@@ -1,4 +1,5 @@
 import { useLocation } from 'react-router-dom'
+import NotificationPanel from './NotificationPanel.jsx'
 
 const titles = {
   '/': 'Dashboard',
@@ -67,6 +68,20 @@ const initialNotifications = [
 function Header({ onMenuClick }) {
   const { pathname } = useLocation()
   const title = titles[pathname] ?? 'Raut'
+
+  const [notifications, setNotifications] = useState(initialNotifications)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+
+  const unreadCount = notifications.filter((n) => !n.read).length
+
+  const markRead = (id) =>
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
+
+  const markAllRead = () =>
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+
+  const dismiss = (id) =>
+    setNotifications((prev) => prev.filter((n) => n.id !== id))
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-white/80 px-4 backdrop-blur sm:px-6">
