@@ -7,6 +7,63 @@ const titles = {
   '/settings': 'Settings',
 }
 
+const initialNotifications = [
+  {
+    id: 1,
+    type: 'warning',
+    title: 'Rider documents expiring',
+    message: 'Rider Amit Thapa\'s license expires in 7 days. Renewal required.',
+    time: '10 min ago',
+    read: false,
+    to: '/riders',
+  },
+  {
+    id: 2,
+    type: 'success',
+    title: 'Payout completed',
+    message: 'Weekly payouts for 42 riders were processed successfully.',
+    time: '1 hour ago',
+    read: false,
+    to: '/riders',
+  },
+  {
+    id: 3,
+    type: 'error',
+    title: 'Failed payment detected',
+    message: 'Order #48219 payment failed. Customer may need a retry.',
+    time: '3 hours ago',
+    read: false,
+    to: '/customers',
+  },
+  {
+    id: 4,
+    type: 'info',
+    title: 'New customer registered',
+    message: 'Sita Gurung signed up and placed a first order.',
+    time: '5 hours ago',
+    read: true,
+    to: '/customers',
+  },
+  {
+    id: 5,
+    type: 'info',
+    title: 'Scheduled maintenance',
+    message: 'The platform will be under maintenance tonight from 2:00–3:00 AM.',
+    time: 'Yesterday',
+    read: true,
+    to: null,
+  },
+  {
+    id: 6,
+    type: 'success',
+    title: 'Weekly report ready',
+    message: 'Your dashboard analytics report for last week is available.',
+    time: '2 days ago',
+    read: true,
+    to: '/',
+  },
+]
+
 function Header({ onMenuClick }) {
   const { pathname } = useLocation()
   const title = titles[pathname] ?? 'Raut'
