@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
+import AddRiderPanel from "../components/addRiderPanel.jsx";
 
-const riders = [
+const initialRiders = [
   {
     id: 1,
     name: "Daniel Okafor",
-    phone: "+1 (415) 555-0132",
+    phone: "+255 415 555 0132",
     status: "Delivering",
     zone: "Downtown",
     deliveries: 18,
@@ -13,7 +14,7 @@ const riders = [
   {
     id: 2,
     name: "Sofia Rossi",
-    phone: "+1 (415) 555-0177",
+    phone: "+255 555 555 0177",
     status: "Delivering",
     zone: "Westside",
     deliveries: 15,
@@ -22,7 +23,7 @@ const riders = [
   {
     id: 3,
     name: "Jonas Berg",
-    phone: "+1 (415) 555-0119",
+    phone: "+255 555 555 0119",
     status: "Online",
     zone: "Midtown",
     deliveries: 12,
@@ -31,7 +32,7 @@ const riders = [
   {
     id: 4,
     name: "Aisha Bello",
-    phone: "+1 (415) 555-0164",
+    phone: "+255 555 555 0164",
     status: "Offline",
     zone: "Harbor",
     deliveries: 9,
@@ -40,7 +41,7 @@ const riders = [
   {
     id: 5,
     name: "Marco Silva",
-    phone: "+1 (415) 555-0148",
+    phone: "+255 645 5501 34",
     status: "Online",
     zone: "Eastend",
     deliveries: 7,
@@ -49,7 +50,7 @@ const riders = [
   {
     id: 6,
     name: "Priya Sharma",
-    phone: "+1 (415) 555-0193",
+    phone: "+255 655 555 014",
     status: "Delivering",
     zone: "Northgate",
     deliveries: 21,
@@ -58,7 +59,7 @@ const riders = [
   {
     id: 7,
     name: "Tom Novak",
-    phone: "+1 (415) 555-0155",
+    phone: "+255 555 555 015",
     status: "Offline",
     zone: "Southbank",
     deliveries: 4,
@@ -67,7 +68,7 @@ const riders = [
   {
     id: 8,
     name: "Zoe Laurent",
-    phone: "+1 (415) 555-0101",
+    phone: "+255 655 555 0123",
     status: "Online",
     zone: "Downtown",
     deliveries: 11,
@@ -81,15 +82,10 @@ const statusStyles = {
   Offline: "bg-slate-100 text-slate-600 ring-slate-500/20",
 };
 
-const summary = [
-  { label: "Online", value: 2, color: "text-emerald-600" },
-  { label: "Delivering", value: 3, color: "text-brand-600" },
-  { label: "Offline", value: 3, color: "text-slate-500" },
-  { label: "Avg. rating", value: "4.8", color: "text-amber-500" },
-];
-
 function Riders() {
   const [query, setQuery] = useState("");
+  const [riders, setRiders] = useState(initialRiders);
+  const [panelOpen, setPanelOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -98,7 +94,36 @@ function Riders() {
       (r) =>
         r.name.toLowerCase().includes(q) || r.zone.toLowerCase().includes(q),
     );
-  }, [query]);
+  }, [query, riders]);
+
+  const summary = useMemo(() => {
+    const count = (status) => riders.filter((r) => r.status === status).length;
+    const avg =
+      riders.length > 0
+        ? (riders.reduce((sum, r) => sum + r.rating, 0) / riders.length).toFixed(1)
+        : "—";
+    return [
+      { label: "Online", value: count("Online"), color: "text-emerald-600" },
+      { label: "Delivering", value: count("Delivering"), color: "text-brand-600" },
+      { label: "Offline", value: count("Offline"), color: "text-slate-500" },
+      { label: "Avg. rating", value: avg, color: "text-amber-500" },
+    ];
+  }, [riders]);
+
+  const addRider = ({ name, phone, zone, status }) => {
+    setRiders((prev) => [
+      {
+        id: Math.max(0, ...prev.map((r) => r.id)) + 1,
+        name,
+        phone,
+        status,
+        zone,
+        deliveries: 0,
+        rating: 0,
+      },
+      ...prev,
+    ]);
+  };
 
   return (
     <div className="space-y-6">
@@ -138,6 +163,7 @@ function Riders() {
           </div>
           <button
             type="button"
+            onClick={() => setPanelOpen(true)}
             className="rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
           >
             Add rider
@@ -151,7 +177,7 @@ function Riders() {
             <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
               {s.label}
             </p>
-            <p className={'mt-1.5 text-2xl font-bold tracking-tight ${s.color}'}>
+            <p className={`mt-1.5 text-2xl font-bold tracking-tight ${s.color}`}>
               {s.value}
             </p>
           </div>
@@ -278,6 +304,12 @@ function Riders() {
           </div>
         </div>
       </div>
+
+      <AddRiderPanel
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        onCreate={addRider}
+      />
     </div>
   );
 }

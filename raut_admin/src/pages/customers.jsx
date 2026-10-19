@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
+import AddCustomerPanel from '../components/addCustomerPanel.jsx'
 
-const customers = [
+const initialCustomers = [
   { id: 1, name: 'Maya Chen', email: 'maya.chen@example.com', orders: 42, joined: 'Jan 12, 2025', status: 'Active' },
   { id: 2, name: 'Liam Torres', email: 'liam.torres@example.com', orders: 17, joined: 'Feb 3, 2025', status: 'Active' },
   { id: 3, name: 'Emma Wilson', email: 'emma.wilson@example.com', orders: 89, joined: 'Nov 21, 2024', status: 'Active' },
@@ -18,12 +19,29 @@ const statusStyles = {
 
 function Customers() {
   const [query, setQuery] = useState('')
+  const [customers, setCustomers] = useState(initialCustomers)
+  const [panelOpen, setPanelOpen] = useState(false)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return customers
     return customers.filter((c) => c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q))
-  }, [query])
+  }, [query, customers])
+
+  const addCustomer = ({ name, email, phone, status }) => {
+    setCustomers((prev) => [
+      {
+        id: Math.max(0, ...prev.map((c) => c.id)) + 1,
+        name,
+        email,
+        orders: 0,
+        joined: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        status,
+        phone,
+      },
+      ...prev,
+    ])
+  }
 
   return (
     <div className="space-y-6">
@@ -55,7 +73,8 @@ function Customers() {
           </div>
           <button
             type="button"
-            className="rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+            onClick={() => setPanelOpen(true)}
+            className="rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
           >
             Add customer
           </button>
@@ -131,6 +150,12 @@ function Customers() {
           </div>
         </div>
       </div>
+
+      <AddCustomerPanel
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        onCreate={addCustomer}
+      />
     </div>
   )
 }
