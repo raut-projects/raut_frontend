@@ -4,6 +4,7 @@ import Dashboard from './pages/dashboard.jsx'
 import Customers from './pages/customers.jsx'
 import Riders from './pages/riders.jsx'
 import Settings from './pages/settings.jsx'
+import Deliveries from './pages/deliveries.jsx'
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/riders" element={<Riders />} />
+          <Route path="/deliveries" element={<Deliveries />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

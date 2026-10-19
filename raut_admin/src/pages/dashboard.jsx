@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 const stats = [
   { label: 'Total Customers', value: '2,847', delta: '+12.4%', up: true, hint: 'vs. last month' },
   { label: 'Active Riders', value: '164', delta: '+4 this week', up: true, hint: 'of 189 registered' },
@@ -52,9 +54,12 @@ function Dashboard() {
           <div className="rounded-xl border border-slate-200 bg-white shadow-card">
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
               <h3 className="text-sm font-semibold text-slate-900">Recent deliveries</h3>
-              <button type="button" className="text-xs font-semibold text-brand-600 hover:text-brand-700">
+              <Link
+                to="/deliveries"
+                className="text-xs font-semibold text-brand-600 hover:text-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+              >
                 View all
-              </button>
+              </Link>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200">
