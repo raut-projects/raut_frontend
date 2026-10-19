@@ -1,7 +1,7 @@
 const sections = [
   {
     title: 'Profile',
-    description: 'Your personal information shown across raut.',
+    description: 'Your personal information shown across rout.',
     fields: [
       { label: 'Full name', value: 'Alex Smith', type: 'text' },
       { label: 'Email', value: 'alex@raut.app', type: 'email' },
@@ -10,7 +10,7 @@ const sections = [
   },
   {
     title: 'Notifications',
-    description: 'Choose what raut emails you about.',
+    description: 'Choose what rout emails you about.',
     toggles: [
       { label: 'New order alerts', checked: true },
       { label: 'Rider status changes', checked: true },

@@ -31,7 +31,7 @@ function Dashboard() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight text-slate-900">Welcome back, Alex</h2>
-        <p className="mt-1 text-sm text-slate-500">Here is what is happening with Raut today.</p>
+        <p className="mt-1 text-sm text-slate-500">Here is what is happening with Rout today.</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
