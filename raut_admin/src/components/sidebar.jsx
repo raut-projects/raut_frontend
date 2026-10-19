@@ -86,7 +86,7 @@ function Sidebar({ open, onClose }) {
       />
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200 bg-white transition-transform duration-200 lg:static lg:z-auto lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200 bg-white transition-transform duration-200 lg:sticky lg:top-0 lg:bottom-auto lg:h-screen lg:shrink-0 lg:z-auto lg:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
         aria-label="Main sidebar"
@@ -96,7 +96,7 @@ function Sidebar({ open, onClose }) {
             R
           </span>
           <span className="text-lg font-bold tracking-tight text-slate-900">
-            Raut
+            Rout
           </span>
         </div>
 
