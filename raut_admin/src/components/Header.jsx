@@ -69,7 +69,7 @@ const initialNotifications = [
 
 function Header({ onMenuClick }) {
   const { pathname } = useLocation()
-  const title = titles[pathname] ?? 'Raut'
+  const title = titles[pathname] ?? 'Rout'
 
   const [notifications, setNotifications] = useState(initialNotifications)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
@@ -123,7 +123,7 @@ function Header({ onMenuClick }) {
         <button
           type="button"
           onClick={() => setNotificationsOpen(true)}
-          className="relative rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+          className="cursor-pointer relative rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
           aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
           aria-haspopup="dialog"
         >

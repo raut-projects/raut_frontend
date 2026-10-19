@@ -190,7 +190,7 @@ function NotificationPanel({
                     type="button"
                     onClick={() => onDismiss(n.id)}
                     aria-label={`Dismiss: ${n.title}`}
-                    className="rounded-md p-1 text-slate-400 opacity-0 transition-all hover:bg-slate-100 hover:text-slate-600 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 group-hover:opacity-100"
+                    className="cursor-pointer rounded-md p-1 text-slate-400 opacity-0 transition-all hover:bg-slate-100 hover:text-slate-600 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 group-hover:opacity-100"
                   >
                     <svg
                       className="h-3.5 w-3.5"
