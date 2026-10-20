@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import AddCustomerPanel from '../components/addCustomerPanel.jsx'
+import ViewCustomerPanel from '../components/viewCustomerPanel.jsx'
 
 const initialCustomers = [
   { id: 1, name: 'Maya Chen', email: 'maya.chen@example.com', orders: 42, joined: 'Jan 12, 2025', status: 'Active' },
@@ -21,6 +22,8 @@ function Customers() {
   const [query, setQuery] = useState('')
   const [customers, setCustomers] = useState(initialCustomers)
   const [panelOpen, setPanelOpen] = useState(false)
+  const [viewOpen, setViewOpen] = useState(false)
+  const [selectedCustomer, setSelectedCustomer] = useState(null)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -112,7 +115,14 @@ function Customers() {
                     <span className={`badge ring-1 ring-inset ${statusStyles[c.status]}`}>{c.status}</span>
                   </td>
                   <td className="table-td text-right">
-                    <button type="button" className="font-semibold text-brand-600 hover:text-brand-700">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedCustomer(c)
+                        setViewOpen(true)
+                      }}
+                      className="font-semibold text-brand-600 hover:text-brand-700"
+                    >
                       View
                     </button>
                   </td>
@@ -155,6 +165,14 @@ function Customers() {
         open={panelOpen}
         onClose={() => setPanelOpen(false)}
         onCreate={addCustomer}
+      />
+      <ViewCustomerPanel
+        open={viewOpen}
+        onClose={() => {
+          setViewOpen(false)
+          setSelectedCustomer(null)
+        }}
+        customer={selectedCustomer}
       />
     </div>
   )
