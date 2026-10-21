@@ -4,6 +4,7 @@ import { useToast } from '../components/toastContext.js'
 import { useSession } from '../hooks/useSession.js'
 import { isValidPhone, requestOtp, verifyOtp } from '../services/auth.js'
 import { OTP_CODE_LENGTH } from '../lib/config.js'
+import { isAdminRole } from '../lib/roles.js'
 
 const inputClass =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100'
@@ -45,7 +46,9 @@ function Login() {
     return () => clearTimeout(timer)
   }, [step, remaining])
 
-  if (session) return <Navigate to={from} replace />
+  if (session) {
+    return <Navigate to={isAdminRole(session.role) ? from : '/request-admin'} replace />
+  }
 
   const resetFeedback = () => {
     setErrors({})
@@ -137,9 +140,13 @@ function Login() {
     resetFeedback()
 
     try {
-      await verifyOtp({ phone, code: value })
+      const signedIn = await verifyOtp({ phone, code: value })
+      const admin = isAdminRole(signedIn?.role)
       toast.success('Signed in successfully.')
-      navigate(from, { replace: true })
+      navigate(admin ? from : '/request-admin', {
+        replace: true,
+        state: admin ? undefined : { from: from === '/request-admin' ? '/' : from },
+      })
     } catch (error) {
       setFormError(error?.message ?? 'The code is not correct. Please try again.')
       if (isExpiredMessage(error?.message)) setRemaining(0)
