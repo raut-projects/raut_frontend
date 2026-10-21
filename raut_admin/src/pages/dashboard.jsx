@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { QueryError, RefreshIndicator, TableSkeleton } from '../components/queryStates.jsx'
 import { useDashboard } from '../hooks/useDashboard.js'
-import { getSession } from '../services/auth.js'
+import { useSession } from '../hooks/useSession.js'
 
 const statusStyles = {
   Delivered: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
@@ -12,7 +12,7 @@ const statusStyles = {
 
 function Dashboard() {
   const { data, isPending, isError, error, isFetching, dataUpdatedAt, refetch } = useDashboard()
-  const session = getSession()
+  const session = useSession()
   const firstName = session?.name?.split(' ')[0] ?? 'there'
 
   const stats = data?.stats ?? []

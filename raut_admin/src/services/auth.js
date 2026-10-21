@@ -1,75 +1,102 @@
-const SESSION_KEY = 'raut_admin_session'
+import {
+  API_ROUTES,
+  OTP_DEFAULT_TTL_SECONDS,
+  OTP_VERIFY_FIELD,
+} from '../lib/config.js'
+import { ApiError, envelopeData, envelopeMessage, request } from './http.js'
+import { clearSession, getAccessToken, getSessionSnapshot, saveSession } from './tokenStore.js'
 
-const mockAdmins = [
-  {
-    id: 1,
-    name: 'Alex Smith',
-    phone: '+2557545550132',
-    code: 'RAUT-2026',
-    role: 'Super Admin',
-    initials: 'AS',
-  },
-  {
-    id: 2,
-    name: 'Neema Joseph',
-    phone: '+2557335550187',
-    code: 'OPS-7411',
-    role: 'Operations',
-    initials: 'NJ',
-  },
-]
-
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-
-export const normalizePhone = (value) => value.replace(/[\s()-]/g, '')
+export const normalizePhone = (value) => String(value ?? '').replace(/[\s()\-.]/g, '')
 
 export const isValidPhone = (value) => {
   const phone = normalizePhone(value)
   return /^\+?\d{9,15}$/.test(phone)
 }
 
-const toSession = (admin) => ({
-  id: admin.id,
-  name: admin.name,
-  phone: admin.phone,
-  role: admin.role,
-  initials: admin.initials,
-  signedInAt: new Date().toISOString(),
-})
+const formatRole = (role) => {
+  if (!role) return 'Admin'
+  return String(role)
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (character) => character.toUpperCase())
+}
 
-export async function signIn({ phone, code }) {
-  await wait(600)
+const buildInitials = (name) => {
+  const parts = String(name ?? '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
 
-  const match = mockAdmins.find((admin) => admin.phone === normalizePhone(phone))
+  if (parts.length === 0) return 'AD'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+}
 
-  if (!match) {
-    return { ok: false, error: 'No admin account found for that phone number.' }
+const toSession = (user, phone) => {
+  const name = user?.full_name ?? user?.fullName ?? user?.name ?? user?.email ?? 'Admin'
+  const role = user?.role ?? 'user'
+
+  return {
+    id: user?.id ?? null,
+    name,
+    phone: user?.phone ?? phone,
+    role,
+    roleLabel: formatRole(role),
+    initials: buildInitials(name),
+    signedInAt: new Date().toISOString(),
+  }
+}
+
+export async function requestOtp(phone) {
+  const payload = await request(API_ROUTES.otpSend, {
+    method: 'POST',
+    body: { phone: normalizePhone(phone) },
+    auth: false,
+  })
+
+  return {
+    phone: payload?.phone ?? normalizePhone(phone),
+    expiresInSeconds: payload?.expires_in_seconds ?? OTP_DEFAULT_TTL_SECONDS,
+    message: envelopeMessage(payload) || 'We sent a verification code to your phone.',
+  }
+}
+
+export async function verifyOtp({ phone, code }) {
+  const payload = await request(API_ROUTES.otpVerify, {
+    method: 'POST',
+    body: {
+      phone: normalizePhone(phone),
+      [OTP_VERIFY_FIELD]: String(code ?? '').trim(),
+    },
+    auth: false,
+  })
+
+  const data = envelopeData(payload) ?? {}
+  const accessToken = data.access_token ?? data.accessToken ?? data.token
+
+  if (!accessToken) {
+    throw new ApiError('The server did not return a session. Please try again.', 500, payload)
   }
 
-  if (match.code !== code.trim()) {
-    return { ok: false, error: 'That secret code is not correct. Please try again.' }
-  }
+  const session = toSession(data.user, normalizePhone(phone))
 
-  const session = toSession(match)
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+  saveSession({
+    session,
+    accessToken,
+    refreshToken: data.refresh_token ?? data.refreshToken ?? null,
+    expiresIn: data.expires_in ?? data.expiresIn ?? null,
+  })
 
-  return { ok: true, admin: session }
+  return session
 }
 
 export function getSession() {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY)
-    return raw ? JSON.parse(raw) : null
-  } catch {
-    return null
-  }
+  return getSessionSnapshot()
 }
 
 export function signOut() {
-  localStorage.removeItem(SESSION_KEY)
+  clearSession()
 }
 
 export function getToken() {
-  const session = getSession()
-  return session ? `raut.${session.id}.${session.signedInAt}` : null
+  return getAccessToken()
 }
