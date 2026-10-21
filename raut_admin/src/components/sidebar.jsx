@@ -141,7 +141,7 @@ function Sidebar({ open, onClose }) {
             R
           </span>
           <span className="text-lg font-bold tracking-tight text-slate-900">
-            Rout
+            Raut
           </span>
         </div>
 
