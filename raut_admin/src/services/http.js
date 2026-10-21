@@ -10,7 +10,7 @@ import {
   getAccessToken,
   getRefreshToken,
   isAccessTokenExpired,
-  updateAccessToken,
+  updateTokens,
 } from './tokenStore.js'
 
 export class ApiError extends Error {
@@ -114,8 +114,9 @@ export const refreshAccessToken = async () => {
 
         if (!accessToken) return false
 
-        updateAccessToken({
+        updateTokens({
           accessToken,
+          refreshToken: data.refresh_token ?? data.refreshToken ?? undefined,
           expiresIn: data.expires_in ?? data.expiresIn ?? null,
         })
 
@@ -160,15 +161,15 @@ export const request = async (
   }
 
   const headers = { Accept: 'application/json' }
-  let payload = undefined
+  let requestBody = undefined
 
   if (body !== undefined) {
     if (form) {
       headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
-      payload = new URLSearchParams(body).toString()
+      requestBody = new URLSearchParams(body).toString()
     } else {
       headers['Content-Type'] = 'application/json'
-      payload = JSON.stringify(body)
+      requestBody = JSON.stringify(body)
     }
   }
 
@@ -186,7 +187,7 @@ export const request = async (
     response = await fetch(buildUrl(path), {
       method,
       headers,
-      body: payload,
+      body: requestBody,
       signal: controller.signal,
     })
   } catch (error) {

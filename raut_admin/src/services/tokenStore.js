@@ -69,9 +69,26 @@ export const saveSession = ({ session, accessToken, refreshToken, expiresIn }) =
   emit()
 }
 
-export const updateAccessToken = ({ accessToken, expiresIn }) => {
-  write(ACCESS_TOKEN_KEY, accessToken ?? '')
-  write(EXPIRES_AT_KEY, String(computeExpiresAt(expiresIn)))
+export const updateTokens = ({ accessToken, refreshToken, expiresIn } = {}) => {
+  if (accessToken !== undefined && accessToken !== null) {
+    write(ACCESS_TOKEN_KEY, accessToken)
+  }
+
+  if (refreshToken !== undefined && refreshToken !== null) {
+    write(REFRESH_TOKEN_KEY, refreshToken)
+  }
+
+  const expiresAt = computeExpiresAt(expiresIn)
+  if (expiresAt) write(EXPIRES_AT_KEY, String(expiresAt))
+
+  emit()
+}
+
+export const updateSession = (patch) => {
+  const current = readSession()
+  if (!current) return
+
+  write(SESSION_KEY, JSON.stringify({ ...current, ...patch }))
   emit()
 }
 
