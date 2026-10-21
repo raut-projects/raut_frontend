@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLocation } from 'react-router-dom'
 import NotificationPanel from './NotificationPanel.jsx'
-import { getSession } from '../services/auth.js'
+import { useSession } from '../hooks/useSession.js'
 
 const titles = {
   '/': 'Dashboard',
@@ -76,7 +76,7 @@ function Header({ onMenuClick }) {
   const [notifications, setNotifications] = useState(initialNotifications)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
 
-  const session = getSession()
+  const session = useSession()
 
   const unreadCount = notifications.filter((n) => !n.read).length
 
@@ -146,11 +146,11 @@ function Header({ onMenuClick }) {
 
         <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
-            {session?.initials ?? 'AS'}
+            {session?.initials ?? 'AD'}
           </span>
           <div className="hidden leading-tight md:block">
             <p className="text-sm font-semibold text-slate-800">{session?.name ?? 'Admin'}</p>
-            <p className="text-xs text-slate-500">{session?.role ?? 'Admin'}</p>
+            <p className="text-xs text-slate-500">{session?.roleLabel ?? session?.role ?? 'Admin'}</p>
           </div>
         </div>
       </div>
