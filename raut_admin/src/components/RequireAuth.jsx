@@ -1,9 +1,9 @@
 import { Navigate, useLocation } from 'react-router-dom'
-import { getSession } from '../services/auth.js'
+import { useSession } from '../hooks/useSession.js'
 
 function RequireAuth({ children }) {
   const location = useLocation()
-  const session = getSession()
+  const session = useSession()
 
   if (!session) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
