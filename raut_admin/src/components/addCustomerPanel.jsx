@@ -12,10 +12,14 @@ const initialForm = { name: '', email: '', phone: '', status: 'Active' }
 function AddCustomerPanel({ open, onClose, onCreate }) {
   const [form, setForm] = useState(initialForm)
   const [errors, setErrors] = useState({})
+  const [pending, setPending] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
   const close = () => {
     setForm(initialForm)
     setErrors({})
+    setSubmitError('')
+    setPending(false)
     onClose()
   }
 
@@ -33,16 +37,26 @@ function AddCustomerPanel({ open, onClose, onCreate }) {
     return Object.keys(next).length === 0
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    if (pending) return
     if (!validate()) return
-    onCreate({
-      name: form.name.trim(),
-      email: form.email.trim(),
-      phone: form.phone.trim(),
-      status: form.status,
-    })
-    close()
+
+    setPending(true)
+    setSubmitError('')
+
+    try {
+      await onCreate({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        status: form.status,
+      })
+      close()
+    } catch (error) {
+      setSubmitError(error?.message ?? 'We could not save this customer. Please try again.')
+      setPending(false)
+    }
   }
 
   return (
@@ -56,21 +70,35 @@ function AddCustomerPanel({ open, onClose, onCreate }) {
           <button
             type="button"
             onClick={close}
-            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+            disabled={pending}
+            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
           >
             Cancel
           </button>
           <button
             type="submit"
             form="add-customer-form"
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+            disabled={pending}
+            className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
           >
-            Add customer
+            {pending && (
+              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+            )}
+            {pending ? 'Saving…' : 'Add customer'}
           </button>
         </>
       }
     >
       <form id="add-customer-form" onSubmit={handleSubmit} noValidate className="space-y-4">
+        {submitError && (
+          <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">
+            {submitError}
+          </p>
+        )}
+
         <label className="block">
           <span className={labelClass}>Full name</span>
           <input
