@@ -1,80 +1,12 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import AddRiderPanel from "../components/addRiderPanel.jsx";
-
-const initialRiders = [
-  {
-    id: 1,
-    name: "Daniel Okafor",
-    phone: "+255 415 555 0132",
-    status: "Delivering",
-    zone: "Downtown",
-    deliveries: 18,
-    rating: 4.9,
-  },
-  {
-    id: 2,
-    name: "Sofia Rossi",
-    phone: "+255 555 555 0177",
-    status: "Delivering",
-    zone: "Westside",
-    deliveries: 15,
-    rating: 4.8,
-  },
-  {
-    id: 3,
-    name: "Jonas Berg",
-    phone: "+255 555 555 0119",
-    status: "Online",
-    zone: "Midtown",
-    deliveries: 12,
-    rating: 4.7,
-  },
-  {
-    id: 4,
-    name: "Aisha Bello",
-    phone: "+255 555 555 0164",
-    status: "Offline",
-    zone: "Harbor",
-    deliveries: 9,
-    rating: 4.9,
-  },
-  {
-    id: 5,
-    name: "Marco Silva",
-    phone: "+255 645 5501 34",
-    status: "Online",
-    zone: "Eastend",
-    deliveries: 7,
-    rating: 4.6,
-  },
-  {
-    id: 6,
-    name: "Priya Sharma",
-    phone: "+255 655 555 014",
-    status: "Delivering",
-    zone: "Northgate",
-    deliveries: 21,
-    rating: 5.0,
-  },
-  {
-    id: 7,
-    name: "Tom Novak",
-    phone: "+255 555 555 015",
-    status: "Offline",
-    zone: "Southbank",
-    deliveries: 4,
-    rating: 4.4,
-  },
-  {
-    id: 8,
-    name: "Zoe Laurent",
-    phone: "+255 655 555 0123",
-    status: "Online",
-    zone: "Downtown",
-    deliveries: 11,
-    rating: 4.8,
-  },
-];
+import {
+  QueryError,
+  RefreshIndicator,
+  TableSkeleton,
+} from "../components/queryStates.jsx";
+import { useCreateRider, useRiders } from "../hooks/useRiders.js";
+import { useDebouncedValue } from "../hooks/useDebouncedValue.js";
 
 const statusStyles = {
   Online: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
@@ -82,47 +14,44 @@ const statusStyles = {
   Offline: "bg-slate-100 text-slate-600 ring-slate-500/20",
 };
 
+const PAGE_SIZE = 8;
+
+const placeholderSummary = [
+  { label: "Online", value: "—", color: "text-slate-300" },
+  { label: "Delivering", value: "—", color: "text-slate-300" },
+  { label: "Offline", value: "—", color: "text-slate-300" },
+  { label: "Avg. rating", value: "—", color: "text-slate-300" },
+];
+
 function Riders() {
   const [query, setQuery] = useState("");
-  const [riders, setRiders] = useState(initialRiders);
+  const [page, setPage] = useState(1);
   const [panelOpen, setPanelOpen] = useState(false);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return riders;
-    return riders.filter(
-      (r) =>
-        r.name.toLowerCase().includes(q) || r.zone.toLowerCase().includes(q),
-    );
-  }, [query, riders]);
+  const debouncedQuery = useDebouncedValue(query, 300);
+  const params = { search: debouncedQuery, page, limit: PAGE_SIZE };
 
-  const summary = useMemo(() => {
-    const count = (status) => riders.filter((r) => r.status === status).length;
-    const avg =
-      riders.length > 0
-        ? (riders.reduce((sum, r) => sum + r.rating, 0) / riders.length).toFixed(1)
-        : "—";
-    return [
-      { label: "Online", value: count("Online"), color: "text-emerald-600" },
-      { label: "Delivering", value: count("Delivering"), color: "text-brand-600" },
-      { label: "Offline", value: count("Offline"), color: "text-slate-500" },
-      { label: "Avg. rating", value: avg, color: "text-amber-500" },
-    ];
-  }, [riders]);
+  const {
+    data,
+    isPending,
+    isError,
+    error,
+    isFetching,
+    isPlaceholderData,
+    dataUpdatedAt,
+    refetch,
+  } = useRiders(params);
+  const createRider = useCreateRider();
 
-  const addRider = ({ name, phone, zone, status }) => {
-    setRiders((prev) => [
-      {
-        id: Math.max(0, ...prev.map((r) => r.id)) + 1,
-        name,
-        phone,
-        status,
-        zone,
-        deliveries: 0,
-        rating: 0,
-      },
-      ...prev,
-    ]);
+  const riders = data?.items ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const summary = data?.summary ?? [];
+  const summaryCards = summary.length > 0 ? summary : placeholderSummary;
+
+  const onQueryChange = (e) => {
+    setQuery(e.target.value);
+    setPage(1);
   };
 
   return (
@@ -133,7 +62,7 @@ function Riders() {
             Riders
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            {riders.length} riders on the fleet
+            {isPending ? "Loading fleet…" : `${total} rider${total === 1 ? "" : "s"} on the fleet`}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -155,7 +84,7 @@ function Riders() {
             <input
               type="search"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={onQueryChange}
               placeholder="Search riders or zones…"
               aria-label="Search riders"
               className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100 sm:w-64"
@@ -172,7 +101,7 @@ function Riders() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {summary.map((s) => (
+        {summaryCards.map((s) => (
           <div key={s.label} className="stat-card">
             <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
               {s.label}
@@ -185,6 +114,13 @@ function Riders() {
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-card">
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+          <RefreshIndicator
+            isFetching={isFetching}
+            updatedAt={dataUpdatedAt}
+            onRefresh={refetch}
+          />
+        </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50">
@@ -198,106 +134,132 @@ function Riders() {
                 <th className="table-th text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filtered.map((r) => (
-                <tr key={r.id} className="transition-colors hover:bg-slate-50">
-                  <td className="table-td">
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
-                        {r.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </span>
-                      <span className="font-medium text-slate-900">
-                        {r.name}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="table-td">{r.phone}</td>
-                  <td className="table-td">
-                    <span
-                      className={`badge ring-1 ring-inset ${statusStyles[r.status]}`}
-                    >
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          r.status === "Online"
-                            ? "bg-emerald-500"
-                            : r.status === "Delivering"
-                              ? "bg-brand-500"
-                              : "bg-slate-400"
-                        }`}
-                        aria-hidden="true"
-                      />
-                      {r.status}
-                    </span>
-                  </td>
-                  <td className="table-td">{r.zone}</td>
-                  <td className="table-td font-medium text-slate-900">
-                    {r.deliveries}
-                  </td>
-                  <td className="table-td">
-                    <span className="inline-flex items-center gap-1 font-medium text-slate-900">
-                      <svg
-                        className="h-4 w-4 text-amber-400"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        aria-hidden="true"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      {r.rating.toFixed(1)}
-                    </span>
-                  </td>
-                  <td className="table-td text-right">
-                    <button
-                      type="button"
-                      className="font-semibold text-brand-600 hover:text-brand-700"
-                    >
-                      Message
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
+
+            {isPending && <TableSkeleton rows={PAGE_SIZE} cols={7} />}
+
+            {isError && (
+              <tbody>
                 <tr>
-                  <td
-                    colSpan={7}
-                    className="px-4 py-10 text-center text-sm text-slate-500"
-                  >
-                    No riders match “{query}”.
+                  <td colSpan={7}>
+                    <QueryError error={error} onRetry={refetch} />
                   </td>
                 </tr>
-              )}
-            </tbody>
+              </tbody>
+            )}
+
+            {!isPending && !isError && (
+              <tbody className="divide-y divide-slate-100">
+                {riders.map((r) => (
+                  <tr
+                    key={r.id}
+                    className={`transition-colors hover:bg-slate-50 ${
+                      r.pending ? "opacity-50" : ""
+                    }`}
+                  >
+                    <td className="table-td">
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
+                          {r.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </span>
+                        <span className="font-medium text-slate-900">
+                          {r.name}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="table-td">{r.phone}</td>
+                    <td className="table-td">
+                      <span
+                        className={`badge ring-1 ring-inset ${statusStyles[r.status]}`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            r.status === "Online"
+                              ? "bg-emerald-500"
+                              : r.status === "Delivering"
+                                ? "bg-brand-500"
+                                : "bg-slate-400"
+                          }`}
+                          aria-hidden="true"
+                        />
+                        {r.status}
+                      </span>
+                    </td>
+                    <td className="table-td">{r.zone}</td>
+                    <td className="table-td font-medium text-slate-900">
+                      {r.deliveries}
+                    </td>
+                    <td className="table-td">
+                      <span className="inline-flex items-center gap-1 font-medium text-slate-900">
+                        <svg
+                          className="h-4 w-4 text-amber-400"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                          aria-hidden="true"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        {r.rating.toFixed(1)}
+                      </span>
+                    </td>
+                    <td className="table-td text-right">
+                      <button
+                        type="button"
+                        className="font-semibold text-brand-600 hover:text-brand-700"
+                      >
+                        Message
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {riders.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="px-4 py-10 text-center text-sm text-slate-500"
+                    >
+                      No riders match “{query}”.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            )}
           </table>
         </div>
         <div className="flex items-center justify-between border-t border-slate-200 px-5 py-3.5">
           <p className="text-xs text-slate-500">
             Showing{" "}
-            <span className="font-semibold text-slate-700">
-              {filtered.length}
-            </span>{" "}
-            of{" "}
-            <span className="font-semibold text-slate-700">
-              {riders.length}
-            </span>
+            <span className="font-semibold text-slate-700">{riders.length}</span> of{" "}
+            <span className="font-semibold text-slate-700">{total}</span>
+            {totalPages > 1 && (
+              <>
+                {" "}
+                · Page{" "}
+                <span className="font-semibold text-slate-700">{page}</span> of{" "}
+                <span className="font-semibold text-slate-700">{totalPages}</span>
+              </>
+            )}
           </p>
           <div className="flex gap-2">
             <button
               type="button"
-              disabled
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-400"
+              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              disabled={page <= 1 || isPlaceholderData}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400 disabled:hover:bg-white"
             >
               Previous
             </button>
             <button
               type="button"
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={page >= totalPages || isPlaceholderData}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400 disabled:hover:bg-white"
             >
               Next
             </button>
@@ -308,7 +270,7 @@ function Riders() {
       <AddRiderPanel
         open={panelOpen}
         onClose={() => setPanelOpen(false)}
-        onCreate={addRider}
+        onCreate={(payload) => createRider.mutateAsync(payload)}
       />
     </div>
   );
