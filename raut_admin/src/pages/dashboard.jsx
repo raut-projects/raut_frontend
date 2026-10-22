@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { QueryError, RefreshIndicator, TableSkeleton } from '../components/queryStates.jsx'
 import { useDashboard } from '../hooks/useDashboard.js'
-import { useSession } from '../hooks/useSession.js'
+// import { useSession } from '../hooks/useSession.js'
 
 const statusStyles = {
   Delivered: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
@@ -12,8 +12,8 @@ const statusStyles = {
 
 function Dashboard() {
   const { data, isPending, isError, error, isFetching, dataUpdatedAt, refetch } = useDashboard()
-  const session = useSession()
-  const firstName = session?.name?.split(' ')[0] ?? 'there'
+  // const session = useSession()
+  // const firstName = session?.name?.split(' ')[0] ?? 'there'
 
   const stats = data?.stats ?? []
   const recentDeliveries = data?.recentDeliveries ?? []
@@ -24,7 +24,7 @@ function Dashboard() {
     <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Welcome back, {firstName}</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Welcome back, Admin</h2>
           <p className="mt-1 text-sm text-slate-500">Here is what is happening with Raut today.</p>
         </div>
         <RefreshIndicator isFetching={isFetching} updatedAt={dataUpdatedAt} onRefresh={refetch} />
