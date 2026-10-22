@@ -207,5 +207,5 @@ export const mapNotification = (notification) => ({
   message: notification?.body ?? '',
   time: formatRelative(notification?.created_at),
   read: Boolean(notification?.is_read),
-  to: notification?.ride_id ? '/deliveries' : notification?.route_id ? '/riders' : null,
+  to: notification?.ride_id ? '/' : notification?.route_id ? '/riders' : null,
 })
