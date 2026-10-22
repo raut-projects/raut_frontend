@@ -65,8 +65,24 @@ function ViewDeliveryPanel({ open, onClose, delivery }) {
           </label>
 
           <label className="block">
-            <span className={labelClass}>Zone</span>
-            <div className={valueClass}>{delivery.zone}</div>
+            <span className={labelClass}>Route</span>
+            <div className={valueClass}>{delivery.route}</div>
+          </label>
+
+          <div className="grid grid-cols-2 gap-4">
+            <label className="block">
+              <span className={labelClass}>Seats</span>
+              <div className={valueClass}>{delivery.seats}</div>
+            </label>
+            <label className="block">
+              <span className={labelClass}>Platform fee</span>
+              <div className={valueClass}>{delivery.platformFee}</div>
+            </label>
+          </div>
+
+          <label className="block">
+            <span className={labelClass}>Rider earning</span>
+            <div className={valueClass}>{delivery.driverEarning}</div>
           </label>
         </div>
       )}

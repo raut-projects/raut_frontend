@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import ViewDeliveryPanel from '../components/viewDeliveryPanel.jsx'
 import { QueryError, RefreshIndicator, TableSkeleton } from '../components/queryStates.jsx'
+import { ReasonDialog } from '../components/reasonDialog.jsx'
 import { useDeliveries } from '../hooks/useDeliveries.js'
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js'
+import { useCancelRide } from '../hooks/useAdminActions.js'
 
 const statusStyles = {
   Delivered: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
@@ -18,6 +20,8 @@ function Deliveries() {
   const [page, setPage] = useState(1)
   const [viewOpen, setViewOpen] = useState(false)
   const [selectedDelivery, setSelectedDelivery] = useState(null)
+  const [cancelTarget, setCancelTarget] = useState(null)
+  const [cancelReason, setCancelReason] = useState('')
 
   const debouncedSearch = useDebouncedValue(search, 300)
   const params = { search: debouncedSearch, page, limit: PAGE_SIZE }
@@ -32,6 +36,8 @@ function Deliveries() {
     dataUpdatedAt,
     refetch,
   } = useDeliveries(params)
+
+  const cancelRide = useCancelRide()
 
   const items = data?.items ?? []
   const total = data?.total ?? 0
@@ -86,7 +92,7 @@ function Deliveries() {
                 <th className="table-th">Order</th>
                 <th className="table-th">Customer</th>
                 <th className="table-th">Rider</th>
-                <th className="table-th">Zone</th>
+                <th className="table-th">Route</th>
                 <th className="table-th">Amount</th>
                 <th className="table-th">Status</th>
                 <th className="table-th">Date</th>
@@ -113,7 +119,7 @@ function Deliveries() {
                     <td className="table-td font-medium text-slate-900">{d.id}</td>
                     <td className="table-td">{d.customer}</td>
                     <td className="table-td">{d.rider}</td>
-                    <td className="table-td">{d.zone}</td>
+                    <td className="table-td">{d.route}</td>
                     <td className="table-td font-medium text-slate-900">{d.amount}</td>
                     <td className="table-td">
                       <span className={`badge ring-1 ring-inset ${statusStyles[d.status]}`}>
@@ -121,17 +127,31 @@ function Deliveries() {
                       </span>
                     </td>
                     <td className="table-td">{d.date}</td>
-                    <td className="table-td text-right">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedDelivery(d)
-                          setViewOpen(true)
-                        }}
-                        className="font-semibold text-brand-600 hover:text-brand-700"
-                      >
-                        View
-                      </button>
+                    <td className="table-td">
+                      <div className="flex items-center justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedDelivery(d)
+                            setViewOpen(true)
+                          }}
+                          className="font-semibold text-brand-600 hover:text-brand-700"
+                        >
+                          View
+                        </button>
+                        {!['completed', 'cancelled', 'rejected', 'expired'].includes(d.statusKey) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCancelReason('')
+                              setCancelTarget(d)
+                            }}
+                            className="font-semibold text-rose-600 transition-colors hover:text-rose-700"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -185,6 +205,24 @@ function Deliveries() {
           setSelectedDelivery(null)
         }}
         delivery={selectedDelivery}
+      />
+
+      <ReasonDialog
+        open={Boolean(cancelTarget)}
+        onClose={() => setCancelTarget(null)}
+        title="Cancel ride"
+        description={
+          cancelTarget ? `${cancelTarget.id} will be cancelled and the rider notified.` : undefined
+        }
+        confirmLabel="Cancel ride"
+        placeholder="Why is the ride cancelled?"
+        value={cancelReason}
+        onChange={setCancelReason}
+        pending={cancelRide.isPending}
+        onConfirm={async (reason) => {
+          await cancelRide.mutateAsync({ rideId: cancelTarget.rideId, reason })
+          setCancelTarget(null)
+        }}
       />
     </div>
   )
