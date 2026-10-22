@@ -220,6 +220,101 @@ export const mapDocument = (document) => {
   }
 }
 
+export const PAYOUT_STATUS_LABELS = {
+  pending: 'Pending',
+  requested: 'Pending',
+  scheduled: 'Scheduled',
+  processing: 'Processing',
+  approved: 'Approved',
+  paid: 'Paid',
+  completed: 'Paid',
+  settled: 'Paid',
+  transferred: 'Paid',
+  success: 'Paid',
+  failed: 'Failed',
+  error: 'Failed',
+  reversed: 'Reversed',
+  rejected: 'Rejected',
+  cancelled: 'Cancelled',
+}
+
+export const PAYOUT_METHOD_LABELS = {
+  mobile_money: 'Mobile money',
+  mpesa: 'M-Pesa',
+  bank: 'Bank transfer',
+  bank_transfer: 'Bank transfer',
+  cash: 'Cash',
+  card: 'Card',
+}
+
+// The status groups decide which actions the table offers.
+export const PAYOUT_AWAITING_STATUSES = ['pending', 'requested', 'approved', 'scheduled', 'processing']
+
+export const PAYOUT_SETTLED_STATUSES = ['paid', 'completed', 'settled', 'transferred', 'success']
+
+export const PAYOUT_FAILED_STATUSES = ['failed', 'error', 'reversed']
+
+export const PAYOUT_APPROVABLE_STATUSES = ['pending', 'requested', 'approved', 'scheduled']
+
+// The payout endpoints have no declared response model, so every field is read
+// through a list of candidates and the first match wins. The API is free to
+// name a field differently than expected without breaking the screen.
+const firstOf = (source, keys, fallback = null) => {
+  if (!source || typeof source !== 'object') return fallback
+
+  for (const key of keys) {
+    const value = source[key]
+
+    if (value !== undefined && value !== null && value !== '') return value
+  }
+
+  return fallback
+}
+
+export const mapPayout = (payout) => {
+  const statusKey = String(firstOf(payout, ['status', 'payout_status'], 'pending')).toLowerCase()
+  const methodKey = String(firstOf(payout, ['method', 'payout_method', 'payment_method', 'channel'], '')).toLowerCase()
+  const driver = payout?.driver ?? null
+
+  const rawAmount = firstOf(payout, ['amount', 'payout_amount', 'total_amount', 'net_amount', 'gross_amount'], 0)
+  const amount = Number(rawAmount)
+
+  const driverName = firstOf(payout, ['driver_name', 'driver_full_name']) ?? firstOf(driver, ['full_name', 'name'])
+
+  return {
+    id: firstOf(payout, ['id', 'payout_id']),
+    driverId: firstOf(payout, ['driver_id']),
+    driverName: driverName ?? EMPTY,
+    driverPhone:
+      firstOf(payout, ['driver_phone', 'driver_phone_number']) ?? firstOf(driver, ['phone', 'phone_number']) ?? EMPTY,
+    amount: Number.isFinite(amount) ? amount : 0,
+    amountLabel: formatMoney(rawAmount),
+    methodKey,
+    method: PAYOUT_METHOD_LABELS[methodKey] ?? (methodKey ? titleCase(methodKey) : EMPTY),
+    methodDetails:
+      firstOf(payout, ['phone_number', 'mobile_money_number', 'account_number', 'bank_account', 'destination_account']) ??
+      EMPTY,
+    statusKey,
+    status: PAYOUT_STATUS_LABELS[statusKey] ?? titleCase(statusKey),
+    reference:
+      firstOf(payout, ['reference', 'transaction_reference', 'external_reference', 'payout_reference', 'transaction_id']) ??
+      EMPTY,
+    notes: firstOf(payout, ['notes', 'admin_notes', 'note']) ?? EMPTY,
+    rejectionReason: firstOf(payout, ['rejection_reason', 'reason']) ?? EMPTY,
+    requestedAt: formatDateTime(firstOf(payout, ['created_at', 'requested_at', 'initiated_at', 'requested_date'])),
+    processedAt: formatDateTime(
+      firstOf(payout, ['processed_at', 'approved_at', 'paid_at', 'completed_at', 'paid_date']),
+    ),
+    periodStart: formatDate(firstOf(payout, ['period_start', 'period_start_date', 'start_date', 'from_date'])),
+    periodEnd: formatDate(firstOf(payout, ['period_end', 'period_end_date', 'end_date', 'to_date'])),
+    isAwaiting: PAYOUT_AWAITING_STATUSES.includes(statusKey),
+    isSettled: PAYOUT_SETTLED_STATUSES.includes(statusKey),
+    isFailed: PAYOUT_FAILED_STATUSES.includes(statusKey),
+    canApprove: PAYOUT_APPROVABLE_STATUSES.includes(statusKey),
+    canRetry: PAYOUT_FAILED_STATUSES.includes(statusKey),
+  }
+}
+
 export const mapDelivery = (ride) => {
   const statusKey = ride?.status ?? 'requested'
   const pickup = ride?.pickup_name?.trim() || ride?.route_origin?.trim() || EMPTY
