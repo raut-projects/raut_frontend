@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLocation } from 'react-router-dom'
 import NotificationPanel from './NotificationPanel.jsx'
 import { useSession } from '../hooks/useSession.js'
+import { useMarkNotificationRead, useNotifications } from '../hooks/useNotifications.js'
 
 const titles = {
   '/': 'Dashboard',
@@ -16,21 +17,29 @@ function Header({ onMenuClick }) {
   const { pathname } = useLocation()
   const title = titles[pathname] ?? 'Raut'
 
-  const [notifications, setNotifications] = useState(initialNotifications)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [dismissed, setDismissed] = useState([])
 
   const session = useSession()
+  const { data: fetchedNotifications } = useNotifications()
+  const markRead = useMarkNotificationRead()
 
-  const unreadCount = notifications.filter((n) => !n.read).length
+  const notifications = useMemo(
+    () => (fetchedNotifications ?? []).filter((notification) => !dismissed.includes(notification.id)),
+    [fetchedNotifications, dismissed],
+  )
 
-  const markRead = (id) =>
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
+  const unreadCount = notifications.filter((notification) => !notification.read).length
 
-  const markAllRead = () =>
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+  const handleMarkRead = (id) => {
+    markRead.mutate(id)
+  }
 
-  const dismiss = (id) =>
-    setNotifications((prev) => prev.filter((n) => n.id !== id))
+  const handleMarkAllRead = () => {
+    notifications.filter((notification) => !notification.read).forEach((notification) => markRead.mutate(notification.id))
+  }
+
+  const handleDismiss = (id) => setDismissed((prev) => (prev.includes(id) ? prev : [...prev, id]))
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-white/80 px-4 backdrop-blur sm:px-6">
@@ -103,9 +112,9 @@ function Header({ onMenuClick }) {
           open={notificationsOpen}
           onClose={() => setNotificationsOpen(false)}
           notifications={notifications}
-          onMarkRead={markRead}
-          onMarkAllRead={markAllRead}
-          onDismiss={dismiss}
+          onMarkRead={handleMarkRead}
+          onMarkAllRead={handleMarkAllRead}
+          onDismiss={handleDismiss}
         />,
         document.body
       )}

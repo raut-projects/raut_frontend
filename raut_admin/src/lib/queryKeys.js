@@ -14,4 +14,10 @@ export const queryKeys = {
   dashboard: {
     all: ['dashboard'],
   },
+  notifications: {
+    all: ['notifications'],
+  },
+  me: {
+    all: ['me'],
+  },
 }
