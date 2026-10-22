@@ -52,7 +52,7 @@ const icons = {
       />
     </svg>
   ),
-  riders: (
+  drivers: (
     <svg
       className="h-5 w-5 shrink-0"
       viewBox="0 0 24 24"
@@ -89,7 +89,7 @@ const icons = {
 const navItems = [
   { to: "/", label: "Dashboard", icon: icons.dashboard, end: true },
   { to: "/customers", label: "Customers", icon: icons.customers },
-  { to: "/riders", label: "Riders", icon: icons.riders },
+  { to: "/drivers", label: "Drivers", icon: icons.drivers },
 ];
 
 function Sidebar({ open, onClose }) {

@@ -10,7 +10,6 @@ import {
   unsuspendDriver,
   verifyDriver,
 } from '../services/adminActions.js'
-
 const useAction = ({ mutationFn, successMessage }) => {
   const queryClient = useQueryClient()
   const toast = useToast()
@@ -22,7 +21,7 @@ const useAction = ({ mutationFn, successMessage }) => {
       toast.success(typeof successMessage === 'function' ? successMessage(variables) : successMessage)
 
       queryClient.invalidateQueries({ queryKey: queryKeys.customers.all })
-      queryClient.invalidateQueries({ queryKey: queryKeys.riders.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.drivers.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all })
     },
 

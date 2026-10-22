@@ -155,12 +155,12 @@ export const mapCustomer = (user) => ({
   createdAt: user?.created_at ?? null,
 })
 
-export const mapRider = (driver) => {
+export const mapDriver = (driver) => {
   const statusKey = driver?.driver_status ?? 'none'
 
   return {
     id: driver?.id ?? null,
-    name: driver?.full_name?.trim() || driver?.email?.trim() || 'Unnamed rider',
+    name: driver?.full_name?.trim() || driver?.email?.trim() || 'Unnamed driver',
     phone: driver?.phone ?? EMPTY,
     email: driver?.email ?? EMPTY,
     status: DRIVER_STATUS_LABELS[statusKey] ?? titleCase(statusKey),
@@ -182,10 +182,10 @@ export const mapDelivery = (ride) => {
   return {
     id: shortId(ride?.id),
     rideId: ride?.id ?? null,
-    customer: ride?.rider_name?.trim() || 'Unknown rider',
+    customer: ride?.rider_name?.trim() || 'Unknown customer',
     customerPhone: ride?.rider_phone ?? EMPTY,
-    rider: ride?.driver_name?.trim() || 'Unassigned',
-    riderPhone: ride?.driver_phone ?? EMPTY,
+    driver: ride?.driver_name?.trim() || 'Unassigned',
+    driverPhone: ride?.driver_phone ?? EMPTY,
     zone: ride?.route_origin?.trim() || ride?.pickup_name?.trim() || EMPTY,
     route: pickup === EMPTY || dropoff === EMPTY ? pickup : `${pickup} → ${dropoff}`,
     amount: formatMoney(ride?.fare_amount),
@@ -207,5 +207,5 @@ export const mapNotification = (notification) => ({
   message: notification?.body ?? '',
   time: formatRelative(notification?.created_at),
   read: Boolean(notification?.is_read),
-  to: notification?.ride_id ? '/' : notification?.route_id ? '/riders' : null,
+  to: notification?.ride_id ? '/' : notification?.route_id ? '/drivers' : null,
 })
