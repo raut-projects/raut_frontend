@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { QueryError, RefreshIndicator, TableSkeleton } from '../components/queryStates.jsx'
 import { ReasonDialog } from '../components/reasonDialog.jsx'
+import ViewDriverPanel from '../components/viewDriverPanel.jsx'
 import { useDrivers } from '../hooks/useDrivers.js'
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js'
 import {
@@ -44,6 +45,7 @@ function Drivers() {
   const [rejectReason, setRejectReason] = useState('')
   const [suspendTarget, setSuspendTarget] = useState(null)
   const [suspendReason, setSuspendReason] = useState('')
+  const [viewTarget, setViewTarget] = useState(null)
 
   const debouncedQuery = useDebouncedValue(query, 300)
   const params = { search: debouncedQuery, status, page, limit: PAGE_SIZE }
@@ -224,6 +226,13 @@ function Drivers() {
                     <td className="table-td">{r.joined}</td>
                     <td className="table-td">
                       <div className="flex items-center justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setViewTarget(r)}
+                          className={actionClass}
+                        >
+                          View
+                        </button>
                         {r.statusKey === 'pending' && (
                           <>
                             <button
@@ -318,6 +327,12 @@ function Drivers() {
           </div>
         </div>
       </div>
+
+      <ViewDriverPanel
+        open={Boolean(viewTarget)}
+        onClose={() => setViewTarget(null)}
+        driver={viewTarget}
+      />
 
       <ReasonDialog
         open={Boolean(rejectTarget)}
