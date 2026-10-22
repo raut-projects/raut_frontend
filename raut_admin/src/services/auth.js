@@ -83,13 +83,20 @@ const roleFromResponse = ({ user, data }) =>
 
 const toSession = (user, phone, fallbackRole) => {
   const fallbackPhone = normalizePhone(phone)
+  const role = firstRole(user?.role, user?.roles, fallbackRole) ?? 'user'
 
-  const name =
+  const resolvedName =
     firstText(user?.full_name, user?.fullName, user?.name, user?.email) ??
     firstText(user?.phone, fallbackPhone) ??
     'User'
 
-  const role = firstRole(user?.role, user?.roles, fallbackRole) ?? 'user'
+  // Accounts without a name fall back to their phone number, which reads badly
+  // in the header and on the dashboard.
+  const name = /^\+?\d[\d\s()-]{6,}$/.test(resolvedName)
+    ? isAdminRole(role)
+      ? 'Admin'
+      : 'User'
+    : resolvedName
 
   return {
     id: user?.id ?? null,
