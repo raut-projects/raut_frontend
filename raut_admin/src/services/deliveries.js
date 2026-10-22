@@ -1,30 +1,38 @@
-import { db } from '../mocks/db.js'
-import { matches, requireSession, wait } from './mockApi.js'
+import { API_ROUTES } from '../lib/config.js'
+import { apiGet } from './api.js'
+import { mapDelivery, RIDE_STATUS_FILTERS } from './mappers.js'
 
 export async function listDeliveries({ search = '', status = 'all', page = 1, limit = 10 } = {}) {
-  requireSession()
-  await wait()
+  const params = {
+    page,
+    page_size: limit,
+    sort_by: 'created_at',
+    sort_order: 'desc',
+  }
 
-  const query = search.trim().toLowerCase()
-  let rows = db.deliveries
+  if (status && status !== 'all') {
+    params.status = RIDE_STATUS_FILTERS[status] ?? String(status).toLowerCase()
+  }
 
-  if (status && status !== 'all') rows = rows.filter((delivery) => delivery.status === status)
+  const data = await apiGet(API_ROUTES.rides, { params })
+
+  let items = (data?.items ?? []).map(mapDelivery)
+
+  // The rides endpoint has no search parameter, so the lookup runs against the
+  // page that is already loaded.
+  const query = String(search ?? '').trim().toLowerCase()
 
   if (query) {
-    rows = rows.filter(
-      (delivery) =>
-        matches(delivery.id, query) ||
-        matches(delivery.customer, query) ||
-        matches(delivery.rider, query) ||
-        matches(delivery.zone, query),
+    items = items.filter((delivery) =>
+      [delivery.id, delivery.customer, delivery.rider, delivery.zone].some((value) =>
+        String(value).toLowerCase().includes(query),
+      ),
     )
   }
 
-  const start = (page - 1) * limit
-
   return {
-    items: rows.slice(start, start + limit),
-    total: rows.length,
+    items,
+    total: query ? items.length : (data?.pagination?.total_items ?? items.length),
     page,
     limit,
   }

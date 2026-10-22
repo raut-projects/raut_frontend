@@ -7,53 +7,40 @@ import { mapRider } from './mappers.js'
 const FLEET_PAGE_SIZE = 100
 
 export async function listRiders({ search = '', status = 'all', page = 1, limit = 8 } = {}) {
-  requireSession()
-  await wait()
+  const query = String(search ?? '').trim()
 
-  const query = search.trim().toLowerCase()
-  let rows = db.riders
-
-  if (status && status !== 'all') rows = rows.filter((rider) => rider.status === status)
-
-  if (query) {
-    rows = rows.filter(
-      (rider) =>
-        matches(rider.name, query) ||
-        matches(rider.zone, query) ||
-        matches(rider.phone, query),
-    )
+  const params = {
+    page,
+    page_size: limit,
+    sort_by: 'total_rides',
+    sort_order: 'desc',
   }
 
-  const start = (page - 1) * limit
+  if (query) params.search = query
+  if (status && status !== 'all') params.driver_status = String(status).toLowerCase()
+
+  const [data, fleet] = await Promise.all([
+    apiGet(API_ROUTES.riders, { params }),
+    apiGet(API_ROUTES.riders, {
+      params: { page: 1, page_size: FLEET_PAGE_SIZE, sort_by: 'total_rides', sort_order: 'desc' },
+    }),
+  ])
+
+  const items = (data?.items ?? []).map(mapRider)
+  const fleetItems = (fleet?.items ?? []).map(mapRider)
+
+  const summary = {
+    total: fleet?.pagination?.total_items ?? fleetItems.length,
+    verified: fleetItems.filter((rider) => rider.statusKey === 'verified').length,
+    pending: fleetItems.filter((rider) => rider.statusKey === 'pending').length,
+    incomplete: fleetItems.filter((rider) => rider.statusKey === 'incomplete').length,
+  }
 
   return {
-    items: rows.slice(start, start + limit),
-    total: rows.length,
+    items,
+    total: data?.pagination?.total_items ?? items.length,
     page,
     limit,
-    summary: buildSummary(),
+    summary,
   }
-}
-
-export async function createRider({ name, phone, zone, status }) {
-  requireSession()
-  await wait()
-
-  if (name.toLowerCase().includes('fail')) {
-    throw requestError('The server rejected this rider. Please try again.')
-  }
-
-  const record = {
-    id: Math.max(0, ...db.riders.map((rider) => rider.id)) + 1,
-    name,
-    phone,
-    zone,
-    status,
-    deliveries: 0,
-    rating: 5.0,
-  }
-
-  db.riders = [record, ...db.riders]
-
-  return record
 }

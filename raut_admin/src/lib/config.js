@@ -9,14 +9,18 @@ export const API_ROUTES = {
   otpVerify: '/auth/otp/verify',
   refresh: '/auth/refresh',
   me: '/auth/me',
+  notifications: '/notifications/',
   promote: '/admin/promote',
   users: '/admin/users',
   riders: '/admin/drivers',
-  verifyDrivers: '/admin/drivers/{driver_id}/verify',
-  rejectDrivers: '/admin/drivers/{driver_id}/reject',
   rides: '/admin/rides',
-  activeRides: '/admin/rides/active',
-    
+  routes: '/admin/routes',
+  documents: '/admin/documents',
+  transactions: '/admin/transactions',
+  payouts: '/admin/payouts',
+  analyticsRevenue: '/admin/analytics/revenue',
+  analyticsRides: '/admin/analytics/rides',
+  analyticsPeakHours: '/admin/analytics/peak-hours',
 }
 
 export const OTP_CODE_LENGTH = 6
