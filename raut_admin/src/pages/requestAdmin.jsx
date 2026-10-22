@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useToast } from '../components/toastContext.js'
 import { useSession } from '../hooks/useSession.js'
@@ -16,6 +17,7 @@ function RequestAdmin() {
   const location = useLocation()
   const toast = useToast()
   const session = useSession()
+  const queryClient = useQueryClient()
 
   const [secret, setSecret] = useState('')
   const [error, setError] = useState('')
@@ -75,6 +77,7 @@ function RequestAdmin() {
 
   const handleSignOut = () => {
     signOut()
+    queryClient.clear()
     navigate('/login', { replace: true })
   }
 

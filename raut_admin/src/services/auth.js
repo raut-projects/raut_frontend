@@ -3,7 +3,7 @@ import {
   OTP_DEFAULT_TTL_SECONDS,
   OTP_VERIFY_FIELD,
 } from '../lib/config.js'
-import { isAdminRole } from '../lib/roles.js'
+import { firstRole, formatRole, isAdminRole, resolveRole } from '../lib/roles.js'
 import { ApiError, envelopeData, envelopeMessage, request, refreshAccessToken } from './http.js'
 import {
   clearSession,
@@ -21,11 +21,12 @@ export const isValidPhone = (value) => {
   return /^\+?\d{9,15}$/.test(phone)
 }
 
-const formatRole = (role) => {
-  if (!role) return 'Admin'
-  return String(role)
-    .replace(/[_-]+/g, ' ')
-    .replace(/\b\w/g, (character) => character.toUpperCase())
+const firstText = (...values) => {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) return value.trim()
+  }
+
+  return null
 }
 
 const buildInitials = (name) => {
@@ -34,19 +35,66 @@ const buildInitials = (name) => {
     .split(/\s+/)
     .filter(Boolean)
 
-  if (parts.length === 0) return 'AD'
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  if (parts.length === 0) return 'U'
+
+  if (parts.length === 1) {
+    const only = parts[0]
+
+    if (/^\+?\d+$/.test(only)) {
+      return only.replace(/\D/g, '').slice(-2).padStart(2, '0')
+    }
+
+    return only.slice(0, 2).toUpperCase()
+  }
+
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
 }
 
-const toSession = (user, phone) => {
-  const name = user?.full_name ?? user?.fullName ?? user?.name ?? user?.email ?? 'Admin'
-  const role = user?.role ?? 'user'
+const decodeJwtPayload = (token) => {
+  try {
+    const [, payload] = String(token ?? '').split('.')
+    if (!payload) return null
+
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=')
+
+    return JSON.parse(atob(padded))
+  } catch {
+    return null
+  }
+}
+
+// The role can arrive on the user object, beside the tokens, as a list, or only
+// inside the access token. Any of them is enough, and a missing role means "not
+// an admin" rather than "admin".
+const roleFromPayload = ({ user, data, accessToken }) =>
+  resolveRole(
+    user?.role,
+    user?.roles,
+    data?.role,
+    data?.roles,
+    decodeJwtPayload(accessToken)?.role,
+  )
+
+// Same lookup without the token fallback. The token can still carry the role a
+// user had before a promotion, so it must never win over a fresh server answer.
+const roleFromResponse = ({ user, data }) =>
+  resolveRole(user?.role, user?.roles, data?.role, data?.roles)
+
+const toSession = (user, phone, fallbackRole) => {
+  const fallbackPhone = normalizePhone(phone)
+
+  const name =
+    firstText(user?.full_name, user?.fullName, user?.name, user?.email) ??
+    firstText(user?.phone, fallbackPhone) ??
+    'User'
+
+  const role = firstRole(user?.role, user?.roles, fallbackRole) ?? 'user'
 
   return {
     id: user?.id ?? null,
     name,
-    phone: user?.phone ?? phone,
+    phone: user?.phone ?? fallbackPhone,
     role,
     roleLabel: formatRole(role),
     initials: buildInitials(name),
@@ -61,9 +109,14 @@ export async function requestOtp(phone) {
     auth: false,
   })
 
+  const data = envelopeData(payload) ?? {}
+
   return {
-    phone: payload?.phone ?? normalizePhone(phone),
-    expiresInSeconds: payload?.expires_in_seconds ?? OTP_DEFAULT_TTL_SECONDS,
+    phone: data.phone ?? payload?.phone ?? normalizePhone(phone),
+    expiresInSeconds:
+      data.expires_in_seconds ??
+      payload?.expires_in_seconds ??
+      OTP_DEFAULT_TTL_SECONDS,
     message: envelopeMessage(payload) || 'We sent a verification code to your phone.',
   }
 }
@@ -85,10 +138,13 @@ export async function verifyOtp({ phone, code }) {
     throw new ApiError('The server did not return a session. Please try again.', 500, payload)
   }
 
-  const session = toSession(data.user, normalizePhone(phone))
+  const user = data.user ?? data
+  const role = roleFromPayload({ user, data, accessToken })
+
+  const session = toSession(user, normalizePhone(phone), role)
 
   saveSession({
-    session,
+    session: { ...session, roleVerifiedAt: Date.now() },
     accessToken,
     refreshToken: data.refresh_token ?? data.refreshToken ?? null,
     expiresIn: data.expires_in ?? data.expiresIn ?? null,
@@ -109,17 +165,16 @@ export function getToken() {
   return getAccessToken()
 }
 
-const decodeJwtPayload = (token) => {
-  try {
-    const [, payload] = String(token ?? '').split('.')
-    if (!payload) return null
+// Asks the backend who the signed in user actually is. This is the source of
+// truth for the role, the local session only caches it.
+export async function fetchCurrentUser() {
+  const payload = await request(API_ROUTES.me, { auth: true })
+  const data = envelopeData(payload) ?? {}
+  const user = data.user ?? data
 
-    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
-    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=')
-
-    return JSON.parse(atob(padded))
-  } catch {
-    return null
+  return {
+    user,
+    role: roleFromResponse({ user, data }),
   }
 }
 
@@ -146,25 +201,39 @@ export async function requestAdminAccess(secret) {
     updateTokens({ refreshToken: promotedRefreshToken })
   }
 
-  let accessToken = promotedAccessToken
+  if (promotedAccessToken) {
+    updateTokens({ accessToken: promotedAccessToken, expiresIn: promotedExpiresIn })
+  }
 
-  if (accessToken) {
-    updateTokens({ accessToken, expiresIn: promotedExpiresIn })
-  } else {
+  const promotedUser = data.user ?? data
+  let role = roleFromResponse({ user: promotedUser, data })
+
+  if (!role) {
+    const current = await fetchCurrentUser()
+    role = current.role
+  }
+
+  if (!isAdminRole(role)) {
+    throw new ApiError(
+      'That secret was not accepted. Your access level has not changed.',
+      403,
+      payload,
+    )
+  }
+
+  // The access token has to carry the new role, otherwise the backend keeps
+  // treating the user as a plain user on every later request.
+  let accessToken = promotedAccessToken ?? getAccessToken()
+
+  if (!promotedAccessToken) {
     const refreshed = await refreshAccessToken()
     accessToken = getAccessToken()
 
     if (!refreshed || !accessToken) {
-      throw signInAgainError('Your access was granted but your session could not be refreshed. Please sign in again.')
+      throw signInAgainError(
+        'Your access was granted but your session could not be refreshed. Please sign in again.',
+      )
     }
-  }
-
-  const me = await request(API_ROUTES.me, { auth: true })
-  const user = envelopeData(me) ?? {}
-  const role = user.role ?? null
-
-  if (!isAdminRole(role)) {
-    throw new ApiError('That secret was not accepted. Your access level has not changed.', 403, payload)
   }
 
   const claims = decodeJwtPayload(accessToken)
@@ -174,7 +243,7 @@ export async function requestAdminAccess(secret) {
     throw signInAgainError('Your account now has admin access. Please sign in again to continue.')
   }
 
-  updateSession({ role, roleLabel: formatRole(role) })
+  updateSession({ role, roleLabel: formatRole(role), roleVerifiedAt: Date.now() })
 
   return {
     role,
