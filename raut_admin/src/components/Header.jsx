@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLocation } from 'react-router-dom'
 import NotificationPanel from './NotificationPanel.jsx'
-import { getSession } from '../services/auth.js'
+import { useSession } from '../hooks/useSession.js'
+import { useMarkNotificationRead, useNotifications } from '../hooks/useNotifications.js'
 
 const titles = {
   '/': 'Dashboard',
@@ -12,82 +13,33 @@ const titles = {
   '/settings': 'Settings',
 }
 
-const initialNotifications = [
-  {
-    id: 1,
-    type: 'warning',
-    title: 'Rider documents expiring',
-    message: 'Rider Amit Thapa\'s license expires in 7 days. Renewal required.',
-    time: '10 min ago',
-    read: false,
-    to: '/riders',
-  },
-  {
-    id: 2,
-    type: 'success',
-    title: 'Payout completed',
-    message: 'Weekly payouts for 42 riders were processed successfully.',
-    time: '1 hour ago',
-    read: false,
-    to: '/riders',
-  },
-  {
-    id: 3,
-    type: 'error',
-    title: 'Failed payment detected',
-    message: 'Order #48219 payment failed. Customer may need a retry.',
-    time: '3 hours ago',
-    read: false,
-    to: '/customers',
-  },
-  {
-    id: 4,
-    type: 'info',
-    title: 'New customer registered',
-    message: 'Sita Gurung signed up and placed a first order.',
-    time: '5 hours ago',
-    read: true,
-    to: '/customers',
-  },
-  {
-    id: 5,
-    type: 'info',
-    title: 'Scheduled maintenance',
-    message: 'The platform will be under maintenance tonight from 2:00–3:00 AM.',
-    time: 'Yesterday',
-    read: true,
-    to: null,
-  },
-  {
-    id: 6,
-    type: 'success',
-    title: 'Weekly report ready',
-    message: 'Your dashboard analytics report for last week is available.',
-    time: '2 days ago',
-    read: true,
-    to: '/',
-  },
-]
-
 function Header({ onMenuClick }) {
   const { pathname } = useLocation()
   const title = titles[pathname] ?? 'Raut'
 
-  const [notifications, setNotifications] = useState(initialNotifications)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [dismissed, setDismissed] = useState([])
 
-  const session = getSession()
+  const session = useSession()
+  const { data: fetchedNotifications } = useNotifications()
+  const markRead = useMarkNotificationRead()
 
-  const unreadCount = notifications.filter((n) => !n.read).length
+  const notifications = useMemo(
+    () => (fetchedNotifications ?? []).filter((notification) => !dismissed.includes(notification.id)),
+    [fetchedNotifications, dismissed],
+  )
 
-  const markRead = (id) =>
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
+  const unreadCount = notifications.filter((notification) => !notification.read).length
 
-  const markAllRead = () =>
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+  const handleMarkRead = (id) => {
+    markRead.mutate(id)
+  }
 
-  const dismiss = (id) =>
-    setNotifications((prev) => prev.filter((n) => n.id !== id))
+  const handleMarkAllRead = () => {
+    notifications.filter((notification) => !notification.read).forEach((notification) => markRead.mutate(notification.id))
+  }
+
+  const handleDismiss = (id) => setDismissed((prev) => (prev.includes(id) ? prev : [...prev, id]))
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-white/80 px-4 backdrop-blur sm:px-6">
@@ -146,11 +98,11 @@ function Header({ onMenuClick }) {
 
         <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
-            {session?.initials ?? 'AS'}
+            {session?.initials ?? 'AD'}
           </span>
           <div className="hidden leading-tight md:block">
             <p className="text-sm font-semibold text-slate-800">{session?.name ?? 'Admin'}</p>
-            <p className="text-xs text-slate-500">{session?.role ?? 'Admin'}</p>
+            <p className="text-xs text-slate-500">{session?.roleLabel ?? session?.role ?? 'Admin'}</p>
           </div>
         </div>
       </div>
@@ -160,9 +112,9 @@ function Header({ onMenuClick }) {
           open={notificationsOpen}
           onClose={() => setNotificationsOpen(false)}
           notifications={notifications}
-          onMarkRead={markRead}
-          onMarkAllRead={markAllRead}
-          onDismiss={dismiss}
+          onMarkRead={handleMarkRead}
+          onMarkAllRead={handleMarkAllRead}
+          onDismiss={handleDismiss}
         />,
         document.body
       )}

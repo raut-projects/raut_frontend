@@ -7,6 +7,6 @@ export function useDeliveries(params) {
     queryKey: queryKeys.deliveries.list(params),
     queryFn: () => listDeliveries(params),
     placeholderData: keepPreviousData,
-    refetchInterval: 15_000,
+    refetchInterval: 30_000,
   })
 }

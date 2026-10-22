@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
+import RequireAdmin from './components/RequireAdmin.jsx'
 import RequireAuth from './components/RequireAuth.jsx'
 import Dashboard from './pages/dashboard.jsx'
 import Customers from './pages/customers.jsx'
@@ -7,6 +8,7 @@ import Riders from './pages/riders.jsx'
 import Settings from './pages/settings.jsx'
 import Deliveries from './pages/deliveries.jsx'
 import Login from './pages/login.jsx'
+import RequestAdmin from './pages/requestAdmin.jsx'
 
 function App() {
   return (
@@ -14,10 +16,18 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route
+          path="/request-admin"
           element={
             <RequireAuth>
-              <Layout />
+              <RequestAdmin />
             </RequireAuth>
+          }
+        />
+        <Route
+          element={
+            <RequireAdmin>
+              <Layout />
+            </RequireAdmin>
           }
         >
           <Route path="/" element={<Dashboard />} />

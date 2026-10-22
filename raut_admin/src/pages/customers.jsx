@@ -1,26 +1,44 @@
 import { useState } from 'react'
-import AddCustomerPanel from '../components/addCustomerPanel.jsx'
 import ViewCustomerPanel from '../components/viewCustomerPanel.jsx'
 import { QueryError, RefreshIndicator, TableSkeleton } from '../components/queryStates.jsx'
-import { useCreateCustomer, useCustomers } from '../hooks/useCustomers.js'
+import { ReasonDialog, RoleDialog } from '../components/reasonDialog.jsx'
+import { useCustomers } from '../hooks/useCustomers.js'
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js'
+import {
+  useDeactivateUser,
+  useReactivateUser,
+  useSetUserRole,
+} from '../hooks/useAdminActions.js'
 
 const statusStyles = {
   Active: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
   Inactive: 'bg-slate-100 text-slate-600 ring-slate-500/20',
 }
 
+const roleStyles = {
+  user: 'bg-slate-100 text-slate-600 ring-slate-500/20',
+  admin: 'bg-brand-50 text-brand-700 ring-brand-600/20',
+  super_admin: 'bg-violet-50 text-violet-700 ring-violet-600/20',
+}
+
 const PAGE_SIZE = 8
+
+const actionClass =
+  'font-semibold text-brand-600 transition-colors hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-300'
 
 function Customers() {
   const [search, setSearch] = useState('')
+  const [status, setStatus] = useState('all')
   const [page, setPage] = useState(1)
-  const [panelOpen, setPanelOpen] = useState(false)
   const [viewOpen, setViewOpen] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState(null)
+  const [deactivateTarget, setDeactivateTarget] = useState(null)
+  const [deactivateReason, setDeactivateReason] = useState('')
+  const [roleTarget, setRoleTarget] = useState(null)
+  const [roleValue, setRoleValue] = useState('user')
 
   const debouncedSearch = useDebouncedValue(search, 300)
-  const params = { search: debouncedSearch, page, limit: PAGE_SIZE }
+  const params = { search: debouncedSearch, status, page, limit: PAGE_SIZE }
 
   const {
     data,
@@ -32,7 +50,10 @@ function Customers() {
     dataUpdatedAt,
     refetch,
   } = useCustomers(params)
-  const createCustomer = useCreateCustomer()
+
+  const deactivateUser = useDeactivateUser()
+  const reactivateUser = useReactivateUser()
+  const setUserRole = useSetUserRole()
 
   const items = data?.items ?? []
   const total = data?.total ?? 0
@@ -43,13 +64,22 @@ function Customers() {
     setPage(1)
   }
 
+  const onStatusChange = (e) => {
+    setStatus(e.target.value)
+    setPage(1)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900">Customers</h2>
           <p className="mt-1 text-sm text-slate-500">
-            {isPending ? 'Loading accounts…' : `${total} registered account${total === 1 ? '' : 's'}`}
+            {isPending
+              ? 'Loading accounts…'
+              : status === 'all'
+                ? `${total} registered account${total === 1 ? '' : 's'}`
+                : `${total} ${status} account${total === 1 ? '' : 's'}`}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -73,13 +103,16 @@ function Customers() {
               className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100 sm:w-64"
             />
           </div>
-          <button
-            type="button"
-            onClick={() => setPanelOpen(true)}
-            className="rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+          <select
+            value={status}
+            onChange={onStatusChange}
+            aria-label="Filter customers by status"
+            className="rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
           >
-            Add customer
-          </button>
+            <option value="all">All accounts</option>
+            <option value="active">Active only</option>
+            <option value="inactive">Inactive only</option>
+          </select>
         </div>
       </div>
 
@@ -95,17 +128,18 @@ function Customers() {
                 <th className="table-th">Email</th>
                 <th className="table-th">Orders</th>
                 <th className="table-th">Joined</th>
+                <th className="table-th">Role</th>
                 <th className="table-th">Status</th>
                 <th className="table-th text-right">Actions</th>
               </tr>
             </thead>
 
-            {isPending && <TableSkeleton rows={PAGE_SIZE} cols={6} />}
+            {isPending && <TableSkeleton rows={PAGE_SIZE} cols={7} />}
 
             {isError && (
               <tbody>
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={7}>
                     <QueryError error={error} onRetry={refetch} />
                   </td>
                 </tr>
@@ -115,14 +149,15 @@ function Customers() {
             {!isPending && !isError && (
               <tbody className="divide-y divide-slate-100">
                 {items.map((c) => (
-                  <tr
-                    key={c.id}
-                    className={`transition-colors hover:bg-slate-50 ${c.pending ? 'opacity-50' : ''}`}
-                  >
+                  <tr key={c.id} className="transition-colors hover:bg-slate-50">
                     <td className="table-td">
                       <div className="flex items-center gap-3">
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
-                          {c.name.split(' ').map((n) => n[0]).join('')}
+                          {c.name
+                            .split(' ')
+                            .map((n) => n[0])
+                            .join('')
+                            .slice(0, 2)}
                         </span>
                         <span className="font-medium text-slate-900">{c.name}</span>
                       </div>
@@ -131,28 +166,70 @@ function Customers() {
                     <td className="table-td font-medium text-slate-900">{c.orders}</td>
                     <td className="table-td">{c.joined}</td>
                     <td className="table-td">
+                      <span className={`badge capitalize ring-1 ring-inset ${roleStyles[c.role] ?? roleStyles.user}`}>
+                        {c.role.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="table-td">
                       <span className={`badge ring-1 ring-inset ${statusStyles[c.status]}`}>
                         {c.status}
                       </span>
                     </td>
-                    <td className="table-td text-right">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedCustomer(c)
-                          setViewOpen(true)
-                        }}
-                        className="font-semibold text-brand-600 hover:text-brand-700"
-                      >
-                        View
-                      </button>
+                    <td className="table-td">
+                      <div className="flex items-center justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedCustomer(c)
+                            setViewOpen(true)
+                          }}
+                          className={actionClass}
+                        >
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRoleValue(c.role)
+                            setRoleTarget(c)
+                          }}
+                          className={actionClass}
+                        >
+                          Role
+                        </button>
+                        {c.isActive ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDeactivateReason('')
+                              setDeactivateTarget(c)
+                            }}
+                            className="font-semibold text-rose-600 transition-colors hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300"
+                          >
+                            Deactivate
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => reactivateUser.mutate({ userId: c.id })}
+                            disabled={reactivateUser.isPending}
+                            className={actionClass}
+                          >
+                            Reactivate
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
                 {items.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-500">
-                      No customers match “{search}”.
+                    <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-500">
+                      {search
+                        ? `No customers match “${search}”.`
+                        : status === 'all'
+                          ? 'No customers yet.'
+                          : `No ${status} customers.`}
                     </td>
                   </tr>
                 )}
@@ -193,11 +270,6 @@ function Customers() {
         </div>
       </div>
 
-      <AddCustomerPanel
-        open={panelOpen}
-        onClose={() => setPanelOpen(false)}
-        onCreate={(payload) => createCustomer.mutateAsync(payload)}
-      />
       <ViewCustomerPanel
         open={viewOpen}
         onClose={() => {
@@ -205,6 +277,39 @@ function Customers() {
           setSelectedCustomer(null)
         }}
         customer={selectedCustomer}
+      />
+
+      <ReasonDialog
+        open={Boolean(deactivateTarget)}
+        onClose={() => setDeactivateTarget(null)}
+        title="Deactivate account"
+        description={
+          deactivateTarget
+            ? `${deactivateTarget.name} will no longer be able to sign in.`
+            : undefined
+        }
+        confirmLabel="Deactivate"
+        optional
+        placeholder="Reason for deactivation (optional)…"
+        value={deactivateReason}
+        onChange={setDeactivateReason}
+        pending={deactivateUser.isPending}
+        onConfirm={async (reason) => {
+          await deactivateUser.mutateAsync({ userId: deactivateTarget.id, reason })
+          setDeactivateTarget(null)
+        }}
+      />
+
+      <RoleDialog
+        open={Boolean(roleTarget)}
+        onClose={() => setRoleTarget(null)}
+        value={roleValue}
+        onChange={setRoleValue}
+        pending={setUserRole.isPending}
+        onConfirm={async (role) => {
+          await setUserRole.mutateAsync({ userId: roleTarget.id, role })
+          setRoleTarget(null)
+        }}
       />
     </div>
   )

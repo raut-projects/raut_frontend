@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { QueryError, RefreshIndicator, TableSkeleton } from '../components/queryStates.jsx'
 import { useDashboard } from '../hooks/useDashboard.js'
-import { getSession } from '../services/auth.js'
+import { useSession } from '../hooks/useSession.js'
 
 const statusStyles = {
   Delivered: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
@@ -12,13 +12,13 @@ const statusStyles = {
 
 function Dashboard() {
   const { data, isPending, isError, error, isFetching, dataUpdatedAt, refetch } = useDashboard()
-  const session = getSession()
+  const session = useSession()
   const firstName = session?.name?.split(' ')[0] ?? 'there'
 
   const stats = data?.stats ?? []
   const recentDeliveries = data?.recentDeliveries ?? []
   const topRiders = data?.topRiders ?? []
-  const onlineRiders = data?.onlineRiders ?? 0
+  const verifiedRiders = data?.verifiedRiders ?? 0
 
   return (
     <div className="space-y-6">
@@ -78,10 +78,10 @@ function Dashboard() {
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-50">
                   <tr>
-                    <th className="table-th">Order</th>
-                    <th className="table-th">Customer</th>
-                    <th className="table-th">Rider</th>
-                    <th className="table-th">Zone</th>
+                <th className="table-th">Order</th>
+                <th className="table-th">Customer</th>
+                <th className="table-th">Rider</th>
+                <th className="table-th">Route</th>
                     <th className="table-th">Amount</th>
                     <th className="table-th">Status</th>
                   </tr>
@@ -106,7 +106,7 @@ function Dashboard() {
                         <td className="table-td font-medium text-slate-900">{d.id}</td>
                         <td className="table-td">{d.customer}</td>
                         <td className="table-td">{d.rider}</td>
-                        <td className="table-td">{d.zone}</td>
+                        <td className="table-td">{d.route}</td>
                         <td className="table-td font-medium text-slate-900">{d.amount}</td>
                         <td className="table-td">
                           <span className={`badge ring-1 ring-inset ${statusStyles[d.status]}`}>{d.status}</span>
@@ -129,8 +129,8 @@ function Dashboard() {
 
         <div className="rounded-xl border border-slate-200 bg-white shadow-card">
           <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-            <h3 className="text-sm font-semibold text-slate-900">Top riders today</h3>
-            <span className="text-xs text-slate-400">{onlineRiders} online</span>
+            <h3 className="text-sm font-semibold text-slate-900">Top riders</h3>
+            <span className="text-xs text-slate-400">{verifiedRiders} verified</span>
           </div>
           {isPending ? (
             <ul className="divide-y divide-slate-100">
@@ -146,21 +146,25 @@ function Dashboard() {
           ) : (
             <ul className="divide-y divide-slate-100">
               {topRiders.map((r) => (
-                <li key={r.name} className="flex items-center gap-3 px-5 py-3.5">
+                <li key={r.id ?? r.name} className="flex items-center gap-3 px-5 py-3.5">
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
-                    {r.name.split(' ').map((n) => n[0]).join('')}
+                    {r.name
+                      .split(' ')
+                      .map((n) => n[0])
+                      .join('')
+                      .slice(0, 2)}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-slate-800">{r.name}</p>
-                    <p className="text-xs text-slate-500">{r.zone}</p>
+                    <p className="text-xs text-slate-500">{r.status}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-slate-900">{r.deliveries}</p>
-                    <p className="text-xs text-slate-400">drops</p>
+                    <p className="text-sm font-semibold text-slate-900">{r.rides}</p>
+                    <p className="text-xs text-slate-400">rides</p>
                   </div>
                   <span
-                    className={`h-2 w-2 shrink-0 rounded-full ${r.online ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                    aria-label={r.online ? 'Online' : 'Offline'}
+                    className={`h-2 w-2 shrink-0 rounded-full ${r.active ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                    aria-label={r.active ? 'Verified' : 'Not verified'}
                   />
                 </li>
               ))}

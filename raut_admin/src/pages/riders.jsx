@@ -1,35 +1,52 @@
-import { useState } from "react";
-import AddRiderPanel from "../components/addRiderPanel.jsx";
+import { useState } from 'react'
+import { QueryError, RefreshIndicator, TableSkeleton } from '../components/queryStates.jsx'
+import { ReasonDialog } from '../components/reasonDialog.jsx'
+import { useRiders } from '../hooks/useRiders.js'
+import { useDebouncedValue } from '../hooks/useDebouncedValue.js'
 import {
-  QueryError,
-  RefreshIndicator,
-  TableSkeleton,
-} from "../components/queryStates.jsx";
-import { useCreateRider, useRiders } from "../hooks/useRiders.js";
-import { useDebouncedValue } from "../hooks/useDebouncedValue.js";
+  useRejectDriver,
+  useSuspendDriver,
+  useUnsuspendDriver,
+  useVerifyDriver,
+} from '../hooks/useAdminActions.js'
 
 const statusStyles = {
-  Online: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
-  Delivering: "bg-brand-50 text-brand-700 ring-brand-600/20",
-  Offline: "bg-slate-100 text-slate-600 ring-slate-500/20",
-};
+  Verified: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
+  Pending: 'bg-amber-50 text-amber-700 ring-amber-600/20',
+  Incomplete: 'bg-brand-50 text-brand-700 ring-brand-600/20',
+  Rejected: 'bg-rose-50 text-rose-700 ring-rose-600/20',
+  Suspended: 'bg-rose-50 text-rose-700 ring-rose-600/20',
+  'Not a driver': 'bg-slate-100 text-slate-600 ring-slate-500/20',
+}
 
-const PAGE_SIZE = 8;
+const statusDots = {
+  Verified: 'bg-emerald-500',
+  Pending: 'bg-amber-500',
+  Incomplete: 'bg-brand-500',
+  Rejected: 'bg-rose-500',
+  Suspended: 'bg-rose-500',
+  'Not a driver': 'bg-slate-400',
+}
 
-const placeholderSummary = [
-  { label: "Online", value: "—", color: "text-slate-300" },
-  { label: "Delivering", value: "—", color: "text-slate-300" },
-  { label: "Offline", value: "—", color: "text-slate-300" },
-  { label: "Avg. rating", value: "—", color: "text-slate-300" },
-];
+const PAGE_SIZE = 8
+
+const actionClass =
+  'font-semibold text-brand-600 transition-colors hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-300'
+
+const dangerClass =
+  'font-semibold text-rose-600 transition-colors hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300'
 
 function Riders() {
-  const [query, setQuery] = useState("");
-  const [page, setPage] = useState(1);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const [query, setQuery] = useState('')
+  const [status, setStatus] = useState('all')
+  const [page, setPage] = useState(1)
+  const [rejectTarget, setRejectTarget] = useState(null)
+  const [rejectReason, setRejectReason] = useState('')
+  const [suspendTarget, setSuspendTarget] = useState(null)
+  const [suspendReason, setSuspendReason] = useState('')
 
-  const debouncedQuery = useDebouncedValue(query, 300);
-  const params = { search: debouncedQuery, page, limit: PAGE_SIZE };
+  const debouncedQuery = useDebouncedValue(query, 300)
+  const params = { search: debouncedQuery, status, page, limit: PAGE_SIZE }
 
   const {
     data,
@@ -40,29 +57,46 @@ function Riders() {
     isPlaceholderData,
     dataUpdatedAt,
     refetch,
-  } = useRiders(params);
-  const createRider = useCreateRider();
+  } = useRiders(params)
 
-  const riders = data?.items ?? [];
-  const total = data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const summary = data?.summary ?? [];
-  const summaryCards = summary.length > 0 ? summary : placeholderSummary;
+  const verifyDriver = useVerifyDriver()
+  const rejectDriver = useRejectDriver()
+  const suspendDriver = useSuspendDriver()
+  const unsuspendDriver = useUnsuspendDriver()
+
+  const riders = data?.items ?? []
+  const total = data?.total ?? 0
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const summary = data?.summary
+
+  const summaryCards = [
+    { label: 'Verified', value: summary?.verified ?? 0, color: 'text-slate-900', status: 'verified' },
+    { label: 'Pending', value: summary?.pending ?? 0, color: 'text-slate-900', status: 'pending' },
+    { label: 'Incomplete', value: summary?.incomplete ?? 0, color: 'text-slate-900', status: 'incomplete' },
+    { label: 'Total drivers', value: summary?.total ?? total, color: 'text-slate-900', status: 'all' },
+  ]
 
   const onQueryChange = (e) => {
-    setQuery(e.target.value);
-    setPage(1);
-  };
+    setQuery(e.target.value)
+    setPage(1)
+  }
+
+  const onStatusChange = (next) => {
+    setStatus(next)
+    setPage(1)
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-            Riders
-          </h2>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Riders</h2>
           <p className="mt-1 text-sm text-slate-500">
-            {isPending ? "Loading fleet…" : `${total} rider${total === 1 ? "" : "s"} on the fleet`}
+            {isPending
+              ? 'Loading fleet…'
+              : status === 'all'
+                ? `${total} rider${total === 1 ? '' : 's'} on the fleet`
+                : `${total} ${status} rider${total === 1 ? '' : 's'}`}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -85,41 +119,37 @@ function Riders() {
               type="search"
               value={query}
               onChange={onQueryChange}
-              placeholder="Search riders or zones…"
+              placeholder="Search riders…"
               aria-label="Search riders"
               className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100 sm:w-64"
             />
           </div>
-          <button
-            type="button"
-            onClick={() => setPanelOpen(true)}
-            className="rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
-          >
-            Add rider
-          </button>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {summaryCards.map((s) => (
-          <div key={s.label} className="stat-card">
-            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-              {s.label}
-            </p>
-            <p className={`mt-1.5 text-2xl font-bold tracking-tight ${s.color}`}>
-              {s.value}
-            </p>
-          </div>
-        ))}
+        {summaryCards.map((s) => {
+          const active = status === s.status
+          return (
+            <button
+              key={s.label}
+              type="button"
+              onClick={() => onStatusChange(s.status)}
+              aria-pressed={active}
+              className={`stat-card text-left transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
+                active ? 'ring-2 ring-brand-500' : 'hover:shadow-md'
+              }`}
+            >
+              <p className="text-xs font-medium uppercase tracking-wider text-slate-500">{s.label}</p>
+              <p className={`mt-1.5 text-2xl font-bold tracking-tight ${s.color}`}>{s.value}</p>
+            </button>
+          )
+        })}
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-card">
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
-          <RefreshIndicator
-            isFetching={isFetching}
-            updatedAt={dataUpdatedAt}
-            onRefresh={refetch}
-          />
+          <RefreshIndicator isFetching={isFetching} updatedAt={dataUpdatedAt} onRefresh={refetch} />
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
@@ -128,9 +158,9 @@ function Riders() {
                 <th className="table-th">Rider</th>
                 <th className="table-th">Phone</th>
                 <th className="table-th">Status</th>
-                <th className="table-th">Zone</th>
-                <th className="table-th">Deliveries</th>
+                <th className="table-th">Rides</th>
                 <th className="table-th">Rating</th>
+                <th className="table-th">Joined</th>
                 <th className="table-th text-right">Actions</th>
               </tr>
             </thead>
@@ -150,47 +180,30 @@ function Riders() {
             {!isPending && !isError && (
               <tbody className="divide-y divide-slate-100">
                 {riders.map((r) => (
-                  <tr
-                    key={r.id}
-                    className={`transition-colors hover:bg-slate-50 ${
-                      r.pending ? "opacity-50" : ""
-                    }`}
-                  >
+                  <tr key={r.id} className="transition-colors hover:bg-slate-50">
                     <td className="table-td">
                       <div className="flex items-center gap-3">
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
                           {r.name
-                            .split(" ")
+                            .split(' ')
                             .map((n) => n[0])
-                            .join("")}
+                            .join('')
+                            .slice(0, 2)}
                         </span>
-                        <span className="font-medium text-slate-900">
-                          {r.name}
-                        </span>
+                        <span className="font-medium text-slate-900">{r.name}</span>
                       </div>
                     </td>
                     <td className="table-td">{r.phone}</td>
                     <td className="table-td">
-                      <span
-                        className={`badge ring-1 ring-inset ${statusStyles[r.status]}`}
-                      >
+                      <span className={`badge ring-1 ring-inset ${statusStyles[r.status] ?? statusStyles['Not a driver']}`}>
                         <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            r.status === "Online"
-                              ? "bg-emerald-500"
-                              : r.status === "Delivering"
-                                ? "bg-brand-500"
-                                : "bg-slate-400"
-                          }`}
+                          className={`h-1.5 w-1.5 rounded-full ${statusDots[r.status] ?? statusDots['Not a driver']}`}
                           aria-hidden="true"
                         />
                         {r.status}
                       </span>
                     </td>
-                    <td className="table-td">{r.zone}</td>
-                    <td className="table-td font-medium text-slate-900">
-                      {r.deliveries}
-                    </td>
+                    <td className="table-td font-medium text-slate-900">{r.rides}</td>
                     <td className="table-td">
                       <span className="inline-flex items-center gap-1 font-medium text-slate-900">
                         <svg
@@ -208,22 +221,63 @@ function Riders() {
                         {r.rating.toFixed(1)}
                       </span>
                     </td>
-                    <td className="table-td text-right">
-                      <button
-                        type="button"
-                        className="font-semibold text-brand-600 hover:text-brand-700"
-                      >
-                        Message
-                      </button>
+                    <td className="table-td">{r.joined}</td>
+                    <td className="table-td">
+                      <div className="flex items-center justify-end gap-3">
+                        {r.statusKey === 'pending' && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => verifyDriver.mutate({ driverId: r.id })}
+                              disabled={verifyDriver.isPending}
+                              className={actionClass}
+                            >
+                              Verify
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRejectReason('')
+                                setRejectTarget(r)
+                              }}
+                              className={dangerClass}
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                        {r.statusKey === 'verified' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSuspendReason('')
+                              setSuspendTarget(r)
+                            }}
+                            className={dangerClass}
+                          >
+                            Suspend
+                          </button>
+                        )}
+                        {r.statusKey === 'suspended' && (
+                          <button
+                            type="button"
+                            onClick={() => unsuspendDriver.mutate({ driverId: r.id })}
+                            disabled={unsuspendDriver.isPending}
+                            className={actionClass}
+                          >
+                            Unsuspend
+                          </button>
+                        )}
+                        {(r.statusKey === 'incomplete' || r.statusKey === 'none') && (
+                          <span className="text-xs text-slate-400">No action</span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
                 {riders.length === 0 && (
                   <tr>
-                    <td
-                      colSpan={7}
-                      className="px-4 py-10 text-center text-sm text-slate-500"
-                    >
+                    <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-500">
                       No riders match “{query}”.
                     </td>
                   </tr>
@@ -234,14 +288,12 @@ function Riders() {
         </div>
         <div className="flex items-center justify-between border-t border-slate-200 px-5 py-3.5">
           <p className="text-xs text-slate-500">
-            Showing{" "}
-            <span className="font-semibold text-slate-700">{riders.length}</span> of{" "}
+            Showing <span className="font-semibold text-slate-700">{riders.length}</span> of{' '}
             <span className="font-semibold text-slate-700">{total}</span>
             {totalPages > 1 && (
               <>
-                {" "}
-                · Page{" "}
-                <span className="font-semibold text-slate-700">{page}</span> of{" "}
+                {' '}
+                · Page <span className="font-semibold text-slate-700">{page}</span> of{' '}
                 <span className="font-semibold text-slate-700">{totalPages}</span>
               </>
             )}
@@ -267,13 +319,39 @@ function Riders() {
         </div>
       </div>
 
-      <AddRiderPanel
-        open={panelOpen}
-        onClose={() => setPanelOpen(false)}
-        onCreate={(payload) => createRider.mutateAsync(payload)}
+      <ReasonDialog
+        open={Boolean(rejectTarget)}
+        onClose={() => setRejectTarget(null)}
+        title="Reject driver application"
+        description={rejectTarget ? `${rejectTarget.name} will not be able to take rides.` : undefined}
+        confirmLabel="Reject"
+        placeholder="Why is the application rejected?"
+        value={rejectReason}
+        onChange={setRejectReason}
+        pending={rejectDriver.isPending}
+        onConfirm={async (reason) => {
+          await rejectDriver.mutateAsync({ driverId: rejectTarget.id, reason })
+          setRejectTarget(null)
+        }}
+      />
+
+      <ReasonDialog
+        open={Boolean(suspendTarget)}
+        onClose={() => setSuspendTarget(null)}
+        title="Suspend driver"
+        description={suspendTarget ? `${suspendTarget.name} will be taken off the road.` : undefined}
+        confirmLabel="Suspend"
+        placeholder="Why is the driver suspended?"
+        value={suspendReason}
+        onChange={setSuspendReason}
+        pending={suspendDriver.isPending}
+        onConfirm={async (reason) => {
+          await suspendDriver.mutateAsync({ driverId: suspendTarget.id, reason })
+          setSuspendTarget(null)
+        }}
       />
     </div>
-  );
+  )
 }
 
-export default Riders;
+export default Riders

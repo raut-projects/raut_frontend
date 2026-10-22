@@ -53,6 +53,11 @@ function ViewCustomerPanel({ open, onClose, customer }) {
           </div>
 
           <label className="block">
+            <span className={labelClass}>Role</span>
+            <div className={`${valueClass} capitalize`}>{customer.role?.replace('_', ' ')}</div>
+          </label>
+
+          <label className="block">
             <span className={labelClass}>Joined</span>
             <div className={valueClass}>{customer.joined}</div>
           </label>

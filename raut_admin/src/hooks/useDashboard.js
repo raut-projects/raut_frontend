@@ -6,6 +6,6 @@ export function useDashboard() {
   return useQuery({
     queryKey: queryKeys.dashboard.all,
     queryFn: getDashboard,
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
   })
 }
