@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import SidePanel from './SidePanel.jsx'
 
 const inputClass =
@@ -9,8 +9,9 @@ const labelClass = 'mb-1.5 block text-xs font-semibold text-slate-600'
 const errorClass = 'mt-1 block text-xs font-medium text-rose-600'
 
 // Each dialog needs its own form id, the submit button lives outside the form.
-const FORM_ID = 'admin-reason-form'
-const ROLE_FORM_ID = 'admin-role-form'
+// The id has to be unique per instance, otherwise the button of one dialog
+// submits the other dialog that happens to be mounted first.
+const useFormId = () => `admin-form-${useId()}`
 
 function PanelActions({ onClose, confirmLabel, pending, tone = 'brand', formId }) {
   return (
@@ -64,6 +65,7 @@ export function ReasonDialog({
   pending = false,
 }) {
   const [touched, setTouched] = useState(false)
+  const formId = useFormId()
 
   const trimmed = String(value ?? '').trim()
   const tooShort = !optional && trimmed.length < minLength
@@ -101,11 +103,11 @@ export function ReasonDialog({
           confirmLabel={confirmLabel}
           pending={pending}
           tone={confirmLabel.toLowerCase().includes('cancel') ? 'danger' : 'brand'}
-          formId={FORM_ID}
+          formId={formId}
         />
       }
     >
-      <form id={FORM_ID} onSubmit={handleSubmit} noValidate className="space-y-4">
+      <form id={formId} onSubmit={handleSubmit} noValidate className="space-y-4">
         <label className="block">
           <span className={labelClass}>Reason</span>
           <textarea
@@ -140,6 +142,8 @@ const ROLES = [
 ]
 
 export function RoleDialog({ open, onClose, value, onChange, onConfirm, pending = false }) {
+  const formId = useFormId()
+
   const handleSubmit = (event) => {
     event.preventDefault()
     if (pending) return
@@ -154,10 +158,10 @@ export function RoleDialog({ open, onClose, value, onChange, onConfirm, pending 
       title="Change role"
       description="Set the access level for this account."
       footer={
-        <PanelActions onClose={onClose} confirmLabel="Update role" pending={pending} formId={ROLE_FORM_ID} />
+        <PanelActions onClose={onClose} confirmLabel="Update role" pending={pending} formId={formId} />
       }
     >
-      <form id={ROLE_FORM_ID} onSubmit={handleSubmit} noValidate className="space-y-4">
+      <form id={formId} onSubmit={handleSubmit} noValidate className="space-y-4">
         <label className="block">
           <span className={labelClass}>Role</span>
           <select value={value} onChange={(event) => onChange(event.target.value)} className={inputClass}>
