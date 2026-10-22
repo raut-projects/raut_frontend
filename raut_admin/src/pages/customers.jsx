@@ -24,7 +24,7 @@ const roleStyles = {
 const PAGE_SIZE = 8
 
 const actionClass =
-  'font-semibold text-brand-600 transition-colors hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-300'
+  'cursor-pointer font-semibold text-brand-600 transition-colors hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-300'
 
 function Customers() {
   const [search, setSearch] = useState('')
@@ -204,7 +204,7 @@ function Customers() {
                               setDeactivateReason('')
                               setDeactivateTarget(c)
                             }}
-                            className="font-semibold text-rose-600 transition-colors hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300"
+                            className="cursor-pointer font-semibold text-rose-600 transition-colors hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300"
                           >
                             Deactivate
                           </button>

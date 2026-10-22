@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { QueryError, RefreshIndicator, TableSkeleton } from '../components/queryStates.jsx'
 import { ReasonDialog } from '../components/reasonDialog.jsx'
-import { useRiders } from '../hooks/useRiders.js'
+import ViewDriverPanel from '../components/viewDriverPanel.jsx'
+import { useDrivers } from '../hooks/useDrivers.js'
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js'
 import {
   useRejectDriver,
@@ -31,12 +32,12 @@ const statusDots = {
 const PAGE_SIZE = 8
 
 const actionClass =
-  'font-semibold text-brand-600 transition-colors hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-300'
+  'cursor-pointer font-semibold text-brand-600 transition-colors hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-300'
 
 const dangerClass =
-  'font-semibold text-rose-600 transition-colors hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300'
+  'cursor-pointer font-semibold text-rose-600 transition-colors hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300'
 
-function Riders() {
+function Drivers() {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('all')
   const [page, setPage] = useState(1)
@@ -44,6 +45,7 @@ function Riders() {
   const [rejectReason, setRejectReason] = useState('')
   const [suspendTarget, setSuspendTarget] = useState(null)
   const [suspendReason, setSuspendReason] = useState('')
+  const [viewTarget, setViewTarget] = useState(null)
 
   const debouncedQuery = useDebouncedValue(query, 300)
   const params = { search: debouncedQuery, status, page, limit: PAGE_SIZE }
@@ -57,14 +59,14 @@ function Riders() {
     isPlaceholderData,
     dataUpdatedAt,
     refetch,
-  } = useRiders(params)
+  } = useDrivers(params)
 
   const verifyDriver = useVerifyDriver()
   const rejectDriver = useRejectDriver()
   const suspendDriver = useSuspendDriver()
   const unsuspendDriver = useUnsuspendDriver()
 
-  const riders = data?.items ?? []
+  const drivers = data?.items ?? []
   const total = data?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const summary = data?.summary
@@ -90,13 +92,13 @@ function Riders() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Riders</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Drivers</h2>
           <p className="mt-1 text-sm text-slate-500">
             {isPending
               ? 'Loading fleet…'
               : status === 'all'
-                ? `${total} rider${total === 1 ? '' : 's'} on the fleet`
-                : `${total} ${status} rider${total === 1 ? '' : 's'}`}
+                ? `${total} driver${total === 1 ? '' : 's'} on the fleet`
+                : `${total} ${status} driver${total === 1 ? '' : 's'}`}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -119,8 +121,8 @@ function Riders() {
               type="search"
               value={query}
               onChange={onQueryChange}
-              placeholder="Search riders…"
-              aria-label="Search riders"
+              placeholder="Search drivers…"
+              aria-label="Search drivers"
               className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100 sm:w-64"
             />
           </div>
@@ -136,7 +138,7 @@ function Riders() {
               type="button"
               onClick={() => onStatusChange(s.status)}
               aria-pressed={active}
-              className={`stat-card text-left transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
+              className={`cursor-pointer stat-card text-left transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
                 active ? 'ring-2 ring-brand-500' : 'hover:shadow-md'
               }`}
             >
@@ -155,7 +157,7 @@ function Riders() {
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50">
               <tr>
-                <th className="table-th">Rider</th>
+                <th className="table-th">Driver</th>
                 <th className="table-th">Phone</th>
                 <th className="table-th">Status</th>
                 <th className="table-th">Rides</th>
@@ -179,7 +181,7 @@ function Riders() {
 
             {!isPending && !isError && (
               <tbody className="divide-y divide-slate-100">
-                {riders.map((r) => (
+                {drivers.map((r) => (
                   <tr key={r.id} className="transition-colors hover:bg-slate-50">
                     <td className="table-td">
                       <div className="flex items-center gap-3">
@@ -224,6 +226,13 @@ function Riders() {
                     <td className="table-td">{r.joined}</td>
                     <td className="table-td">
                       <div className="flex items-center justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setViewTarget(r)}
+                          className={actionClass}
+                        >
+                          View
+                        </button>
                         {r.statusKey === 'pending' && (
                           <>
                             <button
@@ -275,20 +284,20 @@ function Riders() {
                     </td>
                   </tr>
                 ))}
-                {riders.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-500">
-                      No riders match “{query}”.
-                    </td>
-                  </tr>
-                )}
+                {drivers.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-500">
+                        No drivers match “{query}”.
+                      </td>
+                    </tr>
+                  )}
               </tbody>
             )}
           </table>
         </div>
         <div className="flex items-center justify-between border-t border-slate-200 px-5 py-3.5">
           <p className="text-xs text-slate-500">
-            Showing <span className="font-semibold text-slate-700">{riders.length}</span> of{' '}
+            Showing <span className="font-semibold text-slate-700">{drivers.length}</span> of{' '}
             <span className="font-semibold text-slate-700">{total}</span>
             {totalPages > 1 && (
               <>
@@ -318,6 +327,12 @@ function Riders() {
           </div>
         </div>
       </div>
+
+      <ViewDriverPanel
+        open={Boolean(viewTarget)}
+        onClose={() => setViewTarget(null)}
+        driver={viewTarget}
+      />
 
       <ReasonDialog
         open={Boolean(rejectTarget)}
@@ -354,4 +369,4 @@ function Riders() {
   )
 }
 
-export default Riders
+export default Drivers

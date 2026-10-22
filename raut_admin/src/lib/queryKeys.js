@@ -3,9 +3,13 @@ export const queryKeys = {
     all: ['customers'],
     list: (params) => ['customers', 'list', params],
   },
-  riders: {
-    all: ['riders'],
-    list: (params) => ['riders', 'list', params],
+  drivers: {
+    all: ['drivers'],
+    list: (params) => ['drivers', 'list', params],
+  },
+  documents: {
+    all: ['documents'],
+    list: (driverId) => ['documents', 'list', driverId],
   },
   dashboard: {
     all: ['dashboard'],
