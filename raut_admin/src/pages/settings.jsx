@@ -1,23 +1,8 @@
-const sections = [
-  {
-    title: 'Profile',
-    description: 'Your personal information shown across rout.',
-    fields: [
-      { label: 'Full name', value: 'Alex Smith', type: 'text' },
-      { label: 'Email', value: 'alex@raut.app', type: 'email' },
-      { label: 'Phone', value: '+1 (415) 555-0100', type: 'tel' },
-    ],
-  },
-  {
-    title: 'Notifications',
-    description: 'Choose what rout emails you about.',
-    toggles: [
-      { label: 'New order alerts', checked: true },
-      { label: 'Rider status changes', checked: true },
-      { label: 'Weekly summary report', checked: false },
-    ],
-  },
-]
+import { QueryError } from '../components/queryStates.jsx'
+import { useCurrentUser } from '../hooks/useCurrentUser.js'
+import { EMPTY, DRIVER_STATUS_LABELS } from '../services/mappers.js'
+
+const valueClass = 'text-sm text-slate-800'
 
 function Settings() {
   return (

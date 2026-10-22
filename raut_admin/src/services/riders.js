@@ -1,20 +1,10 @@
-import { db } from '../mocks/db.js'
-import { matches, requestError, requireSession, wait } from './mockApi.js'
+import { API_ROUTES } from '../lib/config.js'
+import { apiGet } from './api.js'
+import { mapRider } from './mappers.js'
 
-const buildSummary = () => {
-  const count = (status) => db.riders.filter((rider) => rider.status === status).length
-  const average =
-    db.riders.length > 0
-      ? (db.riders.reduce((sum, rider) => sum + rider.rating, 0) / db.riders.length).toFixed(1)
-      : '—'
-
-  return [
-    { label: 'Online', value: count('Online'), color: 'text-emerald-600' },
-    { label: 'Delivering', value: count('Delivering'), color: 'text-brand-600' },
-    { label: 'Offline', value: count('Offline'), color: 'text-slate-500' },
-    { label: 'Avg. rating', value: average, color: 'text-amber-500' },
-  ]
-}
+// The fleet is small enough to pull in one page, which lets the summary cards
+// report exact per-status counts without six extra requests.
+const FLEET_PAGE_SIZE = 100
 
 export async function listRiders({ search = '', status = 'all', page = 1, limit = 8 } = {}) {
   requireSession()
