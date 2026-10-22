@@ -32,10 +32,10 @@ const statusDots = {
 const PAGE_SIZE = 8
 
 const actionClass =
-  'font-semibold text-brand-600 transition-colors hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-300'
+  'cursor-pointer font-semibold text-brand-600 transition-colors hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-300'
 
 const dangerClass =
-  'font-semibold text-rose-600 transition-colors hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300'
+  'cursor-pointer font-semibold text-rose-600 transition-colors hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300'
 
 function Drivers() {
   const [query, setQuery] = useState('')
@@ -138,7 +138,7 @@ function Drivers() {
               type="button"
               onClick={() => onStatusChange(s.status)}
               aria-pressed={active}
-              className={`stat-card text-left transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
+              className={`cursor-pointer stat-card text-left transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
                 active ? 'ring-2 ring-brand-500' : 'hover:shadow-md'
               }`}
             >

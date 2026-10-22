@@ -170,7 +170,7 @@ function Sidebar({ open, onClose }) {
           <button
             type="button"
             onClick={handleSignOut}
-            className="nav-link mb-4 w-full text-left"
+            className="cursor-pointer nav-link mb-4 w-full text-left"
           >
             {icons.signOut}
             <span>Sign out</span>
