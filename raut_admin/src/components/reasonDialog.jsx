@@ -55,6 +55,7 @@ export function ReasonDialog({
   title,
   description,
   confirmLabel = 'Confirm',
+  label = 'Reason',
   minLength = 5,
   maxLength = 500,
   optional = false,
@@ -63,6 +64,7 @@ export function ReasonDialog({
   onChange,
   onConfirm,
   pending = false,
+  tone,
 }) {
   const [touched, setTouched] = useState(false)
   const formId = useFormId()
@@ -102,14 +104,14 @@ export function ReasonDialog({
           onClose={onClose}
           confirmLabel={confirmLabel}
           pending={pending}
-          tone={confirmLabel.toLowerCase().includes('cancel') ? 'danger' : 'brand'}
+          tone={tone ?? (confirmLabel.toLowerCase().includes('cancel') ? 'danger' : 'brand')}
           formId={formId}
         />
       }
     >
       <form id={formId} onSubmit={handleSubmit} noValidate className="space-y-4">
         <label className="block">
-          <span className={labelClass}>Reason</span>
+          <span className={labelClass}>{label}</span>
           <textarea
             value={value}
             onChange={(event) => handleChange(event.target.value)}
@@ -140,6 +142,51 @@ const ROLES = [
   { value: 'admin', label: 'Admin' },
   { value: 'super_admin', label: 'Super admin' },
 ]
+
+// A plain confirmation for actions that do not collect a reason, such as
+// retrying a failed payout.
+export function ConfirmDialog({
+  open,
+  onClose,
+  title,
+  description,
+  confirmLabel = 'Confirm',
+  tone = 'brand',
+  children,
+  onConfirm,
+  pending = false,
+}) {
+  const formId = useFormId()
+
+  const handleSubmit = (event) => {
+    event.preventDefault()
+    if (pending) return
+
+    Promise.resolve(onConfirm()).catch(() => {})
+  }
+
+  return (
+    <SidePanel
+      open={open}
+      onClose={onClose}
+      title={title}
+      description={description}
+      footer={
+        <PanelActions
+          onClose={onClose}
+          confirmLabel={confirmLabel}
+          pending={pending}
+          tone={tone}
+          formId={formId}
+        />
+      }
+    >
+      <form id={formId} onSubmit={handleSubmit} noValidate className="space-y-4">
+        {children}
+      </form>
+    </SidePanel>
+  )
+}
 
 export function RoleDialog({ open, onClose, value, onChange, onConfirm, pending = false }) {
   const formId = useFormId()
