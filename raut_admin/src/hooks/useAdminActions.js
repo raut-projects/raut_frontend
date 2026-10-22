@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '../components/toastContext.js'
 import { queryKeys } from '../lib/queryKeys.js'
 import {
-  cancelRide,
   deactivateUser,
   reactivateUser,
   rejectDriver,
@@ -24,7 +23,6 @@ const useAction = ({ mutationFn, successMessage }) => {
 
       queryClient.invalidateQueries({ queryKey: queryKeys.customers.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.riders.all })
-      queryClient.invalidateQueries({ queryKey: queryKeys.deliveries.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all })
     },
 
@@ -74,10 +72,4 @@ export const useReactivateUser = () =>
   useAction({
     mutationFn: ({ userId }) => reactivateUser(userId),
     successMessage: 'Account reactivated.',
-  })
-
-export const useCancelRide = () =>
-  useAction({
-    mutationFn: ({ rideId, reason, refund }) => cancelRide(rideId, reason, refund),
-    successMessage: 'Ride cancelled.',
   })
