@@ -17,6 +17,3 @@ export const deactivateUser = (userId, reason) =>
   apiPut(`${API_ROUTES.users}/${userId}/deactivate`, reason ? { reason } : {})
 
 export const reactivateUser = (userId) => apiPut(`${API_ROUTES.users}/${userId}/reactivate`, {})
-
-export const cancelRide = (rideId, reason, refund = true) =>
-  apiPut(`${API_ROUTES.rides}/${rideId}/cancel`, { reason, refund })

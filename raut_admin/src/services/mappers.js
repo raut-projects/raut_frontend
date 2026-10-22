@@ -121,14 +121,6 @@ export const RIDE_STATUS_LABELS = {
   expired: 'Cancelled',
 }
 
-// The screen level status names mapped back to the values the API filters on.
-export const RIDE_STATUS_FILTERS = {
-  Delivered: 'completed',
-  'In transit': 'picked_up',
-  Pending: 'requested',
-  Cancelled: 'cancelled',
-}
-
 const NOTIFICATION_TYPES = {
   ride_completed: 'success',
   ride_cancelled: 'error',
@@ -215,5 +207,5 @@ export const mapNotification = (notification) => ({
   message: notification?.body ?? '',
   time: formatRelative(notification?.created_at),
   read: Boolean(notification?.is_read),
-  to: notification?.ride_id ? '/deliveries' : notification?.route_id ? '/riders' : null,
+  to: notification?.ride_id ? '/' : notification?.route_id ? '/riders' : null,
 })
