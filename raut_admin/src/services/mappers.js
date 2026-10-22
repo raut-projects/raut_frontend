@@ -108,6 +108,29 @@ export const DRIVER_STATUS_LABELS = {
   suspended: 'Suspended',
 }
 
+export const DOCUMENT_TYPE_LABELS = {
+  license: 'Driving licence',
+  registration: 'Vehicle registration',
+  inspection: 'Inspection certificate',
+  insurance: 'Insurance',
+  profile_photo: 'Profile photo',
+  certificate_of_authorization: 'Certificate of authorization',
+  sticker_photo: 'Sticker photo',
+  vehicle_photo: 'Vehicle photo',
+}
+
+export const DOCUMENT_STATUS_LABELS = {
+  pending: 'Pending review',
+  approved: 'Approved',
+  verified: 'Approved',
+  rejected: 'Rejected',
+  expired: 'Expired',
+}
+
+// The backend marks a reviewed document as approved, but a verified spelling
+// is accepted as well so an unexpected value still reads correctly.
+const APPROVED_DOCUMENT_STATUSES = ['approved', 'verified']
+
 export const RIDE_STATUS_LABELS = {
   requested: 'Pending',
   searching: 'Pending',
@@ -171,6 +194,29 @@ export const mapDriver = (driver) => {
     isActive: driver?.is_active !== false,
     joined: formatDate(driver?.created_at),
     verifiedAt: formatDate(driver?.driver_verified_at),
+  }
+}
+
+export const mapDocument = (document) => {
+  const statusKey = document?.status ?? 'pending'
+  const typeKey = document?.doc_type ?? ''
+
+  return {
+    id: document?.id ?? null,
+    type: typeKey,
+    typeLabel: DOCUMENT_TYPE_LABELS[typeKey] ?? (typeKey ? titleCase(typeKey) : EMPTY),
+    status: DOCUMENT_STATUS_LABELS[statusKey] ?? titleCase(statusKey),
+    statusKey,
+    fileName: document?.file_name ?? EMPTY,
+    fileUrl: document?.file_url ?? null,
+    vehicleId: document?.vehicle_id ?? null,
+    expiresAt: document?.expires_at ?? null,
+    expiry: document?.expires_at ? formatDate(document.expires_at) : 'No expiry',
+    uploadedAt: formatDate(document?.created_at),
+    reviewedAt: document?.reviewed_at ? formatDate(document.reviewed_at) : null,
+    rejectionReason: document?.rejection_reason ?? null,
+    isApproved: APPROVED_DOCUMENT_STATUSES.includes(statusKey),
+    isRejected: statusKey === 'rejected',
   }
 }
 
