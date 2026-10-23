@@ -11,6 +11,11 @@ export const queryKeys = {
     all: ['documents'],
     list: (driverId) => ['documents', 'list', driverId],
   },
+  rides: {
+    all: ['rides'],
+    list: (params) => ['rides', 'list', params],
+    summary: ['rides', 'summary'],
+  },
   payouts: {
     all: ['payouts'],
     list: (params) => ['payouts', 'list', params],

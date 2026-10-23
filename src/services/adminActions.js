@@ -11,6 +11,9 @@ export const suspendDriver = (driverId, reason) =>
 
 export const unsuspendDriver = (driverId) => apiPut(`${API_ROUTES.drivers}/${driverId}/unsuspend`, {})
 
+export const cancelRide = (rideId, reason, refund = true) =>
+  apiPut(`${API_ROUTES.rides}/${rideId}/cancel`, { reason, refund })
+
 export const setUserRole = (userId, role) => apiPut(`${API_ROUTES.users}/${userId}/role`, { role })
 
 export const deactivateUser = (userId, reason) =>
