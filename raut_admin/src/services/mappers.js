@@ -20,6 +20,26 @@ export const formatMoney = (value) => {
   return `TZS ${numberFormat.format(amount)}`
 }
 
+const FILE_SIZE_UNITS = ['B', 'KB', 'MB', 'GB']
+
+export const formatFileSize = (value) => {
+  const bytes = Number(value)
+
+  if (!Number.isFinite(bytes) || bytes <= 0) return EMPTY
+
+  let size = bytes
+  let unit = 0
+
+  while (size >= 1024 && unit < FILE_SIZE_UNITS.length - 1) {
+    size /= 1024
+    unit += 1
+  }
+
+  const rounded = unit === 0 || size >= 10 ? Math.round(size) : Math.round(size * 10) / 10
+
+  return `${rounded} ${FILE_SIZE_UNITS[unit]}`
+}
+
 export const formatDate = (value) => {
   if (!value) return EMPTY
 
@@ -197,9 +217,25 @@ export const mapDriver = (driver) => {
   }
 }
 
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'heic', 'heif', 'avif']
+
+const documentFormat = (contentType, fileName) => {
+  const type = String(contentType ?? '').toLowerCase()
+  const [mediaType, subtype = ''] = type.split('/')
+  const extension = /\.([a-z0-9]+)$/i.exec(String(fileName ?? ''))?.[1]?.toLowerCase() ?? ''
+  const isImage = mediaType === 'image' || IMAGE_EXTENSIONS.includes(extension)
+
+  if (subtype) {
+    return { isImage, formatLabel: subtype === 'svg+xml' ? 'SVG' : subtype.toUpperCase() }
+  }
+
+  return { isImage, formatLabel: extension ? extension.toUpperCase() : EMPTY }
+}
+
 export const mapDocument = (document) => {
   const statusKey = document?.status ?? 'pending'
   const typeKey = document?.doc_type ?? ''
+  const { isImage, formatLabel } = documentFormat(document?.content_type, document?.file_name)
 
   return {
     id: document?.id ?? null,
@@ -209,6 +245,11 @@ export const mapDocument = (document) => {
     statusKey,
     fileName: document?.file_name ?? EMPTY,
     fileUrl: document?.file_url ?? null,
+    contentType: document?.content_type ?? null,
+    fileSize: Number(document?.file_size) || 0,
+    fileSizeLabel: formatFileSize(document?.file_size),
+    fileFormatLabel: formatLabel,
+    isImage,
     vehicleId: document?.vehicle_id ?? null,
     expiresAt: document?.expires_at ?? null,
     expiry: document?.expires_at ? formatDate(document.expires_at) : 'No expiry',
