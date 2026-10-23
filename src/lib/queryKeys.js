@@ -11,6 +11,10 @@ export const queryKeys = {
     all: ['documents'],
     list: (driverId) => ['documents', 'list', driverId],
   },
+  payouts: {
+    all: ['payouts'],
+    list: (params) => ['payouts', 'list', params],
+  },
   dashboard: {
     all: ['dashboard'],
   },
