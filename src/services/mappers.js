@@ -356,7 +356,7 @@ export const mapPayout = (payout) => {
   }
 }
 
-export const mapDelivery = (ride) => {
+export const mapRide = (ride) => {
   const statusKey = ride?.status ?? 'requested'
   const pickup = ride?.pickup_name?.trim() || ride?.route_origin?.trim() || EMPTY
   const dropoff = ride?.dropoff_name?.trim() || ride?.route_destination?.trim() || EMPTY
@@ -368,6 +368,8 @@ export const mapDelivery = (ride) => {
     customerPhone: ride?.rider_phone ?? EMPTY,
     driver: ride?.driver_name?.trim() || 'Unassigned',
     driverPhone: ride?.driver_phone ?? EMPTY,
+    pickup,
+    dropoff,
     zone: ride?.route_origin?.trim() || ride?.pickup_name?.trim() || EMPTY,
     route: pickup === EMPTY || dropoff === EMPTY ? pickup : `${pickup} → ${dropoff}`,
     amount: formatMoney(ride?.fare_amount),
@@ -378,6 +380,7 @@ export const mapDelivery = (ride) => {
     status: RIDE_STATUS_LABELS[statusKey] ?? titleCase(statusKey),
     statusKey,
     date: formatDate(ride?.created_at),
+    requestedAt: formatDateTime(ride?.created_at),
     createdAt: ride?.created_at ?? null,
   }
 }
@@ -389,5 +392,5 @@ export const mapNotification = (notification) => ({
   message: notification?.body ?? '',
   time: formatRelative(notification?.created_at),
   read: Boolean(notification?.is_read),
-  to: notification?.ride_id ? '/' : notification?.route_id ? '/drivers' : null,
+  to: notification?.ride_id ? '/rides' : notification?.route_id ? '/drivers' : null,
 })

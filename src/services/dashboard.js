@@ -1,6 +1,6 @@
 import { API_ROUTES } from '../lib/config.js'
 import { apiGet } from './api.js'
-import { formatCount, formatDelta, formatMoney, mapDelivery, mapDriver } from './mappers.js'
+import { formatCount, formatDelta, formatMoney, mapDriver, mapRide } from './mappers.js'
 
 const FLEET_PAGE_SIZE = 100
 
@@ -86,7 +86,7 @@ export async function getDashboard() {
         hint: 'compared with yesterday',
       },
     ],
-    recentDeliveries: (recent?.items ?? []).map(mapDelivery),
+    recentDeliveries: (recent?.items ?? []).map(mapRide),
     topDrivers: drivers.slice(0, 4).map((driver) => ({
       id: driver.id,
       name: driver.name,
