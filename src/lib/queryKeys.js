@@ -16,6 +16,11 @@ export const queryKeys = {
     list: (params) => ['rides', 'list', params],
     summary: ['rides', 'summary'],
   },
+  routes: {
+    all: ['routes'],
+    list: (params) => ['routes', 'list', params],
+    summary: ['routes', 'summary'],
+  },
   payouts: {
     all: ['payouts'],
     list: (params) => ['payouts', 'list', params],

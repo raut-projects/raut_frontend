@@ -65,6 +65,7 @@ export function ReasonDialog({
   onConfirm,
   pending = false,
   tone,
+  children,
 }) {
   const [touched, setTouched] = useState(false)
   const formId = useFormId()
@@ -132,6 +133,7 @@ export function ReasonDialog({
             </span>
           )}
         </label>
+        {children}
       </form>
     </SidePanel>
   )
