@@ -3,6 +3,22 @@ import { useQueryClient } from "@tanstack/react-query";
 import { signOut } from "../services/auth.js";
 
 const icons = {
+  transactions: (
+    <svg
+      className="h-5 w-5 shrink-0"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"
+      />
+    </svg>
+  ),
   settings: (
     <svg
       className="h-5 w-5 shrink-0"
@@ -146,6 +162,7 @@ const navItems = [
   { to: "/rides", label: "Rides", icon: icons.rides },
   { to: "/routes", label: "Routes", icon: icons.routes },
   { to: "/payouts", label: "Payouts", icon: icons.payouts },
+  { to: "/transactions", label: "Transactions", icon: icons.transactions },
 ];
 
 function Sidebar({ open, onClose }) {
