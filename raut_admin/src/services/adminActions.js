@@ -1,15 +1,15 @@
 import { API_ROUTES } from '../lib/config.js'
 import { apiPut } from './api.js'
 
-export const verifyDriver = (driverId) => apiPut(`${API_ROUTES.riders}/${driverId}/verify`, {})
+export const verifyDriver = (driverId) => apiPut(`${API_ROUTES.drivers}/${driverId}/verify`, {})
 
 export const rejectDriver = (driverId, reason) =>
-  apiPut(`${API_ROUTES.riders}/${driverId}/reject`, { reason })
+  apiPut(`${API_ROUTES.drivers}/${driverId}/reject`, { reason })
 
 export const suspendDriver = (driverId, reason) =>
-  apiPut(`${API_ROUTES.riders}/${driverId}/suspend`, { reason })
+  apiPut(`${API_ROUTES.drivers}/${driverId}/suspend`, { reason })
 
-export const unsuspendDriver = (driverId) => apiPut(`${API_ROUTES.riders}/${driverId}/unsuspend`, {})
+export const unsuspendDriver = (driverId) => apiPut(`${API_ROUTES.drivers}/${driverId}/unsuspend`, {})
 
 export const setUserRole = (userId, role) => apiPut(`${API_ROUTES.users}/${userId}/role`, { role })
 

@@ -108,6 +108,29 @@ export const DRIVER_STATUS_LABELS = {
   suspended: 'Suspended',
 }
 
+export const DOCUMENT_TYPE_LABELS = {
+  license: 'Driving licence',
+  registration: 'Vehicle registration',
+  inspection: 'Inspection certificate',
+  insurance: 'Insurance',
+  profile_photo: 'Profile photo',
+  certificate_of_authorization: 'Certificate of authorization',
+  sticker_photo: 'Sticker photo',
+  vehicle_photo: 'Vehicle photo',
+}
+
+export const DOCUMENT_STATUS_LABELS = {
+  pending: 'Pending review',
+  approved: 'Approved',
+  verified: 'Approved',
+  rejected: 'Rejected',
+  expired: 'Expired',
+}
+
+// The backend marks a reviewed document as approved, but a verified spelling
+// is accepted as well so an unexpected value still reads correctly.
+const APPROVED_DOCUMENT_STATUSES = ['approved', 'verified']
+
 export const RIDE_STATUS_LABELS = {
   requested: 'Pending',
   searching: 'Pending',
@@ -155,12 +178,12 @@ export const mapCustomer = (user) => ({
   createdAt: user?.created_at ?? null,
 })
 
-export const mapRider = (driver) => {
+export const mapDriver = (driver) => {
   const statusKey = driver?.driver_status ?? 'none'
 
   return {
     id: driver?.id ?? null,
-    name: driver?.full_name?.trim() || driver?.email?.trim() || 'Unnamed rider',
+    name: driver?.full_name?.trim() || driver?.email?.trim() || 'Unnamed driver',
     phone: driver?.phone ?? EMPTY,
     email: driver?.email ?? EMPTY,
     status: DRIVER_STATUS_LABELS[statusKey] ?? titleCase(statusKey),
@@ -174,6 +197,29 @@ export const mapRider = (driver) => {
   }
 }
 
+export const mapDocument = (document) => {
+  const statusKey = document?.status ?? 'pending'
+  const typeKey = document?.doc_type ?? ''
+
+  return {
+    id: document?.id ?? null,
+    type: typeKey,
+    typeLabel: DOCUMENT_TYPE_LABELS[typeKey] ?? (typeKey ? titleCase(typeKey) : EMPTY),
+    status: DOCUMENT_STATUS_LABELS[statusKey] ?? titleCase(statusKey),
+    statusKey,
+    fileName: document?.file_name ?? EMPTY,
+    fileUrl: document?.file_url ?? null,
+    vehicleId: document?.vehicle_id ?? null,
+    expiresAt: document?.expires_at ?? null,
+    expiry: document?.expires_at ? formatDate(document.expires_at) : 'No expiry',
+    uploadedAt: formatDate(document?.created_at),
+    reviewedAt: document?.reviewed_at ? formatDate(document.reviewed_at) : null,
+    rejectionReason: document?.rejection_reason ?? null,
+    isApproved: APPROVED_DOCUMENT_STATUSES.includes(statusKey),
+    isRejected: statusKey === 'rejected',
+  }
+}
+
 export const mapDelivery = (ride) => {
   const statusKey = ride?.status ?? 'requested'
   const pickup = ride?.pickup_name?.trim() || ride?.route_origin?.trim() || EMPTY
@@ -182,10 +228,10 @@ export const mapDelivery = (ride) => {
   return {
     id: shortId(ride?.id),
     rideId: ride?.id ?? null,
-    customer: ride?.rider_name?.trim() || 'Unknown rider',
+    customer: ride?.rider_name?.trim() || 'Unknown customer',
     customerPhone: ride?.rider_phone ?? EMPTY,
-    rider: ride?.driver_name?.trim() || 'Unassigned',
-    riderPhone: ride?.driver_phone ?? EMPTY,
+    driver: ride?.driver_name?.trim() || 'Unassigned',
+    driverPhone: ride?.driver_phone ?? EMPTY,
     zone: ride?.route_origin?.trim() || ride?.pickup_name?.trim() || EMPTY,
     route: pickup === EMPTY || dropoff === EMPTY ? pickup : `${pickup} → ${dropoff}`,
     amount: formatMoney(ride?.fare_amount),
@@ -207,5 +253,5 @@ export const mapNotification = (notification) => ({
   message: notification?.body ?? '',
   time: formatRelative(notification?.created_at),
   read: Boolean(notification?.is_read),
-  to: notification?.ride_id ? '/' : notification?.route_id ? '/riders' : null,
+  to: notification?.ride_id ? '/' : notification?.route_id ? '/drivers' : null,
 })

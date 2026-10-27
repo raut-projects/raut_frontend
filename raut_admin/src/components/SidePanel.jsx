@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-function SidePanel({ open, onClose, title, description, children, footer }) {
+function SidePanel({ open, onClose, title, description, children, footer, wide = false }) {
   useEffect(() => {
     if (!open) return
     const onKeyDown = (e) => {
@@ -21,7 +21,7 @@ function SidePanel({ open, onClose, title, description, children, footer }) {
       />
 
       <aside
-        className={`fixed inset-y-0 right-0 z-50 flex w-[26rem] max-w-full flex-col border-l border-slate-200 bg-white transition-transform duration-200 ${
+        className={`fixed inset-y-0 right-0 z-50 flex ${wide ? 'w-[40rem]' : 'w-[26rem]'} max-w-full flex-col border-l border-slate-200 bg-white transition-transform duration-200 ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
         role="dialog"

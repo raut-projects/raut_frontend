@@ -10,8 +10,9 @@ import {
   unsuspendDriver,
   verifyDriver,
 } from '../services/adminActions.js'
+import { approveDocument, rejectDocument } from '../services/documents.js'
 
-const useAction = ({ mutationFn, successMessage }) => {
+const useAction = ({ mutationFn, successMessage, invalidate = [] }) => {
   const queryClient = useQueryClient()
   const toast = useToast()
 
@@ -22,8 +23,12 @@ const useAction = ({ mutationFn, successMessage }) => {
       toast.success(typeof successMessage === 'function' ? successMessage(variables) : successMessage)
 
       queryClient.invalidateQueries({ queryKey: queryKeys.customers.all })
-      queryClient.invalidateQueries({ queryKey: queryKeys.riders.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.drivers.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all })
+
+      invalidate.forEach((queryKey) => {
+        queryClient.invalidateQueries({ queryKey })
+      })
     },
 
     onError: (error) => {
@@ -54,6 +59,20 @@ export const useUnsuspendDriver = () =>
   useAction({
     mutationFn: ({ driverId }) => unsuspendDriver(driverId),
     successMessage: 'Driver reinstated.',
+  })
+
+export const useApproveDocument = () =>
+  useAction({
+    mutationFn: ({ documentId }) => approveDocument(documentId),
+    successMessage: 'Document approved.',
+    invalidate: [queryKeys.documents.all],
+  })
+
+export const useRejectDocument = () =>
+  useAction({
+    mutationFn: ({ documentId, reason }) => rejectDocument(documentId, reason),
+    successMessage: 'Document rejected.',
+    invalidate: [queryKeys.documents.all],
   })
 
 export const useSetUserRole = () =>

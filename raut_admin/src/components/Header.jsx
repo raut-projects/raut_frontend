@@ -8,7 +8,7 @@ import { useMarkNotificationRead, useNotifications } from '../hooks/useNotificat
 const titles = {
   '/': 'Dashboard',
   '/customers': 'Customers',
-  '/riders': 'Riders',
+  '/drivers': 'Drivers',
   '/settings': 'Settings',
 }
 
