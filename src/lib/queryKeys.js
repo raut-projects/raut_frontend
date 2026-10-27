@@ -25,11 +25,6 @@ export const queryKeys = {
     all: ['payouts'],
     list: (params) => ['payouts', 'list', params],
   },
-  transactions: {
-    all: ['transactions'],
-    list: (params) => ['transactions', 'list', params],
-    summary: ['transactions', 'summary'],
-  },
   dashboard: {
     all: ['dashboard'],
   },
