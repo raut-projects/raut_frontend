@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '../components/toastContext.js'
 import { queryKeys } from '../lib/queryKeys.js'
 import {
+  cancelRide,
+  cancelRoute,
   deactivateUser,
   reactivateUser,
   rejectDriver,
@@ -11,6 +13,7 @@ import {
   verifyDriver,
 } from '../services/adminActions.js'
 import { approveDocument, rejectDocument } from '../services/documents.js'
+import { approvePayout, rejectPayout, retryPayout } from '../services/payouts.js'
 
 const useAction = ({ mutationFn, successMessage, invalidate = [] }) => {
   const queryClient = useQueryClient()
@@ -61,6 +64,20 @@ export const useUnsuspendDriver = () =>
     successMessage: 'Driver reinstated.',
   })
 
+export const useCancelRide = () =>
+  useAction({
+    mutationFn: ({ rideId, reason, refund }) => cancelRide(rideId, reason, refund),
+    successMessage: 'Ride cancelled.',
+    invalidate: [queryKeys.rides.all],
+  })
+
+export const useCancelRoute = () =>
+  useAction({
+    mutationFn: ({ routeId, reason, cancelRides }) => cancelRoute(routeId, reason, cancelRides),
+    successMessage: 'Route cancelled.',
+    invalidate: [queryKeys.routes.all, queryKeys.rides.all],
+  })
+
 export const useApproveDocument = () =>
   useAction({
     mutationFn: ({ documentId }) => approveDocument(documentId),
@@ -73,6 +90,27 @@ export const useRejectDocument = () =>
     mutationFn: ({ documentId, reason }) => rejectDocument(documentId, reason),
     successMessage: 'Document rejected.',
     invalidate: [queryKeys.documents.all],
+  })
+
+export const useApprovePayout = () =>
+  useAction({
+    mutationFn: ({ payoutId, notes }) => approvePayout(payoutId, notes),
+    successMessage: 'Payout approved.',
+    invalidate: [queryKeys.payouts.all],
+  })
+
+export const useRejectPayout = () =>
+  useAction({
+    mutationFn: ({ payoutId, reason }) => rejectPayout(payoutId, reason),
+    successMessage: 'Payout rejected.',
+    invalidate: [queryKeys.payouts.all],
+  })
+
+export const useRetryPayout = () =>
+  useAction({
+    mutationFn: ({ payoutId }) => retryPayout(payoutId),
+    successMessage: 'Payout queued for another attempt.',
+    invalidate: [queryKeys.payouts.all],
   })
 
 export const useSetUserRole = () =>

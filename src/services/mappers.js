@@ -40,6 +40,35 @@ export const formatFileSize = (value) => {
   return `${rounded} ${FILE_SIZE_UNITS[unit]}`
 }
 
+export const formatDistance = (value) => {
+  if (value === null || value === undefined || value === '') return EMPTY
+
+  const meters = Number(value)
+
+  if (!Number.isFinite(meters) || meters < 0) return EMPTY
+  if (meters < 1000) return `${Math.round(meters)} m`
+
+  return `${(meters / 1000).toFixed(1)} km`
+}
+
+export const formatDuration = (value) => {
+  if (value === null || value === undefined || value === '') return EMPTY
+
+  const seconds = Number(value)
+
+  if (!Number.isFinite(seconds) || seconds < 0) return EMPTY
+  if (seconds < 60) return `${Math.round(seconds)} sec`
+
+  const totalMinutes = Math.round(seconds / 60)
+
+  if (totalMinutes < 60) return `${totalMinutes} min`
+
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+
+  return minutes ? `${hours} hr ${minutes} min` : `${hours} hr`
+}
+
 export const formatDate = (value) => {
   if (!value) return EMPTY
 
@@ -164,6 +193,17 @@ export const RIDE_STATUS_LABELS = {
   expired: 'Cancelled',
 }
 
+export const ROUTE_STATUS_LABELS = {
+  scheduled: 'Scheduled',
+  active: 'Active',
+  in_progress: 'In progress',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  expired: 'Expired',
+}
+
+const ROUTE_CANCELLABLE_STATUSES = ['scheduled', 'active', 'in_progress']
+
 const NOTIFICATION_TYPES = {
   ride_completed: 'success',
   ride_cancelled: 'error',
@@ -261,7 +301,102 @@ export const mapDocument = (document) => {
   }
 }
 
-export const mapDelivery = (ride) => {
+export const PAYOUT_STATUS_LABELS = {
+  pending: 'Pending',
+  requested: 'Pending',
+  scheduled: 'Scheduled',
+  processing: 'Processing',
+  approved: 'Approved',
+  paid: 'Paid',
+  completed: 'Paid',
+  settled: 'Paid',
+  transferred: 'Paid',
+  success: 'Paid',
+  failed: 'Failed',
+  error: 'Failed',
+  reversed: 'Reversed',
+  rejected: 'Rejected',
+  cancelled: 'Cancelled',
+}
+
+export const PAYOUT_METHOD_LABELS = {
+  mobile_money: 'Mobile money',
+  mpesa: 'M-Pesa',
+  bank: 'Bank transfer',
+  bank_transfer: 'Bank transfer',
+  cash: 'Cash',
+  card: 'Card',
+}
+
+// The status groups decide which actions the table offers.
+export const PAYOUT_AWAITING_STATUSES = ['pending', 'requested', 'approved', 'scheduled', 'processing']
+
+export const PAYOUT_SETTLED_STATUSES = ['paid', 'completed', 'settled', 'transferred', 'success']
+
+export const PAYOUT_FAILED_STATUSES = ['failed', 'error', 'reversed']
+
+export const PAYOUT_APPROVABLE_STATUSES = ['pending', 'requested', 'approved', 'scheduled']
+
+// The payout endpoints have no declared response model, so every field is read
+// through a list of candidates and the first match wins. The API is free to
+// name a field differently than expected without breaking the screen.
+const firstOf = (source, keys, fallback = null) => {
+  if (!source || typeof source !== 'object') return fallback
+
+  for (const key of keys) {
+    const value = source[key]
+
+    if (value !== undefined && value !== null && value !== '') return value
+  }
+
+  return fallback
+}
+
+export const mapPayout = (payout) => {
+  const statusKey = String(firstOf(payout, ['status', 'payout_status'], 'pending')).toLowerCase()
+  const methodKey = String(firstOf(payout, ['method', 'payout_method', 'payment_method', 'channel'], '')).toLowerCase()
+  const driver = payout?.driver ?? null
+
+  const rawAmount = firstOf(payout, ['amount', 'payout_amount', 'total_amount', 'net_amount', 'gross_amount'], 0)
+  const amount = Number(rawAmount)
+
+  const driverName = firstOf(payout, ['driver_name', 'driver_full_name']) ?? firstOf(driver, ['full_name', 'name'])
+
+  return {
+    id: firstOf(payout, ['id', 'payout_id']),
+    driverId: firstOf(payout, ['driver_id']),
+    driverName: driverName ?? EMPTY,
+    driverPhone:
+      firstOf(payout, ['driver_phone', 'driver_phone_number']) ?? firstOf(driver, ['phone', 'phone_number']) ?? EMPTY,
+    amount: Number.isFinite(amount) ? amount : 0,
+    amountLabel: formatMoney(rawAmount),
+    methodKey,
+    method: PAYOUT_METHOD_LABELS[methodKey] ?? (methodKey ? titleCase(methodKey) : EMPTY),
+    methodDetails:
+      firstOf(payout, ['phone_number', 'mobile_money_number', 'account_number', 'bank_account', 'destination_account']) ??
+      EMPTY,
+    statusKey,
+    status: PAYOUT_STATUS_LABELS[statusKey] ?? titleCase(statusKey),
+    reference:
+      firstOf(payout, ['reference', 'transaction_reference', 'external_reference', 'payout_reference', 'transaction_id']) ??
+      EMPTY,
+    notes: firstOf(payout, ['notes', 'admin_notes', 'note']) ?? EMPTY,
+    rejectionReason: firstOf(payout, ['rejection_reason', 'reason']) ?? EMPTY,
+    requestedAt: formatDateTime(firstOf(payout, ['created_at', 'requested_at', 'initiated_at', 'requested_date'])),
+    processedAt: formatDateTime(
+      firstOf(payout, ['processed_at', 'approved_at', 'paid_at', 'completed_at', 'paid_date']),
+    ),
+    periodStart: formatDate(firstOf(payout, ['period_start', 'period_start_date', 'start_date', 'from_date'])),
+    periodEnd: formatDate(firstOf(payout, ['period_end', 'period_end_date', 'end_date', 'to_date'])),
+    isAwaiting: PAYOUT_AWAITING_STATUSES.includes(statusKey),
+    isSettled: PAYOUT_SETTLED_STATUSES.includes(statusKey),
+    isFailed: PAYOUT_FAILED_STATUSES.includes(statusKey),
+    canApprove: PAYOUT_APPROVABLE_STATUSES.includes(statusKey),
+    canRetry: PAYOUT_FAILED_STATUSES.includes(statusKey),
+  }
+}
+
+export const mapRide = (ride) => {
   const statusKey = ride?.status ?? 'requested'
   const pickup = ride?.pickup_name?.trim() || ride?.route_origin?.trim() || EMPTY
   const dropoff = ride?.dropoff_name?.trim() || ride?.route_destination?.trim() || EMPTY
@@ -273,6 +408,8 @@ export const mapDelivery = (ride) => {
     customerPhone: ride?.rider_phone ?? EMPTY,
     driver: ride?.driver_name?.trim() || 'Unassigned',
     driverPhone: ride?.driver_phone ?? EMPTY,
+    pickup,
+    dropoff,
     zone: ride?.route_origin?.trim() || ride?.pickup_name?.trim() || EMPTY,
     route: pickup === EMPTY || dropoff === EMPTY ? pickup : `${pickup} → ${dropoff}`,
     amount: formatMoney(ride?.fare_amount),
@@ -283,7 +420,51 @@ export const mapDelivery = (ride) => {
     status: RIDE_STATUS_LABELS[statusKey] ?? titleCase(statusKey),
     statusKey,
     date: formatDate(ride?.created_at),
+    requestedAt: formatDateTime(ride?.created_at),
     createdAt: ride?.created_at ?? null,
+  }
+}
+
+export const mapRoute = (route) => {
+  const statusKey = String(route?.status ?? 'unknown').toLowerCase()
+  const origin = route?.origin_name?.trim() || EMPTY
+  const destination = route?.dest_name?.trim() || EMPTY
+  const routePath =
+    origin === EMPTY || destination === EMPTY
+      ? origin || destination
+      : `${origin} \u2192 ${destination}`
+
+  return {
+    id: shortId(route?.id, 'RTE'),
+    routeId: route?.id ?? null,
+    driverId: route?.driver_id ?? null,
+    vehicleId: route?.vehicle_id ?? null,
+    driver: route?.driver_name?.trim() || 'Unassigned',
+    driverPhone: route?.driver_phone ?? EMPTY,
+    vehicle: route?.vehicle_info?.trim() || EMPTY,
+    plateNumber: route?.plate_number ?? EMPTY,
+    origin,
+    destination,
+    route: routePath,
+    originLat: Number(route?.origin_lat),
+    originLng: Number(route?.origin_lng),
+    destLat: Number(route?.dest_lat),
+    destLng: Number(route?.dest_lng),
+    distanceM: Number(route?.route_distance_m ?? 0),
+    distance: formatDistance(route?.route_distance_m),
+    durationS: Number(route?.route_duration_s ?? 0),
+    duration: formatDuration(route?.route_duration_s),
+    seats: Number(route?.available_seats ?? 0),
+    status: ROUTE_STATUS_LABELS[statusKey] ?? titleCase(statusKey),
+    statusKey,
+    scheduledFor: route?.scheduled_for ? formatDateTime(route.scheduled_for) : 'Not scheduled',
+    startedAt: route?.started_at ? formatDateTime(route.started_at) : 'Not started',
+    completedAt: route?.completed_at ? formatDateTime(route.completed_at) : 'Not completed',
+    createdAt: formatDateTime(route?.created_at),
+    created: formatDate(route?.created_at),
+    activeRides: Number(route?.active_rides_count ?? 0),
+    totalRides: Number(route?.total_rides_count ?? 0),
+    canCancel: ROUTE_CANCELLABLE_STATUSES.includes(statusKey),
   }
 }
 
@@ -294,5 +475,5 @@ export const mapNotification = (notification) => ({
   message: notification?.body ?? '',
   time: formatRelative(notification?.created_at),
   read: Boolean(notification?.is_read),
-  to: notification?.ride_id ? '/' : notification?.route_id ? '/drivers' : null,
+  to: notification?.ride_id ? '/rides' : notification?.route_id ? '/routes' : null,
 })

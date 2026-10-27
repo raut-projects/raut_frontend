@@ -5,6 +5,9 @@ import RequireAuth from './components/RequireAuth.jsx'
 import Dashboard from './pages/dashboard.jsx'
 import Customers from './pages/customers.jsx'
 import Drivers from './pages/drivers.jsx'
+import Rides from './pages/rides.jsx'
+import RoutesPage from './pages/routes.jsx'
+import Payouts from './pages/payouts.jsx'
 import Settings from './pages/settings.jsx'
 import Login from './pages/login.jsx'
 import RequestAdmin from './pages/requestAdmin.jsx'
@@ -32,6 +35,9 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/drivers" element={<Drivers />} />
+          <Route path="/rides" element={<Rides />} />
+          <Route path="/routes" element={<RoutesPage />} />
+          <Route path="/payouts" element={<Payouts />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
