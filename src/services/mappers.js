@@ -468,6 +468,73 @@ export const mapRoute = (route) => {
   }
 }
 
+export const TRANSACTION_STATUS_LABELS = {
+  pending: 'Pending',
+  processing: 'Processing',
+  completed: 'Completed',
+  successful: 'Completed',
+  paid: 'Completed',
+  settled: 'Completed',
+  success: 'Completed',
+  failed: 'Failed',
+  error: 'Failed',
+  cancelled: 'Cancelled',
+  refunded: 'Refunded',
+  reversed: 'Reversed',
+}
+
+export const TRANSACTION_TYPE_LABELS = {
+  payment: 'Payment',
+  ride_payment: 'Ride Payment',
+  ride_earning: 'Ride Earning',
+  fare: 'Fare',
+  payout: 'Payout',
+  withdrawal: 'Withdrawal',
+  refund: 'Refund',
+  commission: 'Commission',
+  fee: 'Fee',
+  top_up: 'Top Up',
+  deposit: 'Deposit',
+}
+
+const TRANSACTION_AWAITING_STATUSES = ['pending', 'processing']
+const TRANSACTION_COMPLETED_STATUSES = ['completed', 'successful', 'paid', 'settled', 'success']
+const TRANSACTION_FAILED_STATUSES = ['failed', 'error', 'cancelled', 'reversed']
+
+export const mapTransaction = (transaction) => {
+  const statusKey = String(transaction?.status ?? 'pending').toLowerCase()
+  const typeKey = String(transaction?.type ?? '').toLowerCase()
+  const rawAmount = transaction?.amount ?? 0
+  const amount = Number(rawAmount)
+  return {
+    id: transaction?.id ?? null,
+    reference: transaction?.external_ref ?? transaction?.id ?? EMPTY,
+    userId: transaction?.user_id ?? null,
+    userName: transaction?.user_name?.trim() || EMPTY,
+    userPhone: transaction?.user_phone ?? EMPTY,
+    typeKey,
+    type: TRANSACTION_TYPE_LABELS[typeKey] ?? (typeKey ? titleCase(typeKey) : EMPTY),
+    amount: Number.isFinite(amount) ? amount : 0,
+    amountLabel: formatMoney(rawAmount),
+    currency: 'TZS',
+    statusKey,
+    status: TRANSACTION_STATUS_LABELS[statusKey] ?? titleCase(statusKey),
+    description: EMPTY,
+    paymentMethod: EMPTY,
+    rideId: transaction?.ride_id ?? null,
+    routeId: null,
+    payoutId: transaction?.payout_id ?? null,
+    createdAt: formatDateTime(transaction?.created_at),
+    updatedAt: formatDateTime(transaction?.completed_at),
+    created: formatDate(transaction?.created_at),
+    completedAt: formatDateTime(transaction?.completed_at),
+    externalRef: transaction?.external_ref ?? null,
+    isPending: TRANSACTION_AWAITING_STATUSES.includes(statusKey),
+    isCompleted: TRANSACTION_COMPLETED_STATUSES.includes(statusKey),
+    isFailed: TRANSACTION_FAILED_STATUSES.includes(statusKey),
+  }
+}
+
 export const mapNotification = (notification) => ({
   id: notification?.id,
   type: NOTIFICATION_TYPES[notification?.type] ?? 'info',
