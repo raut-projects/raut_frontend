@@ -7,10 +7,6 @@ export const queryKeys = {
     all: ['riders'],
     list: (params) => ['riders', 'list', params],
   },
-  deliveries: {
-    all: ['deliveries'],
-    list: (params) => ['deliveries', 'list', params],
-  },
   dashboard: {
     all: ['dashboard'],
   },

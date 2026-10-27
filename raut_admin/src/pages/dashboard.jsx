@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { QueryError, RefreshIndicator, TableSkeleton } from '../components/queryStates.jsx'
 import { useDashboard } from '../hooks/useDashboard.js'
 import { useSession } from '../hooks/useSession.js'
@@ -65,23 +64,17 @@ function Dashboard() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="xl:col-span-2">
           <div className="rounded-xl border border-slate-200 bg-white shadow-card">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+            <div className="flex items-center border-b border-slate-200 px-5 py-4">
               <h3 className="text-sm font-semibold text-slate-900">Recent deliveries</h3>
-              <Link
-                to="/deliveries"
-                className="text-xs font-semibold text-brand-600 hover:text-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
-              >
-                View all
-              </Link>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-50">
                   <tr>
-                <th className="table-th">Order</th>
-                <th className="table-th">Customer</th>
-                <th className="table-th">Rider</th>
-                <th className="table-th">Route</th>
+                    <th className="table-th">Order</th>
+                    <th className="table-th">Customer</th>
+                    <th className="table-th">Rider</th>
+                    <th className="table-th">Route</th>
                     <th className="table-th">Amount</th>
                     <th className="table-th">Status</th>
                   </tr>
