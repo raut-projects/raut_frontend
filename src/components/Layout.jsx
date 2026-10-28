@@ -17,7 +17,10 @@ function Layout() {
   useEffect(() => {
     try {
       localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed))
-    } catch {}
+    } catch (err) {
+      // Ignore localStorage errors (e.g., quota exceeded, private mode)
+      console.warn('Failed to save sidebar state:', err)
+    }
   }, [sidebarCollapsed])
 
   const toggleSidebarCollapse = () => {

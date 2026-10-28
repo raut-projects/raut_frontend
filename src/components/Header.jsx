@@ -16,7 +16,7 @@ const titles = {
   '/settings': 'Settings',
 }
 
-function Header({ onMenuClick, sidebarCollapsed }) {
+function Header({ onMenuClick }) {
   const { pathname } = useLocation()
   const title = titles[pathname] ?? 'Raut'
 
