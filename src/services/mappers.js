@@ -40,6 +40,35 @@ export const formatFileSize = (value) => {
   return `${rounded} ${FILE_SIZE_UNITS[unit]}`
 }
 
+export const formatDistance = (value) => {
+  if (value === null || value === undefined || value === '') return EMPTY
+
+  const meters = Number(value)
+
+  if (!Number.isFinite(meters) || meters < 0) return EMPTY
+  if (meters < 1000) return `${Math.round(meters)} m`
+
+  return `${(meters / 1000).toFixed(1)} km`
+}
+
+export const formatDuration = (value) => {
+  if (value === null || value === undefined || value === '') return EMPTY
+
+  const seconds = Number(value)
+
+  if (!Number.isFinite(seconds) || seconds < 0) return EMPTY
+  if (seconds < 60) return `${Math.round(seconds)} sec`
+
+  const totalMinutes = Math.round(seconds / 60)
+
+  if (totalMinutes < 60) return `${totalMinutes} min`
+
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+
+  return minutes ? `${hours} hr ${minutes} min` : `${hours} hr`
+}
+
 export const formatDate = (value) => {
   if (!value) return EMPTY
 
@@ -163,6 +192,17 @@ export const RIDE_STATUS_LABELS = {
   rejected: 'Cancelled',
   expired: 'Cancelled',
 }
+
+export const ROUTE_STATUS_LABELS = {
+  scheduled: 'Scheduled',
+  active: 'Active',
+  in_progress: 'In progress',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  expired: 'Expired',
+}
+
+const ROUTE_CANCELLABLE_STATUSES = ['scheduled', 'active', 'in_progress']
 
 const NOTIFICATION_TYPES = {
   ride_completed: 'success',
@@ -385,6 +425,49 @@ export const mapRide = (ride) => {
   }
 }
 
+export const mapRoute = (route) => {
+  const statusKey = String(route?.status ?? 'unknown').toLowerCase()
+  const origin = route?.origin_name?.trim() || EMPTY
+  const destination = route?.dest_name?.trim() || EMPTY
+  const routePath =
+    origin === EMPTY || destination === EMPTY
+      ? origin || destination
+      : `${origin} \u2192 ${destination}`
+
+  return {
+    id: shortId(route?.id, 'RTE'),
+    routeId: route?.id ?? null,
+    driverId: route?.driver_id ?? null,
+    vehicleId: route?.vehicle_id ?? null,
+    driver: route?.driver_name?.trim() || 'Unassigned',
+    driverPhone: route?.driver_phone ?? EMPTY,
+    vehicle: route?.vehicle_info?.trim() || EMPTY,
+    plateNumber: route?.plate_number ?? EMPTY,
+    origin,
+    destination,
+    route: routePath,
+    originLat: Number(route?.origin_lat),
+    originLng: Number(route?.origin_lng),
+    destLat: Number(route?.dest_lat),
+    destLng: Number(route?.dest_lng),
+    distanceM: Number(route?.route_distance_m ?? 0),
+    distance: formatDistance(route?.route_distance_m),
+    durationS: Number(route?.route_duration_s ?? 0),
+    duration: formatDuration(route?.route_duration_s),
+    seats: Number(route?.available_seats ?? 0),
+    status: ROUTE_STATUS_LABELS[statusKey] ?? titleCase(statusKey),
+    statusKey,
+    scheduledFor: route?.scheduled_for ? formatDateTime(route.scheduled_for) : 'Not scheduled',
+    startedAt: route?.started_at ? formatDateTime(route.started_at) : 'Not started',
+    completedAt: route?.completed_at ? formatDateTime(route.completed_at) : 'Not completed',
+    createdAt: formatDateTime(route?.created_at),
+    created: formatDate(route?.created_at),
+    activeRides: Number(route?.active_rides_count ?? 0),
+    totalRides: Number(route?.total_rides_count ?? 0),
+    canCancel: ROUTE_CANCELLABLE_STATUSES.includes(statusKey),
+  }
+}
+
 export const mapNotification = (notification) => ({
   id: notification?.id,
   type: NOTIFICATION_TYPES[notification?.type] ?? 'info',
@@ -392,5 +475,5 @@ export const mapNotification = (notification) => ({
   message: notification?.body ?? '',
   time: formatRelative(notification?.created_at),
   read: Boolean(notification?.is_read),
-  to: notification?.ride_id ? '/rides' : notification?.route_id ? '/drivers' : null,
+  to: notification?.ride_id ? '/rides' : notification?.route_id ? '/routes' : null,
 })

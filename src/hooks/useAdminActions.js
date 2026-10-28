@@ -3,6 +3,7 @@ import { useToast } from '../components/toastContext.js'
 import { queryKeys } from '../lib/queryKeys.js'
 import {
   cancelRide,
+  cancelRoute,
   deactivateUser,
   reactivateUser,
   rejectDriver,
@@ -68,6 +69,13 @@ export const useCancelRide = () =>
     mutationFn: ({ rideId, reason, refund }) => cancelRide(rideId, reason, refund),
     successMessage: 'Ride cancelled.',
     invalidate: [queryKeys.rides.all],
+  })
+
+export const useCancelRoute = () =>
+  useAction({
+    mutationFn: ({ routeId, reason, cancelRides }) => cancelRoute(routeId, reason, cancelRides),
+    successMessage: 'Route cancelled.',
+    invalidate: [queryKeys.routes.all, queryKeys.rides.all],
   })
 
 export const useApproveDocument = () =>
