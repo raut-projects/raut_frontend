@@ -52,7 +52,7 @@ export const firstRole = (...candidates) => collectRoles(...candidates)[0] ?? nu
 
 // Picks the role that decides access. The first source that carries a role
 // wins, and inside that source a role that grants admin access wins over the
-// others, so `roles: ['rider', 'admin']` is treated as an admin.
+// others, so `roles: ['user', 'admin']` is treated as an admin.
 export const resolveRole = (...candidates) => {
   for (const candidate of candidates) {
     const entries = Array.isArray(candidate) ? candidate : [candidate]

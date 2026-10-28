@@ -12,7 +12,7 @@ export const API_ROUTES = {
   notifications: '/notifications/',
   promote: '/admin/promote',
   users: '/admin/users',
-  riders: '/admin/drivers',
+  drivers: '/admin/drivers',
   rides: '/admin/rides',
   routes: '/admin/routes',
   documents: '/admin/documents',

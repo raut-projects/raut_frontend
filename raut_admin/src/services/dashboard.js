@@ -1,6 +1,6 @@
 import { API_ROUTES } from '../lib/config.js'
 import { apiGet } from './api.js'
-import { formatCount, formatDelta, formatMoney, mapDelivery, mapRider } from './mappers.js'
+import { formatCount, formatDelta, formatMoney, mapDelivery, mapDriver } from './mappers.js'
 
 const FLEET_PAGE_SIZE = 100
 
@@ -28,7 +28,7 @@ export async function getDashboard() {
   // from the endpoints that do answer.
   const [customers, fleet, rideStats, revenue, recent] = await Promise.all([
     apiGet(API_ROUTES.users, { params: { page: 1, page_size: 1, is_driver: false } }),
-    apiGet(API_ROUTES.riders, {
+    apiGet(API_ROUTES.drivers, {
       params: { page: 1, page_size: FLEET_PAGE_SIZE, sort_by: 'total_rides', sort_order: 'desc' },
     }),
     apiGet(API_ROUTES.analyticsRides),
@@ -37,7 +37,7 @@ export async function getDashboard() {
   ])
 
   const customerTotal = customers?.pagination?.total_items ?? 0
-  const drivers = (fleet?.items ?? []).map(mapRider)
+  const drivers = (fleet?.items ?? []).map(mapDriver)
   const driverTotal = fleet?.pagination?.total_items ?? drivers.length
   const verifiedDrivers = drivers.filter((driver) => driver.statusKey === 'verified').length
   const pendingDrivers = drivers.filter((driver) => driver.statusKey === 'pending').length
@@ -65,7 +65,7 @@ export async function getDashboard() {
         hint: 'accounts without a driver profile',
       },
       {
-        label: 'Active Riders',
+        label: 'Active Drivers',
         value: formatCount(verifiedDrivers),
         delta: `${formatCount(pendingDrivers)} awaiting review`,
         up: true,
@@ -87,7 +87,7 @@ export async function getDashboard() {
       },
     ],
     recentDeliveries: (recent?.items ?? []).map(mapDelivery),
-    topRiders: drivers.slice(0, 4).map((driver) => ({
+    topDrivers: drivers.slice(0, 4).map((driver) => ({
       id: driver.id,
       name: driver.name,
       status: driver.status,
@@ -95,6 +95,6 @@ export async function getDashboard() {
       rating: driver.rating,
       active: driver.statusKey === 'verified',
     })),
-    verifiedRiders: verifiedDrivers,
+    verifiedDrivers,
   }
 }
