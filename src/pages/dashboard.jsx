@@ -9,6 +9,29 @@ const statusStyles = {
   Cancelled: 'bg-rose-50 text-rose-700 ring-rose-600/20',
 }
 
+const statIcons = {
+  users: (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+    </svg>
+  ),
+  truck: (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+    </svg>
+  ),
+  route: (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+    </svg>
+  ),
+  currency: (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 11.95 12 11.25c-.725-.695-1.453-1.31-2.191-1.954C8.796 8.229 7.5 7.284 7.5 5.818c0-1.03.823-1.9 1.875-2.006M12 6V4.5m0 15V18" />
+    </svg>
+  ),
+}
+
 function Dashboard() {
   const { data, isPending, isError, error, isFetching, dataUpdatedAt, refetch } = useDashboard()
   const session = useSession()
@@ -19,12 +42,21 @@ function Dashboard() {
   const topDrivers = data?.topDrivers ?? []
   const verifiedDrivers = data?.verifiedDrivers ?? 0
 
+  const getStatIcon = (label) => {
+    const l = label.toLowerCase()
+    if (l.includes('customer')) return statIcons.users
+    if (l.includes('driver')) return statIcons.truck
+    if (l.includes('ride') || l.includes('delivery')) return statIcons.route
+    if (l.includes('revenue') || l.includes('amount')) return statIcons.currency
+    return statIcons.users
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900">Welcome back, {firstName}</h2>
-          <p className="mt-1 text-sm text-slate-500">Here is what is happening with Raut today.</p>
+          <p className="mt-1 text-sm text-slate-500">Here's what's happening with your platform today.</p>
         </div>
         <RefreshIndicator isFetching={isFetching} updatedAt={dataUpdatedAt} onRefresh={refetch} />
       </div>
@@ -33,17 +65,25 @@ function Dashboard() {
         {isPending &&
           Array.from({ length: 4 }, (_, index) => (
             <div key={index} className="stat-card">
-              <span className="block h-3.5 w-24 animate-pulse rounded bg-slate-200" />
-              <span className="mt-3 block h-6 w-16 animate-pulse rounded bg-slate-200" />
-              <span className="mt-2.5 block h-3 w-28 animate-pulse rounded bg-slate-200" />
+              <div className="flex items-center justify-between">
+                <span className="block h-3.5 w-24 animate-pulse rounded bg-slate-200" />
+                <span className="block h-9 w-9 animate-pulse rounded-xl bg-slate-200" />
+              </div>
+              <span className="mt-3 block h-7 w-16 animate-pulse rounded bg-slate-200" />
+              <span className="mt-2 block h-3 w-28 animate-pulse rounded bg-slate-200" />
             </div>
           ))}
 
         {!isPending &&
           !isError &&
           stats.map((stat) => (
-            <div key={stat.label} className="stat-card">
-              <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+            <div key={stat.label} className="stat-card group">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-slate-50 to-slate-100/50 text-slate-700 transition-transform group-hover:scale-110">
+                  {getStatIcon(stat.label)}
+                </div>
+              </div>
               <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{stat.value}</p>
               <p className="mt-1.5 flex items-center gap-1.5 text-xs">
                 <span className={`font-semibold ${stat.up ? 'text-emerald-600' : 'text-rose-600'}`}>{stat.delta}</span>
@@ -54,7 +94,7 @@ function Dashboard() {
 
         {isError && (
           <div className="sm:col-span-2 xl:col-span-4">
-            <div className="rounded-xl border border-slate-200 bg-white shadow-card">
+            <div className="card">
               <QueryError error={error} onRetry={refetch} />
             </div>
           </div>
@@ -63,13 +103,14 @@ function Dashboard() {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="xl:col-span-2">
-          <div className="rounded-xl border border-slate-200 bg-white shadow-card">
-            <div className="flex items-center border-b border-slate-200 px-5 py-4">
-              <h3 className="text-sm font-semibold text-slate-900">Recent deliveries</h3>
+          <div className="card overflow-hidden">
+            <div className="card-header">
+              <h3 className="text-base font-semibold text-slate-900">Recent deliveries</h3>
+              <button className="text-sm font-medium text-brand-600 hover:text-brand-700">View all</button>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50">
+                <thead className="bg-slate-50/50">
                   <tr>
                     <th className="table-th">Order</th>
                     <th className="table-th">Customer</th>
@@ -95,14 +136,14 @@ function Dashboard() {
                 {!isPending && !isError && (
                   <tbody className="divide-y divide-slate-100">
                     {recentDeliveries.map((d) => (
-                      <tr key={d.id} className="transition-colors hover:bg-slate-50">
+                      <tr key={d.id} className="transition-colors hover:bg-slate-50/50">
                         <td className="table-td font-medium text-slate-900">{d.id}</td>
                         <td className="table-td">{d.customer}</td>
                         <td className="table-td">{d.driver}</td>
                         <td className="table-td">{d.route}</td>
                         <td className="table-td font-medium text-slate-900">{d.amount}</td>
                         <td className="table-td">
-                          <span className={`badge ring-1 ring-inset ${statusStyles[d.status]}`}>{d.status}</span>
+                          <span className={`badge ${statusStyles[d.status]}`}>{d.status}</span>
                         </td>
                       </tr>
                     ))}
@@ -120,17 +161,20 @@ function Dashboard() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white shadow-card">
-          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-            <h3 className="text-sm font-semibold text-slate-900">Top drivers</h3>
-            <span className="text-xs text-slate-400">{verifiedDrivers} verified</span>
+        <div className="card overflow-hidden">
+          <div className="card-header">
+            <h3 className="text-base font-semibold text-slate-900">Top drivers</h3>
+            <span className="text-xs font-medium text-slate-400">{verifiedDrivers} verified</span>
           </div>
           {isPending ? (
             <ul className="divide-y divide-slate-100">
               {Array.from({ length: 4 }, (_, index) => (
-                <li key={index} className="flex items-center gap-3 px-5 py-3.5">
-                  <span className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-slate-200" />
-                  <span className="h-3.5 flex-1 animate-pulse rounded bg-slate-200" />
+                <li key={index} className="flex items-center gap-3 px-6 py-3.5">
+                  <span className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-slate-200" />
+                  <div className="flex-1 space-y-2">
+                    <span className="block h-3.5 w-24 animate-pulse rounded bg-slate-200" />
+                    <span className="block h-3 w-16 animate-pulse rounded bg-slate-200" />
+                  </div>
                 </li>
               ))}
             </ul>
@@ -139,8 +183,8 @@ function Dashboard() {
           ) : (
             <ul className="divide-y divide-slate-100">
               {topDrivers.map((r) => (
-                <li key={r.id ?? r.name} className="flex items-center gap-3 px-5 py-3.5">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
+                <li key={r.id ?? r.name} className="flex items-center gap-3 px-6 py-3.5 transition-colors hover:bg-slate-50/50">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-xs font-semibold text-slate-700">
                     {r.name
                       .split(' ')
                       .map((n) => n[0])
@@ -156,13 +200,13 @@ function Dashboard() {
                     <p className="text-xs text-slate-400">rides</p>
                   </div>
                   <span
-                    className={`h-2 w-2 shrink-0 rounded-full ${r.active ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                    className={`h-2 w-2 shrink-0 rounded-full ${r.active ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'bg-slate-300'}`}
                     aria-label={r.active ? 'Verified' : 'Not verified'}
                   />
                 </li>
               ))}
               {topDrivers.length === 0 && (
-                <li className="px-5 py-10 text-center text-sm text-slate-500">No drivers are active right now.</li>
+                <li className="px-6 py-10 text-center text-sm text-slate-500">No drivers are active right now.</li>
               )}
             </ul>
           )}

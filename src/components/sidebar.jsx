@@ -153,6 +153,16 @@ const icons = {
       />
     </svg>
   ),
+  chevronLeft: (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+    </svg>
+  ),
+  chevronRight: (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+    </svg>
+  ),
 };
 
 const navItems = [
@@ -165,7 +175,7 @@ const navItems = [
   { to: "/transactions", label: "Transactions", icon: icons.transactions },
 ];
 
-function Sidebar({ open, onClose }) {
+function Sidebar({ open, onClose, collapsed = false, onToggleCollapse }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -179,7 +189,7 @@ function Sidebar({ open, onClose }) {
   return (
     <>
       <div
-        className={`fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm transition-opacity lg:hidden ${
+        className={`fixed inset-0 z-30 bg-slate-900/50 backdrop-blur-sm transition-opacity lg:hidden ${
           open ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
         onClick={onClose}
@@ -187,24 +197,49 @@ function Sidebar({ open, onClose }) {
       />
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200 bg-white transition-transform duration-200 lg:sticky lg:top-0 lg:bottom-auto lg:h-screen lg:shrink-0 lg:z-auto lg:translate-x-0 ${
-          open ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-slate-200/80 bg-white shadow-lg shadow-slate-900/5 transition-all duration-300 ease-in-out lg:sticky lg:top-0 lg:bottom-auto lg:h-screen lg:shrink-0 lg:z-auto ${
+          collapsed ? "lg:w-[76px]" : "lg:w-[280px]"
+        } ${open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
         aria-label="Main sidebar"
       >
-        <div className="flex h-16 items-center gap-2.5 border-b border-slate-200 px-5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-white">
-            R
-          </span>
-          <span className="text-lg font-bold tracking-tight text-slate-900">
-            Raut
-          </span>
+        <div className={`flex h-16 items-center gap-2.5 border-b border-slate-200/80 px-4 ${collapsed ? 'justify-center' : ''}`}>
+          <img src="/logo.png" alt="Raut" className="h-9 w-9 rounded-xl object-contain" />
+          {!collapsed && (
+            <span className="text-lg font-bold tracking-tight text-slate-900">
+              Raut
+            </span>
+          )}
+          {!collapsed && onToggleCollapse && (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="ml-auto hidden rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 lg:flex"
+              aria-label="Collapse sidebar"
+            >
+              {icons.chevronLeft}
+            </button>
+          )}
         </div>
 
-        <div className="flex-1 overflow-y-auto px-3 py-4">
-          <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
-            Menu
-          </p>
+        {collapsed && onToggleCollapse && (
+          <div className="hidden border-b border-slate-200/80 px-2 py-2 lg:block">
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="flex w-full items-center justify-center rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+              aria-label="Expand sidebar"
+            >
+              {icons.chevronRight}
+            </button>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-4">
+          {!collapsed && (
+            <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              Menu
+            </p>
+          )}
 
           <nav className="space-y-1">
             {navItems.map(({ to, label, icon, end }) => (
@@ -213,48 +248,86 @@ function Sidebar({ open, onClose }) {
                 to={to}
                 end={end}
                 onClick={onClose}
+                title={collapsed ? label : undefined}
                 className={({ isActive }) =>
-                  `nav-link ${isActive ? "nav-link-active" : ""}`
+                  `group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                    isActive 
+                      ? "bg-slate-100 text-slate-900 shadow-sm" 
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  } ${collapsed ? 'justify-center' : ''}`
                 }
               >
-                {icon}
-                <span>{label}</span>
+                {({ isActive }) => (
+                  <>
+                    <span className={`${isActive ? 'text-slate-900' : 'text-slate-400 group-hover:text-slate-600'} transition-colors`}>
+                      {icon}
+                    </span>
+                    {!collapsed && <span className="truncate">{label}</span>}
+                    {isActive && !collapsed && (
+                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-slate-900"></span>
+                    )}
+                    {isActive && collapsed && (
+                      <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-slate-900"></span>
+                    )}
+                  </>
+                )}
               </NavLink>
             ))}
           </nav>
         </div>
 
-        <div className="border-t border-slate-200 p-4">
-          <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
-            Preferences
-          </p>
+        <div className="border-t border-slate-200/80 p-2">
+          {!collapsed && (
+            <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              Preferences
+            </p>
+          )}
 
           <NavLink
             to="/settings"
             className={({ isActive }) =>
-              `nav-link mb-4 ${isActive ? "nav-link-active" : ""}`
+              `group relative mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                isActive 
+                  ? "bg-slate-100 text-slate-900 shadow-sm" 
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+              } ${collapsed ? 'justify-center' : ''}`
             }
             onClick={onClose}
+            title={collapsed ? "Settings" : undefined}
           >
-            {icons.settings}
-            <span>Settings</span>
+            {({ isActive }) => (
+              <>
+                <span className={`${isActive ? 'text-slate-900' : 'text-slate-400 group-hover:text-slate-600'} transition-colors`}>
+                  {icons.settings}
+                </span>
+                {!collapsed && <span>Settings</span>}
+                {isActive && collapsed && (
+                  <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-slate-900"></span>
+                )}
+              </>
+            )}
           </NavLink>
 
           <button
             type="button"
             onClick={handleSignOut}
-            className="cursor-pointer nav-link mb-4 w-full text-left"
+            title={collapsed ? "Sign out" : undefined}
+            className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-rose-50 hover:text-rose-600 ${collapsed ? 'justify-center' : ''}`}
           >
-            {icons.signOut}
-            <span>Sign out</span>
+            <span className="text-slate-400 transition-colors group-hover:text-rose-500">
+              {icons.signOut}
+            </span>
+            {!collapsed && <span>Sign out</span>}
           </button>
 
-          <div className="rounded-lg bg-slate-50 p-3">
-            <p className="text-xs font-semibold text-slate-700">Need help?</p>
-            <p className="mt-0.5 text-xs text-slate-500">
-              Contact support or check the docs.
-            </p>
-          </div>
+          {!collapsed && (
+            <div className="mt-3 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100/50 p-3">
+              <p className="text-xs font-semibold text-slate-700">Need help?</p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Contact support for assistance.
+              </p>
+            </div>
+          )}
         </div>
       </aside>
     </>
