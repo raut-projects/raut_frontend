@@ -9,6 +9,7 @@ const titles = {
   '/': 'Dashboard',
   '/customers': 'Customers',
   '/drivers': 'Drivers',
+  '/rides': 'Rides',
   '/payouts': 'Payouts',
   '/settings': 'Settings',
 }
