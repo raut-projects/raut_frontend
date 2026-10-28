@@ -11,6 +11,7 @@ import {
   verifyDriver,
 } from '../services/adminActions.js'
 import { approveDocument, rejectDocument } from '../services/documents.js'
+import { approvePayout, rejectPayout, retryPayout } from '../services/payouts.js'
 
 const useAction = ({ mutationFn, successMessage, invalidate = [] }) => {
   const queryClient = useQueryClient()
@@ -73,6 +74,27 @@ export const useRejectDocument = () =>
     mutationFn: ({ documentId, reason }) => rejectDocument(documentId, reason),
     successMessage: 'Document rejected.',
     invalidate: [queryKeys.documents.all],
+  })
+
+export const useApprovePayout = () =>
+  useAction({
+    mutationFn: ({ payoutId, notes }) => approvePayout(payoutId, notes),
+    successMessage: 'Payout approved.',
+    invalidate: [queryKeys.payouts.all],
+  })
+
+export const useRejectPayout = () =>
+  useAction({
+    mutationFn: ({ payoutId, reason }) => rejectPayout(payoutId, reason),
+    successMessage: 'Payout rejected.',
+    invalidate: [queryKeys.payouts.all],
+  })
+
+export const useRetryPayout = () =>
+  useAction({
+    mutationFn: ({ payoutId }) => retryPayout(payoutId),
+    successMessage: 'Payout queued for another attempt.',
+    invalidate: [queryKeys.payouts.all],
   })
 
 export const useSetUserRole = () =>
