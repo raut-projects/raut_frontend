@@ -5,6 +5,7 @@ import {
   cancelRide,
   cancelRoute,
   deactivateUser,
+  deleteUser,
   reactivateUser,
   rejectDriver,
   setUserRole,
@@ -129,4 +130,10 @@ export const useReactivateUser = () =>
   useAction({
     mutationFn: ({ userId }) => reactivateUser(userId),
     successMessage: 'Account reactivated.',
+  })
+
+export const useDeleteUser = () =>
+  useAction({
+    mutationFn: ({ userId }) => deleteUser(userId),
+    successMessage: 'Account deleted.',
   })

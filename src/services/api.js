@@ -38,3 +38,9 @@ export const apiPut = async (path, body, { auth = true } = {}) => {
 
   return envelopeData(payload) ?? {}
 }
+
+export const apiDelete = async (path, { body, auth = true } = {}) => {
+  const payload = await request(path, { method: 'DELETE', body, auth })
+
+  return envelopeData(payload) ?? {}
+}
