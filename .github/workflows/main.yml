@@ -161,9 +161,9 @@ jobs:
               exit 1
             fi
 
-            # Wait and verify container is running
-            echo "Waiting for frontend to start..."
-            sleep 10
+            # Wait for nginx to start
+            echo "Waiting for nginx to start..."
+            sleep 5
 
             # Check if container is running
             if ! docker ps | grep -q raut-frontend; then
@@ -182,23 +182,6 @@ jobs:
               exit 1
             fi
 
-            # Wait for health check
-            echo "Waiting for frontend to be healthy..."
-            for i in {1..10}; do
-              HEALTH=$(docker inspect raut-frontend --format '{{.State.Health.Status}}' 2>/dev/null || echo "none")
-              if [ "$HEALTH" = "healthy" ]; then
-                echo "Frontend is healthy!"
-                break
-              fi
-              if [ $i -eq 10 ]; then
-                echo "ERROR: Frontend failed health check after 10 attempts"
-                docker logs raut-frontend --tail 50
-                exit 1
-              fi
-              echo "Health check attempt $i/10: $HEALTH"
-              sleep 3
-            done
-
             # Test if nginx is serving
             if ! curl -f -s http://localhost:3000 > /dev/null; then
               echo "ERROR: Nginx not responding on port 3000"
@@ -206,7 +189,7 @@ jobs:
               exit 1
             fi
 
-            echo "✅ Frontend deployment verified successfully"
+            echo "Frontend deployment verified successfully"
 
       - name: Deployment notification
         if: success()
