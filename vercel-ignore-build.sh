@@ -4,13 +4,22 @@
 # Exit 0 = Skip build (no deployment)
 # Exit 1 = Proceed with build (deploy)
 
+echo "=========================================="
 echo "Branch: $VERCEL_GIT_COMMIT_REF"
+echo "Commit: $VERCEL_GIT_COMMIT_SHA"
+echo "Environment: $VERCEL_ENV"
+echo "=========================================="
 
-# Only deploy if branch is 'staging'
-if [ "$VERCEL_GIT_COMMIT_REF" = "staging" ]; then
-  echo "✅ Deploying staging branch"
+# Only deploy staging branch
+# Skip all PRs, feature branches, and main branch
+if [ "$VERCEL_GIT_COMMIT_REF" = "staging" ] && [ "$VERCEL_ENV" = "preview" ]; then
+  echo "✅ DEPLOYING: Staging branch detected"
   exit 1  # Proceed with build
-else
-  echo "⏭️  Skipping deployment for branch: $VERCEL_GIT_COMMIT_REF"
-  exit 0  # Skip build
 fi
+
+# Skip everything else
+echo "⏭️  SKIPPED: Only staging branch is deployed to Vercel"
+echo "   - Main branch: Deploys to VPS via GitHub Actions"
+echo "   - Feature branches: Not deployed"
+echo "   - Pull requests: Not deployed"
+exit 0  # Skip build
