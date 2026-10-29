@@ -34,19 +34,28 @@ Runs after lint passes.
 - Builds production bundle
 - Uploads build artifacts (retained for 7 days)
 
-#### 3. **Deploy to Production VPS**
+#### 3. **Build & Push Docker Image**
 Runs on push to `main` branch after lint and build pass.
 
+- Builds Docker image with production environment
+- Pushes to GitHub Container Registry (GHCR)
+- Tags: `latest`, `main-<sha>`
+
+**Image:** `ghcr.io/raut-projects/raut_frontend/frontend:latest`
+
+#### 4. **Deploy to Production VPS**
+Runs after image is built and pushed.
+
 - SSHs into production VPS
-- Clones/pulls latest code from main branch
-- Deploys frontend using Docker Compose
+- Pulls latest image from GHCR
+- Deploys using Docker Compose
 - Serves via Nginx on port 3000
 
 **Required Secrets:**
 - `VPS_HOST` - Production server hostname/IP
 - `VPS_USER` - SSH username for production
 - `VPS_SSH_KEY` - SSH private key for production
-- `PAT_TOKEN` - GitHub Personal Access Token for cloning
+- `GITHUB_TOKEN` - Automatically provided (for GHCR access)
 
 **Deploy Location:** `/opt/raut_frontend` (Docker container)  
 **Exposed Port:** `3000` (mapped to container port 80)
@@ -107,41 +116,37 @@ Staging is handled automatically by Vercel's GitHub integration.
    docker network create raut-network
    ```
 
-3. **Set up deployment directory**
+3. **Set up deployment directory and env file**
    ```bash
-   sudo mkdir -p /opt/raut_frontend
-   sudo chown -R $USER:$USER /opt/raut_frontend
+   # Create directory
+   mkdir -p /opt/raut_frontend
+   
+   # Create .env.production
+   echo "VITE_API_URL=https://api.raut.app" > /opt/raut_frontend/.env.production
    ```
 
-4. **Create `.env.production` file**
-   ```bash
-   cd /opt/raut_frontend
-   cp .env.production.example .env.production
-   nano .env.production
-   ```
-   
-   Add:
-   ```bash
-   VITE_API_URL=https://api.raut.app
-   ```
+**Note:** The deployment process creates `docker-compose.yml` automatically on the server. No need to clone the repo manually!
 
 ### Production Deployment Flow
 ```
 1. Push to `main` branch
 2. Lint → Build verification
-3. SSH into VPS
-4. Pull latest code
-5. Docker Compose build & deploy
-6. Nginx serves on port 3000
+3. Build Docker image with production config
+4. Push image to GHCR (ghcr.io)
+5. SSH into VPS
+6. Pull latest image from GHCR
+7. Deploy with Docker Compose
+8. Nginx serves on port 3000
 ```
 
 ### Docker Stack
 
-- **Base Image:** `node:20-alpine` (builder) → `nginx:alpine` (production)
-- **Build:** Multi-stage build (npm ci → vite build → nginx)
+- **Image:** Pre-built from GHCR (`ghcr.io/raut-projects/raut_frontend/frontend:latest`)
+- **Base:** Multi-stage build (`node:20-alpine` builder → `nginx:alpine` production)
 - **Config:** `nginx.conf` with SPA routing and security headers
 - **Health Check:** Nginx health endpoint at `/health`
 - **Network:** `raut-network` (external, shared with backend)
+- **Registry:** GitHub Container Registry (GHCR) - images built in CI, pulled on server
 
 ---
 
@@ -177,16 +182,11 @@ In your GitHub repository:
 
 ```
 VPS_HOST=<your-production-server-ip>
-VPS_USER=ubuntu
+VPS_USER=root
 VPS_SSH_KEY=<paste-private-key>
-PAT_TOKEN=<github-personal-access-token>
 ```
 
-### Creating a GitHub Personal Access Token
-
-1. Go to GitHub **Settings** → **Developer settings** → **Personal access tokens** → **Tokens (classic)**
-2. Generate new token with `repo` scope
-3. Copy token and add as `PAT_TOKEN` secret
+**Note:** `GITHUB_TOKEN` is automatically provided by GitHub Actions for GHCR access - no need to create it manually
 
 ---
 
