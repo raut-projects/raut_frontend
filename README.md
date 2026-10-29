@@ -37,7 +37,7 @@ Administrators can review platform activity, inspect records in detail panels, f
 | --- | --- |
 | Dashboard | Customer, driver, delivery and revenue summaries; recent deliveries; top drivers; manual refresh |
 | Customers | Search, active/inactive filtering, pagination, customer details, role changes, deactivate and reactivate accounts |
-| Drivers | Search, status summary, driver details, document review, verify, reject, suspend and unsuspend drivers; approve or reject documents |
+| Drivers | Search, status summary, driver details, document review, verify, reject, suspend and unsuspend drivers; approve or reject documents; delete drivers (single and bulk) |
 | Rides | Filter by status, driver and date range; summary counts; ride details; cancel with reason and refund option |
 | Routes | Filter by status, driver, origin, destination and date range; summary counts; route details; cancel route |
 | Payouts | Filter by status, method, driver and date range; payout summary; details; approve, reject and retry payouts |
@@ -51,6 +51,7 @@ Administrators can review platform activity, inspect records in detail panels, f
 | Technology | Purpose |
 | --- | --- |
 | [React 19](https://react.dev/) | UI library |
+| [TypeScript](https://www.typescriptlang.org/) | Type-safe JavaScript |
 | [Vite 8](https://vite.dev/) | Development server and production build |
 | [React Router 7](https://reactrouter.com/) | Client-side routing |
 | [TanStack Query 5](https://tanstack.com/query) | Server state, caching and mutations |
@@ -120,6 +121,7 @@ Administrators can review platform activity, inspect records in detail panels, f
 | --- | --- |
 | `npm run dev` | Start the Vite development server with hot module reloading |
 | `npm run build` | Create an optimized production build in `dist/` |
+| `npm run typecheck` | Run TypeScript type checking without emitting files |
 | `npm run lint` | Run ESLint across the repository |
 | `npm run preview` | Serve the production build locally for verification |
 
@@ -158,9 +160,9 @@ Tokens are stored in browser `localStorage`. This keeps the SPA usable across re
 
 ## API integration
 
-The backend base URL and endpoint paths live in `src/lib/config.js`.
+The backend base URL and endpoint paths live in `src/lib/config.ts`.
 
-```js
+```ts
 export const API_ROUTES = {
   otpSend: '/auth/otp/send',
   otpVerify: '/auth/otp/verify',
@@ -181,7 +183,7 @@ export const API_ROUTES = {
 }
 ```
 
-Requests go through `src/services/http.js` and the `apiGet`, `apiPost` and `apiPut` helpers in `src/services/api.js`.
+Requests go through `src/services/http.ts` and the `apiGet`, `apiPost`, `apiPut` and `apiDelete` helpers in `src/services/api.ts`.
 
 ### Request behavior
 
@@ -195,7 +197,7 @@ Requests go through `src/services/http.js` and the `apiGet`, `apiPost` and `apiP
 
 ### Response mapping
 
-Raw API records are normalized in `src/services/mappers.js`. Mappers provide consistent labels, currency and date formatting, status booleans and fallback values so pages do not depend directly on backend field names.
+Raw API records are normalized in `src/services/mappers.ts`. Mappers provide consistent labels, currency and date formatting, status booleans and fallback values so pages do not depend directly on backend field names.
 
 ## Backend endpoints
 
@@ -212,6 +214,7 @@ Raw API records are normalized in `src/services/mappers.js`. Mappers provide con
 | `PUT` | `/admin/users/{id}/role` | Change a user's role |
 | `PUT` | `/admin/users/{id}/deactivate` | Deactivate a user |
 | `PUT` | `/admin/users/{id}/reactivate` | Reactivate a user |
+| `DELETE` | `/admin/users/{id}` | Delete a user/account (customers and drivers) |
 | `GET` | `/admin/drivers` | List drivers |
 | `PUT` | `/admin/drivers/{id}/verify` | Verify a driver |
 | `PUT` | `/admin/drivers/{id}/reject` | Reject a driver application |
@@ -235,14 +238,14 @@ Raw API records are normalized in `src/services/mappers.js`. Mappers provide con
 
 ## Data fetching and state
 
-TanStack Query is configured in `src/lib/queryClient.js`:
+TanStack Query is configured in `src/lib/queryClient.ts`:
 
 - Queries are considered stale after 30 seconds.
 - Inactive query data is garbage-collected after 5 minutes.
 - Failed queries retry once; mutations do not retry.
 - Queries refetch when the window regains focus or the network reconnects.
 
-Query keys are centralized in `src/lib/queryKeys.js`.
+Query keys are centralized in `src/lib/queryKeys.ts`.
 
 The typical data flow is:
 
@@ -267,37 +270,44 @@ raut_frontend/
 │  ├─ favicon.svg
 │  └─ icons.svg
 ├─ src/
-│  ├─ components/          Shared layout, navigation, panels, dialogs, toasts and query states
+│  ├─ components/          Shared layout, navigation, panels, dialogs, toasts, query states, checkbox
 │  ├─ hooks/               TanStack Query hooks and session helpers
 │  ├─ lib/                 API config, roles, query client, query keys
 │  ├─ pages/               Route-level screens
 │  ├─ services/            API services, HTTP client, token store and mappers
-│  ├─ App.jsx              Route definitions and guards
+│  ├─ types/               Shared TypeScript type definitions
+│  ├─ App.tsx              Route definitions and guards
 │  ├─ index.css            Tailwind import, theme tokens and shared component classes
-│  └─ main.jsx             Application bootstrap and providers
+│  └─ main.tsx             Application bootstrap and providers
 ├─ .env.example            Documented environment variables
 ├─ eslint.config.js        ESLint flat configuration
 ├─ index.html              Vite HTML entry point
 ├─ package.json            Dependencies and scripts
 ├─ README.md
-└─ vite.config.js          Vite plugins
+├─ tsconfig.json           TypeScript configuration
+├─ tsconfig.node.json      TypeScript config for Node/Vite
+└─ vite.config.ts          Vite plugins
 ```
 
 ### Key modules
 
 | Path | Responsibility |
 | --- | --- |
-| `src/services/http.js` | Authenticated fetch wrapper, token refresh, timeout and error handling |
-| `src/services/tokenStore.js` | localStorage session/token persistence and subscriptions |
-| `src/services/mappers.js` | API response normalization and display formatting |
-| `src/lib/config.js` | Base URL, API routes, OTP and role revalidation constants |
-| `src/lib/roles.js` | Role normalization, aliases and admin-role checks |
-| `src/components/RequireAdmin.jsx` | Server-confirmed admin route gate |
-| `src/components/Layout.jsx` | Sidebar, header and page outlet shell |
-| `src/components/SidePanel.jsx` | Shared slide-over panel |
-| `src/components/reasonDialog.jsx` | Reason and role confirmation dialogs |
-| `src/components/queryStates.jsx` | Table skeletons, error states and refresh indicator |
-| `src/components/toastProvider.jsx` | Success, error and info notifications |
+| `src/services/http.ts` | Authenticated fetch wrapper, token refresh, timeout and error handling |
+| `src/services/tokenStore.ts` | localStorage session/token persistence and subscriptions |
+| `src/services/mappers.ts` | API response normalization and display formatting |
+| `src/lib/config.ts` | Base URL, API routes, OTP and role revalidation constants |
+| `src/lib/roles.ts` | Role normalization, aliases and admin-role checks |
+| `src/lib/queryClient.ts` | TanStack Query client configuration |
+| `src/lib/queryKeys.ts` | Centralized query key factory |
+| `src/components/RequireAdmin.tsx` | Server-confirmed admin route gate |
+| `src/components/Layout.tsx` | Sidebar, header and page outlet shell |
+| `src/components/SidePanel.tsx` | Shared slide-over panel |
+| `src/components/Checkbox.tsx` | Custom reusable checkbox component |
+| `src/components/reasonDialog.tsx` | Reason, role and confirmation dialogs |
+| `src/components/queryStates.tsx` | Table skeletons, error states and refresh indicator |
+| `src/components/toastProvider.tsx` | Success, error and info notifications |
+| `src/types/` | Shared TypeScript type definitions |
 
 ## UI and styling
 
