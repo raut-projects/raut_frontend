@@ -1,6 +1,7 @@
-import { QueryError, RefreshIndicator, TableSkeleton } from '../components/queryStates.jsx'
-import { useDashboard } from '../hooks/useDashboard.js'
-import { useSession } from '../hooks/useSession.js'
+import { QueryError, RefreshIndicator, TableSkeleton } from '../components/queryStates'
+import { useDashboard } from '../hooks/useDashboard'
+import { useSession } from '../hooks/useSession'
+import { formatMoney } from '../services/mappers'
 
 const statusStyles = {
   Delivered: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
@@ -43,6 +44,11 @@ function Dashboard() {
   const recentDeliveries = data?.recentDeliveries ?? []
   const topDrivers = data?.topDrivers ?? []
   const verifiedDrivers = data?.verifiedDrivers ?? 0
+  const overview = data?.overview
+  const ridesAnalytics = data?.ridesAnalytics ?? []
+  const revenueAnalytics = data?.revenueAnalytics ?? []
+  const driversAnalytics = data?.driversAnalytics
+  const peakHours = data?.peakHours ?? []
 
   const getStatIcon = (label) => {
     const l = label.toLowerCase()
@@ -212,6 +218,160 @@ function Dashboard() {
           )}
         </div>
       </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div className="card overflow-hidden">
+          <div className="card-header">
+            <h3 className="text-base font-semibold text-slate-900">Rides analytics</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200">
+              <thead className="bg-slate-50/50">
+                <tr>
+                  <th className="table-th">Period</th>
+                  <th className="table-th">Total rides</th>
+                  <th className="table-th">Completed</th>
+                  <th className="table-th">Cancelled</th>
+                </tr>
+              </thead>
+              {isPending && <TableSkeleton rows={5} cols={4} />}
+              {!isPending && !isError && (
+                <tbody className="divide-y divide-slate-100">
+                  {ridesAnalytics.slice(0, 10).map((row: any, idx: number) => (
+                    <tr key={idx} className="transition-colors hover:bg-slate-50/50">
+                      <td className="table-td">{row.period}</td>
+                      <td className="table-td font-medium text-slate-900">{row.totalRides}</td>
+                      <td className="table-td">{row.completed}</td>
+                      <td className="table-td">{row.cancelled}</td>
+                    </tr>
+                  ))}
+                  {ridesAnalytics.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-sm text-slate-500">
+                        No rides analytics data available.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              )}
+            </table>
+          </div>
+        </div>
+
+        <div className="card overflow-hidden">
+          <div className="card-header">
+            <h3 className="text-base font-semibold text-slate-900">Revenue analytics</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200">
+              <thead className="bg-slate-50/50">
+                <tr>
+                  <th className="table-th">Period</th>
+                  <th className="table-th">Revenue</th>
+                </tr>
+              </thead>
+              {isPending && <TableSkeleton rows={5} cols={2} />}
+              {!isPending && !isError && (
+                <tbody className="divide-y divide-slate-100">
+                  {revenueAnalytics.slice(0, 10).map((row: any, idx: number) => (
+                    <tr key={idx} className="transition-colors hover:bg-slate-50/50">
+                      <td className="table-td">{row.period}</td>
+                      <td className="table-td font-medium text-slate-900">{formatMoney(row.totalRevenue)}</td>
+                    </tr>
+                  ))}
+                  {revenueAnalytics.length === 0 && (
+                    <tr>
+                      <td colSpan={2} className="px-4 py-8 text-center text-sm text-slate-500">
+                        No revenue analytics data available.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              )}
+            </table>
+          </div>
+        </div>
+
+        <div className="card overflow-hidden">
+          <div className="card-header">
+            <h3 className="text-base font-semibold text-slate-900">Drivers analytics</h3>
+          </div>
+          <div className="p-6">
+            {isPending ? (
+              <div className="space-y-2">
+                <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+                <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+                <div className="h-4 w-28 animate-pulse rounded bg-slate-200" />
+              </div>
+            ) : driversAnalytics && typeof driversAnalytics === 'object' ? (
+              <div className="grid grid-cols-2 gap-4">
+                {Object.entries(driversAnalytics).slice(0, 8).map(([key, value]: any) => (
+                  <div key={key} className="rounded-lg border border-slate-100 p-3">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">{key.replace(/_/g, ' ')}</p>
+                    <p className="mt-1 text-lg font-semibold text-slate-900">{typeof value === 'number' ? value : JSON.stringify(value)}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">No drivers analytics data available.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="card overflow-hidden">
+          <div className="card-header">
+            <h3 className="text-base font-semibold text-slate-900">Peak hours</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200">
+              <thead className="bg-slate-50/50">
+                <tr>
+                  <th className="table-th">Hour</th>
+                  <th className="table-th">Rides</th>
+                </tr>
+              </thead>
+              {isPending && <TableSkeleton rows={5} cols={2} />}
+              {!isPending && !isError && (
+                <tbody className="divide-y divide-slate-100">
+                  {peakHours.slice(0, 24).map((row: any, idx: number) => (
+                    <tr key={idx} className="transition-colors hover:bg-slate-50/50">
+                      <td className="table-td">{row.hour}</td>
+                      <td className="table-td font-medium text-slate-900">{row.rides}</td>
+                    </tr>
+                  ))}
+                  {peakHours.length === 0 && (
+                    <tr>
+                      <td colSpan={2} className="px-4 py-8 text-center text-sm text-slate-500">
+                        No peak hours data available.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              )}
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {overview && typeof overview === 'object' && (
+        <div className="card overflow-hidden">
+          <div className="card-header">
+            <h3 className="text-base font-semibold text-slate-900">Overview analytics</h3>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              {Object.entries(overview).slice(0, 12).map(([key, value]: any) => (
+                <div key={key} className="rounded-lg border border-slate-100 p-3">
+                  <p className="text-xs uppercase tracking-wide text-slate-500">{key.replace(/_/g, ' ')}</p>
+                  <p className="mt-1 text-lg font-semibold text-slate-900">
+                    {typeof value === 'number' && key.includes('revenue') ? formatMoney(value) : typeof value === 'number' ? value : JSON.stringify(value)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
