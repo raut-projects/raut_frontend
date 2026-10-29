@@ -1,11 +1,10 @@
+# This file is for reference only
+# GitHub Actions creates docker-compose.yml on the server automatically
+# The actual deployment uses: ghcr.io/raut-projects/raut_frontend/frontend:latest
+
 services:
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL: ${VITE_API_URL}
-    image: raut-frontend:latest
+    image: ghcr.io/raut-projects/raut_frontend/frontend:latest
     container_name: raut-frontend
     restart: unless-stopped
     ports:

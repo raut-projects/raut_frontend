@@ -61,16 +61,53 @@ jobs:
           path: dist/
           retention-days: 7
 
-  deploy-production:
-    name: Deploy to Production VPS
+  build-and-push-image:
+    name: Build & Push Docker Image
     runs-on: ubuntu-latest
     needs: [lint, build]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/frontend
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VITE_API_URL=https://api.server.raut.app
+
+  deploy-production:
+    name: Deploy to Production VPS
+    runs-on: ubuntu-latest
+    needs: [build-and-push-image]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -78,30 +115,49 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            # Clone if repo doesn't exist, otherwise pull
-            if [ ! -d "/opt/raut_frontend/.git" ]; then
-              git clone https://${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }}.git /opt/raut_frontend
-            else
-              cd /opt/raut_frontend
-              git remote set-url origin https://${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }}.git
-              git fetch origin
-              git reset --hard origin/main
-            fi
+            # Ensure directory exists
+            mkdir -p /opt/raut_frontend
 
-            cd /opt/raut_frontend
-
-            # Production env must exist
-            if [ ! -f .env.production ]; then
-              echo "ERROR: .env.production does not exist!"
-              echo "Please create it based on .env.production.example"
+            # Check .env.production exists
+            if [ ! -f /opt/raut_frontend/.env.production ]; then
+              echo "ERROR: /opt/raut_frontend/.env.production does not exist!"
+              echo "Please create it with: VITE_API_URL=https://api.raut.app"
               exit 1
             fi
 
-            # Deploy frontend with Docker
-            docker compose \
-              --env-file .env.production \
-              -f docker-compose.prod.yml \
-              up -d --build
+            # Create docker-compose.yml for production
+            cat > /opt/raut_frontend/docker-compose.yml <<'EOF'
+            services:
+              frontend:
+                image: ghcr.io/${{ github.repository }}/frontend:latest
+                container_name: raut-frontend
+                restart: unless-stopped
+                ports:
+                  - "3000:80"
+                networks:
+                  - raut-network
+                healthcheck:
+                  test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+                  interval: 30s
+                  timeout: 3s
+                  start_period: 5s
+                  retries: 3
+                labels:
+                  - "com.raut.service=frontend"
+                  - "com.raut.environment=production"
+
+            networks:
+              raut-network:
+                external: true
+            EOF
+
+            # Login to GHCR
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Pull latest image and deploy
+            cd /opt/raut_frontend
+            docker compose pull
+            docker compose up -d
 
             echo "Frontend deployment complete"
 
@@ -111,6 +167,7 @@ jobs:
           echo "RAUT Frontend deployed to Production successfully"
           echo "Commit: ${{ github.sha }}"
           echo "Branch: ${{ github.ref_name }}"
+          echo "Image: ghcr.io/${{ github.repository }}/frontend:latest"
 
       - name: Deployment failed
         if: failure()
