@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ActionIcon from "../components/ActionIcon";
 import {
   QueryError,
   RefreshIndicator,
@@ -37,10 +38,10 @@ const statusDots = {
 const PAGE_SIZE = 8;
 
 const actionClass =
-  "cursor-pointer font-semibold text-brand-600 transition-colors hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-300";
+  "inline-flex h-8 w-8 items-center justify-center rounded-md cursor-pointer text-brand-600 transition-colors hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-300";
 
 const dangerClass =
-  "cursor-pointer font-semibold text-rose-600 transition-colors hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300";
+  "inline-flex h-8 w-8 items-center justify-center rounded-md cursor-pointer text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300";
 
 function Drivers() {
   const [query, setQuery] = useState("");
@@ -353,14 +354,12 @@ function Drivers() {
                     </td>
                     <td className="table-td">{r.joined}</td>
                     <td className="table-td">
-                      <div className="flex items-center justify-end gap-3">
+                      <div className="flex items-center justify-end gap-1">
                         <button
                           type="button"
                           onClick={() => setViewTarget(r)}
                           className={actionClass}
-                        >
-                          View
-                        </button>
+                        ><ActionIcon label="View" /></button>
                         {r.statusKey === "pending" && (
                           <>
                             <button
@@ -374,9 +373,7 @@ function Drivers() {
                               }
                               disabled={verifyDriver.isPending}
                               className={actionClass}
-                            >
-                              Verify
-                            </button>
+                            ><ActionIcon label="Verify" /></button>
                             <button
                               type="button"
                               onClick={() => {
@@ -384,9 +381,7 @@ function Drivers() {
                                 setRejectTarget(r);
                               }}
                               className={dangerClass}
-                            >
-                              Reject
-                            </button>
+                            ><ActionIcon label="Reject" /></button>
                           </>
                         )}
                         {r.statusKey === "verified" && (
@@ -397,9 +392,7 @@ function Drivers() {
                               setSuspendTarget(r);
                             }}
                             className={dangerClass}
-                          >
-                            Suspend
-                          </button>
+                          ><ActionIcon label="Suspend" /></button>
                         )}
                         {r.statusKey === "suspended" && (
                           <button
@@ -407,18 +400,14 @@ function Drivers() {
                             onClick={() => unsuspendDriver.mutate()}
                             disabled={unsuspendDriver.isPending}
                             className={actionClass}
-                          >
-                            Unsuspend
-                          </button>
+                          ><ActionIcon label="Unsuspend" /></button>
                         )}
                         <button
                           type="button"
                           onClick={() => setDeleteTarget(r)}
                           disabled={deleteUser.isPending}
                           className={dangerClass}
-                        >
-                          Delete
-                        </button>
+                        ><ActionIcon label="Delete" /></button>
                         {(r.statusKey === "incomplete" ||
                           r.statusKey === "none") && (
                           <span className="text-xs text-slate-400">

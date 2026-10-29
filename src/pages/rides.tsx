@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ActionIcon from "../components/ActionIcon";
 import {
   QueryError,
   RefreshIndicator,
@@ -39,10 +40,10 @@ const controlClass =
   "rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100";
 
 const actionClass =
-  "cursor-pointer font-semibold text-brand-600 transition-colors hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-300";
+  "inline-flex h-8 w-8 items-center justify-center rounded-md cursor-pointer text-brand-600 transition-colors hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-300";
 
 const dangerClass =
-  "cursor-pointer font-semibold text-rose-600 transition-colors hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300";
+  "inline-flex h-8 w-8 items-center justify-center rounded-md cursor-pointer text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300";
 
 function Rides() {
   const [status, setStatus] = useState("all");
@@ -299,14 +300,12 @@ function Rides() {
                     </td>
                     <td className="table-td">{ride.date}</td>
                     <td className="table-td">
-                      <div className="flex items-center justify-end gap-3">
+                      <div className="flex items-center justify-end gap-1">
                         <button
                           type="button"
                           onClick={() => setViewTarget(ride)}
                           className={actionClass}
-                        >
-                          View
-                        </button>
+                        ><ActionIcon label="View" /></button>
                         {TERMINAL_STATUSES.includes(ride.statusKey) ? (
                           <span className="text-xs text-slate-400">
                             No action
@@ -319,9 +318,7 @@ function Rides() {
                               setCancelTarget(ride);
                             }}
                             className={dangerClass}
-                          >
-                            Cancel
-                          </button>
+                          ><ActionIcon label="Cancel" /></button>
                         )}
                       </div>
                     </td>

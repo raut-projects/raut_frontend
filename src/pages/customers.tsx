@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ActionIcon from "../components/ActionIcon";
 import ViewCustomerPanel from "../components/viewCustomerPanel";
 import {
   QueryError,
@@ -33,7 +34,7 @@ const roleStyles = {
 const PAGE_SIZE = 8;
 
 const actionClass =
-  "cursor-pointer font-semibold text-brand-600 transition-colors hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-300";
+  "inline-flex h-8 w-8 items-center justify-center rounded-md cursor-pointer text-brand-600 transition-colors hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-300";
 
 function Customers() {
   const [search, setSearch] = useState("");
@@ -285,7 +286,7 @@ function Customers() {
                       </span>
                     </td>
                     <td className="table-td">
-                      <div className="flex items-center justify-end gap-3">
+                      <div className="flex items-center justify-end gap-1">
                         <button
                           type="button"
                           onClick={() => {
@@ -293,9 +294,7 @@ function Customers() {
                             setViewOpen(true);
                           }}
                           className={actionClass}
-                        >
-                          View
-                        </button>
+                        ><ActionIcon label="View" /></button>
                         <button
                           type="button"
                           onClick={() => {
@@ -303,9 +302,7 @@ function Customers() {
                             setRoleTarget(c);
                           }}
                           className={actionClass}
-                        >
-                          Role
-                        </button>
+                        ><ActionIcon label="Role" /></button>
                         {c.isActive ? (
                           <button
                             type="button"
@@ -313,28 +310,22 @@ function Customers() {
                               setDeactivateReason("");
                               setDeactivateTarget(c);
                             }}
-                            className="cursor-pointer font-semibold text-rose-600 transition-colors hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300"
-                          >
-                            Deactivate
-                          </button>
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md cursor-pointer text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300"
+                          ><ActionIcon label="Deactivate" /></button>
                         ) : (
                           <button
                             type="button"
                             onClick={() => reactivateUser.mutate()}
                             disabled={reactivateUser.isPending}
                             className={actionClass}
-                          >
-                            Reactivate
-                          </button>
+                          ><ActionIcon label="Reactivate" /></button>
                         )}
                         <button
                           type="button"
                           onClick={() => setDeleteTarget(c)}
                           disabled={deleteUser.isPending}
-                          className="cursor-pointer font-semibold text-rose-600 transition-colors hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300"
-                        >
-                          Delete
-                        </button>
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md cursor-pointer text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300"
+                        ><ActionIcon label="Delete" /></button>
                       </div>
                     </td>
                   </tr>

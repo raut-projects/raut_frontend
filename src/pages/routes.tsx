@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ActionIcon from "../components/ActionIcon";
 import {
   QueryError,
   RefreshIndicator,
@@ -39,10 +40,10 @@ const inputClass =
   "rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100";
 
 const actionClass =
-  "cursor-pointer font-semibold text-brand-600 transition-colors hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-300";
+  "inline-flex h-8 w-8 items-center justify-center rounded-md cursor-pointer text-brand-600 transition-colors hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-300";
 
 const dangerClass =
-  "cursor-pointer font-semibold text-rose-600 transition-colors hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300";
+  "inline-flex h-8 w-8 items-center justify-center rounded-md cursor-pointer text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300";
 
 function RoutesPage() {
   const [status, setStatus] = useState("all");
@@ -367,22 +368,18 @@ function RoutesPage() {
                     </td>
                     <td className="table-td">{route.created}</td>
                     <td className="table-td">
-                      <div className="flex items-center justify-end gap-3">
+                      <div className="flex items-center justify-end gap-1">
                         <button
                           type="button"
                           onClick={() => setViewTarget(route)}
                           className={actionClass}
-                        >
-                          View
-                        </button>
+                        ><ActionIcon label="View" /></button>
                         {route.canCancel ? (
                           <button
                             type="button"
                             onClick={() => openCancelDialog(route)}
                             className={dangerClass}
-                          >
-                            Cancel
-                          </button>
+                          ><ActionIcon label="Cancel" /></button>
                         ) : (
                           <span className="text-xs text-slate-400">
                             No action
