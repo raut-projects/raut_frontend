@@ -1,5 +1,5 @@
 import { useId, useState } from 'react'
-import SidePanel from './SidePanel.jsx'
+import SidePanel from './SidePanel'
 
 const inputClass =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100'

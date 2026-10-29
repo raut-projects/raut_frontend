@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom'
-import { useSession } from '../hooks/useSession.js'
+import { useSession } from '../hooks/useSession'
 
 function RequireAuth({ children }) {
   const location = useLocation()

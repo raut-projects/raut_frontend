@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { listDriverDocuments } from '../services/documents.js'
-import { queryKeys } from '../lib/queryKeys.js'
+import { listDriverDocuments } from '../services/documents'
+import { queryKeys } from '../lib/queryKeys'
 
 export function useDriverDocuments(driverId) {
   return useQuery({

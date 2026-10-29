@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { fetchCurrentUser } from '../services/auth.js'
-import { queryKeys } from '../lib/queryKeys.js'
+import { fetchCurrentUser } from '../services/auth'
+import { queryKeys } from '../lib/queryKeys'
 
 export function useCurrentUser() {
   return useQuery({

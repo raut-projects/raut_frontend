@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { getDashboard } from '../services/dashboard.js'
-import { queryKeys } from '../lib/queryKeys.js'
-import type { AnalyticsPeriod } from '../types/index.js'
+import { getDashboard } from '../services/dashboard'
+import { queryKeys } from '../lib/queryKeys'
+import type { AnalyticsPeriod } from '../types/index'
 
 export function useDashboard(period: AnalyticsPeriod = 'month') {
   return useQuery({

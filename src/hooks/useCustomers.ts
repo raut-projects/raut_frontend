@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { listCustomers } from '../services/customers.js'
-import { queryKeys } from '../lib/queryKeys.js'
+import { listCustomers } from '../services/customers'
+import { queryKeys } from '../lib/queryKeys'
 
 export function useCustomers(params) {
   return useQuery({

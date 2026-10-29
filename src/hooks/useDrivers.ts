@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { listDrivers } from '../services/drivers.js'
-import { queryKeys } from '../lib/queryKeys.js'
+import { listDrivers } from '../services/drivers'
+import { queryKeys } from '../lib/queryKeys'
 
 export function useDrivers(params) {
   return useQuery({

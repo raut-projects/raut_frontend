@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useToast } from '../components/toastContext.js'
-import { queryKeys } from '../lib/queryKeys.js'
-import { listNotifications, markNotificationRead } from '../services/notifications.js'
+import { useToast } from '../components/toastContext'
+import { queryKeys } from '../lib/queryKeys'
+import { listNotifications, markNotificationRead } from '../services/notifications'
 
 export function useNotifications() {
   return useQuery({

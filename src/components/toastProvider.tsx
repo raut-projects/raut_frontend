@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ToastContext } from './toastContext.js'
+import { ToastContext } from './toastContext'
 
 const TOAST_DURATION = 4000
 

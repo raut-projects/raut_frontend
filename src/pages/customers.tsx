@@ -320,9 +320,7 @@ function Customers() {
                         ) : (
                           <button
                             type="button"
-                            onClick={() =>
-                              reactivateUser.mutate({ userId: c.id })
-                            }
+                            onClick={() => reactivateUser.mutate()}
                             disabled={reactivateUser.isPending}
                             className={actionClass}
                           >
@@ -410,6 +408,7 @@ function Customers() {
       <ReasonDialog
         open={Boolean(deactivateTarget)}
         onClose={() => setDeactivateTarget(null)}
+        children={null}
         title="Deactivate account"
         description={
           deactivateTarget
@@ -417,16 +416,14 @@ function Customers() {
             : undefined
         }
         confirmLabel="Deactivate"
+        tone="danger"
         optional
         placeholder="Reason for deactivation (optional)…"
         value={deactivateReason}
         onChange={setDeactivateReason}
         pending={deactivateUser.isPending}
-        onConfirm={async (reason) => {
-          await deactivateUser.mutateAsync({
-            userId: deactivateTarget.id,
-            reason,
-          });
+        onConfirm={async () => {
+          await deactivateUser.mutateAsync();
           setDeactivateTarget(null);
         }}
       />
@@ -438,7 +435,10 @@ function Customers() {
         onChange={setRoleValue}
         pending={setUserRole.isPending}
         onConfirm={async (role) => {
-          await setUserRole.mutateAsync({ userId: roleTarget.id, role });
+          await setUserRole.mutateAsync({
+            userId: roleTarget.id,
+            role,
+          } as never);
           setRoleTarget(null);
         }}
       />
@@ -446,6 +446,7 @@ function Customers() {
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
+        children={null}
         title="Delete account"
         description={
           deleteTarget
@@ -456,7 +457,7 @@ function Customers() {
         tone="danger"
         pending={deleteUser.isPending}
         onConfirm={async () => {
-          await deleteUser.mutateAsync({ userId: deleteTarget.id });
+          await deleteUser.mutateAsync();
           setDeleteTarget(null);
         }}
       />
@@ -464,6 +465,7 @@ function Customers() {
       <ConfirmDialog
         open={bulkDeleteOpen}
         onClose={() => setBulkDeleteOpen(false)}
+        children={null}
         title="Delete selected accounts"
         description={`You are about to permanently delete ${selectedIds.size} account${selectedIds.size === 1 ? "" : "s"}. This action cannot be undone.`}
         confirmLabel="Delete selected"
@@ -472,7 +474,7 @@ function Customers() {
         onConfirm={async () => {
           const ids = Array.from(selectedIds);
           await Promise.allSettled(
-            ids.map((id) => deleteUser.mutateAsync({ userId: id })),
+            ids.map((id) => deleteUser.mutateAsync({ userId: id } as never)),
           );
           setBulkDeleteOpen(false);
           setSelectedIds(new Set());

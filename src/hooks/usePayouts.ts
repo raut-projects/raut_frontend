@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { listPayouts } from '../services/payouts.js'
-import { queryKeys } from '../lib/queryKeys.js'
+import { listPayouts } from '../services/payouts'
+import { queryKeys } from '../lib/queryKeys'
 
 export function usePayouts(params) {
   return useQuery({

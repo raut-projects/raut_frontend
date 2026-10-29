@@ -1,6 +1,6 @@
-import { QueryError } from '../components/queryStates.jsx'
-import { useCurrentUser } from '../hooks/useCurrentUser.js'
-import { EMPTY, DRIVER_STATUS_LABELS } from '../services/mappers.js'
+import { QueryError } from '../components/queryStates'
+import { useCurrentUser } from '../hooks/useCurrentUser'
+import { EMPTY, DRIVER_STATUS_LABELS } from '../services/mappers'
 
 const valueClass = 'text-sm text-slate-800'
 

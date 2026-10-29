@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLocation } from 'react-router-dom'
-import NotificationPanel from './NotificationPanel.jsx'
-import { useSession } from '../hooks/useSession.js'
-import { useMarkNotificationRead, useNotifications } from '../hooks/useNotifications.js'
+import NotificationPanel from './NotificationPanel'
+import { useSession } from '../hooks/useSession'
+import { useMarkNotificationRead, useNotifications } from '../hooks/useNotifications'
 
 const titles = {
   '/': 'Dashboard',

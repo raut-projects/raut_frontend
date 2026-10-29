@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { queryKeys } from '../lib/queryKeys.js'
-import { getRouteSummary, listRoutes } from '../services/routes.js'
+import { queryKeys } from '../lib/queryKeys'
+import { getRouteSummary, listRoutes } from '../services/routes'
 
 export function useRoutes(params) {
   return useQuery({

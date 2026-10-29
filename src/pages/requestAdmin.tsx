@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { useToast } from '../components/toastContext.js'
-import { useSession } from '../hooks/useSession.js'
-import { isAdminRole } from '../lib/roles.js'
-import { requestAdminAccess, signOut } from '../services/auth.js'
+import { useToast } from '../components/toastContext'
+import { useSession } from '../hooks/useSession'
+import { isAdminRole } from '../lib/roles'
+import { requestAdminAccess, signOut } from '../services/auth'
 
 const inputClass =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100'

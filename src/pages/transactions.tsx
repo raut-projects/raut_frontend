@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { QueryError, RefreshIndicator, TableSkeleton } from '../components/queryStates.jsx'
-import { useTransactionSummary, useTransactions } from '../hooks/useTransactions.js'
+import { QueryError, RefreshIndicator, TableSkeleton } from '../components/queryStates'
+import { useTransactionSummary, useTransactions } from '../hooks/useTransactions'
 
 const statusStyles = {
   Pending: 'bg-amber-50 text-amber-700 ring-amber-600/20',

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { useSession } from '../hooks/useSession.js'
-import { ROLE_REVALIDATE_MS } from '../lib/config.js'
-import { firstRole, formatRole, isAdminRole } from '../lib/roles.js'
-import { fetchCurrentUser } from '../services/auth.js'
-import { clearSession, updateSession } from '../services/tokenStore.js'
+import { useSession } from '../hooks/useSession'
+import { ROLE_REVALIDATE_MS } from '../lib/config'
+import { firstRole, formatRole, isAdminRole } from '../lib/roles'
+import { fetchCurrentUser } from '../services/auth'
+import { clearSession, updateSession } from '../services/tokenStore'
 
 let verification = null
 

@@ -1,25 +1,29 @@
-import { useState } from 'react'
-import SidePanel from './SidePanel.jsx'
-import { ReasonDialog } from './reasonDialog.jsx'
-import { QueryError } from './queryStates.jsx'
-import { useApproveDocument, useRejectDocument } from '../hooks/useAdminActions.js'
-import { useDriverDocuments } from '../hooks/useDriverDocuments.js'
+import { useState } from "react";
+import SidePanel from "./SidePanel";
+import { ReasonDialog } from "./reasonDialog";
+import { QueryError } from "./queryStates";
+import {
+  useApproveDocument,
+  useRejectDocument,
+} from "../hooks/useAdminActions";
+import { useDriverDocuments } from "../hooks/useDriverDocuments";
 
-const labelClass = 'mb-1.5 block text-xs font-semibold text-slate-600'
-const valueClass = 'block rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700'
+const labelClass = "mb-1.5 block text-xs font-semibold text-slate-600";
+const valueClass =
+  "block rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700";
 
 const documentStatusStyles = {
-  'Pending review': 'bg-amber-50 text-amber-700 ring-amber-600/20',
-  Approved: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
-  Rejected: 'bg-rose-50 text-rose-700 ring-rose-600/20',
-  Expired: 'bg-rose-50 text-rose-700 ring-rose-600/20',
-}
+  "Pending review": "bg-amber-50 text-amber-700 ring-amber-600/20",
+  Approved: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+  Rejected: "bg-rose-50 text-rose-700 ring-rose-600/20",
+  Expired: "bg-rose-50 text-rose-700 ring-rose-600/20",
+};
 
 const actionClass =
-  'font-semibold text-brand-600 transition-colors hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-300'
+  "font-semibold text-brand-600 transition-colors hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-300";
 
 const dangerClass =
-  'font-semibold text-rose-600 transition-colors hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300'
+  "font-semibold text-rose-600 transition-colors hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300";
 
 function FileIcon() {
   return (
@@ -37,18 +41,20 @@ function FileIcon() {
         d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
       />
     </svg>
-  )
+  );
 }
 
 function DocumentPreview({ document }) {
-  const [loaded, setLoaded] = useState(false)
-  const [failed, setFailed] = useState(false)
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
 
-  const showImage = Boolean(document.fileUrl) && document.isImage && !failed
+  const showImage = Boolean(document.fileUrl) && document.isImage && !failed;
 
   const body = showImage ? (
     <>
-      {!loaded && <span className="absolute inset-0 animate-pulse bg-slate-200" />}
+      {!loaded && (
+        <span className="absolute inset-0 animate-pulse bg-slate-200" />
+      )}
       <img
         src={document.fileUrl}
         alt={`${document.typeLabel} document`}
@@ -57,10 +63,10 @@ function DocumentPreview({ document }) {
         onLoad={() => setLoaded(true)}
         onError={() => setFailed(true)}
         ref={(node) => {
-          if (node?.complete && !loaded) setLoaded(true)
+          if (node?.complete && !loaded) setLoaded(true);
         }}
         className={`h-full w-full object-contain transition-opacity duration-150 ${
-          loaded ? 'opacity-100' : 'opacity-0'
+          loaded ? "opacity-100" : "opacity-0"
         }`}
       />
       <span className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-slate-900/60 to-transparent pb-2 pt-8 opacity-0 transition-opacity group-hover:opacity-100">
@@ -71,13 +77,13 @@ function DocumentPreview({ document }) {
     <span className="flex h-full flex-col items-center justify-center gap-2 text-slate-400">
       <FileIcon />
       <span className="px-4 text-center text-xs font-medium">
-        {document.fileUrl ? 'Preview unavailable' : 'No file attached'}
+        {document.fileUrl ? "Preview unavailable" : "No file attached"}
       </span>
     </span>
-  )
+  );
 
   if (!document.fileUrl) {
-    return <div className="relative block h-56 bg-slate-100">{body}</div>
+    return <div className="relative block h-56 bg-slate-100">{body}</div>;
   }
 
   return (
@@ -90,7 +96,7 @@ function DocumentPreview({ document }) {
     >
       {body}
     </a>
-  )
+  );
 }
 
 function DocumentCard({ document, onApprove, onReject, pending }) {
@@ -99,7 +105,8 @@ function DocumentCard({ document, onApprove, onReject, pending }) {
       <DocumentPreview document={document} />
       <span
         className={`badge absolute right-2 top-2 shadow-sm ring-1 ring-inset ${
-          documentStatusStyles[document.status] ?? documentStatusStyles['Pending review']
+          documentStatusStyles[document.status] ??
+          documentStatusStyles["Pending review"]
         }`}
       >
         {document.status}
@@ -107,31 +114,45 @@ function DocumentCard({ document, onApprove, onReject, pending }) {
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-slate-900">{document.typeLabel}</p>
-          <p className="mt-0.5 truncate text-xs text-slate-500">{document.fileName}</p>
+          <p className="truncate text-sm font-semibold text-slate-900">
+            {document.typeLabel}
+          </p>
+          <p className="mt-0.5 truncate text-xs text-slate-500">
+            {document.fileName}
+          </p>
         </div>
 
         <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
           <div>
             <dt className="text-slate-400">File</dt>
-            <dd className="mt-0.5 font-medium text-slate-700">{document.fileFormatLabel}</dd>
+            <dd className="mt-0.5 font-medium text-slate-700">
+              {document.fileFormatLabel}
+            </dd>
           </div>
           <div>
             <dt className="text-slate-400">Size</dt>
-            <dd className="mt-0.5 font-medium text-slate-700">{document.fileSizeLabel}</dd>
+            <dd className="mt-0.5 font-medium text-slate-700">
+              {document.fileSizeLabel}
+            </dd>
           </div>
           <div>
             <dt className="text-slate-400">Uploaded</dt>
-            <dd className="mt-0.5 font-medium text-slate-700">{document.uploadedAt}</dd>
+            <dd className="mt-0.5 font-medium text-slate-700">
+              {document.uploadedAt}
+            </dd>
           </div>
           <div>
             <dt className="text-slate-400">Expires</dt>
-            <dd className="mt-0.5 font-medium text-slate-700">{document.expiry}</dd>
+            <dd className="mt-0.5 font-medium text-slate-700">
+              {document.expiry}
+            </dd>
           </div>
         </dl>
 
         {document.rejectionReason && (
-          <p className="rounded-md bg-rose-50 px-3 py-2 text-xs text-rose-700">{document.rejectionReason}</p>
+          <p className="rounded-md bg-rose-50 px-3 py-2 text-xs text-rose-700">
+            {document.rejectionReason}
+          </p>
         )}
 
         <div className="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
@@ -150,14 +171,26 @@ function DocumentCard({ document, onApprove, onReject, pending }) {
 
           {document.isApproved ? (
             <span className="text-xs text-slate-400">
-              {document.reviewedAt ? `Approved ${document.reviewedAt}` : 'Approved'}
+              {document.reviewedAt
+                ? `Approved ${document.reviewedAt}`
+                : "Approved"}
             </span>
           ) : (
             <div className="flex items-center gap-2.5">
-              <button type="button" onClick={onApprove} disabled={pending} className={actionClass}>
+              <button
+                type="button"
+                onClick={onApprove}
+                disabled={pending}
+                className={actionClass}
+              >
                 Verify
               </button>
-              <button type="button" onClick={onReject} disabled={pending} className={dangerClass}>
+              <button
+                type="button"
+                onClick={onReject}
+                disabled={pending}
+                className={dangerClass}
+              >
                 Reject
               </button>
             </div>
@@ -165,32 +198,38 @@ function DocumentCard({ document, onApprove, onReject, pending }) {
         </div>
       </div>
     </article>
-  )
+  );
 }
 
 function ViewDriverPanel({ open, onClose, driver }) {
-  const [rejectTarget, setRejectTarget] = useState(null)
-  const [rejectReason, setRejectReason] = useState('')
+  const [rejectTarget, setRejectTarget] = useState(null);
+  const [rejectReason, setRejectReason] = useState("");
 
-  const { data: documents, isPending, isError, error, refetch } = useDriverDocuments(driver?.id)
-  const approveDocument = useApproveDocument()
-  const rejectDocument = useRejectDocument()
+  const {
+    data: documents,
+    isPending,
+    isError,
+    error,
+    refetch,
+  } = useDriverDocuments(driver?.id);
+  const approveDocument = useApproveDocument();
+  const rejectDocument = useRejectDocument();
 
   const close = () => {
-    setRejectTarget(null)
-    setRejectReason('')
-    onClose()
-  }
+    setRejectTarget(null);
+    setRejectReason("");
+    onClose();
+  };
 
   // While the reject dialog is open it owns the escape key and the backdrop,
   // so dismissing it does not also close the panel underneath.
   const handlePanelClose = () => {
-    if (rejectTarget) return
+    if (rejectTarget) return;
 
-    close()
-  }
+    close();
+  };
 
-  const items = documents ?? []
+  const items = documents ?? [];
 
   return (
     <>
@@ -198,7 +237,7 @@ function ViewDriverPanel({ open, onClose, driver }) {
         open={open}
         onClose={handlePanelClose}
         title="Driver details"
-        description={driver ? driver.name : 'View driver information'}
+        description={driver ? driver.name : "View driver information"}
         wide
         footer={
           <button
@@ -252,8 +291,12 @@ function ViewDriverPanel({ open, onClose, driver }) {
 
             <section className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-900">Documents</h3>
-                <span className="text-xs text-slate-400">{items.length} on file</span>
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Documents
+                </h3>
+                <span className="text-xs text-slate-400">
+                  {items.length} on file
+                </span>
               </div>
 
               {isPending && (
@@ -292,11 +335,19 @@ function ViewDriverPanel({ open, onClose, driver }) {
                     <DocumentCard
                       key={document.id ?? document.fileName}
                       document={document}
-                      pending={approveDocument.isPending || rejectDocument.isPending}
-                      onApprove={() => approveDocument.mutate({ documentId: document.id })}
+                      pending={
+                        approveDocument.isPending || rejectDocument.isPending
+                      }
+                      onApprove={() =>
+                        (
+                          approveDocument.mutate as unknown as (variables: {
+                            documentId: string;
+                          }) => void
+                        )({ documentId: document.id })
+                      }
                       onReject={() => {
-                        setRejectReason('')
-                        setRejectTarget(document)
+                        setRejectReason("");
+                        setRejectTarget(document);
                       }}
                     />
                   ))}
@@ -311,21 +362,30 @@ function ViewDriverPanel({ open, onClose, driver }) {
         open={Boolean(rejectTarget)}
         onClose={() => setRejectTarget(null)}
         title="Reject document"
+        tone="danger"
         description={
-          rejectTarget ? `${rejectTarget.typeLabel} for ${driver?.name ?? 'this driver'} will be rejected.` : undefined
+          rejectTarget
+            ? `${rejectTarget.typeLabel} for ${driver?.name ?? "this driver"} will be rejected.`
+            : undefined
         }
+        children={null}
         confirmLabel="Reject"
         placeholder="Why is this document rejected?"
         value={rejectReason}
         onChange={setRejectReason}
         pending={rejectDocument.isPending}
         onConfirm={async (reason) => {
-          await rejectDocument.mutateAsync({ documentId: rejectTarget.id, reason })
-          setRejectTarget(null)
+          await (
+            rejectDocument.mutateAsync as unknown as (variables: {
+              documentId: string;
+              reason: string;
+            }) => Promise<unknown>
+          )({ documentId: rejectTarget.id, reason });
+          setRejectTarget(null);
         }}
       />
     </>
-  )
+  );
 }
 
-export default ViewDriverPanel
+export default ViewDriverPanel;

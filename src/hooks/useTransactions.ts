@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { getTransactionSummary, listTransactions } from '../services/transactions.js'
-import { queryKeys } from '../lib/queryKeys.js'
+import { getTransactionSummary, listTransactions } from '../services/transactions'
+import { queryKeys } from '../lib/queryKeys'
 
 export function useTransactions(params) {
   return useQuery({

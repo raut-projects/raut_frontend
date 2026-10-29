@@ -1,4 +1,4 @@
-import SidePanel from './SidePanel.jsx'
+import SidePanel from './SidePanel'
 
 const labelClass = 'mb-1.5 block text-xs font-semibold text-slate-600'
 const valueClass = 'block rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700'

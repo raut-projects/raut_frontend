@@ -1,21 +1,22 @@
-import SidePanel from './SidePanel.jsx'
+import SidePanel from "./SidePanel";
 
-const labelClass = 'mb-1.5 block text-xs font-semibold text-slate-600'
-const valueClass = 'block rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700'
+const labelClass = "mb-1.5 block text-xs font-semibold text-slate-600";
+const valueClass =
+  "block rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700";
 
 const statusStyles = {
-  Pending: 'bg-amber-50 text-amber-700 ring-amber-600/20',
-  'In transit': 'bg-brand-50 text-brand-700 ring-brand-600/20',
-  Delivered: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
-  Cancelled: 'bg-slate-100 text-slate-600 ring-slate-500/20',
-}
+  Pending: "bg-amber-50 text-amber-700 ring-amber-600/20",
+  "In transit": "bg-brand-50 text-brand-700 ring-brand-600/20",
+  Delivered: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+  Cancelled: "bg-slate-100 text-slate-600 ring-slate-500/20",
+};
 
 const statusDots = {
-  Pending: 'bg-amber-500',
-  'In transit': 'bg-brand-500',
-  Delivered: 'bg-emerald-500',
-  Cancelled: 'bg-slate-400',
-}
+  Pending: "bg-amber-500",
+  "In transit": "bg-brand-500",
+  Delivered: "bg-emerald-500",
+  Cancelled: "bg-slate-400",
+};
 
 function ViewRidePanel({ open, onClose, ride }) {
   if (!ride) {
@@ -25,6 +26,7 @@ function ViewRidePanel({ open, onClose, ride }) {
         onClose={onClose}
         title="Ride details"
         description="View ride information"
+        children={null}
         footer={
           <button
             type="button"
@@ -35,7 +37,7 @@ function ViewRidePanel({ open, onClose, ride }) {
           </button>
         }
       />
-    )
+    );
   }
 
   return (
@@ -59,7 +61,9 @@ function ViewRidePanel({ open, onClose, ride }) {
         <section className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold text-slate-500">Fare</p>
-            <p className="mt-1 text-3xl font-bold tracking-tight text-slate-900">{ride.amount}</p>
+            <p className="mt-1 text-3xl font-bold tracking-tight text-slate-900">
+              {ride.amount}
+            </p>
             <p className="mt-1 text-sm text-slate-500">{ride.route}</p>
           </div>
           <span
@@ -152,7 +156,7 @@ function ViewRidePanel({ open, onClose, ride }) {
         </section>
       </div>
     </SidePanel>
-  )
+  );
 }
 
-export default ViewRidePanel
+export default ViewRidePanel;

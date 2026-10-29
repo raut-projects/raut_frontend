@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { signOut } from "../services/auth.js";
+import { signOut } from "../services/auth";
 
 const icons = {
   transactions: (
