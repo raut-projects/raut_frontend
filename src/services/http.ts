@@ -14,7 +14,9 @@ import {
 } from './tokenStore.js'
 
 export class ApiError extends Error {
-  constructor(message, status = 0, body = null) {
+  status: number
+  body: any
+  constructor(message: string, status = 0, body: any = null) {
     super(message)
     this.name = 'ApiError'
     this.status = status
@@ -103,11 +105,11 @@ export const refreshAccessToken = async () => {
   if (!refreshInFlight) {
     refreshInFlight = (async () => {
       try {
-        const payload = await request(API_ROUTES.refresh, {
+        const payload: any = await request(API_ROUTES.refresh, {
           method: 'POST',
           body: { [REFRESH_TOKEN_FIELD]: refreshToken },
           auth: false,
-        })
+        }) as any
 
         const data = envelopeData(payload) ?? {}
         const accessToken = data.access_token ?? data.accessToken ?? data.token
@@ -142,7 +144,7 @@ const ensureFreshToken = async () => {
 }
 
 export const request = async (
-  path,
+  path: string,
   {
     method = 'GET',
     body,
@@ -150,7 +152,7 @@ export const request = async (
     timeout = REQUEST_TIMEOUT_MS,
     allowRefresh = true,
     form = false,
-  } = {},
+  }: any = {},
 ) => {
   if (!isApiConfigured) {
     throw new ApiError(
@@ -160,13 +162,13 @@ export const request = async (
     )
   }
 
-  const headers = { Accept: 'application/json' }
-  let requestBody = undefined
+  const headers: Record<string, string> = { Accept: 'application/json' }
+  let requestBody: BodyInit | undefined = undefined
 
   if (body !== undefined) {
     if (form) {
       headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
-      requestBody = new URLSearchParams(body).toString()
+      requestBody = new URLSearchParams(body as Record<string, string>).toString()
     } else {
       headers['Content-Type'] = 'application/json'
       requestBody = JSON.stringify(body)
@@ -175,7 +177,7 @@ export const request = async (
 
   if (auth) {
     const token = await ensureFreshToken()
-    if (token) headers.Authorization = `Bearer ${token}`
+    if (token) (headers as any).Authorization = `Bearer ${token}`
   }
 
   const controller = new AbortController()
