@@ -57,10 +57,10 @@ function Dashboard() {
   const isStaging = apiUrl.includes('staging')
 
   return (
-    <div className="space-y-6">
+    <div className="relative space-y-6">
       {isStaging && (
-        <div className="rounded-lg bg-amber-400 px-4 py-2 text-center">
-          <p className="text-sm font-semibold text-amber-900">STAGING</p>
+        <div className="fixed top-4 right-4 z-50 rounded-md bg-amber-400 px-3 py-1 shadow-lg">
+          <p className="text-xs font-bold text-amber-900">STG</p>
         </div>
       )}
 

@@ -184,19 +184,19 @@ jobs:
 
             # Wait for health check
             echo "Waiting for frontend to be healthy..."
-            for i in {1..30}; do
+            for i in {1..10}; do
               HEALTH=$(docker inspect raut-frontend --format '{{.State.Health.Status}}' 2>/dev/null || echo "none")
               if [ "$HEALTH" = "healthy" ]; then
                 echo "Frontend is healthy!"
                 break
               fi
-              if [ $i -eq 30 ]; then
-                echo "ERROR: Frontend failed health check after 30 attempts"
+              if [ $i -eq 10 ]; then
+                echo "ERROR: Frontend failed health check after 10 attempts"
                 docker logs raut-frontend --tail 50
                 exit 1
               fi
-              echo "Health check attempt $i/30: $HEALTH"
-              sleep 2
+              echo "Health check attempt $i/10: $HEALTH"
+              sleep 3
             done
 
             # Test if nginx is serving
