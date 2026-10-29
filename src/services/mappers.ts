@@ -20,6 +20,26 @@ export const formatMoney = (value) => {
   return `TZS ${numberFormat.format(amount)}`
 }
 
+const compactFormat = new Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  maximumFractionDigits: 1,
+})
+
+// Axis labels need short values so the chart plot area is not squeezed.
+export const formatCompact = (value) => {
+  const amount = Number(value)
+
+  return Number.isFinite(amount) ? compactFormat.format(amount) : EMPTY
+}
+
+export const formatCompactMoney = (value) => {
+  const amount = Number(value)
+
+  if (!Number.isFinite(amount)) return EMPTY
+
+  return `TZS ${compactFormat.format(amount)}`
+}
+
 const FILE_SIZE_UNITS = ['B', 'KB', 'MB', 'GB']
 
 export const formatFileSize = (value) => {

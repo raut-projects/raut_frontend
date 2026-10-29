@@ -2,9 +2,9 @@ import {
   API_ROUTES,
   OTP_DEFAULT_TTL_SECONDS,
   OTP_VERIFY_FIELD,
-} from '../lib/config.js'
-import { firstRole, formatRole, isAdminRole, resolveRole } from '../lib/roles.js'
-import { ApiError, envelopeData, envelopeMessage, request, refreshAccessToken } from './http.js'
+} from '../lib/config'
+import { firstRole, formatRole, isAdminRole, resolveRole } from '../lib/roles'
+import { ApiError, envelopeData, envelopeMessage, request, refreshAccessToken } from './http'
 import {
   clearSession,
   getAccessToken,
@@ -12,7 +12,7 @@ import {
   saveSession,
   updateSession,
   updateTokens,
-} from './tokenStore.js'
+} from './tokenStore'
 
 export const normalizePhone = (value) => String(value ?? '').replace(/[\s()\-.]/g, '')
 

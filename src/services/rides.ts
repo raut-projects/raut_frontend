@@ -1,6 +1,6 @@
-import { API_ROUTES } from '../lib/config.js'
-import { apiGet } from './api.js'
-import { mapRide } from './mappers.js'
+import { API_ROUTES } from '../lib/config'
+import { apiGet } from './api'
+import { mapRide } from './mappers'
 
 // Every summary card is a single status count, so each one is read from
 // pagination.total_items instead of paging through the whole book of rides.

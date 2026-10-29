@@ -4,14 +4,14 @@ import {
   REFRESH_TOKEN_FIELD,
   REQUEST_TIMEOUT_MS,
   isApiConfigured,
-} from '../lib/config.js'
+} from '../lib/config'
 import {
   clearSession,
   getAccessToken,
   getRefreshToken,
   isAccessTokenExpired,
   updateTokens,
-} from './tokenStore.js'
+} from './tokenStore'
 
 export class ApiError extends Error {
   status: number

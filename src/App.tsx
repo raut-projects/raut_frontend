@@ -1,17 +1,17 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import Layout from './components/Layout.jsx'
-import RequireAdmin from './components/RequireAdmin.jsx'
-import RequireAuth from './components/RequireAuth.jsx'
-import Dashboard from './pages/dashboard.jsx'
-import Customers from './pages/customers.jsx'
-import Drivers from './pages/drivers.jsx'
-import Rides from './pages/rides.jsx'
-import RoutesPage from './pages/routes.jsx'
-import Payouts from './pages/payouts.jsx'
-import Transactions from './pages/transactions.jsx'
-import Settings from './pages/settings.jsx'
-import Login from './pages/login.jsx'
-import RequestAdmin from './pages/requestAdmin.jsx'
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Layout from "./components/Layout";
+import RequireAdmin from "./components/RequireAdmin";
+import RequireAuth from "./components/RequireAuth";
+import Dashboard from "./pages/dashboard";
+import Customers from "./pages/customers";
+import Drivers from "./pages/drivers";
+import Rides from "./pages/rides";
+import RoutesPage from "./pages/routes";
+import Payouts from "./pages/payouts";
+import Transactions from "./pages/transactions";
+import Settings from "./pages/settings";
+import Login from "./pages/login";
+import RequestAdmin from "./pages/requestAdmin";
 
 function App() {
   return (
@@ -45,7 +45,7 @@ function App() {
         </Route>
       </Routes>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

@@ -32,6 +32,7 @@ export const queryKeys = {
   },
   dashboard: {
     all: ['dashboard'],
+    byPeriod: (period) => ['dashboard', period],
   },
   notifications: {
     all: ['notifications'],

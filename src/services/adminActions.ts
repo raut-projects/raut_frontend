@@ -1,27 +1,35 @@
-import { API_ROUTES } from '../lib/config.js'
-import { apiDelete, apiPut } from './api.js'
+import { API_ROUTES } from "../lib/config";
+import { apiDelete, apiPut } from "./api";
 
-export const verifyDriver = (driverId) => apiPut(`${API_ROUTES.drivers}/${driverId}/verify`, {})
+export const verifyDriver = (driverId) =>
+  apiPut(`${API_ROUTES.drivers}/${driverId}/verify`, {});
 
 export const rejectDriver = (driverId, reason) =>
-  apiPut(`${API_ROUTES.drivers}/${driverId}/reject`, { reason })
+  apiPut(`${API_ROUTES.drivers}/${driverId}/reject`, { reason });
 
 export const suspendDriver = (driverId, reason) =>
-  apiPut(`${API_ROUTES.drivers}/${driverId}/suspend`, { reason })
+  apiPut(`${API_ROUTES.drivers}/${driverId}/suspend`, { reason });
 
-export const unsuspendDriver = (driverId) => apiPut(`${API_ROUTES.drivers}/${driverId}/unsuspend`, {})
+export const unsuspendDriver = (driverId) =>
+  apiPut(`${API_ROUTES.drivers}/${driverId}/unsuspend`, {});
 
 export const cancelRide = (rideId, reason, refund = true) =>
-  apiPut(`${API_ROUTES.rides}/${rideId}/cancel`, { reason, refund })
+  apiPut(`${API_ROUTES.rides}/${rideId}/cancel`, { reason, refund });
 
 export const cancelRoute = (routeId, reason, cancelRides = true) =>
-  apiPut(`${API_ROUTES.routes}/${routeId}/cancel`, { reason, cancel_rides: cancelRides })
+  apiPut(`${API_ROUTES.routes}/${routeId}/cancel`, {
+    reason,
+    cancel_rides: cancelRides,
+  });
 
-export const setUserRole = (userId, role) => apiPut(`${API_ROUTES.users}/${userId}/role`, { role })
+export const setUserRole = (userId, role) =>
+  apiPut(`${API_ROUTES.users}/${userId}/role`, { role });
 
 export const deactivateUser = (userId, reason) =>
-  apiPut(`${API_ROUTES.users}/${userId}/deactivate`, reason ? { reason } : {})
+  apiPut(`${API_ROUTES.users}/${userId}/deactivate`, reason ? { reason } : {});
 
-export const reactivateUser = (userId) => apiPut(`${API_ROUTES.users}/${userId}/reactivate`, {})
+export const reactivateUser = (userId) =>
+  apiPut(`${API_ROUTES.users}/${userId}/reactivate`, {});
 
-export const deleteUser = (userId) => apiDelete(`${API_ROUTES.users}/${userId}`)
+export const deleteUser = (userId) =>
+  apiDelete(`${API_ROUTES.users}/${userId}`);

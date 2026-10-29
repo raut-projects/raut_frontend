@@ -1,6 +1,6 @@
-import { API_ROUTES } from '../lib/config.js'
-import { apiGet, apiPost } from './api.js'
-import { mapNotification } from './mappers.js'
+import { API_ROUTES } from '../lib/config'
+import { apiGet, apiPost } from './api'
+import { mapNotification } from './mappers'
 
 export async function listNotifications() {
   const data = await apiGet(API_ROUTES.notifications)

@@ -1,6 +1,6 @@
-import { API_ROUTES } from '../lib/config.js'
-import { apiGet, apiPut } from './api.js'
-import { mapPayout } from './mappers.js'
+import { API_ROUTES } from '../lib/config'
+import { apiGet, apiPut } from './api'
+import { mapPayout } from './mappers'
 
 // The summary cards read the whole book of payouts, the table reads the
 // filtered page. The count is capped by the overview size, like the fleet

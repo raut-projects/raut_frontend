@@ -1,6 +1,6 @@
-import { API_ROUTES } from '../lib/config.js'
-import { apiGet } from './api.js'
-import { mapDriver } from './mappers.js'
+import { API_ROUTES } from '../lib/config'
+import { apiGet } from './api'
+import { mapDriver } from './mappers'
 
 // The fleet is small enough to pull in one page, which lets the summary cards
 // report exact per-status counts without six extra requests.

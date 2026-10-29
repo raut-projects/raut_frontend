@@ -25,6 +25,14 @@ export const API_ROUTES = {
   analyticsPeakHours: '/admin/analytics/peak-hours',
 }
 
+// Analytics windows. `day|week|month` is sent as `period` to the analytics
+// endpoints, while peak hours uses the number of days as `days_back`.
+export const PERIOD_DAYS: Record<'day' | 'week' | 'month', number> = {
+  day: 1,
+  week: 7,
+  month: 30,
+}
+
 export const OTP_CODE_LENGTH = 6
 export const OTP_DEFAULT_TTL_SECONDS = 300
 

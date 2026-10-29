@@ -1,6 +1,6 @@
-import { API_ROUTES } from '../lib/config.js'
-import { apiGet, apiPut } from './api.js'
-import { mapDocument } from './mappers.js'
+import { API_ROUTES } from '../lib/config'
+import { apiGet, apiPut } from './api'
+import { mapDocument } from './mappers'
 
 // A driver keeps a handful of documents, so one generous page covers them all.
 const DOCUMENT_PAGE_SIZE = 100

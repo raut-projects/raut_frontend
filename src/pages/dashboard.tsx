@@ -1,13 +1,40 @@
+import { useState } from 'react'
 import { QueryError, RefreshIndicator, TableSkeleton } from '../components/queryStates'
+import { DriverStatusChart } from '../components/analytics/DriverStatusChart'
+import { OverviewMetrics } from '../components/analytics/OverviewMetrics'
+import { PeakHoursChart } from '../components/analytics/PeakHoursChart'
+import { RevenueChart } from '../components/analytics/RevenueChart'
+import { RidesChart } from '../components/analytics/RidesChart'
 import { useDashboard } from '../hooks/useDashboard'
 import { useSession } from '../hooks/useSession'
-import { formatMoney } from '../services/mappers'
+import { PERIOD_DAYS } from '../lib/config'
+import type { AnalyticsPeriod, DriverStats } from '../types/index'
 
 const statusStyles = {
   Delivered: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
   'In transit': 'bg-brand-50 text-brand-700 ring-brand-600/20',
   Pending: 'bg-amber-50 text-amber-700 ring-amber-600/20',
   Cancelled: 'bg-rose-50 text-rose-700 ring-rose-600/20',
+}
+
+const PERIOD_OPTIONS: Array<{ value: AnalyticsPeriod; label: string }> = [
+  { value: 'day', label: 'Day' },
+  { value: 'week', label: 'Week' },
+  { value: 'month', label: 'Month' },
+]
+
+const EMPTY_DRIVERS: DriverStats = {
+  totalDrivers: 0,
+  verified: 0,
+  pending: 0,
+  rejected: 0,
+  suspended: 0,
+  registeredThisWeek: 0,
+  verifiedThisWeek: 0,
+  pendingDocuments: 0,
+  completeDocs: 0,
+  activeToday: 0,
+  activeRoutes: 0,
 }
 
 const statIcons = {
@@ -27,16 +54,16 @@ const statIcons = {
     </svg>
   ),
   currency: (
-    <svg width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="feather feather-dollar-sign">
-      <line x1="12" y1="1" x2="12" y2="23"></line>
-    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-</svg>
-
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="12" y1="1" x2="12" y2="23" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
   ),
 }
 
 function Dashboard() {
-  const { data, isPending, isError, error, isFetching, dataUpdatedAt, refetch } = useDashboard()
+  const [period, setPeriod] = useState<AnalyticsPeriod>('month')
+  const { data, isPending, isError, error, isFetching, dataUpdatedAt, refetch } = useDashboard(period)
   const session = useSession()
   const firstName = session?.name?.split(' ')[0] ?? 'there'
 
@@ -44,13 +71,16 @@ function Dashboard() {
   const recentDeliveries = data?.recentDeliveries ?? []
   const topDrivers = data?.topDrivers ?? []
   const verifiedDrivers = data?.verifiedDrivers ?? 0
-  const overview = data?.overview
-  const ridesAnalytics = data?.ridesAnalytics ?? []
-  const revenueAnalytics = data?.revenueAnalytics ?? []
-  const driversAnalytics = data?.driversAnalytics
+  const overview = data?.overview ?? {}
+  const ridesAnalytics = data?.ridesAnalytics ?? { isSeries: false, points: [], latest: null }
+  const revenueAnalytics = data?.revenueAnalytics ?? { isSeries: false, points: [], latest: null }
+  const driversAnalytics = data?.driversAnalytics ?? EMPTY_DRIVERS
   const peakHours = data?.peakHours ?? []
+  const periodDays = data?.periodDays ?? PERIOD_DAYS[period]
 
-  const getStatIcon = (label) => {
+  const chartError = isError ? error : null
+
+  const getStatIcon = (label: string) => {
     const l = label.toLowerCase()
     if (l.includes('customer')) return statIcons.users
     if (l.includes('driver')) return statIcons.truck
@@ -61,12 +91,39 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900">Welcome back, {firstName}</h2>
           <p className="mt-1 text-sm text-slate-500">Here's what's happening with your platform today.</p>
         </div>
-        <RefreshIndicator isFetching={isFetching} updatedAt={dataUpdatedAt} onRefresh={refetch} />
+        <div className="flex flex-wrap items-center gap-3">
+          <div
+            role="group"
+            aria-label="Analytics period"
+            className="flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-card"
+          >
+            {PERIOD_OPTIONS.map((option) => {
+              const active = option.value === period
+
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setPeriod(option.value)}
+                  aria-pressed={active}
+                  className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
+                    active
+                      ? 'bg-brand-600 text-white'
+                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              )
+            })}
+          </div>
+          <RefreshIndicator isFetching={isFetching} updatedAt={dataUpdatedAt} onRefresh={refetch} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -109,11 +166,52 @@ function Dashboard() {
         )}
       </div>
 
+      <RidesChart
+        series={ridesAnalytics}
+        loading={isPending}
+        error={chartError}
+        onRetry={refetch}
+      />
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <div className="xl:col-span-2">
+          <RevenueChart
+            series={revenueAnalytics}
+            loading={isPending}
+            error={chartError}
+            onRetry={refetch}
+          />
+        </div>
+        <div>
+          <DriverStatusChart
+            stats={driversAnalytics}
+            loading={isPending}
+            error={chartError}
+            onRetry={refetch}
+          />
+        </div>
+      </div>
+
+      <PeakHoursChart
+        points={peakHours}
+        periodDays={periodDays}
+        loading={isPending}
+        error={chartError}
+        onRetry={refetch}
+      />
+
+      <OverviewMetrics
+        overview={overview}
+        loading={isPending}
+        error={chartError}
+        onRetry={refetch}
+      />
+
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="xl:col-span-2">
           <div className="card overflow-hidden">
             <div className="card-header">
-              <h3 className="text-base font-semibold text-slate-900">Recent deliveries</h3>
+              <h3 className="text-base font-semibold text-slate-900">Recent Rides</h3>
               <button className="text-sm font-medium text-brand-600 hover:text-brand-700">View all</button>
             </div>
             <div className="overflow-x-auto">
