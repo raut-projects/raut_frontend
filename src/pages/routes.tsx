@@ -327,7 +327,7 @@ function RoutesPage() {
                       </span>
                     </td>
                     <td className="table-td">
-                      <span className="block max-w-[14rem] truncate text-slate-900">
+                      <span className="block max-w-56 truncate text-slate-900">
                         {route.vehicle}
                       </span>
                       <span className="block text-xs text-slate-400">

@@ -198,7 +198,7 @@ function Sidebar({ open, onClose, collapsed = false, onToggleCollapse }) {
 
       <aside
         className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-slate-200/80 bg-white shadow-lg shadow-slate-900/5 transition-all duration-300 ease-in-out lg:sticky lg:top-0 lg:bottom-auto lg:h-screen lg:shrink-0 lg:z-auto ${
-          collapsed ? "lg:w-[76px]" : "lg:w-[280px]"
+          collapsed ? "lg:w-19" : "lg:w-70"
         } ${open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
         aria-label="Main sidebar"
       >
@@ -321,7 +321,7 @@ function Sidebar({ open, onClose, collapsed = false, onToggleCollapse }) {
           </button>
 
           {!collapsed && (
-            <div className="mt-3 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100/50 p-3">
+            <div className="mt-3 rounded-xl bg-gradient-to from-slate-50 to-slate-100/50 p-3">
               <p className="text-xs font-semibold text-slate-700">Need help?</p>
               <p className="mt-0.5 text-xs text-slate-500">
                 Contact support for assistance.

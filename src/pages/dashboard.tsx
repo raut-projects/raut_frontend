@@ -145,7 +145,7 @@ function Dashboard() {
             <div key={stat.label} className="stat-card group">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-slate-500">{stat.label}</p>
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-slate-50 to-slate-100/50 text-slate-700 transition-transform group-hover:scale-110">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to from-slate-50 to-slate-100/50 text-slate-700 transition-transform group-hover:scale-110">
                   {getStatIcon(stat.label)}
                 </div>
               </div>

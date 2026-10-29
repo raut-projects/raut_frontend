@@ -193,7 +193,7 @@ function Payouts() {
             value={driverId}
             onChange={(event) => onDriverChange(event.target.value)}
             aria-label="Filter payouts by driver"
-            className={`${controlClass} max-w-[12rem]`}
+            className={`${controlClass} max-w-48`}
           >
             <option value="">All drivers</option>
             {drivers.map((driver) => (
