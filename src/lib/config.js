@@ -18,7 +18,9 @@ export const API_ROUTES = {
   documents: '/admin/documents',
   transactions: '/admin/transactions',
   payouts: '/admin/payouts',
+  analyticsOverview: '/admin/analytics/overview',
   analyticsRevenue: '/admin/analytics/revenue',
+  analyticsDrivers: '/admin/analytics/drivers',
   analyticsRides: '/admin/analytics/rides',
   analyticsPeakHours: '/admin/analytics/peak-hours',
 }
