@@ -53,8 +53,17 @@ function Dashboard() {
     return statIcons.users
   }
 
+  const apiUrl = import.meta.env.VITE_API_URL || ''
+  const isStaging = apiUrl.includes('staging')
+
   return (
     <div className="space-y-6">
+      {isStaging && (
+        <div className="rounded-lg bg-amber-400 px-4 py-2 text-center">
+          <p className="text-sm font-semibold text-amber-900">STAGING</p>
+        </div>
+      )}
+
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900">Welcome back, {firstName}</h2>
