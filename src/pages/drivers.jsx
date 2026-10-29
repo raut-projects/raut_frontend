@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import Checkbox from '../components/Checkbox.jsx'
 import { QueryError, RefreshIndicator, TableSkeleton } from '../components/queryStates.jsx'
-import { ReasonDialog } from '../components/reasonDialog.jsx'
+import { ConfirmDialog, ReasonDialog } from '../components/reasonDialog.jsx'
 import ViewDriverPanel from '../components/viewDriverPanel.jsx'
 import { useDrivers } from '../hooks/useDrivers.js'
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js'
 import {
+  useDeleteUser,
   useRejectDriver,
   useSuspendDriver,
   useUnsuspendDriver,
@@ -46,6 +48,9 @@ function Drivers() {
   const [suspendTarget, setSuspendTarget] = useState(null)
   const [suspendReason, setSuspendReason] = useState('')
   const [viewTarget, setViewTarget] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
   const debouncedQuery = useDebouncedValue(query, 300)
   const params = { search: debouncedQuery, status, page, limit: PAGE_SIZE }
@@ -65,6 +70,7 @@ function Drivers() {
   const rejectDriver = useRejectDriver()
   const suspendDriver = useSuspendDriver()
   const unsuspendDriver = useUnsuspendDriver()
+  const deleteUser = useDeleteUser()
 
   const drivers = data?.items ?? []
   const total = data?.total ?? 0
@@ -81,12 +87,36 @@ function Drivers() {
   const onQueryChange = (e) => {
     setQuery(e.target.value)
     setPage(1)
+    setSelectedIds(new Set())
   }
 
   const onStatusChange = (next) => {
     setStatus(next)
     setPage(1)
+    setSelectedIds(new Set())
   }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === drivers.length && drivers.length > 0) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(drivers.map((d) => d.id)))
+    }
+  }
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const clearSelection = () => setSelectedIds(new Set())
 
   return (
     <div className="space-y-6">
@@ -152,11 +182,40 @@ function Drivers() {
       <div className="rounded-xl border border-slate-200 bg-white shadow-card">
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
           <RefreshIndicator isFetching={isFetching} updatedAt={dataUpdatedAt} onRefresh={refetch} />
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold text-slate-600">
+                {selectedIds.size} selected
+              </span>
+              <button
+                type="button"
+                onClick={() => setBulkDeleteOpen(true)}
+                className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-70"
+                disabled={deleteUser.isPending}
+              >
+                Delete selected
+              </button>
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+              >
+                Clear
+              </button>
+            </div>
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50">
               <tr>
+                <th className="table-th w-10">
+                  <Checkbox
+                    aria-label="Select all drivers"
+                    checked={drivers.length > 0 && selectedIds.size === drivers.length}
+                    onChange={toggleSelectAll}
+                  />
+                </th>
                 <th className="table-th">Driver</th>
                 <th className="table-th">Phone</th>
                 <th className="table-th">Status</th>
@@ -167,12 +226,12 @@ function Drivers() {
               </tr>
             </thead>
 
-            {isPending && <TableSkeleton rows={PAGE_SIZE} cols={7} />}
+            {isPending && <TableSkeleton rows={PAGE_SIZE} cols={8} />}
 
             {isError && (
               <tbody>
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={8}>
                     <QueryError error={error} onRetry={refetch} />
                   </td>
                 </tr>
@@ -183,6 +242,13 @@ function Drivers() {
               <tbody className="divide-y divide-slate-100">
                 {drivers.map((r) => (
                   <tr key={r.id} className="transition-colors hover:bg-slate-50">
+                    <td className="table-td">
+                      <Checkbox
+                        aria-label={`Select ${r.name}`}
+                        checked={selectedIds.has(r.id)}
+                        onChange={() => toggleSelect(r.id)}
+                      />
+                    </td>
                     <td className="table-td">
                       <div className="flex items-center gap-3">
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
@@ -275,6 +341,14 @@ function Drivers() {
                             Unsuspend
                           </button>
                         )}
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(r)}
+                          disabled={deleteUser.isPending}
+                          className={dangerClass}
+                        >
+                          Delete
+                        </button>
                         {(r.statusKey === 'incomplete' || r.statusKey === 'none') && (
                           <span className="text-xs text-slate-400">No action</span>
                         )}
@@ -283,12 +357,12 @@ function Drivers() {
                   </tr>
                 ))}
                 {drivers.length === 0 && (
-                    <tr>
-                      <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-500">
-                        No drivers match “{query}”.
-                      </td>
-                    </tr>
-                  )}
+                  <tr>
+                    <td colSpan={8} className="px-4 py-10 text-center text-sm text-slate-500">
+                      No drivers match “{query}”.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             )}
           </table>
@@ -361,6 +435,40 @@ function Drivers() {
         onConfirm={async (reason) => {
           await suspendDriver.mutateAsync({ driverId: suspendTarget.id, reason })
           setSuspendTarget(null)
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete driver account"
+        description={
+          deleteTarget
+            ? `${deleteTarget.name} will be permanently deleted. This action cannot be undone.`
+            : undefined
+        }
+        confirmLabel="Delete"
+        tone="danger"
+        pending={deleteUser.isPending}
+        onConfirm={async () => {
+          await deleteUser.mutateAsync({ userId: deleteTarget.id })
+          setDeleteTarget(null)
+        }}
+      />
+
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        onClose={() => setBulkDeleteOpen(false)}
+        title="Delete selected drivers"
+        description={`You are about to permanently delete ${selectedIds.size} driver${selectedIds.size === 1 ? '' : 's'}. This action cannot be undone.`}
+        confirmLabel="Delete selected"
+        tone="danger"
+        pending={deleteUser.isPending}
+        onConfirm={async () => {
+          const ids = Array.from(selectedIds)
+          await Promise.allSettled(ids.map((id) => deleteUser.mutateAsync({ userId: id })))
+          setBulkDeleteOpen(false)
+          setSelectedIds(new Set())
         }}
       />
     </div>

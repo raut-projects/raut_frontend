@@ -9,8 +9,6 @@ services:
     restart: unless-stopped
     ports:
       - "3000:80"
-    networks:
-      - raut-network
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
       interval: 30s
@@ -20,7 +18,3 @@ services:
     labels:
       - "com.raut.service=frontend"
       - "com.raut.environment=production"
-
-networks:
-  raut-network:
-    external: true

@@ -1,5 +1,5 @@
 import { API_ROUTES } from '../lib/config.js'
-import { apiPut } from './api.js'
+import { apiDelete, apiPut } from './api.js'
 
 export const verifyDriver = (driverId) => apiPut(`${API_ROUTES.drivers}/${driverId}/verify`, {})
 
@@ -23,3 +23,5 @@ export const deactivateUser = (userId, reason) =>
   apiPut(`${API_ROUTES.users}/${userId}/deactivate`, reason ? { reason } : {})
 
 export const reactivateUser = (userId) => apiPut(`${API_ROUTES.users}/${userId}/reactivate`, {})
+
+export const deleteUser = (userId) => apiDelete(`${API_ROUTES.users}/${userId}`)

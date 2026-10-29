@@ -26,7 +26,7 @@ const statIcons = {
     </svg>
   ),
   currency: (
-    <svg width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-dollar-sign">
+    <svg width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="feather feather-dollar-sign">
       <line x1="12" y1="1" x2="12" y2="23"></line>
     <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
 </svg>
@@ -57,10 +57,10 @@ function Dashboard() {
   const isStaging = apiUrl.includes('staging')
 
   return (
-    <div className="space-y-6">
+    <div className="relative space-y-6">
       {isStaging && (
-        <div className="rounded-lg bg-amber-400 px-4 py-2 text-center">
-          <p className="text-sm font-semibold text-amber-900">STAGING</p>
+        <div className="fixed top-4 right-4 z-50 rounded-md bg-amber-400 px-3 py-1 shadow-lg">
+          <p className="text-xs font-bold text-amber-900">STG</p>
         </div>
       )}
 
