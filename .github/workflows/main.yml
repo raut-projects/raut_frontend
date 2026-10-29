@@ -99,7 +99,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            VITE_API_URL=https://api.raut.app
+            VITE_API_URL=https://api.server.raut.app
 
   deploy-production:
     name: Deploy to Production VPS

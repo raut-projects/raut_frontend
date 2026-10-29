@@ -122,7 +122,7 @@ Staging is handled automatically by Vercel's GitHub integration.
    mkdir -p /opt/raut_frontend
    
    # Create .env.production
-   echo "VITE_API_URL=https://api.raut.app" > /opt/raut_frontend/.env.production
+   echo "VITE_API_URL=https://api.server.raut.app" > /opt/raut_frontend/.env.production
    ```
 
 **Note:** The deployment process creates `docker-compose.yml` automatically on the server. No need to clone the repo manually!
