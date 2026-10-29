@@ -148,12 +148,65 @@ jobs:
             # Login to GHCR
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Pull latest image and deploy
+            # Pull latest image with error check
             cd /opt/raut_frontend
-            docker compose pull
-            docker compose up -d
+            if ! docker compose pull; then
+              echo "ERROR: Failed to pull image from GHCR"
+              exit 1
+            fi
 
-            echo "Frontend deployment complete"
+            # Start container with error check
+            if ! docker compose up -d; then
+              echo "ERROR: Failed to start frontend container"
+              exit 1
+            fi
+
+            # Wait and verify container is running
+            echo "Waiting for frontend to start..."
+            sleep 10
+
+            # Check if container is running
+            if ! docker ps | grep -q raut-frontend; then
+              echo "ERROR: Frontend container is not running"
+              docker logs raut-frontend --tail 50
+              exit 1
+            fi
+
+            # Check if container is using correct image
+            CURRENT_IMAGE=$(docker inspect raut-frontend --format '{{.Config.Image}}')
+            EXPECTED_IMAGE="ghcr.io/${{ github.repository }}/frontend:latest"
+            if [ "$CURRENT_IMAGE" != "$EXPECTED_IMAGE" ]; then
+              echo "ERROR: Container using wrong image"
+              echo "Expected: $EXPECTED_IMAGE"
+              echo "Got: $CURRENT_IMAGE"
+              exit 1
+            fi
+
+            # Wait for health check
+            echo "Waiting for frontend to be healthy..."
+            for i in {1..30}; do
+              HEALTH=$(docker inspect raut-frontend --format '{{.State.Health.Status}}' 2>/dev/null || echo "none")
+              if [ "$HEALTH" = "healthy" ]; then
+                echo "Frontend is healthy!"
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo "ERROR: Frontend failed health check after 30 attempts"
+                docker logs raut-frontend --tail 50
+                exit 1
+              fi
+              echo "Health check attempt $i/30: $HEALTH"
+              sleep 2
+            done
+
+            # Test if nginx is serving
+            if ! curl -f -s http://localhost:3000 > /dev/null; then
+              echo "ERROR: Nginx not responding on port 3000"
+              docker logs raut-frontend --tail 50
+              exit 1
+            fi
+
+            echo "✅ Frontend deployment verified successfully"
 
       - name: Deployment notification
         if: success()

@@ -12,13 +12,13 @@ echo "=========================================="
 
 # Only deploy staging branch
 # Skip all PRs, feature branches, and main branch
-if [ "$VERCEL_GIT_COMMIT_REF" = "staging" ] && [ "$VERCEL_ENV" = "preview" ]; then
-  echo "✅ DEPLOYING: Staging branch detected"
+if [ "$VERCEL_GIT_COMMIT_REF" = "staging" ]; then
+  echo "DEPLOYING: Staging branch detected"
   exit 1  # Proceed with build
 fi
 
 # Skip everything else
-echo "⏭️  SKIPPED: Only staging branch is deployed to Vercel"
+echo "SKIPPED: Only staging branch is deployed to Vercel"
 echo "   - Main branch: Deploys to VPS via GitHub Actions"
 echo "   - Feature branches: Not deployed"
 echo "   - Pull requests: Not deployed"
