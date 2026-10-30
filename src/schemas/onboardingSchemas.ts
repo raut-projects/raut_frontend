@@ -16,8 +16,8 @@ export const personalInfoSchema = z.object({
 export const driverInfoSchema = z.object({
   nationalIdNumber: z.string().min(10, 'At least 10 characters'),
   licenseNumber: z.string().min(8, 'At least 8 characters'),
-  profilePhoto: z.any().refine((file) => file !== null, 'Profile photo required'),
-  licensePhoto: z.any().nullable(), // Optional
+  profilePhotoUrl: z.string().min(1, 'Profile photo required'),
+  licensePhotoUrl: z.string().min(1, 'License photo required'),
 });
 
 // Step 3: Vehicle Information
@@ -39,11 +39,12 @@ export const vehicleInfoSchema = z.object({
   ownerName: z.string().min(2, 'Owner name required'),
   ownerEmail: z.string().email('Valid email required'),
   ownerPhone: z.string().min(10, 'Valid phone required'),
-  frontPhoto: z.any().refine((file) => file !== null, 'Front photo required'),
-  rearPhoto: z.any().refine((file) => file !== null, 'Rear photo required'),
-  insuranceDoc: z.any().refine((file) => file !== null, 'Insurance document required'),
-  vehicleCardDoc: z.any().refine((file) => file !== null, 'Vehicle card required'),
-  latraStickerDoc: z.any().refine((file) => file !== null, 'LATRA sticker required'),
+  frontPhotoUrl: z.string().min(1, 'Front photo required'),
+  rearPhotoUrl: z.string().min(1, 'Rear photo required'),
+  insuranceDocUrl: z.string().min(1, 'Insurance document required'),
+  vehicleCardDocUrl: z.string().min(1, 'Vehicle card required'),
+  latraStickerDocUrl: z.string().min(1, 'LATRA sticker required'),
+  vehicleId: z.string().optional(),
 });
 
 // Step 4: Payment Details

@@ -1,12 +1,21 @@
+import { useEffect } from 'react';
 import OnboardingLayout from '../components/OnboardingLayout';
-import PersonalInfoStep from '../components/onboarding/PersonalInfoStep';
-import DriverInfoStep from '../components/onboarding/DriverInfoStep';
-import VehicleInfoStep from '../components/onboarding/VehicleInfoStep';
-import PaymentDetailsStep from '../components/onboarding/PaymentDetailsStep';
+import PersonalInfoStep from '../onboarding/PersonalInfoStep';
+import DriverInfoStep from '../onboarding/DriverInfoStep';
+import VehicleInfoStep from '../onboarding/VehicleInfoStep';
+import PaymentDetailsStep from '../onboarding/PaymentDetailsStep';
 import useOnboardingStore from '../store/onboardingStore';
+import { updateTokens } from '../services/tokenStore';
 
 export default function Onboarding() {
-  const { currentStep } = useOnboardingStore();
+  const { currentStep, token } = useOnboardingStore();
+
+  // Save token to localStorage on mount (for API authentication)
+  useEffect(() => {
+    if (token) {
+      updateTokens({ accessToken: token });
+    }
+  }, [token]);
 
   const renderStep = () => {
     switch (currentStep) {

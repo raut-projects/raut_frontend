@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { getLanguageFromURL, getTokenFromURL, type Language } from '../lib/i18n';
 
 interface PersonalInfo {
   firstName: string;
@@ -11,8 +12,8 @@ interface PersonalInfo {
 interface DriverInfo {
   nationalIdNumber: string;
   licenseNumber: string;
-  profilePhoto: File | null;
-  licensePhoto: File | null;
+  profilePhotoUrl: string;
+  licensePhotoUrl: string;
 }
 
 interface VehicleInfo {
@@ -27,11 +28,12 @@ interface VehicleInfo {
   ownerName: string;
   ownerEmail: string;
   ownerPhone: string;
-  frontPhoto: File | null;
-  rearPhoto: File | null;
-  insuranceDoc: File | null;
-  vehicleCardDoc: File | null;
-  latraStickerDoc: File | null;
+  frontPhotoUrl: string;
+  rearPhotoUrl: string;
+  insuranceDocUrl: string;
+  vehicleCardDocUrl: string;
+  latraStickerDocUrl: string;
+  vehicleId?: string; // Returned from backend after creating vehicle
 }
 
 interface PaymentDetails {
@@ -50,12 +52,16 @@ interface CompletedSteps {
 
 interface OnboardingStore {
   currentStep: number;
+  language: Language;
+  token: string | null;
   personalInfo: PersonalInfo;
   driverInfo: DriverInfo;
   vehicleInfo: VehicleInfo;
   paymentDetails: PaymentDetails;
   completedSteps: CompletedSteps;
   termsAccepted: boolean;
+  setLanguage: (lang: Language) => void;
+  setToken: (token: string | null) => void;
   setCurrentStep: (step: number) => void;
   nextStep: () => void;
   prevStep: () => void;
@@ -75,19 +81,21 @@ const useOnboardingStore = create<OnboardingStore>()(
   persist(
     (set, get) => ({
       currentStep: 1,
+      language: getLanguageFromURL(),
+      token: getTokenFromURL(),
 
       personalInfo: {
         firstName: '',
         lastName: '',
         email: '',
-        languagePreference: 'en',
+        languagePreference: getLanguageFromURL(),
       },
 
       driverInfo: {
         nationalIdNumber: '',
         licenseNumber: '',
-        profilePhoto: null,
-        licensePhoto: null,
+        profilePhotoUrl: '',
+        licensePhotoUrl: '',
       },
 
       vehicleInfo: {
@@ -102,11 +110,11 @@ const useOnboardingStore = create<OnboardingStore>()(
         ownerName: '',
         ownerEmail: '',
         ownerPhone: '',
-        frontPhoto: null,
-        rearPhoto: null,
-        insuranceDoc: null,
-        vehicleCardDoc: null,
-        latraStickerDoc: null,
+        frontPhotoUrl: '',
+        rearPhotoUrl: '',
+        insuranceDocUrl: '',
+        vehicleCardDocUrl: '',
+        latraStickerDocUrl: '',
       },
 
       paymentDetails: {
@@ -124,6 +132,10 @@ const useOnboardingStore = create<OnboardingStore>()(
       },
 
       termsAccepted: false,
+
+      setLanguage: (lang) => set({ language: lang }),
+
+      setToken: (token) => set({ token }),
 
       setCurrentStep: (step) => set({ currentStep: step }),
 
@@ -180,8 +192,8 @@ const useOnboardingStore = create<OnboardingStore>()(
           driverInfo: {
             nationalIdNumber: '',
             licenseNumber: '',
-            profilePhoto: null,
-            licensePhoto: null,
+            profilePhotoUrl: '',
+            licensePhotoUrl: '',
           },
           vehicleInfo: {
             vehicleType: 'boda',
@@ -195,11 +207,11 @@ const useOnboardingStore = create<OnboardingStore>()(
             ownerName: '',
             ownerEmail: '',
             ownerPhone: '',
-            frontPhoto: null,
-            rearPhoto: null,
-            insuranceDoc: null,
-            vehicleCardDoc: null,
-            latraStickerDoc: null,
+            frontPhotoUrl: '',
+            rearPhotoUrl: '',
+            insuranceDocUrl: '',
+            vehicleCardDocUrl: '',
+            latraStickerDocUrl: '',
           },
           paymentDetails: {
             accountName: '',
