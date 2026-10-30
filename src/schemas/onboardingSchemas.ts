@@ -38,7 +38,7 @@ export const vehicleInfoSchema = z.object({
   ]),
   ownerName: z.string().min(2, 'Owner name required'),
   ownerEmail: z.string().email('Valid email required'),
-  ownerPhone: z.string().min(10, 'Valid phone required'),
+  ownerPhone: z.string().min(9, 'Valid phone required').max(9, 'Phone must be 9 digits'),
   frontPhotoUrl: z.string().min(1, 'Front photo required'),
   rearPhotoUrl: z.string().min(1, 'Rear photo required'),
   insuranceDocUrl: z.string().min(1, 'Insurance document required'),
