@@ -14,8 +14,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
     { number: 1, label: 'Personal Info' },
     { number: 2, label: 'Driver Info' },
     { number: 3, label: 'Vehicle Info' },
-    { number: 4, label: 'Documents' },
-    { number: 5, label: 'Review' },
+    { number: 4, label: 'Payment' },
   ];
 
   const progressPercentage = ((currentStep - 1) / (steps.length - 1)) * 100;

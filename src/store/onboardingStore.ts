@@ -2,54 +2,43 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 interface PersonalInfo {
-  fullName: string;
-  phone: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  dateOfBirth: string;
-  nin: string;
-  address: string;
-  city: string;
-  region: string;
+  languagePreference: 'en' | 'sw';
 }
 
 interface DriverInfo {
+  nationalIdNumber: string;
   licenseNumber: string;
-  licenseIssueDate: string;
-  licenseExpiryDate: string;
-  yearsOfExperience: string;
-  previousEmployer: string;
-  emergencyContactName: string;
-  emergencyContactPhone: string;
+  profilePhoto: File | null;
+  licensePhoto: File | null;
 }
 
 interface VehicleInfo {
+  vehicleType: 'boda' | 'car' | 'bajaji';
   plateNumber: string;
-  make: string;
+  manufacturer: string;
   model: string;
-  year: string;
+  year: number;
   color: string;
-  vehicleType: 'car' | 'bajaj' | 'bodaboda';
-  seats: number;
-  insurancePolicyNumber: string;
-  insuranceExpiryDate: string;
+  availableSeats: number;
+  ownershipType: 'fully_paid' | 'financed' | 'lease_individual' | 'lease_company' | 'work_to_own';
+  ownerName: string;
+  ownerEmail: string;
+  ownerPhone: string;
+  frontPhoto: File | null;
+  rearPhoto: File | null;
+  insuranceDoc: File | null;
+  vehicleCardDoc: File | null;
+  latraStickerDoc: File | null;
 }
 
-interface Documents {
-  profilePhoto: File | null;
-  licensePhoto: File | null;
-  ninPhoto: File | null;
-  vehicleRegistration: File | null;
-  insuranceCertificate: File | null;
-  vehiclePhoto: File | null;
-}
-
-interface UploadedDocuments {
-  profilePhoto: string;
-  licensePhoto: string;
-  ninPhoto: string;
-  vehicleRegistration: string;
-  insuranceCertificate: string;
-  vehiclePhoto: string;
+interface PaymentDetails {
+  accountName: string;
+  address: string;
+  mobileMoneyNumber: string;
+  mobileNetwork: 'vodacom' | 'airtel' | 'halotel' | 'mixx';
 }
 
 interface CompletedSteps {
@@ -64,89 +53,69 @@ interface OnboardingStore {
   personalInfo: PersonalInfo;
   driverInfo: DriverInfo;
   vehicleInfo: VehicleInfo;
-  documents: Documents;
-  uploadedDocuments: UploadedDocuments;
+  paymentDetails: PaymentDetails;
   completedSteps: CompletedSteps;
+  termsAccepted: boolean;
   setCurrentStep: (step: number) => void;
   nextStep: () => void;
   prevStep: () => void;
   updatePersonalInfo: (data: Partial<PersonalInfo>) => void;
   updateDriverInfo: (data: Partial<DriverInfo>) => void;
   updateVehicleInfo: (data: Partial<VehicleInfo>) => void;
-  updateDocuments: (data: Partial<Documents>) => void;
-  updateUploadedDocuments: (data: Partial<UploadedDocuments>) => void;
+  updatePaymentDetails: (data: Partial<PaymentDetails>) => void;
+  setTermsAccepted: (accepted: boolean) => void;
   markStepComplete: (step: 1 | 2 | 3 | 4) => void;
   reset: () => void;
 }
 
 /**
- * Driver Onboarding Store
- *
- * Manages the multi-step onboarding flow state
+ * Driver Onboarding Store - Matches Flutter onboarding exactly
  */
 const useOnboardingStore = create<OnboardingStore>()(
   persist(
     (set, get) => ({
-      // Current step (1-5)
       currentStep: 1,
 
-      // Personal Information
       personalInfo: {
-        fullName: '',
-        phone: '',
+        firstName: '',
+        lastName: '',
         email: '',
-        dateOfBirth: '',
-        nin: '', // National ID Number
-        address: '',
-        city: '',
-        region: '',
+        languagePreference: 'en',
       },
 
-      // Driver Information
       driverInfo: {
+        nationalIdNumber: '',
         licenseNumber: '',
-        licenseIssueDate: '',
-        licenseExpiryDate: '',
-        yearsOfExperience: '',
-        previousEmployer: '',
-        emergencyContactName: '',
-        emergencyContactPhone: '',
-      },
-
-      // Vehicle Information
-      vehicleInfo: {
-        plateNumber: '',
-        make: '',
-        model: '',
-        year: '',
-        color: '',
-        vehicleType: 'car', // car, bajaj, bodaboda
-        seats: 4,
-        insurancePolicyNumber: '',
-        insuranceExpiryDate: '',
-      },
-
-      // Documents (file uploads)
-      documents: {
         profilePhoto: null,
         licensePhoto: null,
-        ninPhoto: null,
-        vehicleRegistration: null,
-        insuranceCertificate: null,
-        vehiclePhoto: null,
       },
 
-      // Uploaded file URLs (after upload to backend)
-      uploadedDocuments: {
-        profilePhoto: '',
-        licensePhoto: '',
-        ninPhoto: '',
-        vehicleRegistration: '',
-        insuranceCertificate: '',
-        vehiclePhoto: '',
+      vehicleInfo: {
+        vehicleType: 'boda',
+        plateNumber: '',
+        manufacturer: '',
+        model: '',
+        year: new Date().getFullYear(),
+        color: '',
+        availableSeats: 1,
+        ownershipType: 'fully_paid',
+        ownerName: '',
+        ownerEmail: '',
+        ownerPhone: '',
+        frontPhoto: null,
+        rearPhoto: null,
+        insuranceDoc: null,
+        vehicleCardDoc: null,
+        latraStickerDoc: null,
       },
 
-      // Step completion status
+      paymentDetails: {
+        accountName: '',
+        address: '',
+        mobileMoneyNumber: '',
+        mobileNetwork: 'vodacom',
+      },
+
       completedSteps: {
         1: false,
         2: false,
@@ -154,12 +123,13 @@ const useOnboardingStore = create<OnboardingStore>()(
         4: false,
       },
 
-      // Actions
+      termsAccepted: false,
+
       setCurrentStep: (step) => set({ currentStep: step }),
 
       nextStep: () => {
         const { currentStep } = get();
-        if (currentStep < 5) {
+        if (currentStep < 4) {
           set({ currentStep: currentStep + 1 });
         }
       },
@@ -186,70 +156,56 @@ const useOnboardingStore = create<OnboardingStore>()(
           vehicleInfo: { ...state.vehicleInfo, ...data },
         })),
 
-      updateDocuments: (data) =>
+      updatePaymentDetails: (data) =>
         set((state) => ({
-          documents: { ...state.documents, ...data },
+          paymentDetails: { ...state.paymentDetails, ...data },
         })),
 
-      updateUploadedDocuments: (data) =>
-        set((state) => ({
-          uploadedDocuments: { ...state.uploadedDocuments, ...data },
-        })),
+      setTermsAccepted: (accepted) => set({ termsAccepted: accepted }),
 
       markStepComplete: (step) =>
         set((state) => ({
           completedSteps: { ...state.completedSteps, [step]: true },
         })),
 
-      // Reset store (after successful submission)
       reset: () =>
         set({
           currentStep: 1,
           personalInfo: {
-            fullName: '',
-            phone: '',
+            firstName: '',
+            lastName: '',
             email: '',
-            dateOfBirth: '',
-            nin: '',
-            address: '',
-            city: '',
-            region: '',
+            languagePreference: 'en',
           },
           driverInfo: {
+            nationalIdNumber: '',
             licenseNumber: '',
-            licenseIssueDate: '',
-            licenseExpiryDate: '',
-            yearsOfExperience: '',
-            previousEmployer: '',
-            emergencyContactName: '',
-            emergencyContactPhone: '',
-          },
-          vehicleInfo: {
-            plateNumber: '',
-            make: '',
-            model: '',
-            year: '',
-            color: '',
-            vehicleType: 'car',
-            seats: 4,
-            insurancePolicyNumber: '',
-            insuranceExpiryDate: '',
-          },
-          documents: {
             profilePhoto: null,
             licensePhoto: null,
-            ninPhoto: null,
-            vehicleRegistration: null,
-            insuranceCertificate: null,
-            vehiclePhoto: null,
           },
-          uploadedDocuments: {
-            profilePhoto: '',
-            licensePhoto: '',
-            ninPhoto: '',
-            vehicleRegistration: '',
-            insuranceCertificate: '',
-            vehiclePhoto: '',
+          vehicleInfo: {
+            vehicleType: 'boda',
+            plateNumber: '',
+            manufacturer: '',
+            model: '',
+            year: new Date().getFullYear(),
+            color: '',
+            availableSeats: 1,
+            ownershipType: 'fully_paid',
+            ownerName: '',
+            ownerEmail: '',
+            ownerPhone: '',
+            frontPhoto: null,
+            rearPhoto: null,
+            insuranceDoc: null,
+            vehicleCardDoc: null,
+            latraStickerDoc: null,
+          },
+          paymentDetails: {
+            accountName: '',
+            address: '',
+            mobileMoneyNumber: '',
+            mobileNetwork: 'vodacom',
           },
           completedSteps: {
             1: false,
@@ -257,10 +213,11 @@ const useOnboardingStore = create<OnboardingStore>()(
             3: false,
             4: false,
           },
+          termsAccepted: false,
         }),
     }),
     {
-      name: 'driver-onboarding-storage', // localStorage key
+      name: 'driver-onboarding-storage',
     }
   )
 );

@@ -2,8 +2,7 @@ import OnboardingLayout from '../components/OnboardingLayout';
 import PersonalInfoStep from '../components/onboarding/PersonalInfoStep';
 import DriverInfoStep from '../components/onboarding/DriverInfoStep';
 import VehicleInfoStep from '../components/onboarding/VehicleInfoStep';
-import DocumentsStep from '../components/onboarding/DocumentsStep';
-import ReviewStep from '../components/onboarding/ReviewStep';
+import PaymentDetailsStep from '../components/onboarding/PaymentDetailsStep';
 import useOnboardingStore from '../store/onboardingStore';
 
 export default function Onboarding() {
@@ -18,9 +17,7 @@ export default function Onboarding() {
       case 3:
         return <VehicleInfoStep />;
       case 4:
-        return <DocumentsStep />;
-      case 5:
-        return <ReviewStep />;
+        return <PaymentDetailsStep />;
       default:
         return <PersonalInfoStep />;
     }

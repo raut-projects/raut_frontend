@@ -3,9 +3,20 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { personalInfoSchema } from '../../schemas/onboardingSchemas';
 import useOnboardingStore from '../../store/onboardingStore';
 
+const inputClass =
+  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100";
+const labelClass = "mb-1.5 block text-xs font-semibold text-slate-600";
+const errorClass = "mt-1 block text-xs font-medium text-rose-600";
+
 export default function PersonalInfoStep() {
-  const { personalInfo, updatePersonalInfo, nextStep, markStepComplete } =
-    useOnboardingStore();
+  const {
+    personalInfo,
+    updatePersonalInfo,
+    nextStep,
+    markStepComplete,
+    termsAccepted,
+    setTermsAccepted,
+  } = useOnboardingStore();
 
   const {
     register,
@@ -16,215 +27,106 @@ export default function PersonalInfoStep() {
     defaultValues: personalInfo,
   });
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (data: typeof personalInfo) => {
     updatePersonalInfo(data);
     markStepComplete(1);
     nextStep();
   };
 
-  const regions = [
-    'Dar es Salaam',
-    'Arusha',
-    'Dodoma',
-    'Geita',
-    'Iringa',
-    'Kagera',
-    'Katavi',
-    'Kigoma',
-    'Kilimanjaro',
-    'Lindi',
-    'Manyara',
-    'Mara',
-    'Mbeya',
-    'Morogoro',
-    'Mtwara',
-    'Mwanza',
-    'Njombe',
-    'Pemba North',
-    'Pemba South',
-    'Pwani',
-    'Rukwa',
-    'Ruvuma',
-    'Shinyanga',
-    'Simiyu',
-    'Singida',
-    'Tabora',
-    'Tanga',
-    'Zanzibar North',
-    'Zanzibar South',
-    'Zanzibar West',
-  ];
-
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Personal Information</h2>
-        <p className="text-gray-600">
-          Let's start with your basic information. All fields are required.
+        <h3 className="text-lg font-semibold text-slate-900">Personal Information</h3>
+        <p className="mt-1 text-sm text-slate-500">
+          Let's start with your basic information to create your driver profile.
         </p>
       </div>
 
-      {/* Full Name */}
+      {/* First Name */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Full Name <span className="text-red-500">*</span>
+        <label className={labelClass}>
+          First Name <span className="text-rose-600">*</span>
         </label>
         <input
           type="text"
-          {...register('fullName')}
-          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-black transition-colors ${
-            errors.fullName ? 'border-red-500' : 'border-gray-300'
-          }`}
-          placeholder="John Doe"
+          {...register('firstName')}
+          className={inputClass}
+          placeholder="John"
         />
-        {errors.fullName && (
-          <p className="mt-1 text-sm text-red-600">{errors.fullName.message}</p>
-        )}
+        {errors.firstName && <p className={errorClass}>{errors.firstName.message}</p>}
       </div>
 
-      {/* Phone */}
+      {/* Last Name */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Phone Number <span className="text-red-500">*</span>
+        <label className={labelClass}>
+          Last Name <span className="text-rose-600">*</span>
         </label>
         <input
-          type="tel"
-          {...register('phone')}
-          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-black transition-colors ${
-            errors.phone ? 'border-red-500' : 'border-gray-300'
-          }`}
-          placeholder="+255 712 345 678"
+          type="text"
+          {...register('lastName')}
+          className={inputClass}
+          placeholder="Doe"
         />
-        {errors.phone && (
-          <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
-        )}
+        {errors.lastName && <p className={errorClass}>{errors.lastName.message}</p>}
       </div>
 
       {/* Email */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Email Address (Optional)
+        <label className={labelClass}>
+          Email Address <span className="text-rose-600">*</span>
         </label>
         <input
           type="email"
           {...register('email')}
-          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-black transition-colors ${
-            errors.email ? 'border-red-500' : 'border-gray-300'
-          }`}
+          className={inputClass}
           placeholder="john@example.com"
         />
-        {errors.email && (
-          <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-        )}
+        {errors.email && <p className={errorClass}>{errors.email.message}</p>}
       </div>
 
-      {/* Date of Birth */}
+      {/* Language Preference */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Date of Birth <span className="text-red-500">*</span>
+        <label className={labelClass}>
+          Language Preference <span className="text-rose-600">*</span>
         </label>
-        <input
-          type="date"
-          {...register('dateOfBirth')}
-          max={new Date(new Date().setFullYear(new Date().getFullYear() - 18))
-            .toISOString()
-            .split('T')[0]}
-          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-black transition-colors ${
-            errors.dateOfBirth ? 'border-red-500' : 'border-gray-300'
-          }`}
-        />
-        {errors.dateOfBirth && (
-          <p className="mt-1 text-sm text-red-600">{errors.dateOfBirth.message}</p>
-        )}
+        <select {...register('languagePreference')} className={inputClass}>
+          <option value="en">English</option>
+          <option value="sw">Swahili</option>
+        </select>
+        {errors.languagePreference && <p className={errorClass}>{errors.languagePreference.message}</p>}
       </div>
 
-      {/* NIN */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          National ID Number (NIN)
-        </label>
-        <input
-          type="text"
-          {...register('nin')}
-          maxLength={20}
-          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-black transition-colors ${
-            errors.nin ? 'border-red-500' : 'border-gray-300'
-          }`}
-          placeholder="20 digits"
-        />
-        {errors.nin && (
-          <p className="mt-1 text-sm text-red-600">{errors.nin.message}</p>
-        )}
-      </div>
-
-      {/* Address */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Address <span className="text-red-500">*</span>
-        </label>
-        <textarea
-          {...register('address')}
-          rows={3}
-          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-black transition-colors ${
-            errors.address ? 'border-red-500' : 'border-gray-300'
-          }`}
-          placeholder="Street, district, ward..."
-        />
-        {errors.address && (
-          <p className="mt-1 text-sm text-red-600">{errors.address.message}</p>
-        )}
-      </div>
-
-      {/* City & Region */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            City <span className="text-red-500">*</span>
-          </label>
+      {/* Terms & Conditions */}
+      <div className="border-t border-slate-200 pt-5">
+        <label className="flex items-start gap-2.5 cursor-pointer">
           <input
-            type="text"
-            {...register('city')}
-            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-black transition-colors ${
-              errors.city ? 'border-red-500' : 'border-gray-300'
-            }`}
-            placeholder="Dar es Salaam"
+            type="checkbox"
+            checked={termsAccepted}
+            onChange={(e) => setTermsAccepted(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
           />
-          {errors.city && (
-            <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Region <span className="text-red-500">*</span>
-          </label>
-          <select
-            {...register('region')}
-            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-black transition-colors ${
-              errors.region ? 'border-red-500' : 'border-gray-300'
-            }`}
-          >
-            <option value="">Select region</option>
-            {regions.map((region) => (
-              <option key={region} value={region}>
-                {region}
-              </option>
-            ))}
-          </select>
-          {errors.region && (
-            <p className="mt-1 text-sm text-red-600">{errors.region.message}</p>
-          )}
-        </div>
+          <span className="text-xs text-slate-600">
+            I agree to the{' '}
+            <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-brand-700 underline hover:text-brand-800">
+              Terms & Conditions
+            </a>{' '}
+            and{' '}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-brand-700 underline hover:text-brand-800">
+              Privacy Policy
+            </a>
+          </span>
+        </label>
       </div>
 
       {/* Submit Button */}
-      <div className="flex justify-end pt-4">
+      <div className="flex items-center justify-between border-t border-slate-200 pt-5">
+        <p className="text-xs font-medium text-slate-500">Step 1 of 4</p>
         <button
           type="submit"
-          disabled={isSubmitting}
-          className="bg-black text-white px-8 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isSubmitting || !termsAccepted}
+          className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isSubmitting ? 'Saving...' : 'Next Step'}
+          {isSubmitting ? 'Saving...' : 'Continue'}
         </button>
       </div>
     </form>
