@@ -12,12 +12,14 @@ import Transactions from "./pages/transactions";
 import Settings from "./pages/settings";
 import Login from "./pages/login";
 import RequestAdmin from "./pages/requestAdmin";
+import Onboarding from "./pages/Onboarding";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/onboarding" element={<Onboarding />} />
         <Route
           path="/request-admin"
           element={
