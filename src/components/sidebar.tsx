@@ -1,4 +1,7 @@
-import { NavLink, useNavigate } from "react-router-dom";
+"use client";
+
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { signOut } from "../services/auth";
 
@@ -154,13 +157,35 @@ const icons = {
     </svg>
   ),
   chevronLeft: (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+    <svg
+      className="h-4 w-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15.75 19.5L8.25 12l7.5-7.5"
+      />
     </svg>
   ),
   chevronRight: (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+    <svg
+      className="h-4 w-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8.25 4.5l7.5 7.5-7.5 7.5"
+      />
     </svg>
   ),
 };
@@ -176,14 +201,26 @@ const navItems = [
 ];
 
 function Sidebar({ open, onClose, collapsed = false, onToggleCollapse }) {
-  const navigate = useNavigate();
+  const router = useRouter();
+  const pathname = usePathname();
   const queryClient = useQueryClient();
+
+  const isActive = (to, end = false) => {
+    const current = pathname.replace(/\/+$/, "") || "/";
+    const target = to.replace(/\/+$/, "") || "/";
+
+    if (end || target === "/") return current === target;
+
+    return current === target || current.startsWith(`${target}/`);
+  };
+
+  const settingsActive = isActive("/settings");
 
   const handleSignOut = () => {
     signOut();
     queryClient.clear();
     onClose();
-    navigate("/login", { replace: true });
+    router.replace("/login");
   };
 
   return (
@@ -202,8 +239,14 @@ function Sidebar({ open, onClose, collapsed = false, onToggleCollapse }) {
         } ${open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
         aria-label="Main sidebar"
       >
-        <div className={`flex h-16 items-center gap-2.5 border-b border-slate-200/80 px-4 ${collapsed ? 'justify-center' : ''}`}>
-          <img src="/logo.png" alt="Raut" className="h-9 w-9 rounded-xl object-contain" />
+        <div
+          className={`flex h-16 items-center gap-2.5 border-b border-slate-200/80 px-4 ${collapsed ? "justify-center" : ""}`}
+        >
+          <img
+            src="/logo.png"
+            alt="Raut"
+            className="h-9 w-9 rounded-xl object-contain"
+          />
           {!collapsed && (
             <span className="text-lg font-bold tracking-tight text-slate-900">
               Raut
@@ -242,37 +285,37 @@ function Sidebar({ open, onClose, collapsed = false, onToggleCollapse }) {
           )}
 
           <nav className="space-y-1">
-            {navItems.map(({ to, label, icon, end }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={end}
-                onClick={onClose}
-                title={collapsed ? label : undefined}
-                className={({ isActive }) =>
-                  `group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
-                    isActive 
-                      ? "bg-slate-100 text-slate-900 shadow-sm" 
+            {navItems.map(({ to, label, icon, end }) => {
+              const active = isActive(to, end);
+
+              return (
+                <Link
+                  key={to}
+                  href={to}
+                  onClick={onClose}
+                  title={collapsed ? label : undefined}
+                  aria-current={active ? "page" : undefined}
+                  className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                    active
+                      ? "bg-slate-100 text-slate-900 shadow-sm"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                  } ${collapsed ? 'justify-center' : ''}`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <span className={`${isActive ? 'text-slate-900' : 'text-slate-400 group-hover:text-slate-600'} transition-colors`}>
-                      {icon}
-                    </span>
-                    {!collapsed && <span className="truncate">{label}</span>}
-                    {isActive && !collapsed && (
-                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-slate-900"></span>
-                    )}
-                    {isActive && collapsed && (
-                      <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-slate-900"></span>
-                    )}
-                  </>
-                )}
-              </NavLink>
-            ))}
+                  } ${collapsed ? "justify-center" : ""}`}
+                >
+                  <span
+                    className={`${active ? "text-slate-900" : "text-slate-400 group-hover:text-slate-600"} transition-colors`}
+                  >
+                    {icon}
+                  </span>
+                  {!collapsed && <span className="truncate">{label}</span>}
+                  {active && !collapsed && (
+                    <span className="ml-auto h-1.5 w-1.5 rounded-full bg-slate-900"></span>
+                  )}
+                  {active && collapsed && (
+                    <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-slate-900"></span>
+                  )}
+                </Link>
+              );
+            })}
           </nav>
         </div>
 
@@ -283,36 +326,33 @@ function Sidebar({ open, onClose, collapsed = false, onToggleCollapse }) {
             </p>
           )}
 
-          <NavLink
-            to="/settings"
-            className={({ isActive }) =>
-              `group relative mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
-                isActive 
-                  ? "bg-slate-100 text-slate-900 shadow-sm" 
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-              } ${collapsed ? 'justify-center' : ''}`
-            }
+          <Link
+            href="/settings"
+            aria-current={settingsActive ? "page" : undefined}
+            className={`group relative mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+              settingsActive
+                ? "bg-slate-100 text-slate-900 shadow-sm"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            } ${collapsed ? "justify-center" : ""}`}
             onClick={onClose}
             title={collapsed ? "Settings" : undefined}
           >
-            {({ isActive }) => (
-              <>
-                <span className={`${isActive ? 'text-slate-900' : 'text-slate-400 group-hover:text-slate-600'} transition-colors`}>
-                  {icons.settings}
-                </span>
-                {!collapsed && <span>Settings</span>}
-                {isActive && collapsed && (
-                  <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-slate-900"></span>
-                )}
-              </>
+            <span
+              className={`${settingsActive ? "text-slate-900" : "text-slate-400 group-hover:text-slate-600"} transition-colors`}
+            >
+              {icons.settings}
+            </span>
+            {!collapsed && <span>Settings</span>}
+            {settingsActive && collapsed && (
+              <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-slate-900"></span>
             )}
-          </NavLink>
+          </Link>
 
           <button
             type="button"
             onClick={handleSignOut}
             title={collapsed ? "Sign out" : undefined}
-            className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-rose-50 hover:text-rose-600 ${collapsed ? 'justify-center' : ''}`}
+            className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-rose-50 hover:text-rose-600 ${collapsed ? "justify-center" : ""}`}
           >
             <span className="text-slate-400 transition-colors group-hover:text-rose-500">
               {icons.signOut}

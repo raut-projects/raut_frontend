@@ -27,7 +27,7 @@ This repository contains the **frontend only**. A compatible Raut backend API is
 
 ## Overview
 
-Raut's admin dashboard is a responsive single-page application built with React and Vite. It uses phone-based OTP authentication, token refresh, role-based route protection and TanStack Query for server state.
+Raut's admin dashboard is a responsive web application built with React and Next.js (App Router). It is exported as static files, uses phone-based OTP authentication, token refresh, role-based route protection and TanStack Query for server state.
 
 Administrators can review platform activity, inspect records in detail panels, filter and paginate lists, and perform operational actions such as verifying drivers, suspending accounts, cancelling rides or routes, and approving payouts.
 
@@ -35,7 +35,7 @@ Administrators can review platform activity, inspect records in detail panels, f
 
 | Area | Capabilities |
 | --- | --- |
-| Dashboard | Customer, driver, delivery and revenue summaries; recent deliveries; top drivers; manual refresh |
+| Dashboard | Customer, driver, ride and revenue summaries; recent rides; top drivers; manual refresh |
 | Customers | Search, active/inactive filtering, pagination, customer details, role changes, deactivate and reactivate accounts |
 | Drivers | Search, status summary, driver details, document review, verify, reject, suspend and unsuspend drivers; approve or reject documents; delete drivers (single and bulk) |
 | Rides | Filter by status, driver and date range; summary counts; ride details; cancel with reason and refund option |
@@ -52,8 +52,7 @@ Administrators can review platform activity, inspect records in detail panels, f
 | --- | --- |
 | [React 19](https://react.dev/) | UI library |
 | [TypeScript](https://www.typescriptlang.org/) | Type-safe JavaScript |
-| [Vite 8](https://vite.dev/) | Development server and production build |
-| [React Router 7](https://reactrouter.com/) | Client-side routing |
+| [Next.js 16](https://nextjs.org/) | App Router, development server and static export |
 | [TanStack Query 5](https://tanstack.com/query) | Server state, caching and mutations |
 | [Tailwind CSS 4](https://tailwindcss.com/) | Styling and design tokens |
 | [ESLint 10](https://eslint.org/) | Linting |
@@ -61,7 +60,7 @@ Administrators can review platform activity, inspect records in detail panels, f
 
 ## Requirements
 
-- Node.js `^20.19.0` or `>=22.12.0` (required by Vite 8)
+- Node.js `>=20.9.0` (required by Next.js 16)
 - npm
 - A running Raut backend API
 
@@ -93,7 +92,7 @@ Administrators can review platform activity, inspect records in detail panels, f
 4. Set the backend API URL in `.env`:
 
    ```env
-   VITE_API_BASE_URL=http://localhost:8000
+   NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
    ```
 
    Use the backend origin without a trailing slash.
@@ -104,7 +103,7 @@ Administrators can review platform activity, inspect records in detail panels, f
    npm run dev
    ```
 
-   Vite prints the local URL, typically `http://localhost:5173`.
+   Next.js prints the local URL, typically `http://localhost:3000`.
 
 `.env` is ignored by Git. Never commit real credentials or secrets.
 
@@ -112,18 +111,19 @@ Administrators can review platform activity, inspect records in detail panels, f
 
 | Variable | Required | Default | Description |
 | --- | --- | --- | --- |
-| `VITE_API_BASE_URL` | Yes | None | Base URL of the Raut backend API, for example `http://localhost:8000`. Trailing slashes are removed automatically. |
-| `VITE_ADMIN_ROLES` | No | `admin,super_admin` | Comma-separated list of roles allowed through the admin gate. Role aliases such as `administrator`, `superadmin` and `owner` are normalized. |
+| `NEXT_PUBLIC_API_BASE_URL` | Yes | None | Base URL of the Raut backend API, for example `http://localhost:8000`. Trailing slashes are removed automatically. Inlined at build time, so rebuild after changing it. |
+| `NEXT_PUBLIC_ADMIN_ROLES` | No | `admin,super_admin` | Comma-separated list of roles allowed through the admin gate. Role aliases such as `administrator`, `superadmin` and `owner` are normalized. Inlined at build time. |
 
 ## Available scripts
 
 | Command | Description |
 | --- | --- |
-| `npm run dev` | Start the Vite development server with hot module reloading |
-| `npm run build` | Create an optimized production build in `dist/` |
+| `npm run dev` | Start the Next.js development server with hot module reloading |
+| `npm run build` | Create a static export of the app in `out/` |
 | `npm run typecheck` | Run TypeScript type checking without emitting files |
 | `npm run lint` | Run ESLint across the repository |
-| `npm run preview` | Serve the production build locally for verification |
+| `npm run start` | Serve the static export in `out/` locally |
+| `npm run preview` | Serve the static export in `out/` locally for verification |
 
 ## Application routes
 
@@ -139,7 +139,7 @@ Administrators can review platform activity, inspect records in detail panels, f
 | `/payouts` | Admin | Payout review and processing |
 | `/transactions` | Admin | Transaction history |
 | `/settings` | Admin | Signed-in account profile and access details |
-| `*` | Admin | Redirect to `/` |
+| `*` | Public | Render the exported `404.html` page |
 
 `RequireAuth` protects authenticated pages. `RequireAdmin` revalidates the signed-in user's role against `GET /auth/me` before opening admin routes.
 
@@ -154,9 +154,9 @@ Administrators can review platform activity, inspect records in detail panels, f
 7. If the promoted access token still does not grant an admin role, the user is asked to sign in again.
 8. Authenticated requests that return `401` attempt a token refresh through `POST /auth/refresh`. If refresh fails, the session is cleared and the user returns to `/login`.
 
-The default admin roles are `admin` and `super_admin`. Override them with `VITE_ADMIN_ROLES`.
+The default admin roles are `admin` and `super_admin`. Override them with `NEXT_PUBLIC_ADMIN_ROLES`.
 
-Tokens are stored in browser `localStorage`. This keeps the SPA usable across reloads, but it does not replace server-side authorization. The backend must enforce permissions for every admin endpoint.
+Tokens are stored in browser `localStorage`. This keeps the static app usable across reloads, but it does not replace server-side authorization. The backend must enforce permissions for every admin endpoint.
 
 ## API integration
 
@@ -177,7 +177,9 @@ export const API_ROUTES = {
   documents: '/admin/documents',
   transactions: '/admin/transactions',
   payouts: '/admin/payouts',
+  analyticsOverview: '/admin/analytics/overview',
   analyticsRevenue: '/admin/analytics/revenue',
+  analyticsDrivers: '/admin/analytics/drivers',
   analyticsRides: '/admin/analytics/rides',
   analyticsPeakHours: '/admin/analytics/peak-hours',
 }
@@ -232,9 +234,11 @@ Raw API records are normalized in `src/services/mappers.ts`. Mappers provide con
 | `PUT` | `/admin/payouts/{id}/approve` | Approve a payout |
 | `PUT` | `/admin/payouts/{id}/reject` | Reject a payout |
 | `PUT` | `/admin/payouts/{id}/retry` | Retry a payout |
+| `GET` | `/admin/analytics/overview` | Aggregate dashboard metrics |
 | `GET` | `/admin/analytics/revenue` | Daily revenue analytics |
+| `GET` | `/admin/analytics/drivers` | Driver performance analytics |
 | `GET` | `/admin/analytics/rides` | Daily ride analytics |
-| `GET` | `/admin/analytics/peak-hours` | Peak-hour analytics endpoint, currently defined but unused |
+| `GET` | `/admin/analytics/peak-hours` | Peak-hour analytics used by the dashboard charts |
 
 ## Data fetching and state
 
@@ -255,7 +259,8 @@ Page -> Hook -> Service -> API helper -> HTTP client -> Backend
                   +-> Mapper -> Normalized UI data
 ```
 
-- `src/pages/*` render screens and handle local UI state.
+- `src/app/*` defines the App Router routes, layouts, guards and providers.
+- `src/views/*` render screens and handle local UI state.
 - `src/hooks/*` wrap TanStack Query and admin mutations.
 - `src/services/*` contain endpoint functions, request behavior and mappers.
 - `src/lib/*` contains configuration, roles, query keys and the query client.
@@ -270,23 +275,26 @@ raut_frontend/
 │  ├─ favicon.svg
 │  └─ icons.svg
 ├─ src/
-│  ├─ components/          Shared layout, navigation, panels, dialogs, toasts, query states, checkbox
+│  ├─ app/                 App Router routes, layouts, providers and global CSS
+│  │  ├─ (dashboard)/      Admin-only route group and shared shell
+│  │  ├─ login/            OTP sign-in route
+│  │  ├─ request-admin/    Admin promotion route
+│  │  ├─ globals.css       Tailwind import, theme tokens and shared component classes
+│  │  ├─ layout.tsx        Root layout, metadata and Inter font
+│  │  └─ providers.tsx     TanStack Query and toast providers
+│  ├─ components/          Shared layout, navigation, panels, dialogs, toasts, query states, checkbox and analytics charts
 │  ├─ hooks/               TanStack Query hooks and session helpers
-│  ├─ lib/                 API config, roles, query client, query keys
-│  ├─ pages/               Route-level screens
+│  ├─ lib/                 API config, env, roles, query client, query keys
 │  ├─ services/            API services, HTTP client, token store and mappers
 │  ├─ types/               Shared TypeScript type definitions
-│  ├─ App.tsx              Route definitions and guards
-│  ├─ index.css            Tailwind import, theme tokens and shared component classes
-│  └─ main.tsx             Application bootstrap and providers
+│  └─ views/               Route-level screens
 ├─ .env.example            Documented environment variables
 ├─ eslint.config.js        ESLint flat configuration
-├─ index.html              Vite HTML entry point
+├─ next.config.ts          Next.js static export configuration
 ├─ package.json            Dependencies and scripts
+├─ postcss.config.mjs      Tailwind CSS PostCSS plugin
 ├─ README.md
-├─ tsconfig.json           TypeScript configuration
-├─ tsconfig.node.json      TypeScript config for Node/Vite
-└─ vite.config.ts          Vite plugins
+└─ tsconfig.json           TypeScript configuration
 ```
 
 ### Key modules
@@ -301,21 +309,26 @@ raut_frontend/
 | `src/lib/queryClient.ts` | TanStack Query client configuration |
 | `src/lib/queryKeys.ts` | Centralized query key factory |
 | `src/components/RequireAdmin.tsx` | Server-confirmed admin route gate |
-| `src/components/Layout.tsx` | Sidebar, header and page outlet shell |
+| `src/components/RequireAuth.tsx` | Signed-in route gate |
+| `src/components/Layout.tsx` | Sidebar, header and page content shell |
+| `src/lib/env.ts` | Reads `NEXT_PUBLIC_*` configuration at build time |
 | `src/components/SidePanel.tsx` | Shared slide-over panel |
 | `src/components/Checkbox.tsx` | Custom reusable checkbox component |
 | `src/components/reasonDialog.tsx` | Reason, role and confirmation dialogs |
 | `src/components/queryStates.tsx` | Table skeletons, error states and refresh indicator |
+| `src/components/GateLoader.tsx` | Full-page loading state while a route guard resolves the session |
+| `src/components/ActionIcon.tsx` | Shared icon button used by table row actions |
+| `src/components/analytics/` | Dashboard metric cards and Recharts visualizations |
 | `src/components/toastProvider.tsx` | Success, error and info notifications |
 | `src/types/` | Shared TypeScript type definitions |
 
 ## UI and styling
 
-Tailwind CSS 4 is configured through `src/index.css` using the CSS-first `@theme` API.
+Tailwind CSS 4 is configured through `src/app/globals.css` using the CSS-first `@theme` API and the `@tailwindcss/postcss` plugin.
 
-- Brand palette: indigo (`brand-50` through `brand-900`).
+- Brand palette: greyscale (`brand-50` through `brand-500`) with black accents (`brand-600` through `brand-900`).
 - Shared card shadow: `shadow-card`.
-- Primary font: Inter, loaded from Google Fonts in `index.html`.
+- Primary font: Inter, loaded through `next/font`.
 - Reusable classes: `nav-link`, `nav-link-active`, `stat-card`, `table-th`, `table-td` and `badge`.
 
 The interface is responsive. The sidebar is fixed on desktop and becomes an overlay on smaller screens. Tables scroll horizontally on narrow viewports.
@@ -331,9 +344,9 @@ npm run lint
 npm run build
 ```
 
-The production build is written to `dist/`.
+The static export is written to `out/`.
 
-Deploy the contents of `dist/` to any static host. Because the app uses `BrowserRouter`, configure the host to fall back to `index.html` for unknown paths so client-side routes such as `/customers` or `/transactions` work on reload.
+Deploy the contents of `out/` to any static host. Next.js emits one directory per route (`customers/index.html`, `transactions/index.html`, and so on) because `trailingSlash` is enabled, so routes such as `/customers` work on reload without an SPA fallback. Unknown paths render the exported `404.html`.
 
 ## Legal documents
 
@@ -344,17 +357,17 @@ Deploy the contents of `dist/` to any static host. Because the app uses `Browser
 ## Known limitations
 
 - There is currently no automated test suite or CI configuration.
-- The dashboard builds its summary cards from several endpoints because the analytics overview endpoint is not usable.
-- Driver and payout summaries fetch up to 100 records and calculate some totals client-side.
-- `/admin/analytics/peak-hours` is defined in the endpoint map but is not currently used by a page.
-- Static hosting must provide an SPA history fallback for client-side routes.
+- The dashboard builds its summary cards from the analytics overview response and falls back to list totals when fields or endpoints are unavailable.
+- Driver, document and payout summaries fetch up to 100 records and calculate some totals client-side.
+- Dashboard cards render zero or empty states when an analytics endpoint fails, so partial data is expected during backend incidents.
+- The app is a static export: there is no Next.js server runtime, server-side rendering or built-in API layer. All data comes from the external Raut backend.
 - No license file is present in this repository.
 
 ## Contributing
 
 1. Create a feature branch from the appropriate base branch.
-2. Keep API endpoint changes in `src/lib/config.js` and domain logic in `src/services`.
-3. Normalize new response shapes in `src/services/mappers.js`.
-4. Add or update query keys in `src/lib/queryKeys.js`.
+2. Keep API endpoint changes in `src/lib/config.ts` and domain logic in `src/services`.
+3. Normalize new response shapes in `src/services/mappers.ts`.
+4. Add or update query keys in `src/lib/queryKeys.ts`.
 5. Run `npm run lint` and `npm run build` before opening a pull request.
 6. Do not commit `.env`, tokens or other secrets.

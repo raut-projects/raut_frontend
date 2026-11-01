@@ -481,7 +481,6 @@ function Drivers() {
 
       <ReasonDialog
         open={Boolean(rejectTarget)}
-        children={null}
         onClose={() => setRejectTarget(null)}
         title="Reject driver application"
         description={
@@ -508,7 +507,6 @@ function Drivers() {
 
       <ReasonDialog
         open={Boolean(suspendTarget)}
-        children={null}
         onClose={() => setSuspendTarget(null)}
         title="Suspend driver"
         description={
@@ -538,7 +536,6 @@ function Drivers() {
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
-        children={null}
         onClose={() => setDeleteTarget(null)}
         title="Delete driver account"
         description={
@@ -557,7 +554,6 @@ function Drivers() {
 
       <ConfirmDialog
         open={bulkDeleteOpen}
-        children={null}
         onClose={() => setBulkDeleteOpen(false)}
         title="Delete selected drivers"
         description={`You are about to permanently delete ${selectedIds.size} driver${selectedIds.size === 1 ? "" : "s"}. This action cannot be undone.`}

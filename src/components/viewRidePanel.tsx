@@ -26,7 +26,6 @@ function ViewRidePanel({ open, onClose, ride }) {
         onClose={onClose}
         title="Ride details"
         description="View ride information"
-        children={null}
         footer={
           <button
             type="button"

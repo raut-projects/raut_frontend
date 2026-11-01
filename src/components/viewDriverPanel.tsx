@@ -368,7 +368,6 @@ function ViewDriverPanel({ open, onClose, driver }) {
             ? `${rejectTarget.typeLabel} for ${driver?.name ?? "this driver"} will be rejected.`
             : undefined
         }
-        children={null}
         confirmLabel="Reject"
         placeholder="Why is this document rejected?"
         value={rejectReason}

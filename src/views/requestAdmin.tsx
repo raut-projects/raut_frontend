@@ -1,7 +1,11 @@
-import { useState } from 'react'
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useToast } from '../components/toastContext'
+import GateLoader from '../components/GateLoader'
+import { useFromParam } from '../lib/useFromParam'
 import { useSession } from '../hooks/useSession'
 import { isAdminRole } from '../lib/roles'
 import { requestAdminAccess, signOut } from '../services/auth'
@@ -13,8 +17,7 @@ const labelClass = 'mb-1.5 block text-xs font-semibold text-slate-600'
 const errorClass = 'mt-1 block text-xs font-medium text-rose-600'
 
 function RequestAdmin() {
-  const navigate = useNavigate()
-  const location = useLocation()
+  const router = useRouter()
   const toast = useToast()
   const session = useSession()
   const queryClient = useQueryClient()
@@ -24,15 +27,21 @@ function RequestAdmin() {
   const [submitting, setSubmitting] = useState(false)
   const [visible, setVisible] = useState(false)
 
-  const requested = location.state?.from ?? '/'
+  const requested = useFromParam('/')
   const from = requested === '/request-admin' ? '/' : requested
 
-  if (!session) {
-    return <Navigate to="/login" replace state={{ from: '/request-admin' }} />
-  }
+  const isAdmin = Boolean(session) && isAdminRole(session.role)
 
-  if (isAdminRole(session.role)) {
-    return <Navigate to={from} replace />
+  useEffect(() => {
+    if (!session) router.replace('/login?from=%2Frequest-admin')
+  }, [session, router])
+
+  useEffect(() => {
+    if (isAdmin) router.replace(from)
+  }, [isAdmin, from, router])
+
+  if (!session || isAdmin) {
+    return <GateLoader />
   }
 
   const handleChange = (event) => {
@@ -58,14 +67,14 @@ function RequestAdmin() {
       const result = await requestAdminAccess(value)
       toast.success(result.message)
       setSecret('')
-      navigate(from, { replace: true })
+      router.replace(from)
     } catch (submitError) {
       const message = submitError?.message ?? 'That secret is not correct. Please try again.'
 
       if (submitError?.requiresSignIn) {
         toast.error(message)
         signOut()
-        navigate('/login', { replace: true })
+        router.replace('/login')
         return
       }
 
@@ -78,7 +87,7 @@ function RequestAdmin() {
   const handleSignOut = () => {
     signOut()
     queryClient.clear()
-    navigate('/login', { replace: true })
+    router.replace('/login')
   }
 
   return (

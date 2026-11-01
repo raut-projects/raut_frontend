@@ -399,7 +399,6 @@ function Customers() {
       <ReasonDialog
         open={Boolean(deactivateTarget)}
         onClose={() => setDeactivateTarget(null)}
-        children={null}
         title="Deactivate account"
         description={
           deactivateTarget
@@ -437,7 +436,6 @@ function Customers() {
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
-        children={null}
         title="Delete account"
         description={
           deleteTarget
@@ -456,7 +454,6 @@ function Customers() {
       <ConfirmDialog
         open={bulkDeleteOpen}
         onClose={() => setBulkDeleteOpen(false)}
-        children={null}
         title="Delete selected accounts"
         description={`You are about to permanently delete ${selectedIds.size} account${selectedIds.size === 1 ? "" : "s"}. This action cannot be undone.`}
         confirmLabel="Delete selected"

@@ -1,15 +1,24 @@
-import { Navigate, useLocation } from 'react-router-dom'
-import { useSession } from '../hooks/useSession'
+"use client";
+
+import { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import GateLoader from "./GateLoader";
+import { useSession } from "../hooks/useSession";
 
 function RequireAuth({ children }) {
-  const location = useLocation()
-  const session = useSession()
+  const router = useRouter();
+  const pathname = usePathname();
+  const session = useSession();
 
-  if (!session) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />
-  }
+  useEffect(() => {
+    if (!session) {
+      router.replace(`/login?from=${encodeURIComponent(pathname)}`);
+    }
+  }, [session, pathname, router]);
 
-  return children
+  if (!session) return <GateLoader />;
+
+  return children;
 }
 
-export default RequireAuth
+export default RequireAuth;

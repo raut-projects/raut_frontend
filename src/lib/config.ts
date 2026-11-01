@@ -1,4 +1,6 @@
-const rawBaseUrl = import.meta.env?.VITE_API_BASE_URL ?? ''
+import { API_BASE_URL_RAW } from './env'
+
+const rawBaseUrl = API_BASE_URL_RAW
 
 export const API_BASE_URL = rawBaseUrl.trim().replace(/\/+$/, '')
 

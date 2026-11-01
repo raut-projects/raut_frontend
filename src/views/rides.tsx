@@ -8,7 +8,7 @@ import {
 import { ReasonDialog } from "../components/reasonDialog";
 import ViewRidePanel from "../components/viewRidePanel";
 import { useRideSummary, useRides } from "../hooks/useRides";
-import { useDrivers } from "../hooks/useDrivers.js";
+import { useDrivers } from "../hooks/useDrivers";
 import { useCancelRide } from "../hooks/useAdminActions";
 
 const statusStyles = {
@@ -384,7 +384,6 @@ function Rides() {
       />
 
       <ReasonDialog
-        children={null}
         open={Boolean(cancelTarget)}
         onClose={() => setCancelTarget(null)}
         title="Cancel ride"

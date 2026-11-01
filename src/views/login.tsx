@@ -1,6 +1,10 @@
+"use client";
+
 import { useEffect, useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { useToast } from "../components/toastContext";
+import GateLoader from "../components/GateLoader";
+import { useFromParam } from "../lib/useFromParam";
 import { useSession } from "../hooks/useSession";
 import { isValidPhone, requestOtp, verifyOtp } from "../services/auth";
 import { OTP_CODE_LENGTH } from "../lib/config";
@@ -22,8 +26,7 @@ const isExpiredMessage = (message) =>
   /expired|no longer valid|invalid or has expired/i.test(message ?? "");
 
 function Login() {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
   const toast = useToast();
   const session = useSession();
 
@@ -35,7 +38,7 @@ function Login() {
   const [submitting, setSubmitting] = useState(false);
   const [remaining, setRemaining] = useState(0);
 
-  const from = location.state?.from ?? "/";
+  const from = useFromParam("/");
 
   useEffect(() => {
     if (step !== "code" || remaining <= 0) return undefined;
@@ -47,13 +50,18 @@ function Login() {
     return () => clearTimeout(timer);
   }, [step, remaining]);
 
+  const sessionRedirect = session
+    ? isAdminRole(session.role)
+      ? from
+      : `/request-admin?from=${encodeURIComponent(from === "/request-admin" ? "/" : from)}`
+    : null;
+
+  useEffect(() => {
+    if (sessionRedirect) router.replace(sessionRedirect);
+  }, [sessionRedirect, router]);
+
   if (session) {
-    return (
-      <Navigate
-        to={isAdminRole(session.role) ? from : "/request-admin"}
-        replace
-      />
-    );
+    return <GateLoader />;
   }
 
   const resetFeedback = () => {
@@ -159,12 +167,11 @@ function Login() {
       const signedIn = await verifyOtp({ phone, code: value });
       const admin = isAdminRole(signedIn?.role);
       toast.success("Signed in successfully.");
-      navigate(admin ? from : "/request-admin", {
-        replace: true,
-        state: admin
-          ? undefined
-          : { from: from === "/request-admin" ? "/" : from },
-      });
+      router.replace(
+        admin
+          ? from
+          : `/request-admin?from=${encodeURIComponent(from === "/request-admin" ? "/" : from)}`,
+      );
     } catch (error) {
       setFormError(
         error?.message ?? "The code is not correct. Please try again.",

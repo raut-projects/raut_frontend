@@ -1,3 +1,5 @@
+import { ADMIN_ROLES_RAW } from './env'
+
 const ROLE_ALIASES = {
   admin: 'admin',
   administrator: 'admin',
@@ -15,7 +17,7 @@ export const normalizeRole = (role) => {
   return ROLE_ALIASES[value] ?? value
 }
 
-const configuredAdminRoles = (import.meta.env?.VITE_ADMIN_ROLES ?? '')
+const configuredAdminRoles = ADMIN_ROLES_RAW
   .split(',')
   .map((role) => normalizeRole(role))
   .filter(Boolean)

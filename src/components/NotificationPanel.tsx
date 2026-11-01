@@ -1,5 +1,7 @@
+"use client";
+
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 
 const typeStyles = {
   info: {
@@ -28,7 +30,7 @@ function NotificationPanel({
   onMarkAllRead,
   onDismiss,
 }) {
-  const navigate = useNavigate();
+  const router = useRouter();
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   useEffect(() => {
@@ -43,7 +45,7 @@ function NotificationPanel({
   const handleClick = (n) => {
     onMarkRead(n.id);
     if (n.to) {
-      navigate(n.to);
+      router.push(n.to);
       onClose();
     }
   };
@@ -129,7 +131,9 @@ function NotificationPanel({
               <p className="text-sm font-medium text-slate-700">
                 No notifications
               </p>
-              <p className="text-xs text-slate-500">You're all caught up.</p>
+              <p className="text-xs text-slate-500">
+                {"You're all caught up."}
+              </p>
             </div>
           )}
 
