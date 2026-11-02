@@ -1,0 +1,259 @@
+{
+  "categories": [
+    {
+      "category": "Bajaji",
+      "manufacturers": [
+        {
+          "name": "Bajaj Auto",
+          "models": ["RE 4S Petrol", "RE 4S CNG", "RE Compact", "Maxima Z", "Maxima C (Cargo)"]
+        },
+        {
+          "name": "TVS Motor Company",
+          "models": ["King Deluxe Plus", "King Duramax", "King Kargo", "King EV"]
+        },
+        {
+          "name": "Piaggio",
+          "models": ["Ape City", "Ape City DX", "Ape Xtra LDX (Cargo)", "Ape E-City"]
+        },
+        {
+          "name": "Feichi (Focin)",
+          "models": ["FC 150", "FC 200 Heavy Cargo", "FC Passenger"]
+        },
+        {
+          "name": "Mahindra",
+          "models": ["Alfa Passenger", "Alfa Plus Cargo", "Treo Auto", "Treo Zor"]
+        },
+        {
+          "name": "Toyo (Tibet New Star)",
+          "models": ["TY 150 Tricycle", "TY 200 Cargo Tricycle", "TY Passenger"]
+        },
+        {
+          "name": "Abba Tricycles",
+          "models": ["ABBA 150 Passenger", "ABBA 200 Cargo", "ABBA EV"]
+        },
+        {
+          "name": "Shineray",
+          "models": ["XY 150ZK", "XY 200ZK Cargo"]
+        },
+        {
+          "name": "Kingo Auto",
+          "models": ["Kingo 150 Passenger", "Kingo 200 Heavy Load"]
+        },
+        {
+          "name": "Lishui / Lifan",
+          "models": ["LF150ZH", "LF200ZH Cargo"]
+        },
+        {
+          "name": "Dayang Tricycles",
+          "models": ["DY 150ZH", "DY 200ZH Heavy Duty"]
+        },
+        {
+          "name": "Zongshen",
+          "models": ["ZS 150ZH", "ZS 200ZH Cargo", "Metro 150"]
+        },
+        {
+          "name": "Loncin",
+          "models": ["LX150ZH", "LX200ZH Cargo"]
+        },
+        {
+          "name": "Jianshe",
+          "models": ["JS 150 Tricycle", "JS 200 Heavy Duty"]
+        },
+        {
+          "name": "Wanhoo",
+          "models": ["WH 150ZH", "WH 200 Cargo"]
+        },
+        {
+          "name": "Haobin",
+          "models": ["HB 150 Passenger", "HB 200 Cargo"]
+        },
+        {
+          "name": "Keweseki",
+          "models": ["KW 150 Tricycle", "KW 200 Cargo"]
+        },
+        {
+          "name": "Roong / Rongsheng",
+          "models": ["RS 150ZH", "RS 200 Heavy Duty Cargo"]
+        },
+        {
+          "name": "Ampere Electric",
+          "models": ["Primus Tricycle", "EL-Passenger"]
+        },
+        {
+          "name": "Kinetic Green",
+          "models": ["Safar Smart", "Super Jumbo Cargo"]
+        }
+      ]
+    },
+    {
+      "category": "Motorcycles (Boda Boda)",
+      "manufacturers": [
+        {
+          "name": "Bajaj Auto",
+          "models": ["Boxer BM 150", "Boxer BM 100", "Boxer 150 X", "CT 125"]
+        },
+        {
+          "name": "TVS Motor Company",
+          "models": ["HLX 125", "HLX 150", "TVS Max 125", "Apache RTR 160"]
+        },
+        {
+          "name": "Sanlg",
+          "models": ["SL 125", "SL 150", "SL 200"]
+        },
+        {
+          "name": "Toyo (Tibet New Star)",
+          "models": ["Power King 150cc", "TY 125", "TY 150", "TY 200"]
+        },
+        {
+          "name": "Honda",
+          "models": ["Ace 110", "Ace 125", "XL 125V", "CRF 250"]
+        },
+        {
+          "name": "Yamaha",
+          "models": ["Crux Rev", "AG125", "AG200", "YBR 125"]
+        },
+        {
+          "name": "Haojue",
+          "models": ["Express 125", "Cool 150", "KA 150"]
+        },
+        {
+          "name": "Kibo Motorcycles",
+          "models": ["K150", "K250"]
+        },
+        {
+          "name": "Skygo",
+          "models": ["SG 125", "SG 150", "SG 200"]
+        },
+        {
+          "name": "Sunlg",
+          "models": ["SL 125-A", "SL 150-B"]
+        },
+        {
+          "name": "Kinglion",
+          "models": ["KL 125", "KL 150", "KL 200"]
+        },
+        {
+          "name": "Lifan",
+          "models": ["LF 125-J", "LF 150-B", "Hunter 150"]
+        },
+        {
+          "name": "Zongshen",
+          "models": ["ZS 125", "ZS 150 Fly", "ZS 200"]
+        },
+        {
+          "name": "Feichi (Focin)",
+          "models": ["FC 125", "FC 150"]
+        },
+        {
+          "name": "Jianshe",
+          "models": ["JS 125", "JS 150"]
+        },
+        {
+          "name": "Suzuki",
+          "models": ["GD 110", "TF 125", "DR 200"]
+        },
+        {
+          "name": "Sanya",
+          "models": ["SY 125", "SY 150"]
+        },
+        {
+          "name": "Hero MotoCorp",
+          "models": ["Dawn 125", "Hunter 150", "HF Deluxe"]
+        },
+        {
+          "name": "Roam (Electric Boda)",
+          "models": ["Roam Air", "Roam Air Fleet"]
+        },
+        {
+          "name": "Ampersand (Electric Boda)",
+          "models": ["E-Boda 150"]
+        }
+      ]
+    },
+    {
+      "category": "Passenger Cars & Light Vehicles",
+      "manufacturers": [
+        {
+          "name": "Toyota",
+          "models": ["IST", "Vitz", "Axio", "Fielder", "Harrier", "Rav4", "Prado", "Land Cruiser 70/200/300", "HiAce", "Probox", "Hilux", "Alphard"]
+        },
+        {
+          "name": "Nissan",
+          "models": ["X-Trail", "Dualis", "Note", "Caravan", "Navara", "Patrol", "Tiida", "March"]
+        },
+        {
+          "name": "Subaru",
+          "models": ["Forester", "Outback", "Impreza", "XV", "Legacy"]
+        },
+        {
+          "name": "Suzuki",
+          "models": ["Swift", "Jimny", "Escudo / Grand Vitara", "Alto", "Carry", "Brezza"]
+        },
+        {
+          "name": "Honda",
+          "models": ["Fit", "CR-V", "Vezel", "Freed", "Stepwgn", "Insight"]
+        },
+        {
+          "name": "Mitsubishi",
+          "models": ["Pajero", "Outlander", "Canter", "Delica", "RVR", "Mirage"]
+        },
+        {
+          "name": "Mazda",
+          "models": ["CX-5", "Demio", "Axela", "Atenza", "Premacy", "Biante"]
+        },
+        {
+          "name": "Hyundai",
+          "models": ["Tucson", "Santa Fe", "Elantra", "Grand i10", "Porter II", "Venue"]
+        },
+        {
+          "name": "Kia",
+          "models": ["Sportage", "Sorento", "Picanto", "Rio", "K2500"]
+        },
+        {
+          "name": "Isuzu",
+          "models": ["D-Max", "ELF Truck", "MU-X", "Forward"]
+        },
+        {
+          "name": "Volkswagen",
+          "models": ["Golf", "Polo", "Tiguan", "Touareg", "Amarok"]
+        },
+        {
+          "name": "BMW",
+          "models": ["X3", "X5", "3 Series", "5 Series"]
+        },
+        {
+          "name": "Mercedes-Benz",
+          "models": ["C-Class", "E-Class", "ML / GLE-Class", "G-Class", "Actros", "Sprinter"]
+        },
+        {
+          "name": "Ford",
+          "models": ["Ranger", "Everest", "Transit", "EcoSport"]
+        },
+        {
+          "name": "Daihatsu",
+          "models": ["Terios", "Hijet", "Mira", "Move", "Tanto"]
+        },
+        {
+          "name": "Peugeot",
+          "models": ["208", "3008", "5008", "Partner"]
+        },
+        {
+          "name": "Audi",
+          "models": ["Q3", "Q5", "Q7", "A4"]
+        },
+        {
+          "name": "Land Rover / Range Rover",
+          "models": ["Defender", "Discovery", "Range Rover Sport", "Range Rover Evoque"]
+        },
+        {
+          "name": "BYD (Electric Vehicles)",
+          "models": ["Atto 3", "Dolphin", "Tang", "E6"]
+        },
+        {
+          "name": "Tata Motors",
+          "models": ["Xenon", "Super Ace", "Safari", "Punch"]
+        }
+      ]
+    }
+  ]
+}

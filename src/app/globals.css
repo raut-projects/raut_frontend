@@ -87,9 +87,6 @@
   .card-header {
     @apply flex items-center justify-between border-b border-slate-200/80 px-6 py-4;
   }
-<<<<<<< HEAD:src/app/globals.css
-}
-=======
 }
 
 @layer utilities {
@@ -102,4 +99,3 @@
     display: none;
   }
 }
->>>>>>> 54765f5ece6ea76b7673ed26f8dd914d6ebde9d9:src/index.css

@@ -1,6 +1,7 @@
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import useOnboardingStore from '../store/onboardingStore';
 import { useTranslation } from '../lib/i18n';
+import { use } from 'motion/react-m';
 
 declare global {
   interface Window {
@@ -12,7 +13,7 @@ declare global {
 }
 
 export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
-  const navigate = useNavigate();
+  const navigate = useRouter();
   const { currentStep, prevStep, language } = useOnboardingStore();
   const t = useTranslation(language);
 
