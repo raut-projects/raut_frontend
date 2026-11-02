@@ -1,8 +1,7 @@
 import {
   Bar,
+  BarChart,
   CartesianGrid,
-  ComposedChart,
-  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -11,7 +10,7 @@ import {
 import { AnalyticsCard } from './AnalyticsCard'
 import { ChartTooltip } from './ChartTooltip'
 import { axisProps, chartColors, gridProps } from '../../lib/chartTheme'
-import { formatCompactMoney, formatCount, formatMoney } from '../../services/mappers'
+import { formatCount, formatMoney } from '../../services/mappers'
 import type { AnalyticsOverview } from '../../types/index'
 
 interface OverviewMetricsProps {
@@ -44,6 +43,17 @@ const METRICS: Array<{ key: keyof AnalyticsOverview; label: string; money?: bool
   { key: 'pending_documents_count', label: 'Pending documents' },
 ]
 
+const COMPOSITION: Array<{ key: keyof AnalyticsOverview; label: string }> = [
+  { key: 'total_users', label: 'Users' },
+  { key: 'total_drivers', label: 'Drivers' },
+  { key: 'verified_drivers', label: 'Verified drivers' },
+  { key: 'pending_drivers', label: 'Pending drivers' },
+  { key: 'active_routes_now', label: 'Active routes' },
+  { key: 'active_rides_now', label: 'Active rides' },
+  { key: 'pending_payouts_count', label: 'Pending payouts' },
+  { key: 'pending_documents_count', label: 'Pending documents' },
+]
+
 const num = (value: unknown) => {
   const parsed = Number(value)
 
@@ -51,23 +61,11 @@ const num = (value: unknown) => {
 }
 
 export function OverviewMetrics({ overview, loading, error, onRetry }: OverviewMetricsProps) {
-  const chartData = [
-    {
-      label: 'Today',
-      rides: num(overview.rides_today),
-      revenue: num(overview.revenue_today_tzs),
-    },
-    {
-      label: 'This week',
-      rides: num(overview.rides_this_week),
-      revenue: num(overview.revenue_this_week_tzs),
-    },
-    {
-      label: 'This month',
-      rides: num(overview.rides_this_month),
-      revenue: num(overview.revenue_this_month_tzs),
-    },
-  ]
+  const chartData = COMPOSITION.map((item) => ({
+    label: item.label,
+    value: num(overview[item.key]),
+  }))
+  const hasChartData = chartData.some((item) => item.value > 0)
 
   const metrics = METRICS.filter(
     (metric) => overview[metric.key] !== undefined && overview[metric.key] !== null,
@@ -76,8 +74,8 @@ export function OverviewMetrics({ overview, loading, error, onRetry }: OverviewM
   return (
     <AnalyticsCard
       title="Platform overview"
-      subtitle="Every metric returned by the overview endpoint"
-      badge="All time + today"
+      subtitle="Users, drivers, live activity and pending work"
+      badge="Live snapshot"
       loading={loading}
       error={error}
       onRetry={onRetry}
@@ -88,52 +86,36 @@ export function OverviewMetrics({ overview, loading, error, onRetry }: OverviewM
       <div className="space-y-6">
         <div
           role="img"
-          aria-label="Rides and revenue compared across today, this week and this month"
+          aria-label="Platform counts for users, drivers, active routes and rides, and pending work"
         >
-          <ResponsiveContainer width="100%" height={240}>
-            <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid {...gridProps} />
-              <XAxis dataKey="label" {...axisProps} />
-              <YAxis yAxisId="rides" {...axisProps} width={38} allowDecimals={false} />
-              <YAxis
-                yAxisId="revenue"
-                orientation="right"
-                {...axisProps}
-                width={58}
-                tickFormatter={formatCompactMoney}
-              />
-              <Tooltip
-                content={
-                  <ChartTooltip
-                    formatter={(value, _name, dataKey) =>
-                      dataKey === 'revenue' ? formatMoney(value) : `${formatCount(value)} rides`
-                    }
-                  />
-                }
-              />
-              <Legend
-                iconType="circle"
-                iconSize={8}
-                wrapperStyle={{ fontSize: 11, color: chartColors.slate500 }}
-              />
-              <Bar
-                yAxisId="rides"
-                dataKey="rides"
-                name="Rides"
-                fill={chartColors.slate900}
-                radius={[3, 3, 0, 0]}
-                barSize={28}
-              />
-              <Bar
-                yAxisId="revenue"
-                dataKey="revenue"
-                name="Revenue"
-                fill={chartColors.violet}
-                radius={[3, 3, 0, 0]}
-                barSize={28}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
+          {hasChartData ? (
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart
+                data={chartData}
+                layout="vertical"
+                margin={{ top: 4, right: 16, left: 8, bottom: 0 }}
+              >
+                <CartesianGrid {...gridProps} horizontal={false} />
+                <XAxis type="number" {...axisProps} allowDecimals={false} />
+                <YAxis type="category" dataKey="label" {...axisProps} width={112} />
+                <Tooltip content={<ChartTooltip formatter={(value) => formatCount(value)} />} />
+                <Bar
+                  dataKey="value"
+                  name="Total"
+                  fill={chartColors.slate900}
+                  radius={[0, 4, 4, 0]}
+                  maxBarSize={18}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div
+              className="flex flex-col items-center justify-center gap-2 text-center"
+              style={{ height: 240 }}
+            >
+              <p className="text-sm text-slate-500">No platform activity to chart yet.</p>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
