@@ -366,10 +366,10 @@ function Login() {
         <p className="mt-6 text-center text-xs text-slate-500">
           Need access? Contact{" "}
           <a
-            href="mailto:support@raut.co.tz"
+            href="mailto:support@raut.africa"
             className="font-semibold text-brand-600 hover:text-brand-700"
           >
-            support@raut.co.tz
+            support@raut.africa
           </a>
         </p>
       </div>
