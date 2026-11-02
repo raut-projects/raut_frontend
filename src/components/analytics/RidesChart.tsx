@@ -1,12 +1,9 @@
 import {
   Bar,
   CartesianGrid,
-  Cell,
   ComposedChart,
   Legend,
   Line,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -35,16 +32,10 @@ function StatChip({ label, value }: { label: string; value: string }) {
 }
 
 export function RidesChart({ series, loading, error, onRetry }: RidesChartProps) {
-  const { points, latest, isSeries } = series
-  const composition = latest
-    ? [
-        { name: 'Completed', value: latest.completed, color: chartColors.emerald },
-        { name: 'Cancelled', value: latest.cancelled, color: chartColors.rose },
-        { name: 'Rejected', value: latest.rejected, color: chartColors.amber },
-      ].filter((entry) => entry.value > 0)
-    : []
+  const { points, latest } = series
+  const singlePoint = points.length <= 1
 
-  const empty = isSeries ? points.length === 0 : composition.length === 0
+  const empty = points.length === 0
 
   const footer = latest ? (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -58,8 +49,8 @@ export function RidesChart({ series, loading, error, onRetry }: RidesChartProps)
   return (
     <AnalyticsCard
       title="Rides analytics"
-      subtitle={isSeries ? 'Rides by period' : 'Ride outcomes for the selected period'}
-      badge={isSeries ? 'Series' : 'Current period'}
+      subtitle="Rides by period"
+      badge={singlePoint ? 'Current period' : 'Series'}
       loading={loading}
       error={error}
       onRetry={onRetry}
@@ -68,60 +59,53 @@ export function RidesChart({ series, loading, error, onRetry }: RidesChartProps)
       height={chartHeight}
       footer={footer}
     >
-      {isSeries ? (
-        <div role="img" aria-label="Rides per period, split by completed, cancelled and rejected">
-          <ResponsiveContainer width="100%" height={chartHeight}>
-            <ComposedChart data={points} margin={chartMargin}>
-              <CartesianGrid {...gridProps} />
-              <XAxis dataKey="label" {...axisProps} minTickGap={20} />
-              <YAxis {...axisProps} width={38} allowDecimals={false} />
-              <Tooltip content={<ChartTooltip formatter={(value) => `${formatCount(value)} rides`} />} />
-              <Legend
-                iconType="circle"
-                iconSize={8}
-                wrapperStyle={{ fontSize: 11, color: chartColors.slate500 }}
-              />
-              <Bar dataKey="completed" name="Completed" stackId="rides" fill={chartColors.emerald} radius={[3, 3, 0, 0]} />
-              <Bar dataKey="cancelled" name="Cancelled" stackId="rides" fill={chartColors.rose} radius={[3, 3, 0, 0]} />
-              <Bar dataKey="rejected" name="Rejected" stackId="rides" fill={chartColors.amber} radius={[3, 3, 0, 0]} />
-              <Line
-                dataKey="total"
-                name="Total"
-                type="monotone"
-                stroke={chartColors.slate900}
-                strokeWidth={2}
-                dot={false}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
-      ) : (
-        <div role="img" aria-label="Ride outcome composition">
-          <ResponsiveContainer width="100%" height={chartHeight}>
-            <PieChart>
-              <Pie
-                data={composition}
-                dataKey="value"
-                nameKey="name"
-                innerRadius={62}
-                outerRadius={92}
-                paddingAngle={2}
-                stroke="none"
-              >
-                {composition.map((entry) => (
-                  <Cell key={entry.name} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip content={<ChartTooltip formatter={(value) => `${formatCount(value)} rides`} />} />
-              <Legend
-                iconType="circle"
-                iconSize={8}
-                wrapperStyle={{ fontSize: 11, color: chartColors.slate500 }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+      <div role="img" aria-label="Rides per period, split by completed, cancelled and rejected">
+        <ResponsiveContainer width="100%" height={chartHeight}>
+          <ComposedChart data={points} margin={chartMargin}>
+            <CartesianGrid {...gridProps} />
+            <XAxis dataKey="label" {...axisProps} minTickGap={20} />
+            <YAxis {...axisProps} width={38} allowDecimals={false} />
+            <Tooltip content={<ChartTooltip formatter={(value) => `${formatCount(value)} rides`} />} />
+            <Legend
+              iconType="circle"
+              iconSize={8}
+              wrapperStyle={{ fontSize: 11, color: chartColors.slate500 }}
+            />
+            <Bar
+              dataKey="completed"
+              name="Completed"
+              stackId="rides"
+              fill={chartColors.emerald}
+              radius={[3, 3, 0, 0]}
+              maxBarSize={56}
+            />
+            <Bar
+              dataKey="cancelled"
+              name="Cancelled"
+              stackId="rides"
+              fill={chartColors.rose}
+              radius={[3, 3, 0, 0]}
+              maxBarSize={56}
+            />
+            <Bar
+              dataKey="rejected"
+              name="Rejected"
+              stackId="rides"
+              fill={chartColors.amber}
+              radius={[3, 3, 0, 0]}
+              maxBarSize={56}
+            />
+            <Line
+              dataKey="total"
+              name="Total"
+              type="monotone"
+              stroke={chartColors.slate900}
+              strokeWidth={2}
+              dot={singlePoint ? { r: 3 } : false}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
     </AnalyticsCard>
   )
 }

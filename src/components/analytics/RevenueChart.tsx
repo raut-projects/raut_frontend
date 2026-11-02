@@ -1,12 +1,8 @@
 import {
-  Area,
   CartesianGrid,
-  Cell,
-  ComposedChart,
   Legend,
   Line,
-  Pie,
-  PieChart,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -35,15 +31,10 @@ function StatChip({ label, value }: { label: string; value: string }) {
 }
 
 export function RevenueChart({ series, loading, error, onRetry }: RevenueChartProps) {
-  const { points, latest, isSeries } = series
-  const composition = latest
-    ? [
-        { name: 'Platform fees', value: latest.platformFees, color: chartColors.violet },
-        { name: 'Driver earnings', value: latest.driverEarnings, color: chartColors.sky },
-      ].filter((entry) => entry.value > 0)
-    : []
+  const { points, latest } = series
+  const singlePoint = points.length <= 1
 
-  const empty = isSeries ? points.length === 0 : composition.length === 0
+  const empty = points.length === 0
 
   const footer = latest ? (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -57,8 +48,8 @@ export function RevenueChart({ series, loading, error, onRetry }: RevenueChartPr
   return (
     <AnalyticsCard
       title="Revenue analytics"
-      subtitle={isSeries ? 'Revenue by period' : 'Revenue split for the selected period'}
-      badge={isSeries ? 'Series' : 'Current period'}
+      subtitle="Revenue by period"
+      badge={singlePoint ? 'Current period' : 'Series'}
       loading={loading}
       error={error}
       onRetry={onRetry}
@@ -67,85 +58,45 @@ export function RevenueChart({ series, loading, error, onRetry }: RevenueChartPr
       height={chartHeight}
       footer={footer}
     >
-      {isSeries ? (
-        <div role="img" aria-label="Revenue per period, split between platform fees and driver earnings">
-          <ResponsiveContainer width="100%" height={chartHeight}>
-            <ComposedChart data={points} margin={chartMargin}>
-              <defs>
-                <linearGradient id="platformFeesFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={chartColors.violet} stopOpacity={0.35} />
-                  <stop offset="100%" stopColor={chartColors.violet} stopOpacity={0.04} />
-                </linearGradient>
-                <linearGradient id="driverEarningsFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={chartColors.sky} stopOpacity={0.32} />
-                  <stop offset="100%" stopColor={chartColors.sky} stopOpacity={0.04} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid {...gridProps} />
-              <XAxis dataKey="label" {...axisProps} minTickGap={20} />
-              <YAxis {...axisProps} width={58} tickFormatter={formatCompactMoney} />
-              <Tooltip content={<ChartTooltip formatter={(value) => formatMoney(value)} />} />
-              <Legend
-                iconType="circle"
-                iconSize={8}
-                wrapperStyle={{ fontSize: 11, color: chartColors.slate500 }}
-              />
-              <Area
-                dataKey="platformFees"
-                name="Platform fees"
-                type="monotone"
-                stackId="revenue"
-                stroke={chartColors.violet}
-                fill="url(#platformFeesFill)"
-                strokeWidth={2}
-              />
-              <Area
-                dataKey="driverEarnings"
-                name="Driver earnings"
-                type="monotone"
-                stackId="revenue"
-                stroke={chartColors.sky}
-                fill="url(#driverEarningsFill)"
-                strokeWidth={2}
-              />
-              <Line
-                dataKey="totalRevenue"
-                name="Total revenue"
-                type="monotone"
-                stroke={chartColors.slate900}
-                strokeWidth={2}
-                dot={false}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
-      ) : (
-        <div role="img" aria-label="Revenue composition between platform fees and driver earnings">
-          <ResponsiveContainer width="100%" height={chartHeight}>
-            <PieChart>
-              <Pie
-                data={composition}
-                dataKey="value"
-                nameKey="name"
-                innerRadius={62}
-                outerRadius={92}
-                paddingAngle={2}
-                stroke="none"
-              >
-                {composition.map((entry) => (
-                  <Cell key={entry.name} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip content={<ChartTooltip formatter={(value) => formatMoney(value)} />} />
-              <Legend
-                iconType="circle"
-                iconSize={8}
-                wrapperStyle={{ fontSize: 11, color: chartColors.slate500 }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+      <div role="img" aria-label="Revenue per period, split between platform fees and driver earnings">
+        <ResponsiveContainer width="100%" height={chartHeight}>
+          <LineChart data={points} margin={chartMargin}>
+            <CartesianGrid {...gridProps} />
+            <XAxis dataKey="label" {...axisProps} minTickGap={20} />
+            <YAxis {...axisProps} width={58} tickFormatter={formatCompactMoney} />
+            <Tooltip content={<ChartTooltip formatter={(value) => formatMoney(value)} />} />
+            <Legend
+              iconType="circle"
+              iconSize={8}
+              wrapperStyle={{ fontSize: 11, color: chartColors.slate500 }}
+            />
+            <Line
+              dataKey="totalRevenue"
+              name="Total revenue"
+              type="monotone"
+              stroke={chartColors.slate900}
+              strokeWidth={2.5}
+              dot={singlePoint ? { r: 3 } : false}
+            />
+            <Line
+              dataKey="platformFees"
+              name="Platform fees"
+              type="monotone"
+              stroke={chartColors.violet}
+              strokeWidth={2}
+              dot={singlePoint ? { r: 2.5 } : false}
+            />
+            <Line
+              dataKey="driverEarnings"
+              name="Driver earnings"
+              type="monotone"
+              stroke={chartColors.sky}
+              strokeWidth={2}
+              dot={singlePoint ? { r: 2.5 } : false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </AnalyticsCard>
   )
 }
