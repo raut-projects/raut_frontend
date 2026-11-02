@@ -591,7 +591,7 @@ export default function VehicleInfoStep() {
       <button
         type="submit"
         disabled={isSubmitting || Object.values(uploading).some(Boolean)}
-        className="w-full mt-5 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full mt-6 mb-8 rounded-lg bg-brand-600 px-4 py-4 text-base font-semibold text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
       >
         {isSubmitting ? t('saving') : t('continue')}
       </button>

@@ -46,7 +46,6 @@ export default function PaymentDetailsStep() {
 
   const onSubmit = async (data: typeof paymentDetails) => {
     try {
-      // Update payment details in backend
       await apiPost('/drivers/payment-details', {
         account_name: data.accountName,
         address: data.address,
@@ -57,28 +56,15 @@ export default function PaymentDetailsStep() {
       updatePaymentDetails(data);
       setSubmitted(true);
 
-      // Notify Flutter app that onboarding is complete
-      console.log('Payment saved, checking Flutter bridge...', window.FlutterOnboarding);
-
-      // Wait a moment for state to settle, then call Flutter
       setTimeout(() => {
         if (window.FlutterOnboarding?.onComplete) {
-          console.log('Calling Flutter onComplete...');
-          try {
-            window.FlutterOnboarding.onComplete({
-              success: true,
-              message: 'Onboarding completed successfully'
-            });
-            console.log('Flutter callback called successfully');
-          } catch (err) {
-            console.error('Error calling Flutter callback:', err);
-          }
-        } else {
-          console.log('Flutter bridge not found');
+          window.FlutterOnboarding.onComplete({
+            success: true,
+            message: 'Onboarding completed successfully'
+          });
         }
       }, 300);
     } catch (error) {
-      console.error('Error saving payment details:', error);
       const message = error instanceof Error ? error.message : 'Failed to save payment details. Please try again.';
       alert(message);
     }
@@ -101,33 +87,16 @@ export default function PaymentDetailsStep() {
         </p>
         <button
           onClick={() => {
-            console.log('🔥 Close button clicked on success screen');
-            // Try onComplete first (proper completion)
             if (window.FlutterOnboarding?.onComplete) {
-              console.log('🔥 Calling Flutter onComplete from close button...');
-              try {
-                window.FlutterOnboarding.onComplete({
-                  success: true,
-                  message: 'Onboarding completed'
-                });
-                console.log('🔥 Flutter onComplete called');
-              } catch (err) {
-                console.error('🔥 Error calling onComplete:', err);
-              }
+              window.FlutterOnboarding.onComplete({
+                success: true,
+                message: 'Onboarding completed'
+              });
             } else if (window.FlutterOnboarding?.onCancel) {
-              // Fallback to onCancel if onComplete not available
-              console.log('🔥 Calling Flutter onCancel as fallback...');
-              try {
-                window.FlutterOnboarding.onCancel();
-                console.log('🔥 Flutter onCancel called');
-              } catch (err) {
-                console.error('🔥 Error calling onCancel:', err);
-              }
-            } else {
-              console.log('🔥 No Flutter bridge available');
+              window.FlutterOnboarding.onCancel();
             }
           }}
-          className="rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-700"
+          className="w-full max-w-xs rounded-lg bg-brand-600 px-6 py-4 text-base font-semibold text-white hover:bg-brand-700 shadow-md"
         >
           {t('close') || 'Close'}
         </button>
@@ -233,7 +202,7 @@ export default function PaymentDetailsStep() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full mt-5 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full mt-6 mb-8 rounded-lg bg-brand-600 px-4 py-4 text-base font-semibold text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
       >
         {isSubmitting ? t('submitting') : t('completeOnboarding')}
       </button>
