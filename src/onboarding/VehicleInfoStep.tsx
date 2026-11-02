@@ -230,8 +230,8 @@ export default function VehicleInfoStep() {
       markStepComplete(3);
       nextStep();
     } catch (error) {
-      console.error('Error creating vehicle:', error);
-      alert('Failed to save vehicle information. Please try again.');
+      const message = error instanceof Error ? error.message : 'Failed to save vehicle information. Please try again.';
+      alert(message);
     }
   };
 
