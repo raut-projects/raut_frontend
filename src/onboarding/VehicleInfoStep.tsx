@@ -206,6 +206,13 @@ export default function VehicleInfoStep() {
 
   const onSubmit = async (data: typeof vehicleInfo) => {
     try {
+      // Format phone number: "712345678" → "+255712345678"
+      const formattedPhone = data.ownerPhone.startsWith('255')
+        ? `+${data.ownerPhone}`
+        : data.ownerPhone.startsWith('0')
+        ? `+255${data.ownerPhone.substring(1)}`
+        : `+255${data.ownerPhone}`;
+
       // Create vehicle with photo URLs
       const vehicle = await apiPost('/drivers/vehicles', {
         make: data.manufacturer,
@@ -217,7 +224,7 @@ export default function VehicleInfoStep() {
         available_seats: data.availableSeats,
         owner_name: data.ownerName,
         owner_email: data.ownerEmail,
-        owner_phone: data.ownerPhone,
+        owner_phone: formattedPhone,
         ownership_type: data.ownershipType,
         front_photo_url: data.frontPhotoUrl,
         rear_photo_url: data.rearPhotoUrl,

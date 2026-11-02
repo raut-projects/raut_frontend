@@ -46,10 +46,17 @@ export default function PaymentDetailsStep() {
 
   const onSubmit = async (data: typeof paymentDetails) => {
     try {
+      // Format phone number: "712345678" → "+255712345678"
+      const formattedPhone = data.mobileMoneyNumber.startsWith('255')
+        ? `+${data.mobileMoneyNumber}`
+        : data.mobileMoneyNumber.startsWith('0')
+        ? `+255${data.mobileMoneyNumber.substring(1)}`
+        : `+255${data.mobileMoneyNumber}`;
+
       await apiPost('/drivers/payment-details', {
         account_name: data.accountName,
         address: data.address,
-        mobile_money_number: data.mobileMoneyNumber,
+        mobile_money_number: formattedPhone,
         mobile_network: data.mobileNetwork,
       });
 
