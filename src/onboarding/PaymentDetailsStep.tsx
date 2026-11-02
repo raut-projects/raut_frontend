@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { paymentDetailsSchema } from '../schemas/onboardingSchemas';
@@ -41,6 +42,8 @@ export default function PaymentDetailsStep() {
     defaultValues: paymentDetails,
   });
 
+  const [submitted, setSubmitted] = useState(false);
+
   const onSubmit = async (data: typeof paymentDetails) => {
     try {
       // Update payment details in backend
@@ -52,22 +55,63 @@ export default function PaymentDetailsStep() {
       });
 
       updatePaymentDetails(data);
+      setSubmitted(true);
 
       // Notify Flutter app that onboarding is complete
-      if (window.FlutterOnboarding?.onComplete) {
-        window.FlutterOnboarding.onComplete({
-          success: true,
-          message: 'Onboarding completed successfully'
-        });
-      } else {
-        // If not in WebView, show success message
-        alert('Onboarding completed successfully!');
-      }
+      console.log('Payment saved, checking Flutter bridge...', window.FlutterOnboarding);
+
+      // Wait a moment for state to settle, then call Flutter
+      setTimeout(() => {
+        if (window.FlutterOnboarding?.onComplete) {
+          console.log('Calling Flutter onComplete...');
+          try {
+            window.FlutterOnboarding.onComplete({
+              success: true,
+              message: 'Onboarding completed successfully'
+            });
+            console.log('Flutter callback called successfully');
+          } catch (err) {
+            console.error('Error calling Flutter callback:', err);
+          }
+        } else {
+          console.log('Flutter bridge not found');
+        }
+      }, 300);
     } catch (error) {
       console.error('Error saving payment details:', error);
-      alert('Failed to save payment details. Please try again.');
+      const message = error instanceof Error ? error.message : 'Failed to save payment details. Please try again.';
+      alert(message);
     }
   };
+
+  // Show success screen after submission
+  if (submitted) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
+          <svg className="h-8 w-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h2 className="mb-2 text-xl font-bold text-slate-900">
+          {t('onboardingComplete') || 'Onboarding Complete!'}
+        </h2>
+        <p className="mb-6 text-sm text-slate-600">
+          {t('onboardingCompleteDesc') || 'Your application has been submitted and is under review. You will be notified once verified.'}
+        </p>
+        <button
+          onClick={() => {
+            if (window.FlutterOnboarding?.onCancel) {
+              window.FlutterOnboarding.onCancel();
+            }
+          }}
+          className="rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-700"
+        >
+          {t('close') || 'Close'}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
