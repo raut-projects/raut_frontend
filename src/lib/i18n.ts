@@ -188,12 +188,14 @@ export const translations = {
 };
 
 export function getLanguageFromURL(): Language {
+  if (typeof window === 'undefined') return 'en';
   const params = new URLSearchParams(window.location.search);
   const lang = params.get('lang');
   return lang === 'sw' ? 'sw' : 'en';
 }
 
 export function getTokenFromURL(): string | null {
+  if (typeof window === 'undefined') return null;
   const params = new URLSearchParams(window.location.search);
   return params.get('token');
 }

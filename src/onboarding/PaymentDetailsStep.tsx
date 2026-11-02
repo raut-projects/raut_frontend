@@ -10,6 +10,7 @@ declare global {
   interface Window {
     FlutterOnboarding?: {
       onComplete: (result: unknown) => void;
+      onCancel?: () => void;
     };
   }
 }

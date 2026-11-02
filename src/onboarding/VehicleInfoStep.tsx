@@ -352,7 +352,7 @@ export default function VehicleInfoStep() {
             >
               <img
                 src={type.image}
-                alt={type.label}
+                alt={t(type.labelKey as any)}
                 className="w-20 h-20 mx-auto mb-2 object-contain"
                 style={{ opacity: vehicleType === type.value ? 1 : 0.6 }}
               />

@@ -1,7 +1,6 @@
 import { useRouter } from 'next/navigation';
 import useOnboardingStore from '../store/onboardingStore';
 import { useTranslation } from '../lib/i18n';
-import { use } from 'motion/react-m';
 
 declare global {
   interface Window {
@@ -13,7 +12,7 @@ declare global {
 }
 
 export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
-  const navigate = useRouter();
+  const router = useRouter();
   const { currentStep, prevStep, language } = useOnboardingStore();
   const t = useTranslation(language);
 
@@ -26,7 +25,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
     } else {
       // Fallback for standalone web
       if (confirm('Cancel onboarding? Your progress will be saved.')) {
-        navigate('/');
+        router.push('/');
       }
     }
   };
@@ -39,7 +38,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <img
-                src="/assets/images/app_icon.png"
+                src="/logo.png"
                 alt="RAUT"
                 className="h-8 w-8"
               />
