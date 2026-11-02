@@ -13,6 +13,15 @@ import {
   ReasonDialog,
   RoleDialog,
 } from "@/components/reasonDialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
@@ -192,103 +201,97 @@ function Customers() {
             </div>
           )}
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="table-th w-10">
-                  <input
-                    type="checkbox"
-                    aria-label="Select all customers"
-                    checked={
-                      items.length > 0 && selectedIds.size === items.length
-                    }
-                    onChange={toggleSelectAll}
-                    className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
-                  />
-                </th>
-                <th className="table-th">Customer</th>
-                <th className="table-th">Email</th>
-                <th className="table-th">Orders</th>
-                <th className="table-th">Joined</th>
-                <th className="table-th">Role</th>
-                <th className="table-th">Status</th>
-                <th className="table-th text-right">Actions</th>
-              </tr>
-            </thead>
+        <Table className="min-w-full">
+          <TableHeader className="bg-slate-50 [&_tr]:border-slate-200">
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="w-10">
+                <Checkbox
+                  aria-label="Select all customers"
+                  className="border-slate-300 focus-visible:ring-brand-500"
+                  checked={
+                    items.length > 0 && selectedIds.size === items.length
+                  }
+                  onCheckedChange={toggleSelectAll}
+                />
+              </TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Orders</TableHead>
+              <TableHead>Joined</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
 
-            {isPending && <TableSkeleton rows={PAGE_SIZE} cols={7} />}
+          {isPending && <TableSkeleton rows={PAGE_SIZE} cols={8} />}
 
-            {isError && (
-              <tbody>
-                <tr>
-                  <td colSpan={7}>
-                    <QueryError error={error} onRetry={refetch} />
-                  </td>
-                </tr>
-              </tbody>
-            )}
+          {isError && (
+            <TableBody>
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={8} className="p-0">
+                  <QueryError error={error} onRetry={refetch} />
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          )}
 
-            {!isPending && !isError && (
-              <tbody className="divide-y divide-slate-100">
-                {items.map((c) => (
-                  <tr
-                    key={c.id}
-                    className="transition-colors hover:bg-slate-50"
-                  >
-                    <td className="table-td">
-                      <input
-                        type="checkbox"
-                        aria-label={`Select ${c.name}`}
-                        checked={selectedIds.has(c.id)}
-                        onChange={() => toggleSelect(c.id)}
-                        className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
-                      />
-                    </td>
-                    <td className="table-td">
-                      <div className="flex items-center gap-3">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
-                          <svg
-                            className="h-5 w-5"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                            aria-hidden="true"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-                            />
-                          </svg>
-                        </span>
-                        <span className="font-medium text-slate-900">
-                          {c.name}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="table-td">{c.email}</td>
-                    <td className="table-td font-medium text-slate-900">
-                      {c.orders}
-                    </td>
-                    <td className="table-td">{c.joined}</td>
-                    <td className="table-td">
-                      <span
-                        className={`badge capitalize ring-1 ring-inset ${roleStyles[c.role] ?? roleStyles.user}`}
-                      >
-                        {c.role.replace("_", " ")}
+          {!isPending && !isError && (
+            <TableBody>
+              {items.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell>
+                    <Checkbox
+                      aria-label={`Select ${c.name}`}
+                      className="border-slate-300 focus-visible:ring-brand-500"
+                      checked={selectedIds.has(c.id)}
+                      onCheckedChange={() => toggleSelect(c.id)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                        <svg
+                          className="h-5 w-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          aria-hidden="true"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+                          />
+                        </svg>
                       </span>
-                    </td>
-                    <td className="table-td">
-                      <span
-                        className={`badge ring-1 ring-inset ${statusStyles[c.status]}`}
-                      >
-                        {c.status}
+                      <span className="font-medium text-slate-900">
+                        {c.name}
                       </span>
-                    </td>
-                    <td className="table-td">
-                      <div className="flex items-center justify-end gap-1">
+                    </div>
+                  </TableCell>
+                  <TableCell>{c.email}</TableCell>
+                  <TableCell className="font-medium text-slate-900">
+                    {c.orders}
+                  </TableCell>
+                  <TableCell>{c.joined}</TableCell>
+                  <TableCell>
+                    <span
+                      className={`badge capitalize ring-1 ring-inset ${roleStyles[c.role] ?? roleStyles.user}`}
+                    >
+                      {c.role.replace("_", " ")}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={`badge ring-1 ring-inset ${statusStyles[c.status]}`}
+                    >
+                      {c.status}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end gap-1">
                         <button
                           type="button"
                           onClick={() => {
@@ -338,28 +341,27 @@ function Customers() {
                         >
                           <ActionIcon label="Delete" />
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {items.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={8}
-                      className="px-4 py-10 text-center text-sm text-slate-500"
-                    >
-                      {search
-                        ? `No customers match “${search}”.`
-                        : status === "all"
-                          ? "No customers yet."
-                          : `No ${status} customers.`}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            )}
-          </table>
-        </div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {items.length === 0 && (
+                <TableRow className="hover:bg-transparent">
+                  <TableCell
+                    colSpan={8}
+                    className="py-10 text-center text-slate-500"
+                  >
+                    {search
+                      ? `No customers match “${search}”.`
+                      : status === "all"
+                        ? "No customers yet."
+                        : `No ${status} customers.`}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          )}
+        </Table>
         <div className="flex items-center justify-between border-t border-slate-200 px-5 py-3.5">
           <p className="text-xs text-slate-500">
             Showing{" "}

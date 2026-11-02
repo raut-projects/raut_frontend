@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import NotificationPanel from "./NotificationPanel";
+import { SidebarTrigger } from "./ui/sidebar";
 import { useIsClient } from "../lib/useIsClient";
 import { useSession } from "../hooks/useSession";
 import {
@@ -14,15 +15,22 @@ import {
 const titles = {
   "/": "Dashboard",
   "/customers": "Customers",
+  "/live-rides": "Live Rides",
   "/drivers": "Drivers",
   "/rides": "Rides",
   "/routes": "Routes",
   "/payouts": "Payouts",
   "/transactions": "Transactions",
+  "/promotions": "Promotions",
+  "/support-tickets": "Support Tickets",
   "/settings": "Settings",
+  "/settings/platform": "Platform Config",
+  "/settings/admin-users": "Admin Users",
+  "/settings/audit-logs": "Audit Logs",
+  "/settings/system-health": "System Health",
 };
 
-function Header({ onMenuClick, sidebarCollapsed }) {
+function Header() {
   const pathname = usePathname().replace(/\/+$/, "") || "/";
   const title = titles[pathname] ?? "Raut";
 
@@ -61,27 +69,7 @@ function Header({ onMenuClick, sidebarCollapsed }) {
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200/80 bg-white/80 px-4 backdrop-blur-xl print:hidden sm:px-6">
-      <button
-        type="button"
-        onClick={onMenuClick}
-        className="rounded-xl p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 lg:hidden"
-        aria-label="Open sidebar"
-      >
-        <svg
-          className="h-5 w-5"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
-          />
-        </svg>
-      </button>
+      <SidebarTrigger className="-ml-1 text-slate-500" />
 
       <div className="flex items-center gap-2">
         <h1 className="text-lg font-semibold tracking-tight text-slate-900">
