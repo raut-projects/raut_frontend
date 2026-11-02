@@ -226,7 +226,7 @@ function Sidebar({ open, onClose, collapsed = false, onToggleCollapse }) {
   return (
     <>
       <div
-        className={`fixed inset-0 z-30 bg-slate-900/50 backdrop-blur-sm transition-opacity lg:hidden ${
+        className={`fixed inset-0 z-30 bg-slate-900/50 backdrop-blur-sm transition-opacity print:hidden lg:hidden ${
           open ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
         onClick={onClose}
@@ -234,7 +234,7 @@ function Sidebar({ open, onClose, collapsed = false, onToggleCollapse }) {
       />
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-slate-200/80 bg-white shadow-lg shadow-slate-900/5 transition-all duration-300 ease-in-out lg:sticky lg:top-0 lg:bottom-auto lg:h-screen lg:shrink-0 lg:z-auto ${
+        className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-slate-200/80 bg-white shadow-lg shadow-slate-900/5 transition-all duration-300 ease-in-out print:hidden lg:sticky lg:top-0 lg:bottom-auto lg:h-screen lg:shrink-0 lg:z-auto ${
           collapsed ? "lg:w-19" : "lg:w-70"
         } ${open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
         aria-label="Main sidebar"

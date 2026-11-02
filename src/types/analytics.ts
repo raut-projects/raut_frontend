@@ -1,4 +1,48 @@
 export type AnalyticsPeriod = 'day' | 'week' | 'month'
+export type AnalyticsGranularity = AnalyticsPeriod
+export type AnalyticsPreset = '7d' | '30d' | '90d' | 'custom'
+
+export interface AnalyticsRange {
+  preset: AnalyticsPreset
+  granularity: AnalyticsGranularity
+  start: Date
+  end: Date
+  daysBack: number
+  startStr: string
+  endStr: string
+}
+
+export interface AnalyticsComparisonWindow {
+  enabled: boolean
+  previousStart: Date
+  previousEnd: Date
+  previousStartStr: string
+  previousEndStr: string
+  fetchDays: number
+  reason: string | null
+}
+
+export interface AnalyticsComparison extends AnalyticsComparisonWindow {
+  rides: {
+    total: MetricDelta
+    completed: MetricDelta
+    cancelled: MetricDelta
+    fare: MetricDelta
+  }
+  revenue: {
+    totalRevenue: MetricDelta
+    platformFees: MetricDelta
+    driverEarnings: MetricDelta
+    transactions: MetricDelta
+  }
+}
+
+export interface MetricDelta {
+  current: number
+  previous: number
+  delta: number
+  deltaPct: number | null
+}
 
 export interface AnalyticsOverview {
   total_users?: number

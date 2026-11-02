@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { QueryError, RefreshIndicator, TableSkeleton } from '@/components/queryStates'
+import { AnalyticsToolbar } from '@/components/analytics/AnalyticsToolbar'
 import { DriverStatusChart } from '@/components/analytics/DriverStatusChart'
 import { OverviewMetrics } from '@/components/analytics/OverviewMetrics'
 import { PeakHoursChart } from '@/components/analytics/PeakHoursChart'
@@ -9,8 +10,15 @@ import { RevenueChart } from '@/components/analytics/RevenueChart'
 import { RidesChart } from '@/components/analytics/RidesChart'
 import { useDashboard } from '@/hooks/useDashboard'
 import { useSession } from '@/hooks/useSession'
-import { PERIOD_DAYS } from '@/lib/config'
-import type { AnalyticsPeriod, DriverStats } from '@/types/index'
+import { formatRangeLabel, getDefaultRange } from '@/lib/dateRange'
+import { downloadAnalyticsCsv } from '@/lib/analyticsExport'
+import type {
+  AnalyticsRange,
+  AnalyticsSeries,
+  DriverStats,
+  RevenuePoint,
+  RidesPoint,
+} from '@/types/index'
 
 const statusStyles = {
   Delivered: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
@@ -18,12 +26,6 @@ const statusStyles = {
   Pending: 'bg-amber-50 text-amber-700 ring-amber-600/20',
   Cancelled: 'bg-rose-50 text-rose-700 ring-rose-600/20',
 }
-
-const PERIOD_OPTIONS: Array<{ value: AnalyticsPeriod; label: string }> = [
-  { value: 'day', label: 'Day' },
-  { value: 'week', label: 'Week' },
-  { value: 'month', label: 'Month' },
-]
 
 const EMPTY_DRIVERS: DriverStats = {
   totalDrivers: 0,
@@ -38,6 +40,9 @@ const EMPTY_DRIVERS: DriverStats = {
   activeToday: 0,
   activeRoutes: 0,
 }
+
+const EMPTY_RIDES: AnalyticsSeries<RidesPoint> = { isSeries: false, points: [], latest: null }
+const EMPTY_REVENUE: AnalyticsSeries<RevenuePoint> = { isSeries: false, points: [], latest: null }
 
 const statIcons = {
   users: (
@@ -64,8 +69,12 @@ const statIcons = {
 }
 
 function Dashboard() {
-  const [period, setPeriod] = useState<AnalyticsPeriod>('month')
-  const { data, isPending, isError, error, isFetching, dataUpdatedAt, refetch } = useDashboard(period)
+  const [range, setRange] = useState<AnalyticsRange>(() => getDefaultRange())
+  const [compare, setCompare] = useState(false)
+  const { data, isPending, isError, error, isFetching, dataUpdatedAt, refetch } = useDashboard(
+    range,
+    compare,
+  )
   const session = useSession()
   const firstName = session?.name?.split(' ')[0] ?? 'there'
 
@@ -74,11 +83,35 @@ function Dashboard() {
   const topDrivers = data?.topDrivers ?? []
   const verifiedDrivers = data?.verifiedDrivers ?? 0
   const overview = data?.overview ?? {}
-  const ridesAnalytics = data?.ridesAnalytics ?? { isSeries: false, points: [], latest: null }
-  const revenueAnalytics = data?.revenueAnalytics ?? { isSeries: false, points: [], latest: null }
+  const ridesAnalytics = data?.ridesAnalytics ?? EMPTY_RIDES
+  const revenueAnalytics = data?.revenueAnalytics ?? EMPTY_REVENUE
+  const previousRidesAnalytics = data?.previousRidesAnalytics ?? null
+  const previousRevenueAnalytics = data?.previousRevenueAnalytics ?? null
+  const comparison = data?.comparison ?? null
+  const comparisonUnavailableReason = data?.comparisonUnavailableReason ?? null
   const driversAnalytics = data?.driversAnalytics ?? EMPTY_DRIVERS
   const peakHours = data?.peakHours ?? []
-  const periodDays = data?.periodDays ?? PERIOD_DAYS[period]
+  const periodDays = data?.periodDays ?? range.daysBack
+
+  const handleExportCsv = () => {
+    if (data) {
+      downloadAnalyticsCsv({
+        overview,
+        ridesAnalytics,
+        revenueAnalytics,
+        previousRidesAnalytics,
+        previousRevenueAnalytics,
+        comparison,
+        driversAnalytics,
+        peakHours,
+        range: data.range ?? range,
+      })
+    }
+  }
+
+  const handleExportPdf = () => {
+    window.print()
+  }
 
   const chartError = isError ? error : null
 
@@ -92,38 +125,35 @@ function Dashboard() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="space-y-6 print:space-y-4">
+      <div className="hidden border-b border-slate-300 pb-4 print:block">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Raut</p>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">Analytics Report</h1>
+        <p className="mt-1 text-sm text-slate-600">
+          {formatRangeLabel(range)} · {range.granularity} grouping ·{' '}
+          {compare ? 'Compared with the previous period' : 'Live snapshot'}
+        </p>
+        <p className="mt-0.5 text-xs text-slate-500">
+          Generated {dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleString() : '—'}
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-3 print:hidden xl:flex-row xl:items-end xl:justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900">Welcome back, {firstName}</h2>
           <p className="mt-1 text-sm text-slate-500">{"Here's what's happening with your platform today."}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div
-            role="group"
-            aria-label="Analytics period"
-            className="flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-card"
-          >
-            {PERIOD_OPTIONS.map((option) => {
-              const active = option.value === period
-
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setPeriod(option.value)}
-                  aria-pressed={active}
-                  className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
-                    active
-                      ? 'bg-brand-600 text-white'
-                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              )
-            })}
-          </div>
+        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-end">
+          <AnalyticsToolbar
+            range={range}
+            compare={compare}
+            comparisonReason={comparisonUnavailableReason}
+            disabled={!data || isFetching}
+            onRangeChange={setRange}
+            onCompareChange={setCompare}
+            onExportCsv={handleExportCsv}
+            onExportPdf={handleExportPdf}
+          />
           <RefreshIndicator isFetching={isFetching} updatedAt={dataUpdatedAt} onRefresh={refetch} />
         </div>
       </div>
@@ -170,6 +200,8 @@ function Dashboard() {
 
       <RidesChart
         series={ridesAnalytics}
+        previous={previousRidesAnalytics}
+        comparison={comparison}
         loading={isPending}
         error={chartError}
         onRetry={refetch}
@@ -179,6 +211,8 @@ function Dashboard() {
         <div className="xl:col-span-2">
           <RevenueChart
             series={revenueAnalytics}
+            previous={previousRevenueAnalytics}
+            comparison={comparison}
             loading={isPending}
             error={chartError}
             onRetry={refetch}
@@ -214,7 +248,7 @@ function Dashboard() {
           <div className="card overflow-hidden">
             <div className="card-header">
               <h3 className="text-base font-semibold text-slate-900">Recent Rides</h3>
-              <button className="text-sm font-medium text-brand-600 hover:text-brand-700">View all</button>
+              <button className="text-sm font-medium text-brand-600 hover:text-brand-700 print:hidden">View all</button>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200">

@@ -32,7 +32,14 @@ export const queryKeys = {
   },
   dashboard: {
     all: ['dashboard'],
-    byPeriod: (period) => ['dashboard', period],
+    byRange: (range, compare) => [
+      'dashboard',
+      range.startStr,
+      range.endStr,
+      range.granularity,
+      range.daysBack,
+      compare,
+    ],
   },
   notifications: {
     all: ['notifications'],

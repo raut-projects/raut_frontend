@@ -60,7 +60,7 @@ function Header({ onMenuClick, sidebarCollapsed }) {
     setDismissed((prev) => (prev.includes(id) ? prev : [...prev, id]));
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200/80 bg-white/80 px-4 backdrop-blur-xl sm:px-6">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200/80 bg-white/80 px-4 backdrop-blur-xl print:hidden sm:px-6">
       <button
         type="button"
         onClick={onMenuClick}
