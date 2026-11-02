@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from "react";
+import { Search } from "lucide-react";
 import ActionIcon from "@/components/ActionIcon";
 import {
   QueryError,
@@ -9,6 +10,19 @@ import {
 } from "@/components/queryStates";
 import { ConfirmDialog, ReasonDialog } from "@/components/reasonDialog";
 import ViewDriverPanel from "@/components/viewDriverPanel";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
@@ -164,27 +178,18 @@ function Drivers() {
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
-            <svg
+            <Search
               className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth={2}
               aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-              />
-            </svg>
-            <input
+            />
+            <Input
               type="search"
               value={query}
               onChange={onQueryChange}
               placeholder="Search drivers…"
               aria-label="Search drivers"
-              className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100 sm:w-64"
+              className="h-9 w-full border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-brand-100 sm:w-64"
             />
           </div>
         </div>
@@ -216,7 +221,7 @@ function Drivers() {
         })}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white shadow-card">
+      <Card className="gap-0 rounded-xl py-0 shadow-card ring-slate-200">
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
           <RefreshIndicator
             isFetching={isFetching}
@@ -228,78 +233,74 @@ function Drivers() {
               <span className="text-xs font-semibold text-slate-600">
                 {selectedIds.size} selected
               </span>
-              <button
+              <Button
                 type="button"
                 onClick={() => setBulkDeleteOpen(true)}
-                className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-70"
+                className="h-auto rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-700 disabled:opacity-70"
                 disabled={deleteUser.isPending}
               >
                 Delete selected
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="outline"
                 onClick={clearSelection}
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                className="h-auto rounded-lg border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
               >
                 Clear
-              </button>
+              </Button>
             </div>
           )}
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="table-th w-10">
-                  <input
-                    type="checkbox"
+          <Table className="min-w-full">
+            <TableHeader className="bg-slate-50 [&_tr]:border-slate-200">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="w-10 pr-4">
+                  <Checkbox
                     aria-label="Select all drivers"
-                    className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                    className="border-slate-300 focus-visible:ring-brand-500"
                     checked={
                       drivers.length > 0 && selectedIds.size === drivers.length
                     }
-                    onChange={toggleSelectAll}
+                    onCheckedChange={toggleSelectAll}
                   />
-                </th>
-                <th className="table-th">Driver</th>
-                <th className="table-th">Phone</th>
-                <th className="table-th">Status</th>
-                <th className="table-th">Rides</th>
-                <th className="table-th">Rating</th>
-                <th className="table-th">Joined</th>
-                <th className="table-th text-right">Actions</th>
-              </tr>
-            </thead>
+                </TableHead>
+                <TableHead>Driver</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Rides</TableHead>
+                <TableHead>Rating</TableHead>
+                <TableHead>Joined</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
 
             {isPending && <TableSkeleton rows={PAGE_SIZE} cols={8} />}
 
             {isError && (
-              <tbody>
-                <tr>
-                  <td colSpan={8}>
+              <TableBody>
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={8} className="p-0">
                     <QueryError error={error} onRetry={refetch} />
-                  </td>
-                </tr>
-              </tbody>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
             )}
 
             {!isPending && !isError && (
-              <tbody className="divide-y divide-slate-100">
+              <TableBody>
                 {drivers.map((r) => (
-                  <tr
-                    key={r.id}
-                    className="transition-colors hover:bg-slate-50"
-                  >
-                    <td className="table-td">
-                      <input
-                        type="checkbox"
+                  <TableRow key={r.id}>
+                    <TableCell className="pr-4">
+                      <Checkbox
                         aria-label={`Select ${r.name}`}
-                        className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                        className="border-slate-300 focus-visible:ring-brand-500"
                         checked={selectedIds.has(r.id)}
-                        onChange={() => toggleSelect(r.id)}
+                        onCheckedChange={() => toggleSelect(r.id)}
                       />
-                    </td>
-                    <td className="table-td">
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-3">
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
                           <svg
@@ -321,23 +322,24 @@ function Drivers() {
                           {r.name}
                         </span>
                       </div>
-                    </td>
-                    <td className="table-td">{r.phone}</td>
-                    <td className="table-td">
-                      <span
-                        className={`badge ring-1 ring-inset ${statusStyles[r.status] ?? statusStyles["Not a driver"]}`}
+                    </TableCell>
+                    <TableCell>{r.phone}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={`gap-1.5 rounded-full border-transparent px-2.5 ring-1 ring-inset ${statusStyles[r.status] ?? statusStyles["Not a driver"]}`}
                       >
                         <span
                           className={`h-1.5 w-1.5 rounded-full ${statusDots[r.status] ?? statusDots["Not a driver"]}`}
                           aria-hidden="true"
                         />
                         {r.status}
-                      </span>
-                    </td>
-                    <td className="table-td font-medium text-slate-900">
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium text-slate-900">
                       {r.rides}
-                    </td>
-                    <td className="table-td">
+                    </TableCell>
+                    <TableCell>
                       <span className="inline-flex items-center gap-1 font-medium text-slate-900">
                         <svg
                           className="h-4 w-4 text-amber-400"
@@ -353,19 +355,23 @@ function Drivers() {
                         </svg>
                         {r.rating.toFixed(1)}
                       </span>
-                    </td>
-                    <td className="table-td">{r.joined}</td>
-                    <td className="table-td">
+                    </TableCell>
+                    <TableCell>{r.joined}</TableCell>
+                    <TableCell>
                       <div className="flex items-center justify-end gap-1">
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="icon"
                           onClick={() => setViewTarget(r)}
                           className={actionClass}
-                        ><ActionIcon label="View" /></button>
+                        ><ActionIcon label="View" /></Button>
                         {r.statusKey === "pending" && (
                           <>
-                            <button
+                            <Button
                               type="button"
+                              variant="ghost"
+                              size="icon"
                               onClick={() =>
                                 (
                                   verifyDriver.mutate as unknown as (variables: {
@@ -375,41 +381,49 @@ function Drivers() {
                               }
                               disabled={verifyDriver.isPending}
                               className={actionClass}
-                            ><ActionIcon label="Verify" /></button>
-                            <button
+                            ><ActionIcon label="Verify" /></Button>
+                            <Button
                               type="button"
+                              variant="ghost"
+                              size="icon"
                               onClick={() => {
                                 setRejectReason("");
                                 setRejectTarget(r);
                               }}
                               className={dangerClass}
-                            ><ActionIcon label="Reject" /></button>
+                            ><ActionIcon label="Reject" /></Button>
                           </>
                         )}
                         {r.statusKey === "verified" && (
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="icon"
                             onClick={() => {
                               setSuspendReason("");
                               setSuspendTarget(r);
                             }}
                             className={dangerClass}
-                          ><ActionIcon label="Suspend" /></button>
+                          ><ActionIcon label="Suspend" /></Button>
                         )}
                         {r.statusKey === "suspended" && (
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="icon"
                             onClick={() => unsuspendDriver.mutate()}
                             disabled={unsuspendDriver.isPending}
                             className={actionClass}
-                          ><ActionIcon label="Unsuspend" /></button>
+                          ><ActionIcon label="Unsuspend" /></Button>
                         )}
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="icon"
                           onClick={() => setDeleteTarget(r)}
                           disabled={deleteUser.isPending}
                           className={dangerClass}
-                        ><ActionIcon label="Delete" /></button>
+                        ><ActionIcon label="Delete" /></Button>
                         {(r.statusKey === "incomplete" ||
                           r.statusKey === "none") && (
                           <span className="text-xs text-slate-400">
@@ -417,22 +431,22 @@ function Drivers() {
                           </span>
                         )}
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
                 {drivers.length === 0 && (
-                  <tr>
-                    <td
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell
                       colSpan={8}
-                      className="px-4 py-10 text-center text-sm text-slate-500"
+                      className="py-10 text-center text-slate-500"
                     >
                       No drivers match “{query}”.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
-              </tbody>
+              </TableBody>
             )}
-          </table>
+          </Table>
         </div>
         <div className="flex items-center justify-between border-t border-slate-200 px-5 py-3.5">
           <p className="text-xs text-slate-500">
@@ -455,25 +469,29 @@ function Drivers() {
             )}
           </p>
           <div className="flex gap-2">
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => setPage((prev) => Math.max(1, prev - 1))}
               disabled={page <= 1 || isPlaceholderData}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400 disabled:hover:bg-white"
+              className="h-auto border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:text-slate-400 disabled:opacity-100 disabled:hover:bg-white"
             >
               Previous
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
               disabled={page >= totalPages || isPlaceholderData}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400 disabled:hover:bg-white"
+              className="h-auto border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:text-slate-400 disabled:opacity-100 disabled:hover:bg-white"
             >
               Next
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
+      </Card>
 
       <ViewDriverPanel
         open={Boolean(viewTarget)}
