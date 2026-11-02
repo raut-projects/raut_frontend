@@ -4,7 +4,7 @@ import { paymentDetailsSchema } from '../schemas/onboardingSchemas';
 import useOnboardingStore from '../store/onboardingStore';
 import TanzaniaPhoneInput from '../components/TanzaniaPhoneInput';
 import { useTranslation } from '../lib/i18n';
-import { apiPut } from '../services/api';
+import { apiPost } from '../services/api';
 
 declare global {
   interface Window {
@@ -44,7 +44,7 @@ export default function PaymentDetailsStep() {
   const onSubmit = async (data: typeof paymentDetails) => {
     try {
       // Update payment details in backend
-      await apiPut('/drivers/payment-details', {
+      await apiPost('/drivers/payment-details', {
         account_name: data.accountName,
         address: data.address,
         mobile_money_number: data.mobileMoneyNumber,
