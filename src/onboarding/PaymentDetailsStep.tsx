@@ -101,8 +101,30 @@ export default function PaymentDetailsStep() {
         </p>
         <button
           onClick={() => {
-            if (window.FlutterOnboarding?.onCancel) {
-              window.FlutterOnboarding.onCancel();
+            console.log('🔥 Close button clicked on success screen');
+            // Try onComplete first (proper completion)
+            if (window.FlutterOnboarding?.onComplete) {
+              console.log('🔥 Calling Flutter onComplete from close button...');
+              try {
+                window.FlutterOnboarding.onComplete({
+                  success: true,
+                  message: 'Onboarding completed'
+                });
+                console.log('🔥 Flutter onComplete called');
+              } catch (err) {
+                console.error('🔥 Error calling onComplete:', err);
+              }
+            } else if (window.FlutterOnboarding?.onCancel) {
+              // Fallback to onCancel if onComplete not available
+              console.log('🔥 Calling Flutter onCancel as fallback...');
+              try {
+                window.FlutterOnboarding.onCancel();
+                console.log('🔥 Flutter onCancel called');
+              } catch (err) {
+                console.error('🔥 Error calling onCancel:', err);
+              }
+            } else {
+              console.log('🔥 No Flutter bridge available');
             }
           }}
           className="rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-700"

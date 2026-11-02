@@ -19,10 +19,20 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
   const progressPercentage = ((currentStep - 1) / 3) * 100;
 
   const handleCancel = () => {
+    console.log('🔥 Cancel button clicked');
+    console.log('🔥 Flutter bridge available?', !!window.FlutterOnboarding);
+
     // If in WebView, notify Flutter app
     if (window.FlutterOnboarding?.onCancel) {
-      window.FlutterOnboarding.onCancel();
+      console.log('🔥 Calling Flutter onCancel...');
+      try {
+        window.FlutterOnboarding.onCancel();
+        console.log('🔥 Flutter onCancel called successfully');
+      } catch (err) {
+        console.error('🔥 Error calling Flutter onCancel:', err);
+      }
     } else {
+      console.log('🔥 No Flutter bridge, showing confirm dialog');
       // Fallback for standalone web
       if (confirm('Cancel onboarding? Your progress will be saved.')) {
         navigate('/');
