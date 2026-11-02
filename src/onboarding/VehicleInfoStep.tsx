@@ -207,7 +207,7 @@ export default function VehicleInfoStep() {
   const onSubmit = async (data: typeof vehicleInfo) => {
     try {
       // Create vehicle with photo URLs
-      const response = await apiPost('/drivers/vehicles', {
+      const vehicle = await apiPost('/drivers/vehicles', {
         make: data.manufacturer,
         vehicle_type: data.vehicleType,
         model: data.model,
@@ -224,7 +224,10 @@ export default function VehicleInfoStep() {
       });
 
       // Backend auto-links documents with vehicle_id
-      const vehicle = response.data;
+      // apiPost already unwraps response.data, so vehicle is the data object
+      if (!vehicle || !vehicle.id) {
+        throw new Error('Invalid response from server');
+      }
 
       updateVehicleInfo({ ...data, vehicleId: vehicle.id });
       markStepComplete(3);
