@@ -54,16 +54,17 @@ export default function PaymentDetailsStep() {
       });
 
       updatePaymentDetails(data);
-      setSubmitted(true);
 
-      setTimeout(() => {
-        if (window.FlutterOnboarding?.onComplete) {
-          window.FlutterOnboarding.onComplete({
-            success: true,
-            message: 'Onboarding completed successfully'
-          });
-        }
-      }, 300);
+      // If in Flutter WebView, notify immediately (no success screen)
+      if (window.FlutterOnboarding?.onComplete) {
+        window.FlutterOnboarding.onComplete({
+          success: true,
+          message: 'Onboarding completed successfully'
+        });
+      } else {
+        // Show success screen for standalone web only
+        setSubmitted(true);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to save payment details. Please try again.';
       alert(message);
