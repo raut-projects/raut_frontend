@@ -51,7 +51,7 @@ export const vehicleInfoSchema = z.object({
 export const paymentDetailsSchema = z.object({
   accountName: z.string().min(2, 'Account name required'),
   address: z.string().min(5, 'Address required'),
-  mobileMoneyNumber: z.string().min(10, 'Valid mobile money number required'),
+  mobileMoneyNumber: z.string().min(9, 'Valid mobile money number required').max(9, 'Mobile number must be 9 digits'),
   mobileNetwork: z.enum(['vodacom', 'airtel', 'halotel', 'mixx']),
 });
 

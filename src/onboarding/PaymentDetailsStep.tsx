@@ -20,7 +20,7 @@ const labelClass = "mb-1 block text-xs font-medium text-slate-700";
 const errorClass = "mt-1 text-xs text-rose-600";
 
 const MOBILE_NETWORKS = [
-  { value: 'vodacom', label: 'VODACOM (M-Pesa)', logo: null },
+  { value: 'vodacom', label: 'VODACOM (M-Pesa)', logo: '/assets/images/mpesa.png' },
   { value: 'airtel', label: 'AIRTEL (Airtel Money)', logo: '/assets/images/airtel.png' },
   { value: 'halotel', label: 'HALOTEL (HaloPesa)', logo: '/assets/images/halopesa.png' },
   { value: 'mixx', label: 'MIXX BY YASS', logo: '/assets/images/yas.png' },
@@ -70,7 +70,7 @@ export default function PaymentDetailsStep() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="mb-4">
         <h2 className="text-base font-semibold text-slate-900">{t('paymentDetails')}</h2>
         <p className="mt-0.5 text-xs text-slate-500">{t('paymentDetailsDesc')}</p>
@@ -90,6 +90,8 @@ export default function PaymentDetailsStep() {
         {errors.accountName && <p className={errorClass}>{errors.accountName.message}</p>}
       </div>
 
+      <hr className="border-t border-slate-200" />
+
       {/* Address */}
       <div>
         <label className={labelClass}>
@@ -103,6 +105,8 @@ export default function PaymentDetailsStep() {
         />
         {errors.address && <p className={errorClass}>{errors.address.message}</p>}
       </div>
+
+      <hr className="border-t border-slate-200" />
 
       {/* Mobile Money Number */}
       <div>
@@ -125,6 +129,8 @@ export default function PaymentDetailsStep() {
           <p className={errorClass}>{errors.mobileMoneyNumber.message}</p>
         )}
       </div>
+
+      <hr className="border-t border-slate-200" />
 
       {/* Mobile Network */}
       <div>
