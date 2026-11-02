@@ -7,6 +7,12 @@ const ROLE_ALIASES = {
   superadmin: 'super_admin',
   'super-admin': 'super_admin',
   owner: 'super_admin',
+  platform_manager: 'platform_manager',
+  operator: 'operator',
+  support: 'support',
+  analyst: 'analyst',
+  finance: 'finance',
+  marketing: 'marketing',
 }
 
 export const normalizeRole = (role) => {
