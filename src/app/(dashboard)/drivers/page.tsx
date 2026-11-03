@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from "react";
-import { Search } from "lucide-react";
-import ActionIcon from "@/components/ActionIcon";
+import { EllipsisVertical, Search } from "lucide-react";
 import {
   QueryError,
   RefreshIndicator,
@@ -14,6 +13,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -52,12 +58,6 @@ const statusDots = {
 };
 
 const PAGE_SIZE = 8;
-
-const actionClass =
-  "inline-flex h-8 w-8 items-center justify-center rounded-md cursor-pointer text-brand-600 transition-colors hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-300";
-
-const dangerClass =
-  "inline-flex h-8 w-8 items-center justify-center rounded-md cursor-pointer text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300";
 
 function Drivers() {
   const [query, setQuery] = useState("");
@@ -291,7 +291,7 @@ function Drivers() {
             {!isPending && !isError && (
               <TableBody>
                 {drivers.map((r) => (
-                  <TableRow key={r.id}>
+                  <TableRow key={r.id} onClick={() => setViewTarget(r)} className="cursor-pointer">
                     <TableCell className="pr-4">
                       <Checkbox
                         aria-label={`Select ${r.name}`}
@@ -357,80 +357,91 @@ function Drivers() {
                       </span>
                     </TableCell>
                     <TableCell>{r.joined}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setViewTarget(r)}
-                          className={actionClass}
-                        ><ActionIcon label="View" /></Button>
-                        {r.statusKey === "pending" && (
-                          <>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() =>
-                                (
-                                  verifyDriver.mutate as unknown as (variables: {
-                                    driverId: typeof r.id;
-                                  }) => void
-                                )({ driverId: r.id })
-                              }
-                              disabled={verifyDriver.isPending}
-                              className={actionClass}
-                            ><ActionIcon label="Verify" /></Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setRejectReason("");
-                                setRejectTarget(r);
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                            aria-label={`Actions for ${r.name}`}
+                          >
+                            <EllipsisVertical
+                              className="h-4 w-4"
+                              aria-hidden="true"
+                            />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
+                        >
+                          <DropdownMenuItem
+                            onSelect={() => setViewTarget(r)}
+                            className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
+                          >
+                            View
+                          </DropdownMenuItem>
+                          {r.statusKey === "pending" && (
+                            <>
+                              <DropdownMenuItem
+                                onSelect={() =>
+                                  (
+                                    verifyDriver.mutate as unknown as (variables: {
+                                      driverId: typeof r.id;
+                                    }) => void
+                                  )({ driverId: r.id })
+                                }
+                                disabled={verifyDriver.isPending}
+                                className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
+                              >
+                                Verify
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onSelect={() => {
+                                  setRejectReason("");
+                                  setRejectTarget(r);
+                                }}
+                                className="px-2.5 py-1.5 text-xs font-medium"
+                              >
+                                Reject
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          {r.statusKey === "verified" && (
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onSelect={() => {
+                                setSuspendReason("");
+                                setSuspendTarget(r);
                               }}
-                              className={dangerClass}
-                            ><ActionIcon label="Reject" /></Button>
-                          </>
-                        )}
-                        {r.statusKey === "verified" && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setSuspendReason("");
-                              setSuspendTarget(r);
-                            }}
-                            className={dangerClass}
-                          ><ActionIcon label="Suspend" /></Button>
-                        )}
-                        {r.statusKey === "suspended" && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => unsuspendDriver.mutate()}
-                            disabled={unsuspendDriver.isPending}
-                            className={actionClass}
-                          ><ActionIcon label="Unsuspend" /></Button>
-                        )}
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setDeleteTarget(r)}
-                          disabled={deleteUser.isPending}
-                          className={dangerClass}
-                        ><ActionIcon label="Delete" /></Button>
-                        {(r.statusKey === "incomplete" ||
-                          r.statusKey === "none") && (
-                          <span className="text-xs text-slate-400">
-                            No action
-                          </span>
-                        )}
-                      </div>
+                              className="px-2.5 py-1.5 text-xs font-medium"
+                            >
+                              Suspend
+                            </DropdownMenuItem>
+                          )}
+                          {r.statusKey === "suspended" && (
+                            <DropdownMenuItem
+                              onSelect={() => unsuspendDriver.mutate()}
+                              disabled={unsuspendDriver.isPending}
+                              className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
+                            >
+                              Unsuspend
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator className="bg-slate-100" />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={() => setDeleteTarget(r)}
+                            disabled={deleteUser.isPending}
+                            className="px-2.5 py-1.5 text-xs font-medium"
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}

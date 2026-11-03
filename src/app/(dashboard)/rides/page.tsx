@@ -1,12 +1,20 @@
 'use client'
 
 import { useState } from "react";
-import ActionIcon from "@/components/ActionIcon";
+import { EllipsisVertical } from "lucide-react";
 import {
   QueryError,
   RefreshIndicator,
   TableSkeleton,
 } from "@/components/queryStates";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -48,12 +56,6 @@ const PAGE_SIZE = 10;
 
 const controlClass =
   "rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100";
-
-const actionClass =
-  "inline-flex h-8 w-8 items-center justify-center rounded-md cursor-pointer text-brand-600 transition-colors hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-300";
-
-const dangerClass =
-  "inline-flex h-8 w-8 items-center justify-center rounded-md cursor-pointer text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300";
 
 function Rides() {
   const [status, setStatus] = useState("all");
@@ -305,28 +307,49 @@ function Rides() {
                       </span>
                     </TableCell>
                     <TableCell>{ride.date}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setViewTarget(ride)}
-                          className={actionClass}
-                        ><ActionIcon label="View" /></button>
-                        {TERMINAL_STATUSES.includes(ride.statusKey) ? (
-                          <span className="text-xs text-slate-400">
-                            No action
-                          </span>
-                        ) : (
-                          <button
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
                             type="button"
-                            onClick={() => {
-                              setCancelReason("");
-                              setCancelTarget(ride);
-                            }}
-                            className={dangerClass}
-                          ><ActionIcon label="Cancel" /></button>
-                        )}
-                      </div>
+                            variant="ghost"
+                            size="icon"
+                            className="text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                            aria-label={`Actions for ${ride.id}`}
+                          >
+                            <EllipsisVertical
+                              className="h-4 w-4"
+                              aria-hidden="true"
+                            />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
+                        >
+                          <DropdownMenuItem
+                            onSelect={() => setViewTarget(ride)}
+                            className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
+                          >
+                            View
+                          </DropdownMenuItem>
+                          {!TERMINAL_STATUSES.includes(ride.statusKey) && (
+                            <>
+                              <DropdownMenuSeparator className="bg-slate-100" />
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onSelect={() => {
+                                  setCancelReason("");
+                                  setCancelTarget(ride);
+                                }}
+                                className="px-2.5 py-1.5 text-xs font-medium"
+                              >
+                                Cancel ride
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
