@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from "react";
-import { EllipsisVertical } from "lucide-react";
+import Link from "next/link";
+import { EllipsisVertical, FileCheck2, FileDown } from "lucide-react";
 import {
   QueryError,
   RefreshIndicator,
@@ -27,6 +28,7 @@ import { ConfirmDialog, ReasonDialog } from "@/components/reasonDialog";
 import ViewPayoutPanel from "@/components/viewPayoutPanel";
 import { usePayouts } from "@/hooks/usePayouts";
 import { useDrivers } from "@/hooks/useDrivers";
+import { useToast } from "@/components/toastContext";
 import {
   useApprovePayout,
   useRejectPayout,
@@ -63,6 +65,66 @@ const PAGE_SIZE = 8;
 const controlClass =
   "rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100";
 
+const escapeHtml = (value) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+function printPayoutReceipt(payout) {
+  const receiptWindow = window.open("", "_blank");
+  if (!receiptWindow) {
+    throw new Error("Allow pop-ups to print or save this receipt as a PDF.");
+  }
+
+  const fields = [
+    ["Driver", payout.driverName],
+    ["Amount", payout.amountLabel],
+    ["Payment method", payout.method],
+    ["Destination", payout.methodDetails],
+    ["Reference", payout.reference],
+    ["Requested", payout.requestedAt],
+    ["Processed", payout.processedAt],
+  ];
+
+  receiptWindow.document.open();
+  receiptWindow.document.write(`<!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Payout receipt ${escapeHtml(payout.reference)}</title>
+        <style>
+          body { color: #1e293b; font: 14px/1.5 Arial, sans-serif; margin: 0; padding: 48px; }
+          main { margin: 0 auto; max-width: 680px; }
+          h1 { font-size: 24px; margin: 0 0 6px; }
+          p { color: #64748b; margin: 0 0 28px; }
+          dl { border-top: 1px solid #e2e8f0; margin: 0; }
+          dl div { border-bottom: 1px solid #e2e8f0; display: grid; gap: 20px; grid-template-columns: 180px 1fr; padding: 14px 0; }
+          dt { color: #64748b; } dd { font-weight: 600; margin: 0; overflow-wrap: anywhere; }
+          @media print { body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <main>
+          <h1>Payout receipt</h1>
+          <p>Paid payout record</p>
+          <dl>${fields
+            .map(
+              ([label, value]) =>
+                `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`,
+            )
+            .join("")}</dl>
+        </main>
+      </body>
+    </html>`);
+  receiptWindow.document.close();
+  receiptWindow.focus();
+  window.setTimeout(() => receiptWindow.print(), 250);
+}
+
 function Payouts() {
   const [status, setStatus] = useState("all");
   const [method, setMethod] = useState("all");
@@ -76,6 +138,7 @@ function Payouts() {
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [retryTarget, setRetryTarget] = useState(null);
+  const toast = useToast();
 
   const params = { status, method, driverId, from, to, page, limit: PAGE_SIZE };
 
@@ -171,6 +234,13 @@ function Payouts() {
                 ? `${total} payout${total === 1 ? "" : "s"} on record`
                 : `${total} ${status} payout${total === 1 ? "" : "s"}`}
           </p>
+          <Link
+            href="/payouts/batch/"
+            className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+          >
+            <FileCheck2 className="h-4 w-4" aria-hidden="true" />
+            Review pending batch
+          </Link>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <select
@@ -376,6 +446,24 @@ function Payouts() {
                           >
                             View
                           </DropdownMenuItem>
+                          {payout.isSettled && (
+                            <DropdownMenuItem
+                              onSelect={() => {
+                                try {
+                                  printPayoutReceipt(payout);
+                                } catch (receiptError) {
+                                  toast.error(
+                                    receiptError?.message ??
+                                      "The receipt could not be opened.",
+                                  );
+                                }
+                              }}
+                              className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
+                            >
+                              <FileDown className="h-4 w-4" aria-hidden="true" />
+                              Print / save receipt as PDF
+                            </DropdownMenuItem>
+                          )}
                           {payout.canApprove && (
                             <>
                               <DropdownMenuSeparator className="bg-slate-100" />
@@ -561,4 +649,3 @@ function Payouts() {
 }
 
 export default Payouts;
-

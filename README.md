@@ -64,7 +64,7 @@ Dashboard comparison is only available when the previous period falls inside the
 | --- | --- |
 | [React 19](https://react.dev/) | UI library |
 | [TypeScript 6](https://www.typescriptlang.org/) | Type-safe JavaScript |
-| [Next.js 16](https://nextjs.org/) | App Router, development server and static export |
+| [Next.js 16](https://nextjs.org/) | App Router, development server and production server |
 | [TanStack Query 5](https://tanstack.com/query) | Server state, caching, polling and mutations |
 | [Zustand 5](https://github.com/pmndrs/zustand) | Persisted driver onboarding state |
 | [React Hook Form 7](https://react-hook-form.com/) | Onboarding forms |
@@ -153,13 +153,13 @@ Dashboard comparison is only available when the previous period falls inside the
 | Command | Description |
 | --- | --- |
 | `npm run dev` | Start the Next.js development server with hot module reloading |
-| `npm run build` | Create a static export of the app in `out/` |
+| `npm run build` | Build the app for the Next.js production server |
 | `npm run typecheck` | Run TypeScript type checking without emitting files |
 | `npm run lint` | Run ESLint across the repository |
-| `npm run start` | Serve the static export in `out/` locally |
-| `npm run preview` | Serve the static export in `out/` locally for verification |
+| `npm run start` | Start the production server |
+| `npm run preview` | Start the production server for verification |
 
-`npm run start` and `npm run preview` serve the existing `out/` directory. Run `npm run build` first.
+Run `npm run build` before `npm run start` or `npm run preview`.
 
 ## Application routes
 
@@ -174,6 +174,7 @@ Dashboard comparison is only available when the previous period falls inside the
 | `/rides` | Admin | Ride management |
 | `/routes` | Admin | Route management |
 | `/payouts` | Admin | Payout review and processing |
+| `/payouts/batch` | Admin | Pending payout batch review and approval |
 | `/transactions` | Admin | Transaction history |
 | `/live-rides` | Admin | Live rides placeholder (Coming soon) |
 | `/promotions` | Admin | Promotions placeholder (Coming soon) |
@@ -183,7 +184,7 @@ Dashboard comparison is only available when the previous period falls inside the
 | `/settings/audit-logs` | Admin | Audit logs placeholder (Coming soon) |
 | `/settings/platform` | Admin | Platform configuration placeholder (Coming soon) |
 | `/settings/system-health` | Admin | System health placeholder (Coming soon) |
-| `*` | Public | Render the exported `404.html` page, which redirects to `/` |
+| `*` | Public | Render the not-found page |
 
 `RequireAuth` protects the admin-access request page. `RequireAdmin` protects the dashboard route group and revalidates the signed-in user's role against `GET /auth/me` before opening admin pages.
 
@@ -421,7 +422,7 @@ raut_frontend/
 │  └─ types/               Shared TypeScript type definitions
 ├─ .env.example            Documented environment variables
 ├─ eslint.config.js        ESLint flat configuration
-├─ next.config.ts          Next.js static export configuration
+├─ next.config.ts          Next.js configuration
 ├─ package.json            Dependencies and scripts
 ├─ postcss.config.mjs      Tailwind CSS PostCSS plugin
 ├─ README.md
@@ -486,11 +487,11 @@ npm run typecheck
 npm run build
 ```
 
-The static export is written to `out/`.
+The production build is written to `.next/`.
 
-Deploy the contents of `out/` to any static host. Next.js emits one directory per route (`customers/index.html`, `transactions/index.html`, and so on) because `trailingSlash` is enabled, so routes such as `/customers` work on reload without an SPA fallback. Images are unoptimized because the site is statically exported. Unknown paths render the exported `404.html`, which redirects to `/`.
+Deploy the app to a host that can run the Next.js production server. The server is required for routes with runtime parameters, including `/drivers/{id}/`.
 
-To verify the export locally after building:
+To run the production build locally:
 
 ```bash
 npm run start
@@ -511,8 +512,11 @@ Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Re
 - There is no role-level UI beyond the admin gate; every configured admin role sees every admin page.
 - The dashboard builds some summary cards from the analytics overview response and falls back to list totals when fields or endpoints are unavailable.
 - Driver, document and payout summaries fetch up to 100 records and calculate some totals client-side.
+- Batch payout review loads all pending payouts and checks failed payouts for driver-level history. Phone verification is only considered verified when the API explicitly provides a verification flag or timestamp. Pending payouts refresh every 30 seconds; approved and processing statuses refresh every 10 seconds, and failure history refreshes every five minutes.
+- Batch approval uses the existing per-payout endpoint sequentially, so a batch can partially succeed. The UI blocks batches over TZS 50,000 because the backend does not yet provide a server-verified step-up 2FA flow; the backend must also enforce this threshold before high-value approvals are enabled.
+- Payout receipts open the browser print dialog, where they can be printed or saved as PDF.
 - Dashboard cards render zero or empty states when an analytics endpoint fails, so partial data is expected during backend incidents.
-- The app is a static export: there is no Next.js server runtime, server-side rendering or built-in API layer. All admin data comes from the external Raut backend.
+- Admin data comes from the external Raut backend. The Next.js server is used to serve the app and its dynamic routes.
 - The onboarding flow is designed for a Flutter WebView. Outside the WebView it falls back to browser alerts and redirects, and it is not linked from the admin navigation.
 - Onboarding validation and upload errors are shown inline, but step-level API failures use browser alerts.
 - The header search input is presentational and does not filter or search data yet.

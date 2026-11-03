@@ -372,10 +372,32 @@ const firstOf = (source, keys, fallback = null) => {
   return fallback
 }
 
+const phoneVerificationValue = (value) => {
+  if (typeof value === 'boolean') return value
+  if (value === 1 || value === '1') return true
+  if (value === 0 || value === '0') return false
+
+  const normalized = String(value ?? '').trim().toLowerCase()
+  if (['true', 'verified', 'confirmed'].includes(normalized)) return true
+  if (['false', 'unverified', 'unconfirmed'].includes(normalized)) return false
+
+  return null
+}
+
 export const mapPayout = (payout) => {
   const statusKey = String(firstOf(payout, ['status', 'payout_status'], 'pending')).toLowerCase()
   const methodKey = String(firstOf(payout, ['method', 'payout_method', 'payment_method', 'channel'], '')).toLowerCase()
   const driver = payout?.driver ?? null
+  const rawPhoneVerification = firstOf(
+    payout,
+    ['driver_phone_verified', 'phone_verified', 'is_phone_verified'],
+    firstOf(driver, ['phone_verified', 'is_phone_verified']),
+  )
+  const phoneVerifiedAt = firstOf(
+    payout,
+    ['driver_phone_verified_at', 'phone_verified_at'],
+    firstOf(driver, ['phone_verified_at']),
+  )
 
   const rawAmount = firstOf(payout, ['amount', 'payout_amount', 'total_amount', 'net_amount', 'gross_amount'], 0)
   const amount = Number(rawAmount)
@@ -384,10 +406,28 @@ export const mapPayout = (payout) => {
 
   return {
     id: firstOf(payout, ['id', 'payout_id']),
-    driverId: firstOf(payout, ['driver_id']),
+    driverId:
+      firstOf(payout, ['driver_id']) ??
+      firstOf(driver, ['id', 'driver_id']),
     driverName: driverName ?? EMPTY,
     driverPhone:
       firstOf(payout, ['driver_phone', 'driver_phone_number']) ?? firstOf(driver, ['phone', 'phone_number']) ?? EMPTY,
+    phoneVerified:
+      rawPhoneVerification === null
+        ? phoneVerifiedAt
+          ? true
+          : null
+        : phoneVerificationValue(rawPhoneVerification),
+    previousFailureCount: Math.max(
+      0,
+      Number(
+        firstOf(payout, [
+          'previous_failure_count',
+          'failed_attempts',
+          'retry_count',
+        ]) ?? 0,
+      ) || 0,
+    ),
     amount: Number.isFinite(amount) ? amount : 0,
     amountLabel: formatMoney(rawAmount),
     methodKey,

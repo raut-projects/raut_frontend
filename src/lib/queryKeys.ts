@@ -6,6 +6,7 @@ export const queryKeys = {
   drivers: {
     all: ['drivers'],
     list: (params) => ['drivers', 'list', params],
+    detail: (driverId) => ['drivers', 'detail', driverId],
   },
   documents: {
     all: ['documents'],
@@ -24,6 +25,9 @@ export const queryKeys = {
   payouts: {
     all: ['payouts'],
     list: (params) => ['payouts', 'list', params],
+    batchReview: ['payouts', 'batch-review'],
+    batchProcessing: ['payouts', 'batch-processing'],
+    batchFailures: ['payouts', 'batch-failures'],
   },
   transactions: {
     all: ['transactions'],
