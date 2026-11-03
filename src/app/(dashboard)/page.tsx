@@ -23,6 +23,14 @@ import type {
   RevenuePoint,
   RidesPoint,
 } from "@/types/index";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const statusStyles = {
   Delivered: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
@@ -335,68 +343,66 @@ function Dashboard() {
                 View all
               </button>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50/50">
-                  <tr>
-                    <th className="table-th">Order</th>
-                    <th className="table-th">Customer</th>
-                    <th className="table-th">Driver</th>
-                    <th className="table-th">Route</th>
-                    <th className="table-th">Amount</th>
-                    <th className="table-th">Status</th>
-                  </tr>
-                </thead>
+            <Table className="min-w-full divide-y divide-slate-200">
+              <TableHeader className="bg-slate-50/50">
+                <TableRow>
+                  <TableHead>Order</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Driver</TableHead>
+                  <TableHead>Route</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
 
-                {isPending && <TableSkeleton rows={5} cols={6} />}
+              {isPending && <TableSkeleton rows={5} cols={6} />}
 
-                {isError && (
-                  <tbody>
-                    <tr>
-                      <td colSpan={6}>
-                        <QueryError error={error} onRetry={refetch} />
-                      </td>
-                    </tr>
-                  </tbody>
-                )}
+              {isError && (
+                <TableBody>
+                  <TableRow>
+                    <TableCell colSpan={6}>
+                      <QueryError error={error} onRetry={refetch} />
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              )}
 
-                {!isPending && !isError && (
-                  <tbody className="divide-y divide-slate-100">
-                    {recentDeliveries.map((d) => (
-                      <tr
-                        key={d.id}
-                        className="transition-colors hover:bg-slate-50/50"
+              {!isPending && !isError && (
+                <TableBody className="divide-y divide-slate-100">
+                  {recentDeliveries.map((d) => (
+                    <TableRow
+                      key={d.id}
+                      className="transition-colors hover:bg-slate-50/50"
+                    >
+                      <TableCell className="font-medium text-slate-900">
+                        {d.id}
+                      </TableCell>
+                      <TableCell>{d.customer}</TableCell>
+                      <TableCell>{d.driver}</TableCell>
+                      <TableCell>{d.route}</TableCell>
+                      <TableCell className="font-medium text-slate-900">
+                        {d.amount}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`badge ${statusStyles[d.status]}`}>
+                          {d.status}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {recentDeliveries.length === 0 && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={6}
+                        className="py-10 text-center text-slate-500"
                       >
-                        <td className="table-td font-medium text-slate-900">
-                          {d.id}
-                        </td>
-                        <td className="table-td">{d.customer}</td>
-                        <td className="table-td">{d.driver}</td>
-                        <td className="table-td">{d.route}</td>
-                        <td className="table-td font-medium text-slate-900">
-                          {d.amount}
-                        </td>
-                        <td className="table-td">
-                          <span className={`badge ${statusStyles[d.status]}`}>
-                            {d.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                    {recentDeliveries.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan={6}
-                          className="px-4 py-10 text-center text-sm text-slate-500"
-                        >
-                          No deliveries yet today.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                )}
-              </table>
-            </div>
+                        No deliveries yet today.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              )}
+            </Table>
           </div>
         </div>
 
