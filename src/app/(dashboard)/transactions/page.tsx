@@ -3,6 +3,14 @@
 import { useState } from 'react'
 import { QueryError, RefreshIndicator, TableSkeleton } from '@/components/queryStates'
 import { useTransactionSummary, useTransactions } from '@/hooks/useTransactions'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 const statusStyles = {
   Pending: 'bg-amber-50 text-amber-700 ring-amber-600/20',
@@ -189,105 +197,107 @@ function Transactions() {
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5">
           <RefreshIndicator isFetching={isFetching} updatedAt={dataUpdatedAt} onRefresh={refetch} />
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="table-th">Reference</th>
-                <th className="table-th hidden lg:table-cell">Name</th>
-                <th className="table-th hidden lg:table-cell">Type</th>
-                <th className="table-th">Amount</th>
-                <th className="table-th">Status</th>
-                <th className="table-th hidden lg:table-cell">Date</th>
-                <th className="table-th hidden xl:table-cell">Description</th>
-              </tr>
-            </thead>
+        <Table>
+          <TableHeader className="bg-slate-50">
+            <TableRow>
+              <TableHead>Reference</TableHead>
+              <TableHead className="hidden lg:table-cell">Name</TableHead>
+              <TableHead className="hidden lg:table-cell">Type</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="hidden lg:table-cell">Date</TableHead>
+              <TableHead className="hidden xl:table-cell">Description</TableHead>
+            </TableRow>
+          </TableHeader>
 
-            {isPending && (
-              <TableSkeleton
-                rows={PAGE_SIZE}
-                cols={7}
-                mobileCols={3}
-                lgCols={6}
-              />
-            )}
+          {isPending && (
+            <TableSkeleton
+              rows={PAGE_SIZE}
+              cols={7}
+              mobileCols={3}
+              lgCols={6}
+            />
+          )}
 
-            {isError && (
-              <tbody>
-                <tr>
-                  <td colSpan={7}>
-                    <QueryError error={error} onRetry={refetch} />
-                  </td>
-                </tr>
-              </tbody>
-            )}
+          {isError && (
+            <TableBody>
+              <TableRow>
+                <TableCell colSpan={7}>
+                  <QueryError error={error} onRetry={refetch} />
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          )}
 
-            {!isPending && !isError && (
-              <tbody className="divide-y divide-slate-100">
-                {transactions.map((transaction) => (
-                  <tr key={transaction.id} className="transition-colors hover:bg-slate-50">
-                    <td className="table-td">
-                      <span className="block max-w-[5rem] truncate font-medium text-slate-900 sm:max-w-none">
-                        {transaction.reference}
-                      </span>
-                      <span className="block text-xs text-slate-400">{transaction.id}</span>
-                      <span className="block max-w-[5rem] truncate text-xs text-slate-400 lg:hidden">
-                        {transaction.userName}
-                      </span>
-                    </td>
-                    <td className="table-td hidden lg:table-cell">
-                      <span className="block text-slate-900">{transaction.userName}</span>
-                      {transaction.userPhone !== '—' && (
-                        <span className="block text-xs text-slate-400">{transaction.userPhone}</span>
-                      )}
-                    </td>
-                    <td className="table-td hidden lg:table-cell">
+          {!isPending && !isError && (
+            <TableBody>
+              {transactions.map((transaction) => (
+                <TableRow key={transaction.id}>
+                  <TableCell>
+                    <span className="block max-w-[5rem] truncate font-medium text-slate-900 sm:max-w-none">
+                      {transaction.reference}
+                    </span>
+                    <span className="block text-xs text-slate-400">{transaction.id}</span>
+                    <span className="block max-w-[5rem] truncate text-xs text-slate-400 lg:hidden">
+                      {transaction.userName}
+                    </span>
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    <span className="block text-slate-900">{transaction.userName}</span>
+                    {transaction.userPhone !== '—' && (
+                      <span className="block text-xs text-slate-400">{transaction.userPhone}</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        typeStyles[transaction.type] ?? 'bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      {transaction.type || '—'}
+                    </span>
+                  </TableCell>
+                  <TableCell className="font-medium text-slate-900">
+                    {transaction.amountLabel}
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={`badge ring-1 ring-inset ${
+                        statusStyles[transaction.status] ?? statusStyles.Pending
+                      }`}
+                    >
                       <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          typeStyles[transaction.type] ?? 'bg-slate-100 text-slate-700'
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          statusDots[transaction.status] ?? statusDots.Pending
                         }`}
-                      >
-                        {transaction.type || '—'}
-                      </span>
-                    </td>
-                    <td className="table-td font-medium text-slate-900">{transaction.amountLabel}</td>
-                    <td className="table-td">
-                      <span
-                        className={`badge ring-1 ring-inset ${
-                          statusStyles[transaction.status] ?? statusStyles.Pending
-                        }`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            statusDots[transaction.status] ?? statusDots.Pending
-                          }`}
-                          aria-hidden="true"
-                        />
-                        {transaction.status}
-                      </span>
-                    </td>
-                    <td className="table-td hidden lg:table-cell">
-                      <span className="block text-slate-900">{transaction.created}</span>
-                      <span className="block text-xs text-slate-400">{transaction.createdAt?.split(' ')[1] ?? ''}</span>
-                    </td>
-                    <td className="table-td hidden xl:table-cell">
-                      <span className="block max-w-[16rem] truncate text-slate-700">
-                        {transaction.description || '—'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-                {transactions.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-500">
-                      No transactions match these filters.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            )}
-          </table>
-        </div>
+                        aria-hidden="true"
+                      />
+                      {transaction.status}
+                    </span>
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    <span className="block text-slate-900">{transaction.created}</span>
+                    <span className="block text-xs text-slate-400">
+                      {transaction.createdAt?.split(' ')[1] ?? ''}
+                    </span>
+                  </TableCell>
+                  <TableCell className="hidden xl:table-cell">
+                    <span className="block max-w-[16rem] truncate text-slate-700">
+                      {transaction.description || '—'}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {transactions.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="py-10 text-center text-sm text-slate-500">
+                    No transactions match these filters.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          )}
+        </Table>
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3.5 sm:px-5">
           <p className="text-xs text-slate-500">
             Showing <span className="font-semibold text-slate-700">{transactions.length}</span> of{' '}
