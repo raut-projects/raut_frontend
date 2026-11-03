@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3,
+  Bug,
   Car,
   ChevronRight,
   CreditCard,
@@ -96,6 +97,7 @@ const navGroups: NavGroup[] = [
     label: "Support",
     items: [
       { title: "Support Tickets", url: "/support-tickets", icon: Ticket },
+      { title: "Customer Issues", url: "/customer-issues", icon: Bug },
     ],
   },
   {
@@ -144,9 +146,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const isItemActive = (item: NavItem) => isActive(item.activeOn ?? item.url);
 
-  const displayName = session?.name ?? "Admin";
-  const roleLabel = session?.roleLabel ?? "Admin";
-  const initials = session?.initials ?? "A";
+  // const displayName = session?.name ?? "Admin";
+  // const roleLabel = session?.roleLabel ?? "Admin";
+  // const initials = session?.initials ?? "A";
 
   const handleSignOut = () => {
     signOut();

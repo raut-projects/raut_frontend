@@ -418,8 +418,7 @@ raut_frontend/
 │  ├─ services/            API services, HTTP client, token store, uploads and mappers
 │  ├─ store/               Zustand onboarding store
 │  ├─ styles/              Legacy Flutter theme constants
-│  ├─ types/               Shared TypeScript type definitions
-│  └─ views/               Legacy route screens, not used by the App Router
+│  └─ types/               Shared TypeScript type definitions
 ├─ .env.example            Documented environment variables
 ├─ eslint.config.js        ESLint flat configuration
 ├─ next.config.ts          Next.js static export configuration
@@ -428,11 +427,6 @@ raut_frontend/
 ├─ README.md
 └─ tsconfig.json           TypeScript configuration
 ```
-
-### Repository notes
-
-- `src/views/requestAdmin.tsx` is a legacy duplicate of `src/app/request-admin/page.tsx`; the App Router page is the active one.
-- `vite.config.ts` and the empty `src/pages/` directory are leftovers. The app builds with Next.js, not Vite.
 
 ### Key modules
 

@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "useDefineForClassFields": true,
     "lib": [
       "ES2020",
       "DOM",
@@ -21,7 +20,6 @@
       }
     ],
     "incremental": true,
-    "allowImportingTsExtensions": false,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,

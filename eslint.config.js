@@ -8,5 +8,5 @@ export default defineConfig([
       '@next/next/no-img-element': 'off',
     },
   },
-  globalIgnores(['.next/**', 'out/**', 'dist/**', 'node_modules/**']),
+  globalIgnores(['.next/**', 'out/**', 'node_modules/**']),
 ])
