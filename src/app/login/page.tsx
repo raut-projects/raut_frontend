@@ -1,15 +1,12 @@
 "use client";
 
-"use client";
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/toastContext";
 import GateLoader from "@/components/GateLoader";
 import { useFromParam } from "@/lib/useFromParam";
 import { useSession } from "@/hooks/useSession";
-import { isValidPhone, requestOtp, verifyOtp } from "@/services/auth";
-import { OTP_CODE_LENGTH } from "@/lib/config";
+import { loginWithEmail } from "@/services/auth";
 import { isAdminRole } from "@/lib/roles";
 
 const inputClass =
@@ -18,39 +15,23 @@ const inputClass =
 const labelClass = "mb-1.5 block text-xs font-semibold text-slate-600";
 const errorClass = "mt-1 block text-xs font-medium text-rose-600";
 
-const formatCountdown = (seconds) => {
-  const minutes = Math.floor(seconds / 60);
-  const rest = seconds % 60;
-  return `${minutes}:${String(rest).padStart(2, "0")}`;
-};
-
-const isExpiredMessage = (message) =>
-  /expired|no longer valid|invalid or has expired/i.test(message ?? "");
+const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
 function Login() {
   const router = useRouter();
   const toast = useToast();
   const session = useSession();
 
-  const [step, setStep] = useState("phone");
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
-  const [errors, setErrors] = useState<{ phone?: string; code?: string }>({});
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [visible, setVisible] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>(
+    {},
+  );
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [remaining, setRemaining] = useState(0);
 
   const from = useFromParam("/");
-
-  useEffect(() => {
-    if (step !== "code" || remaining <= 0) return undefined;
-
-    const timer = setTimeout(() => {
-      setRemaining((previous) => (previous > 0 ? previous - 1 : 0));
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [step, remaining]);
 
   const sessionRedirect = session
     ? isAdminRole(session.role)
@@ -71,94 +52,37 @@ function Login() {
     setFormError("");
   };
 
-  const handlePhoneChange = (event) => {
-    setPhone(event.target.value);
-    setErrors((previous) => ({ ...previous, phone: undefined }));
+  const handleEmailChange = (event) => {
+    setEmail(event.target.value);
+    setErrors((previous) => ({ ...previous, email: undefined }));
     setFormError("");
   };
 
-  const handleCodeChange = (event) => {
-    setCode(event.target.value.replace(/\D/g, "").slice(0, OTP_CODE_LENGTH));
-    setErrors((previous) => ({ ...previous, code: undefined }));
+  const handlePasswordChange = (event) => {
+    setPassword(event.target.value);
+    setErrors((previous) => ({ ...previous, password: undefined }));
     setFormError("");
   };
 
-  const handleSendCode = async (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (submitting) return;
 
-    const value = phone.trim();
+    const value = email.trim();
+    const nextErrors: { email?: string; password?: string } = {};
 
     if (!value) {
-      setErrors({ phone: "Phone number is required." });
-      return;
+      nextErrors.email = "Email address is required.";
+    } else if (!isValidEmail(value)) {
+      nextErrors.email = "Enter a valid email address.";
     }
 
-    if (!isValidPhone(value)) {
-      setErrors({
-        phone:
-          "Enter a valid phone number, e.g. +255 600 000 000/+255 700 000 000.",
-      });
-      return;
+    if (!password) {
+      nextErrors.password = "Password is required.";
     }
 
-    setSubmitting(true);
-    resetFeedback();
-
-    try {
-      const result = await requestOtp(value);
-
-      setPhone(result.phone ?? value);
-      setCode("");
-      setRemaining(result.expiresInSeconds);
-      setStep("code");
-      toast.success(result.message);
-    } catch (error) {
-      setFormError(
-        error?.message ??
-          "We could not send a verification code. Please try again.",
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleResend = async () => {
-    if (submitting || remaining > 0) return;
-
-    setSubmitting(true);
-    resetFeedback();
-
-    try {
-      const result = await requestOtp(phone);
-
-      setCode("");
-      setRemaining(result.expiresInSeconds);
-      toast.success(result.message);
-    } catch (error) {
-      setFormError(
-        error?.message ?? "We could not send a new code. Please try again.",
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleVerify = async (event) => {
-    event.preventDefault();
-    if (submitting) return;
-
-    const value = code.trim();
-
-    if (!value) {
-      setErrors({ code: "Enter the verification code." });
-      return;
-    }
-
-    if (value.length !== OTP_CODE_LENGTH) {
-      setErrors({
-        code: `The verification code is ${OTP_CODE_LENGTH} digits.`,
-      });
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
       return;
     }
 
@@ -166,7 +90,7 @@ function Login() {
     resetFeedback();
 
     try {
-      const signedIn = await verifyOtp({ phone, code: value });
+      const signedIn = await loginWithEmail({ email: value, password });
       const admin = isAdminRole(signedIn?.role);
       toast.success("Signed in successfully.");
       router.replace(
@@ -176,22 +100,12 @@ function Login() {
       );
     } catch (error) {
       setFormError(
-        error?.message ?? "The code is not correct. Please try again.",
+        error?.message ?? "Those credentials are not correct. Please try again.",
       );
-      if (isExpiredMessage(error?.message)) setRemaining(0);
     } finally {
       setSubmitting(false);
     }
   };
-
-  const handleChangeNumber = () => {
-    setStep("phone");
-    setCode("");
-    setRemaining(0);
-    resetFeedback();
-  };
-
-  const expired = step === "code" && remaining <= 0;
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-4 py-12">
@@ -203,12 +117,10 @@ function Login() {
       <div className="relative w-full max-w-md">
         <div className="mb-8 flex flex-col items-center text-center">
           <h1 className="mt-4 text-xl font-bold tracking-tight text-slate-900">
-            {step === "phone" ? "Sign in to Raut" : "Enter your code"}
+            Sign in to Raut
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            {step === "phone"
-              ? "Enter your admin phone number and we will send you a verification code."
-              : `We sent a ${OTP_CODE_LENGTH}-digit code to ${phone}.`}
+            Enter your admin email address and password to open the dashboard.
           </p>
         </div>
 
@@ -236,131 +148,116 @@ function Login() {
             </div>
           )}
 
-          {step === "phone" ? (
-            <form
-              onSubmit={handleSendCode}
-              noValidate
-              className="space-y-4"
-              aria-busy={submitting}
-            >
-              <label className="block">
-                <span className={labelClass}>Phone number</span>
+          <form
+            onSubmit={handleSubmit}
+            noValidate
+            className="space-y-4"
+            aria-busy={submitting}
+          >
+            <label className="block">
+              <span className={labelClass}>Email address</span>
+              <input
+                id="login-email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                value={email}
+                onChange={handleEmailChange}
+                placeholder="admin@raut.africa"
+                className={inputClass}
+                aria-invalid={Boolean(errors.email)}
+                aria-describedby={errors.email ? "login-email-error" : undefined}
+              />
+              {errors.email && (
+                <span id="login-email-error" className={errorClass}>
+                  {errors.email}
+                </span>
+              )}
+            </label>
+
+            <label className="block">
+              <span className={labelClass}>Password</span>
+              <div className="relative">
                 <input
-                  id="login-phone"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  value={phone}
-                  onChange={handlePhoneChange}
-                  placeholder="+255 000 000 000"
-                  className={inputClass}
-                  aria-invalid={Boolean(errors.phone)}
+                  id="login-password"
+                  type={visible ? "text" : "password"}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={handlePasswordChange}
+                  placeholder="Enter your password"
+                  className={`${inputClass} pr-11`}
+                  aria-invalid={Boolean(errors.password)}
                   aria-describedby={
-                    errors.phone ? "login-phone-error" : undefined
+                    errors.password ? "login-password-error" : undefined
                   }
                 />
-                {errors.phone && (
-                  <span id="login-phone-error" className={errorClass}>
-                    {errors.phone}
-                  </span>
-                )}
-              </label>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {submitting && (
-                  <span
-                    className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
-                    aria-hidden="true"
-                  />
-                )}
-                {submitting ? "Sending…" : "Send code"}
-              </button>
-            </form>
-          ) : (
-            <form
-              onSubmit={handleVerify}
-              noValidate
-              className="space-y-4"
-              aria-busy={submitting}
-            >
-              <label className="block">
-                <span className={labelClass}>Verification code</span>
-                <input
-                  id="login-code"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={OTP_CODE_LENGTH}
-                  value={code}
-                  onChange={handleCodeChange}
-                  placeholder="000000"
-                  className={`${inputClass} text-center text-lg font-semibold tracking-[0.4em] placeholder:tracking-[0.4em] placeholder:text-slate-300`}
-                  aria-invalid={Boolean(errors.code)}
-                  aria-describedby={
-                    errors.code ? "login-code-error" : "login-code-hint"
+                <button
+                  type="button"
+                  onClick={() => setVisible((previous) => !previous)}
+                  className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-400 transition-colors hover:text-slate-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+                  aria-label={
+                    visible ? "Hide the password" : "Show the password"
                   }
-                />
-                {errors.code ? (
-                  <span id="login-code-error" className={errorClass}>
-                    {errors.code}
-                  </span>
-                ) : (
-                  <span
-                    id="login-code-hint"
-                    className="mt-1 block text-xs text-slate-500"
-                  >
-                    {expired ? (
-                      <span className="font-medium text-amber-600">
-                        That code has expired. Request a new one below.
-                      </span>
-                    ) : (
-                      `Code expires in ${formatCountdown(remaining)}`
-                    )}
-                  </span>
-                )}
-              </label>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {submitting && (
-                  <span
-                    className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
-                    aria-hidden="true"
-                  />
-                )}
-                {submitting ? "Verifying…" : "Verify and sign in"}
-              </button>
-
-              <div className="flex items-center justify-between pt-1">
-                <button
-                  type="button"
-                  onClick={handleChangeNumber}
-                  disabled={submitting}
-                  className="text-xs font-semibold text-slate-500 transition-colors hover:text-slate-700 disabled:opacity-60"
                 >
-                  Change number
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleResend}
-                  disabled={submitting || remaining > 0}
-                  className="text-xs font-semibold text-brand-600 transition-colors hover:text-brand-700 disabled:cursor-not-allowed disabled:text-slate-400 disabled:hover:text-slate-400"
-                >
-                  {remaining > 0
-                    ? `Resend code in ${formatCountdown(remaining)}`
-                    : "Resend code"}
+                  {visible ? (
+                    <svg
+                      className="h-5 w-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="h-5 w-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                  )}
                 </button>
               </div>
-            </form>
-          )}
+              {errors.password && (
+                <span id="login-password-error" className={errorClass}>
+                  {errors.password}
+                </span>
+              )}
+            </label>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {submitting && (
+                <span
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                  aria-hidden="true"
+                />
+              )}
+              {submitting ? "Signing in…" : "Sign in"}
+            </button>
+          </form>
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-500">

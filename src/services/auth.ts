@@ -1,8 +1,4 @@
-import {
-  API_ROUTES,
-  OTP_DEFAULT_TTL_SECONDS,
-  OTP_VERIFY_FIELD,
-} from "../lib/config";
+import { API_ROUTES } from "../lib/config";
 import { firstRole, formatRole, isAdminRole, resolveRole } from "../lib/roles";
 import {
   ApiError,
@@ -22,11 +18,6 @@ import {
 
 export const normalizePhone = (value) =>
   String(value ?? "").replace(/[\s()\-.]/g, "");
-
-export const isValidPhone = (value) => {
-  const phone = normalizePhone(value);
-  return /^\+?\d{9,15}$/.test(phone);
-};
 
 const firstText = (...values) => {
   for (const value of values) {
@@ -119,32 +110,12 @@ const toSession = (user, phone, fallbackRole) => {
   };
 };
 
-export async function requestOtp(phone) {
-  const payload = await request(API_ROUTES.otpSend, {
-    method: "POST",
-    body: { phone: normalizePhone(phone) },
-    auth: false,
-  });
-
-  const data = envelopeData(payload) ?? {};
-
-  return {
-    phone: data.phone ?? payload?.phone ?? normalizePhone(phone),
-    expiresInSeconds:
-      data.expires_in_seconds ??
-      payload?.expires_in_seconds ??
-      OTP_DEFAULT_TTL_SECONDS,
-    message:
-      envelopeMessage(payload) || "We sent a verification code to your phone.",
-  };
-}
-
-export async function verifyOtp({ phone, code }) {
-  const payload = await request(API_ROUTES.otpVerify, {
+export async function loginWithEmail({ email, password }) {
+  const payload = await request(API_ROUTES.login, {
     method: "POST",
     body: {
-      phone: normalizePhone(phone),
-      [OTP_VERIFY_FIELD]: String(code ?? "").trim(),
+      email: String(email ?? "").trim(),
+      password: String(password ?? ""),
     },
     auth: false,
   });
@@ -163,7 +134,7 @@ export async function verifyOtp({ phone, code }) {
   const user = data.user ?? data;
   const role = roleFromPayload({ user, data, accessToken });
 
-  const session = toSession(user, normalizePhone(phone), role);
+  const session = toSession(user, user?.phone ?? "", role);
 
   saveSession({
     session: { ...session, roleVerifiedAt: Date.now() },

@@ -30,7 +30,7 @@ This repository contains the **frontend only**. A compatible Raut backend API is
 
 ## Overview
 
-Raut's admin dashboard is a responsive web application built with React and Next.js (App Router). It is exported as static files, uses phone-based OTP authentication, token refresh, role-based route protection and TanStack Query for server state.
+Raut's admin dashboard is a responsive web application built with React and Next.js (App Router). It is exported as static files, uses email and password authentication, token refresh, role-based route protection and TanStack Query for server state.
 
 Administrators can review platform activity, inspect records in detail panels, filter and paginate lists, export analytics, and perform operational actions such as verifying drivers, suspending accounts, cancelling rides or routes, and approving payouts.
 
@@ -165,7 +165,7 @@ Run `npm run build` before `npm run start` or `npm run preview`.
 
 | Route | Access | Description |
 | --- | --- | --- |
-| `/login` | Public | Phone number entry and OTP verification |
+| `/login` | Public | Email and password sign-in |
 | `/request-admin` | Signed in, non-admin | Enter the admin secret to upgrade the account |
 | `/onboarding` | Public / WebView | Driver onboarding flow; expects `token` and optional `lang` query parameters |
 | `/` | Admin | Dashboard overview and analytics |
@@ -233,9 +233,9 @@ If the page is opened outside the WebView, it falls back to a browser alert. Can
 
 ## Authentication and authorization
 
-1. The administrator enters a phone number on `/login`.
-2. The app sends a six-digit OTP through `POST /auth/otp/send`.
-3. `POST /auth/otp/verify` returns the session, access token and optional refresh token.
+1. The administrator enters an email address and password on `/login`.
+2. `POST /auth/login` validates the credentials.
+3. The response returns the session, access token and optional refresh token.
 4. The session and tokens are persisted in `localStorage` and exposed through a small external store.
 5. `RequireAdmin` revalidates the role every five minutes (`ROLE_REVALIDATE_MS`). A missing or stale role is checked against `GET /auth/me`.
 6. Non-admin accounts are redirected to `/request-admin`, where the admin secret is submitted to `POST /admin/promote`.
@@ -262,8 +262,7 @@ The backend base URL and endpoint paths live in `src/lib/config.ts`.
 
 ```ts
 export const API_ROUTES = {
-  otpSend: '/auth/otp/send',
-  otpVerify: '/auth/otp/verify',
+  login: '/auth/login',
   refresh: '/auth/refresh',
   me: '/auth/me',
   notifications: '/notifications/',
@@ -308,8 +307,7 @@ Raw API records are normalized in `src/services/mappers.ts`. Mappers provide con
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
-| `POST` | `/auth/otp/send` | Send an OTP to a phone number |
-| `POST` | `/auth/otp/verify` | Verify an OTP and create a session |
+| `POST` | `/auth/login` | Sign in with an email address and password |
 | `POST` | `/auth/refresh` | Refresh an access token |
 | `GET` | `/auth/me` | Fetch the signed-in user and role |
 | `POST` | `/admin/promote` | Promote a signed-in account to admin using a secret |
@@ -402,7 +400,7 @@ raut_frontend/
 ├─ src/
 │  ├─ app/                 App Router routes, layouts, providers and global CSS
 │  │  ├─ (dashboard)/      Admin-only route group and shared shell
-│  │  ├─ login/            OTP sign-in route
+│  │  ├─ login/            Email and password sign-in route
 │  │  ├─ onboarding/       Driver onboarding route
 │  │  ├─ request-admin/    Admin promotion route
 │  │  ├─ globals.css       Tailwind import, theme tokens and shared component classes
@@ -435,14 +433,14 @@ raut_frontend/
 | --- | --- |
 | `src/services/http.ts` | Authenticated fetch wrapper, token refresh, timeout and error handling |
 | `src/services/api.ts` | `apiGet`, `apiPost`, `apiPut`, `apiDelete` and query-string building |
-| `src/services/auth.ts` | OTP sign-in, session creation, role resolution and admin promotion |
+| `src/services/auth.ts` | Email and password sign-in, session creation, role resolution and admin promotion |
 | `src/services/adminActions.ts` | Verify/reject/suspend drivers, cancel rides/routes and manage users |
 | `src/services/dashboard.ts` | Analytics aggregation, comparison windows and dashboard mapping |
 | `src/services/tokenStore.ts` | localStorage session/token persistence and subscriptions |
 | `src/services/mappers.ts` | API response normalization and display formatting |
 | `src/services/uploads.ts` | Multipart document uploads for onboarding |
 | `src/services/onboarding.ts` | Legacy complete-flow onboarding helper, not used by the current UI |
-| `src/lib/config.ts` | Base URL, API routes, OTP and role revalidation constants |
+| `src/lib/config.ts` | Base URL, API routes and role revalidation constants |
 | `src/lib/roles.ts` | Role normalization, aliases and admin-role checks |
 | `src/lib/queryClient.ts` | TanStack Query client configuration |
 | `src/lib/queryKeys.ts` | Centralized query key factory |
