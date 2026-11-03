@@ -265,7 +265,19 @@ function Rides() {
             {!isPending && !isError && (
               <TableBody>
                 {rides.map((ride) => (
-                  <TableRow key={ride.id}>
+                  <TableRow
+                    key={ride.id}
+                    onClick={() => setViewTarget(ride)}
+                    onKeyDown={(event) => {
+                      if (event.target !== event.currentTarget) return;
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setViewTarget(ride);
+                      }
+                    }}
+                    tabIndex={0}
+                    className="cursor-pointer focus-visible:outline-2 focus-visible:outline-brand-600"
+                  >
                     <TableCell className="font-medium text-slate-900">
                       {ride.id}
                     </TableCell>
@@ -307,7 +319,10 @@ function Rides() {
                       </span>
                     </TableCell>
                     <TableCell>{ride.date}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell
+                      className="text-right"
+                      onClick={(event) => event.stopPropagation()}
+                    >
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button

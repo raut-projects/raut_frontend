@@ -291,8 +291,23 @@ function Drivers() {
             {!isPending && !isError && (
               <TableBody>
                 {drivers.map((r) => (
-                  <TableRow key={r.id} onClick={() => setViewTarget(r)} className="cursor-pointer">
-                    <TableCell className="pr-4">
+                  <TableRow
+                    key={r.id}
+                    onClick={() => setViewTarget(r)}
+                    onKeyDown={(event) => {
+                      if (event.target !== event.currentTarget) return;
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setViewTarget(r);
+                      }
+                    }}
+                    tabIndex={0}
+                    className="cursor-pointer focus-visible:outline-2 focus-visible:outline-brand-600"
+                  >
+                    <TableCell
+                      className="pr-4"
+                      onClick={(event) => event.stopPropagation()}
+                    >
                       <Checkbox
                         aria-label={`Select ${r.name}`}
                         className="border-slate-300 focus-visible:ring-brand-500"
@@ -357,7 +372,10 @@ function Drivers() {
                       </span>
                     </TableCell>
                     <TableCell>{r.joined}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell
+                      className="text-right"
+                      onClick={(event) => event.stopPropagation()}
+                    >
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button

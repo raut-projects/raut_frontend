@@ -123,6 +123,11 @@ function Customers() {
 
   const clearSelection = () => setSelectedIds(new Set());
 
+  const openCustomer = (customer) => {
+    setSelectedCustomer(customer);
+    setViewOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -244,8 +249,20 @@ function Customers() {
           {!isPending && !isError && (
             <TableBody>
               {items.map((c) => (
-                <TableRow key={c.id} onClick={() => setSelectedCustomer(c)} className="cursor-pointer">
-                  <TableCell>
+                <TableRow
+                  key={c.id}
+                  onClick={() => openCustomer(c)}
+                  onKeyDown={(event) => {
+                    if (event.target !== event.currentTarget) return;
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      openCustomer(c);
+                    }
+                  }}
+                  tabIndex={0}
+                  className="cursor-pointer focus-visible:outline-2 focus-visible:outline-brand-600"
+                >
+                  <TableCell onClick={(event) => event.stopPropagation()}>
                     <Checkbox
                       aria-label={`Select ${c.name}`}
                       className="border-slate-300 focus-visible:ring-brand-500"
@@ -295,7 +312,10 @@ function Customers() {
                       {c.status}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell
+                    className="text-right"
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -316,10 +336,7 @@ function Customers() {
                         className="w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
                       >
                         <DropdownMenuItem
-                          onSelect={() => {
-                            setSelectedCustomer(c);
-                            setViewOpen(true);
-                          }}
+                          onSelect={() => openCustomer(c)}
                           className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                         >
                           View

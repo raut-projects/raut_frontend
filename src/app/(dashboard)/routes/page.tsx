@@ -317,7 +317,19 @@ function RoutesPage() {
             {!isPending && !isError && (
               <TableBody>
                 {routes.map((route) => (
-                  <TableRow key={route.routeId}>
+                  <TableRow
+                    key={route.routeId}
+                    onClick={() => setViewTarget(route)}
+                    onKeyDown={(event) => {
+                      if (event.target !== event.currentTarget) return;
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setViewTarget(route);
+                      }
+                    }}
+                    tabIndex={0}
+                    className="cursor-pointer focus-visible:outline-2 focus-visible:outline-brand-600"
+                  >
                     <TableCell>
                       <span className="block max-w-[18rem] truncate font-medium text-slate-900">
                         {route.route}
@@ -375,7 +387,10 @@ function RoutesPage() {
                       </span>
                     </TableCell>
                     <TableCell>{route.created}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell
+                      className="text-right"
+                      onClick={(event) => event.stopPropagation()}
+                    >
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
