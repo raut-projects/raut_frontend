@@ -7,6 +7,14 @@ import {
   RefreshIndicator,
   TableSkeleton,
 } from "@/components/queryStates";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { ReasonDialog } from "@/components/reasonDialog";
 import ViewRoutePanel from "@/components/viewRoutePanel";
 import { useCancelRoute } from "@/hooks/useAdminActions";
@@ -277,83 +285,79 @@ function RoutesPage() {
             onRefresh={refetch}
           />
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="table-th">Route</th>
-                <th className="table-th">Driver</th>
-                <th className="table-th">Vehicle</th>
-                <th className="table-th">Distance</th>
-                <th className="table-th">Seats</th>
-                <th className="table-th">Rides</th>
-                <th className="table-th">Status</th>
-                <th className="table-th">Created</th>
-                <th className="table-th text-right">Actions</th>
-              </tr>
-            </thead>
+        <Table className="min-w-full">
+          <TableHeader className="bg-slate-50 [&_tr]:border-slate-200">
+            <TableRow className="hover:bg-transparent">
+              <TableHead>Route</TableHead>
+              <TableHead>Driver</TableHead>
+              <TableHead>Vehicle</TableHead>
+              <TableHead>Distance</TableHead>
+              <TableHead>Seats</TableHead>
+              <TableHead>Rides</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
 
             {isPending && <TableSkeleton rows={PAGE_SIZE} cols={9} />}
 
             {isError && (
-              <tbody>
-                <tr>
-                  <td colSpan={9}>
+              <TableBody>
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={9} className="p-0">
                     <QueryError error={error} onRetry={refetch} />
-                  </td>
-                </tr>
-              </tbody>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
             )}
 
             {!isPending && !isError && (
-              <tbody className="divide-y divide-slate-100">
+              <TableBody>
                 {routes.map((route) => (
-                  <tr
-                    key={route.routeId}
-                    className="transition-colors hover:bg-slate-50"
-                  >
-                    <td className="table-td">
+                  <TableRow key={route.routeId}>
+                    <TableCell>
                       <span className="block max-w-[18rem] truncate font-medium text-slate-900">
                         {route.route}
                       </span>
                       <span className="block text-xs text-slate-400">
                         {route.id}
                       </span>
-                    </td>
-                    <td className="table-td">
+                    </TableCell>
+                    <TableCell>
                       <span className="block text-slate-900">
                         {route.driver}
                       </span>
                       <span className="block text-xs text-slate-400">
                         {route.driverPhone}
                       </span>
-                    </td>
-                    <td className="table-td">
+                    </TableCell>
+                    <TableCell>
                       <span className="block max-w-56 truncate text-slate-900">
                         {route.vehicle}
                       </span>
                       <span className="block text-xs text-slate-400">
                         {route.plateNumber}
                       </span>
-                    </td>
-                    <td className="table-td">
+                    </TableCell>
+                    <TableCell>
                       <span className="block text-slate-900">
                         {route.distance}
                       </span>
                       <span className="block text-xs text-slate-400">
                         {route.duration}
                       </span>
-                    </td>
-                    <td className="table-td text-slate-700">{route.seats}</td>
-                    <td className="table-td">
+                    </TableCell>
+                    <TableCell className="text-slate-700">{route.seats}</TableCell>
+                    <TableCell>
                       <span className="block text-slate-900">
                         {route.totalRides} total
                       </span>
                       <span className="block text-xs text-slate-400">
                         {route.activeRides} active
                       </span>
-                    </td>
-                    <td className="table-td">
+                    </TableCell>
+                    <TableCell>
                       <span
                         className={`badge ring-1 ring-inset ${
                           statusStyles[route.status] ?? statusStyles.Active
@@ -367,9 +371,9 @@ function RoutesPage() {
                         />
                         {route.status}
                       </span>
-                    </td>
-                    <td className="table-td">{route.created}</td>
-                    <td className="table-td">
+                    </TableCell>
+                    <TableCell>{route.created}</TableCell>
+                    <TableCell>
                       <div className="flex items-center justify-end gap-1">
                         <button
                           type="button"
@@ -388,23 +392,22 @@ function RoutesPage() {
                           </span>
                         )}
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
                 {routes.length === 0 && (
-                  <tr>
-                    <td
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell
                       colSpan={9}
-                      className="px-4 py-10 text-center text-sm text-slate-500"
+                      className="py-10 text-center text-slate-500"
                     >
                       No routes match these filters.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
-              </tbody>
+              </TableBody>
             )}
-          </table>
-        </div>
+        </Table>
         <div className="flex items-center justify-between border-t border-slate-200 px-5 py-3.5">
           <p className="text-xs text-slate-500">
             Showing{" "}

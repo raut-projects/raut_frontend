@@ -6,6 +6,14 @@ import {
   RefreshIndicator,
   TableSkeleton,
 } from "@/components/queryStates";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { ConfirmDialog, ReasonDialog } from "@/components/reasonDialog";
 import ViewPayoutPanel from "@/components/viewPayoutPanel";
 import { usePayouts } from "@/hooks/usePayouts";
@@ -257,40 +265,36 @@ function Payouts() {
             onRefresh={refetch}
           />
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="table-th">Driver</th>
-                <th className="table-th">Amount</th>
-                <th className="table-th">Method</th>
-                <th className="table-th">Status</th>
-                <th className="table-th">Reference</th>
-                <th className="table-th">Requested</th>
-                <th className="table-th text-right">Actions</th>
-              </tr>
-            </thead>
+        <Table className="min-w-full">
+          <TableHeader className="bg-slate-50 [&_tr]:border-slate-200">
+            <TableRow className="hover:bg-transparent">
+              <TableHead>Driver</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Method</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Reference</TableHead>
+              <TableHead>Requested</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
 
             {isPending && <TableSkeleton rows={PAGE_SIZE} cols={7} />}
 
             {isError && (
-              <tbody>
-                <tr>
-                  <td colSpan={7}>
+              <TableBody>
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={7} className="p-0">
                     <QueryError error={error} onRetry={refetch} />
-                  </td>
-                </tr>
-              </tbody>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
             )}
 
             {!isPending && !isError && (
-              <tbody className="divide-y divide-slate-100">
+              <TableBody>
                 {payouts.map((payout) => (
-                  <tr
-                    key={payout.id}
-                    className="transition-colors hover:bg-slate-50"
-                  >
-                    <td className="table-td">
+                  <TableRow key={payout.id}>
+                    <TableCell>
                       <div className="flex items-center gap-3">
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
                           {payout.driverName
@@ -303,11 +307,11 @@ function Payouts() {
                           {payout.driverName}
                         </span>
                       </div>
-                    </td>
-                    <td className="table-td font-medium text-slate-900">
+                    </TableCell>
+                    <TableCell className="font-medium text-slate-900">
                       {payout.amountLabel}
-                    </td>
-                    <td className="table-td">
+                    </TableCell>
+                    <TableCell>
                       <span className="block text-slate-700">
                         {payout.method}
                       </span>
@@ -316,8 +320,8 @@ function Payouts() {
                           {payout.methodDetails}
                         </span>
                       )}
-                    </td>
-                    <td className="table-td">
+                    </TableCell>
+                    <TableCell>
                       <span
                         className={`badge ring-1 ring-inset ${
                           statusStyles[payout.status] ?? statusStyles.Pending
@@ -329,12 +333,12 @@ function Payouts() {
                         />
                         {payout.status}
                       </span>
-                    </td>
-                    <td className="table-td text-xs text-slate-500">
+                    </TableCell>
+                    <TableCell className="text-xs text-slate-500">
                       {payout.reference}
-                    </td>
-                    <td className="table-td">{payout.requestedAt}</td>
-                    <td className="table-td">
+                    </TableCell>
+                    <TableCell>{payout.requestedAt}</TableCell>
+                    <TableCell>
                       <div className="flex items-center justify-end gap-3">
                         <button
                           type="button"
@@ -382,23 +386,22 @@ function Payouts() {
                           </span>
                         )}
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
                 {payouts.length === 0 && (
-                  <tr>
-                    <td
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell
                       colSpan={7}
-                      className="px-4 py-10 text-center text-sm text-slate-500"
+                      className="py-10 text-center text-slate-500"
                     >
                       No payouts match these filters.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
-              </tbody>
+              </TableBody>
             )}
-          </table>
-        </div>
+        </Table>
         <div className="flex items-center justify-between border-t border-slate-200 px-5 py-3.5">
           <p className="text-xs text-slate-500">
             Showing{" "}
