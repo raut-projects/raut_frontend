@@ -194,7 +194,7 @@ function Transactions() {
             <thead className="bg-slate-50">
               <tr>
                 <th className="table-th">Reference</th>
-                <th className="table-th">User</th>
+                <th className="table-th">Name</th>
                 <th className="table-th">Type</th>
                 <th className="table-th">Amount</th>
                 <th className="table-th">Status</th>
