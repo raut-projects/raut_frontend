@@ -1,6 +1,6 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { listCustomers } from '../services/customers'
-import { queryKeys } from '../lib/queryKeys'
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { listCustomers } from "../services/customers";
+import { queryKeys } from "../lib/queryKeys";
 
 export function useCustomers(params) {
   return useQuery({
@@ -8,5 +8,5 @@ export function useCustomers(params) {
     queryFn: () => listCustomers(params),
     placeholderData: keepPreviousData,
     refetchInterval: 60_000,
-  })
+  });
 }

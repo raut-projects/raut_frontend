@@ -1,6 +1,6 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { getRideSummary, listRides } from '../services/rides'
-import { queryKeys } from '../lib/queryKeys'
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { getRideSummary, listRides } from "../services/rides";
+import { queryKeys } from "../lib/queryKeys";
 
 export function useRides(params) {
   return useQuery({
@@ -8,7 +8,7 @@ export function useRides(params) {
     queryFn: () => listRides(params),
     placeholderData: keepPreviousData,
     refetchInterval: 30_000,
-  })
+  });
 }
 
 export function useRideSummary() {
@@ -16,5 +16,5 @@ export function useRideSummary() {
     queryKey: queryKeys.rides.summary,
     queryFn: getRideSummary,
     refetchInterval: 60_000,
-  })
+  });
 }

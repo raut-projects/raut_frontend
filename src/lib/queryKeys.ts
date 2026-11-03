@@ -1,43 +1,43 @@
 export const queryKeys = {
   customers: {
-    all: ['customers'],
-    list: (params) => ['customers', 'list', params],
+    all: ["customers"],
+    list: (params) => ["customers", "list", params],
   },
   drivers: {
-    all: ['drivers'],
-    list: (params) => ['drivers', 'list', params],
-    detail: (driverId) => ['drivers', 'detail', driverId],
+    all: ["drivers"],
+    list: (params) => ["drivers", "list", params],
+    detail: (driverId) => ["drivers", "detail", driverId],
   },
   documents: {
-    all: ['documents'],
-    list: (driverId) => ['documents', 'list', driverId],
+    all: ["documents"],
+    list: (driverId) => ["documents", "list", driverId],
   },
   rides: {
-    all: ['rides'],
-    list: (params) => ['rides', 'list', params],
-    summary: ['rides', 'summary'],
+    all: ["rides"],
+    list: (params) => ["rides", "list", params],
+    summary: ["rides", "summary"],
   },
   routes: {
-    all: ['routes'],
-    list: (params) => ['routes', 'list', params],
-    summary: ['routes', 'summary'],
+    all: ["routes"],
+    list: (params) => ["routes", "list", params],
+    summary: ["routes", "summary"],
   },
   payouts: {
-    all: ['payouts'],
-    list: (params) => ['payouts', 'list', params],
-    batchReview: ['payouts', 'batch-review'],
-    batchProcessing: ['payouts', 'batch-processing'],
-    batchFailures: ['payouts', 'batch-failures'],
+    all: ["payouts"],
+    list: (params) => ["payouts", "list", params],
+    batchReview: ["payouts", "batch-review"],
+    batchProcessing: ["payouts", "batch-processing"],
+    batchFailures: ["payouts", "batch-failures"],
   },
   transactions: {
-    all: ['transactions'],
-    list: (params) => ['transactions', 'list', params],
-    summary: ['transactions', 'summary'],
+    all: ["transactions"],
+    list: (params) => ["transactions", "list", params],
+    summary: ["transactions", "summary"],
   },
   dashboard: {
-    all: ['dashboard'],
+    all: ["dashboard"],
     byRange: (range, compare) => [
-      'dashboard',
+      "dashboard",
       range.startStr,
       range.endStr,
       range.granularity,
@@ -46,9 +46,9 @@ export const queryKeys = {
     ],
   },
   notifications: {
-    all: ['notifications'],
+    all: ["notifications"],
   },
   me: {
-    all: ['me'],
+    all: ["me"],
   },
-}
+};

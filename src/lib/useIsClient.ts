@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { useSyncExternalStore } from 'react'
+import { useSyncExternalStore } from "react";
 
-const subscribe = () => () => {}
+const subscribe = () => () => {};
 
 // True once the app is running in the browser. Used to defer portal rendering
 // and other browser-only work until after hydration, without setting state
@@ -12,5 +12,5 @@ export function useIsClient() {
     subscribe,
     () => true,
     () => false,
-  )
+  );
 }

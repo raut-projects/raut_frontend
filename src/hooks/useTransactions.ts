@@ -1,6 +1,9 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { getTransactionSummary, listTransactions } from '../services/transactions'
-import { queryKeys } from '../lib/queryKeys'
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import {
+  getTransactionSummary,
+  listTransactions,
+} from "../services/transactions";
+import { queryKeys } from "../lib/queryKeys";
 
 export function useTransactions(params) {
   return useQuery({
@@ -8,7 +11,7 @@ export function useTransactions(params) {
     queryFn: () => listTransactions(params),
     placeholderData: keepPreviousData,
     refetchInterval: 30_000,
-  })
+  });
 }
 
 export function useTransactionSummary() {
@@ -16,6 +19,5 @@ export function useTransactionSummary() {
     queryKey: queryKeys.transactions.summary,
     queryFn: getTransactionSummary,
     refetchInterval: 60_000,
-  })
+  });
 }
-

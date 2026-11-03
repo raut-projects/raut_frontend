@@ -1,12 +1,12 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   getPayoutFailureCounts,
   listPendingPayoutBatch,
   listPayoutBatchProcessing,
   listPayouts,
   withPayoutReviewIssues,
-} from '../services/payouts'
-import { queryKeys } from '../lib/queryKeys'
+} from "../services/payouts";
+import { queryKeys } from "../lib/queryKeys";
 
 export function usePayouts(params) {
   return useQuery({
@@ -14,7 +14,7 @@ export function usePayouts(params) {
     queryFn: () => listPayouts(params),
     placeholderData: keepPreviousData,
     refetchInterval: 30_000,
-  })
+  });
 }
 
 export function usePayoutBatchReview() {
@@ -22,18 +22,18 @@ export function usePayoutBatchReview() {
     queryKey: queryKeys.payouts.batchReview,
     queryFn: listPendingPayoutBatch,
     refetchInterval: 30_000,
-  })
+  });
   const processingQuery = useQuery({
     queryKey: queryKeys.payouts.batchProcessing,
     queryFn: listPayoutBatchProcessing,
     refetchInterval: 10_000,
-  })
+  });
   const failuresQuery = useQuery({
     queryKey: queryKeys.payouts.batchFailures,
     queryFn: getPayoutFailureCounts,
     staleTime: 5 * 60_000,
     refetchInterval: 5 * 60_000,
-  })
+  });
 
   const data =
     pendingQuery.data && processingQuery.data && failuresQuery.data
@@ -43,14 +43,14 @@ export function usePayoutBatchReview() {
           ),
           processing: processingQuery.data,
         }
-      : undefined
+      : undefined;
 
   const refetch = async () => {
     const [pending, processing, failures] = await Promise.all([
       pendingQuery.refetch(),
       processingQuery.refetch(),
       failuresQuery.refetch(),
-    ])
+    ]);
 
     if (pending.isError || processing.isError || failures.isError) {
       return { data: undefined };
@@ -67,7 +67,7 @@ export function usePayoutBatchReview() {
             }
           : undefined,
     };
-  }
+  };
 
   return {
     data,
@@ -76,11 +76,8 @@ export function usePayoutBatchReview() {
       processingQuery.isPending ||
       failuresQuery.isPending,
     isError:
-      pendingQuery.isError ||
-      processingQuery.isError ||
-      failuresQuery.isError,
-    error:
-      pendingQuery.error ?? processingQuery.error ?? failuresQuery.error,
+      pendingQuery.isError || processingQuery.isError || failuresQuery.isError,
+    error: pendingQuery.error ?? processingQuery.error ?? failuresQuery.error,
     isFetching:
       pendingQuery.isFetching ||
       processingQuery.isFetching ||
@@ -91,5 +88,5 @@ export function usePayoutBatchReview() {
       failuresQuery.dataUpdatedAt,
     ),
     refetch,
-  }
+  };
 }

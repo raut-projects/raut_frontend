@@ -14,11 +14,7 @@ import {
   verifyDriver,
 } from "../services/adminActions";
 import { approveDocument, rejectDocument } from "../services/documents";
-import {
-  approvePayout,
-  rejectPayout,
-  retryPayout,
-} from "../services/payouts";
+import { approvePayout, rejectPayout, retryPayout } from "../services/payouts";
 
 const useAction = ({ mutationFn, successMessage, invalidate = [] }) => {
   const queryClient = useQueryClient();
@@ -122,10 +118,12 @@ type BatchPayoutResult = {
   message?: string;
 };
 
-type BatchPayoutProgress = BatchPayoutResult | {
-  payoutId: string | number;
-  status: "processing";
-};
+type BatchPayoutProgress =
+  | BatchPayoutResult
+  | {
+      payoutId: string | number;
+      status: "processing";
+    };
 
 type ApprovePayoutBatchVariables = {
   payouts: BatchPayout[];
@@ -136,11 +134,7 @@ export function useApprovePayoutBatch() {
   const queryClient = useQueryClient();
   const toast = useToast();
 
-  return useMutation<
-    BatchPayoutResult[],
-    Error,
-    ApprovePayoutBatchVariables
-  >({
+  return useMutation<BatchPayoutResult[], Error, ApprovePayoutBatchVariables>({
     mutationFn: async ({ payouts, onProgress }) => {
       const results = [];
 

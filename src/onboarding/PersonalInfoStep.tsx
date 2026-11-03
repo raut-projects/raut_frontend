@@ -1,8 +1,8 @@
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { personalInfoSchema } from '../schemas/onboardingSchemas';
-import useOnboardingStore from '../store/onboardingStore';
-import { useTranslation } from '../lib/i18n';
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { personalInfoSchema } from "../schemas/onboardingSchemas";
+import useOnboardingStore from "../store/onboardingStore";
+import { useTranslation } from "../lib/i18n";
 
 const inputClass =
   "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600";
@@ -40,46 +40,52 @@ export default function PersonalInfoStep() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="mb-4">
-        <h2 className="text-base font-semibold text-slate-900">{t('personalInformation')}</h2>
-        <p className="mt-0.5 text-xs text-slate-500">{t('personalInfoDesc')}</p>
+        <h2 className="text-base font-semibold text-slate-900">
+          {t("personalInformation")}
+        </h2>
+        <p className="mt-0.5 text-xs text-slate-500">{t("personalInfoDesc")}</p>
       </div>
 
       {/* First Name */}
       <div>
         <label className={labelClass}>
-          {t('firstName')} <span className="text-rose-500">*</span>
+          {t("firstName")} <span className="text-rose-500">*</span>
         </label>
         <input
           type="text"
-          {...register('firstName')}
+          {...register("firstName")}
           className={inputClass}
-          placeholder={t('firstName')}
+          placeholder={t("firstName")}
         />
-        {errors.firstName && <p className={errorClass}>{errors.firstName.message}</p>}
+        {errors.firstName && (
+          <p className={errorClass}>{errors.firstName.message}</p>
+        )}
       </div>
 
       {/* Last Name */}
       <div>
         <label className={labelClass}>
-          {t('lastName')} <span className="text-rose-500">*</span>
+          {t("lastName")} <span className="text-rose-500">*</span>
         </label>
         <input
           type="text"
-          {...register('lastName')}
+          {...register("lastName")}
           className={inputClass}
-          placeholder={t('lastName')}
+          placeholder={t("lastName")}
         />
-        {errors.lastName && <p className={errorClass}>{errors.lastName.message}</p>}
+        {errors.lastName && (
+          <p className={errorClass}>{errors.lastName.message}</p>
+        )}
       </div>
 
       {/* Email */}
       <div>
         <label className={labelClass}>
-          {t('emailAddress')} <span className="text-rose-500">*</span>
+          {t("emailAddress")} <span className="text-rose-500">*</span>
         </label>
         <input
           type="email"
-          {...register('email')}
+          {...register("email")}
           className={inputClass}
           placeholder="your.email@example.com"
         />
@@ -89,13 +95,15 @@ export default function PersonalInfoStep() {
       {/* Language Preference */}
       <div>
         <label className={labelClass}>
-          {t('preferredLanguage')} <span className="text-rose-500">*</span>
+          {t("preferredLanguage")} <span className="text-rose-500">*</span>
         </label>
-        <select {...register('languagePreference')} className={inputClass}>
-          <option value="en">{t('english')}</option>
-          <option value="sw">{t('swahili')}</option>
+        <select {...register("languagePreference")} className={inputClass}>
+          <option value="en">{t("english")}</option>
+          <option value="sw">{t("swahili")}</option>
         </select>
-        {errors.languagePreference && <p className={errorClass}>{errors.languagePreference.message}</p>}
+        {errors.languagePreference && (
+          <p className={errorClass}>{errors.languagePreference.message}</p>
+        )}
       </div>
 
       {/* Terms & Conditions */}
@@ -108,13 +116,23 @@ export default function PersonalInfoStep() {
             className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
           />
           <span className="text-xs text-slate-600 leading-relaxed">
-            {t('termsText')}{' '}
-            <a href="https://raut.africa/terms" target="_blank" rel="noopener noreferrer" className="font-medium text-brand-600 underline">
-              {t('termsAndConditions')}
-            </a>{' '}
-            {t('and')}{' '}
-            <a href="https://raut.africa/privacy" target="_blank" rel="noopener noreferrer" className="font-medium text-brand-600 underline">
-              {t('privacyPolicy')}
+            {t("termsText")}{" "}
+            <a
+              href="https://raut.africa/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-brand-600 underline"
+            >
+              {t("termsAndConditions")}
+            </a>{" "}
+            {t("and")}{" "}
+            <a
+              href="https://raut.africa/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-brand-600 underline"
+            >
+              {t("privacyPolicy")}
             </a>
           </span>
         </label>
@@ -126,7 +144,7 @@ export default function PersonalInfoStep() {
         disabled={isSubmitting || !termsAccepted}
         className="w-full mt-5 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isSubmitting ? t('saving') : t('continue')}
+        {isSubmitting ? t("saving") : t("continue")}
       </button>
     </form>
   );

@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef } from "react";
 
 interface TanzaniaPhoneInputProps {
   value: string;
@@ -8,16 +8,22 @@ interface TanzaniaPhoneInputProps {
   disabled?: boolean;
 }
 
-const TanzaniaPhoneInput = forwardRef<HTMLInputElement, TanzaniaPhoneInputProps>(
-  ({ value, onChange, className, placeholder = '712 345 678', disabled }, ref) => {
+const TanzaniaPhoneInput = forwardRef<
+  HTMLInputElement,
+  TanzaniaPhoneInputProps
+>(
+  (
+    { value, onChange, className, placeholder = "712 345 678", disabled },
+    ref,
+  ) => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       let input = e.target.value;
 
       // Remove all non-digits
-      input = input.replace(/\D/g, '');
+      input = input.replace(/\D/g, "");
 
       // Remove leading 0 if present
-      if (input.startsWith('0')) {
+      if (input.startsWith("0")) {
         input = input.substring(1);
       }
 
@@ -29,7 +35,7 @@ const TanzaniaPhoneInput = forwardRef<HTMLInputElement, TanzaniaPhoneInputProps>
 
     // Format display value with spaces for readability
     const formatDisplay = (val: string) => {
-      const digits = val.replace(/\D/g, '');
+      const digits = val.replace(/\D/g, "");
       if (digits.length <= 3) return digits;
       if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
       return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
@@ -53,9 +59,9 @@ const TanzaniaPhoneInput = forwardRef<HTMLInputElement, TanzaniaPhoneInputProps>
         />
       </div>
     );
-  }
+  },
 );
 
-TanzaniaPhoneInput.displayName = 'TanzaniaPhoneInput';
+TanzaniaPhoneInput.displayName = "TanzaniaPhoneInput";
 
 export default TanzaniaPhoneInput;

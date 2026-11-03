@@ -1,17 +1,18 @@
-import SidePanel from './SidePanel'
+import SidePanel from "./SidePanel";
 
-const labelClass = 'mb-1.5 block text-xs font-semibold text-slate-600'
-const valueClass = 'block rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700'
+const labelClass = "mb-1.5 block text-xs font-semibold text-slate-600";
+const valueClass =
+  "block rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700";
 
 function ViewCustomerPanel({ open, onClose, customer }) {
-  const close = () => onClose()
+  const close = () => onClose();
 
   return (
     <SidePanel
       open={open}
       onClose={close}
       title="Customer details"
-      description={customer ? customer.name : 'View customer information'}
+      description={customer ? customer.name : "View customer information"}
       footer={
         <button
           type="button"
@@ -54,7 +55,9 @@ function ViewCustomerPanel({ open, onClose, customer }) {
 
           <label className="block">
             <span className={labelClass}>Role</span>
-            <div className={`${valueClass} capitalize`}>{customer.role?.replace('_', ' ')}</div>
+            <div className={`${valueClass} capitalize`}>
+              {customer.role?.replace("_", " ")}
+            </div>
           </label>
 
           <label className="block">
@@ -71,7 +74,7 @@ function ViewCustomerPanel({ open, onClose, customer }) {
         </div>
       )}
     </SidePanel>
-  )
+  );
 }
 
-export default ViewCustomerPanel
+export default ViewCustomerPanel;

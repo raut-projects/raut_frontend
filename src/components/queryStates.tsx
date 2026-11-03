@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
-import { CircleAlert, RefreshCw } from 'lucide-react'
+import { useEffect, useState } from "react";
+import { CircleAlert, RefreshCw } from "lucide-react";
 
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { TableCell, TableRow } from '@/components/ui/table'
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TableCell, TableRow } from "@/components/ui/table";
 
 export function TableSkeleton({
   rows = 6,
@@ -12,10 +12,10 @@ export function TableSkeleton({
   lgCols = cols,
 }) {
   const cellClass = (col) => {
-    if (col >= lgCols) return "hidden xl:table-cell"
-    if (col >= mobileCols) return "hidden lg:table-cell"
-    return undefined
-  }
+    if (col >= lgCols) return "hidden xl:table-cell";
+    if (col >= mobileCols) return "hidden lg:table-cell";
+    return undefined;
+  };
 
   return (
     <tbody>
@@ -29,7 +29,7 @@ export function TableSkeleton({
         </TableRow>
       ))}
     </tbody>
-  )
+  );
 }
 
 export function QueryError({ error, onRetry }) {
@@ -41,7 +41,7 @@ export function QueryError({ error, onRetry }) {
         aria-hidden="true"
       />
       <p className="text-sm font-medium text-slate-700">
-        {error?.message ?? 'Something went wrong while loading this data.'}
+        {error?.message ?? "Something went wrong while loading this data."}
       </p>
       <Button
         type="button"
@@ -52,31 +52,33 @@ export function QueryError({ error, onRetry }) {
         Try again
       </Button>
     </div>
-  )
+  );
 }
 
 export function RefreshIndicator({ isFetching, updatedAt, onRefresh }) {
-  const [now, setNow] = useState(() => Date.now())
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 5_000)
-    return () => clearInterval(timer)
-  }, [])
+    const timer = setInterval(() => setNow(Date.now()), 5_000);
+    return () => clearInterval(timer);
+  }, []);
 
-  const seconds = updatedAt ? Math.max(0, Math.round((now - updatedAt) / 1000)) : null
+  const seconds = updatedAt
+    ? Math.max(0, Math.round((now - updatedAt) / 1000))
+    : null;
   const label =
     seconds === null
-      ? 'not synced yet'
+      ? "not synced yet"
       : seconds < 5
-        ? 'just now'
+        ? "just now"
         : seconds < 60
           ? `${seconds}s ago`
-          : `${Math.round(seconds / 60)}m ago`
+          : `${Math.round(seconds / 60)}m ago`;
 
   return (
     <div className="flex items-center gap-2 text-xs text-slate-500">
-      <span className={isFetching ? 'font-medium text-brand-600' : ''}>
-        {isFetching ? 'Refreshing…' : `Updated ${label}`}
+      <span className={isFetching ? "font-medium text-brand-600" : ""}>
+        {isFetching ? "Refreshing…" : `Updated ${label}`}
       </span>
       <Button
         type="button"
@@ -88,11 +90,11 @@ export function RefreshIndicator({ isFetching, updatedAt, onRefresh }) {
         aria-label="Refresh data"
       >
         <RefreshCw
-          className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`}
+          className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
           strokeWidth={1.8}
           aria-hidden="true"
         />
       </Button>
     </div>
-  )
+  );
 }

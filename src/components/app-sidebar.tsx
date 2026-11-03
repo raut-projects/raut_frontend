@@ -231,7 +231,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton tooltip="Settings" isActive={settingsActive}>
+                  <SidebarMenuButton
+                    tooltip="Settings"
+                    isActive={settingsActive}
+                  >
                     <Settings />
                     <span>Settings</span>
                     <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
