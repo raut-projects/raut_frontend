@@ -8,14 +8,14 @@ import { useFromParam } from "@/lib/useFromParam";
 import { useSession } from "@/hooks/useSession";
 import { loginWithEmail } from "@/services/auth";
 import { isAdminRole } from "@/lib/roles";
+import { validateEmail } from "@/lib/validation";
+import { getLoginErrorMessage } from "@/lib/authErrors";
 
 const inputClass =
   "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100";
 
 const labelClass = "mb-1.5 block text-xs font-semibold text-slate-600";
 const errorClass = "mt-1 block text-xs font-medium text-rose-600";
-
-const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
 function Login() {
   const router = useRouter();
@@ -71,11 +71,8 @@ function Login() {
     const value = email.trim();
     const nextErrors: { email?: string; password?: string } = {};
 
-    if (!value) {
-      nextErrors.email = "Email address is required.";
-    } else if (!isValidEmail(value)) {
-      nextErrors.email = "Enter a valid email address.";
-    }
+    const emailError = validateEmail(value);
+    if (emailError) nextErrors.email = emailError;
 
     if (!password) {
       nextErrors.password = "Password is required.";
@@ -99,9 +96,7 @@ function Login() {
           : `/request-admin?from=${encodeURIComponent(from === "/request-admin" ? "/" : from)}`,
       );
     } catch (error) {
-      setFormError(
-        error?.message ?? "Those credentials are not correct. Please try again.",
-      );
+      setFormError(getLoginErrorMessage(error));
     } finally {
       setSubmitting(false);
     }
@@ -161,6 +156,7 @@ function Login() {
                 type="email"
                 inputMode="email"
                 autoComplete="email"
+                maxLength={254}
                 value={email}
                 onChange={handleEmailChange}
                 placeholder="admin@raut.africa"
