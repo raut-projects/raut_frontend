@@ -293,7 +293,7 @@ export default function VehicleInfoStep() {
           // Show uploaded file with replace button
           <div className="relative group rounded-lg overflow-hidden border-2 border-emerald-500">
             <img src={url} alt={label} className="w-full h-48 object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end">
+            <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent flex items-end">
               <div className="w-full p-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <svg
@@ -394,7 +394,7 @@ export default function VehicleInfoStep() {
               key={type.value}
               type="button"
               onClick={() => handleVehicleTypeChange(type.value)}
-              className={`flex-shrink-0 w-32 p-4 border-2 rounded-xl transition-all ${
+              className={`shrink-0 w-32 p-4 border-2 rounded-xl transition-all ${
                 vehicleType === type.value
                   ? "border-brand-600 bg-brand-50"
                   : "border-slate-200 hover:border-slate-300"
