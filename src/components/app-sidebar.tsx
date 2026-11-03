@@ -258,7 +258,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarFooter className="border-t border-sidebar-border">
         <SidebarMenu>
-          <SidebarMenuItem>
+          {/* <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
               tooltip={`${displayName} — ${roleLabel}`}
@@ -276,7 +276,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </span>
               </div>
             </SidebarMenuButton>
-          </SidebarMenuItem>
+          </SidebarMenuItem> */}
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Logout"
