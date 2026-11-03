@@ -143,8 +143,8 @@ function Customers() {
                 : `${total} ${status} account${total === 1 ? "" : "s"}`}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:w-auto">
             <svg
               className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
               viewBox="0 0 24 24"
@@ -172,7 +172,7 @@ function Customers() {
             value={status}
             onChange={onStatusChange}
             aria-label="Filter customers by status"
-            className="rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100 sm:w-auto"
           >
             <option value="all">All accounts</option>
             <option value="active">Active only</option>
@@ -182,14 +182,14 @@ function Customers() {
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-card">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5">
           <RefreshIndicator
             isFetching={isFetching}
             updatedAt={dataUpdatedAt}
             onRefresh={refetch}
           />
           {selectedIds.size > 0 && (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="text-xs font-semibold text-slate-600">
                 {selectedIds.size} selected
               </span>
@@ -225,16 +225,23 @@ function Customers() {
                 />
               </TableHead>
               <TableHead>Customer</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Orders</TableHead>
-              <TableHead>Joined</TableHead>
-              <TableHead>Role</TableHead>
+              <TableHead className="hidden lg:table-cell">Email</TableHead>
+              <TableHead className="hidden lg:table-cell">Orders</TableHead>
+              <TableHead className="hidden xl:table-cell">Joined</TableHead>
+              <TableHead className="hidden lg:table-cell">Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
 
-          {isPending && <TableSkeleton rows={PAGE_SIZE} cols={8} />}
+          {isPending && (
+            <TableSkeleton
+              rows={PAGE_SIZE}
+              cols={8}
+              mobileCols={4}
+              lgCols={7}
+            />
+          )}
 
           {isError && (
             <TableBody>
@@ -272,7 +279,7 @@ function Customers() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                      <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 sm:flex sm:h-10 sm:w-10">
                         <svg
                           className="h-5 w-5"
                           viewBox="0 0 24 24"
@@ -288,17 +295,21 @@ function Customers() {
                           />
                         </svg>
                       </span>
-                      <span className="font-medium text-slate-900">
+                      <span className="max-w-[5rem] truncate font-medium text-slate-900 sm:max-w-[8rem] lg:max-w-none">
                         {c.name}
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell>{c.email}</TableCell>
-                  <TableCell className="font-medium text-slate-900">
+                  <TableCell className="hidden max-w-[8rem] truncate lg:table-cell">
+                    {c.email}
+                  </TableCell>
+                  <TableCell className="hidden font-medium text-slate-900 lg:table-cell">
                     {c.orders}
                   </TableCell>
-                  <TableCell>{c.joined}</TableCell>
-                  <TableCell>
+                  <TableCell className="hidden xl:table-cell">
+                    {c.joined}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
                     <span
                       className={`badge capitalize ring-1 ring-inset ${roleStyles[c.role] ?? roleStyles.user}`}
                     >

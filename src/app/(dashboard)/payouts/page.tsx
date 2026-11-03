@@ -251,7 +251,7 @@ function Payouts() {
               <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
                 {card.label}
               </p>
-              <p className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900">
+              <p className="mt-1.5 text-lg font-bold tracking-tight sm:text-2xl text-slate-900">
                 {card.value}
               </p>
               <p className="mt-0.5 text-xs text-slate-500">{card.hint}</p>
@@ -261,7 +261,7 @@ function Payouts() {
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-card">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5">
           <RefreshIndicator
             isFetching={isFetching}
             updatedAt={dataUpdatedAt}
@@ -273,15 +273,22 @@ function Payouts() {
             <TableRow className="hover:bg-transparent">
               <TableHead>Driver</TableHead>
               <TableHead>Amount</TableHead>
-              <TableHead>Method</TableHead>
+              <TableHead className="hidden lg:table-cell">Method</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Reference</TableHead>
-              <TableHead>Requested</TableHead>
+              <TableHead className="hidden xl:table-cell">Reference</TableHead>
+              <TableHead className="hidden lg:table-cell">Requested</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
 
-            {isPending && <TableSkeleton rows={PAGE_SIZE} cols={7} />}
+            {isPending && (
+              <TableSkeleton
+                rows={PAGE_SIZE}
+                cols={7}
+                mobileCols={4}
+                lgCols={6}
+              />
+            )}
 
             {isError && (
               <TableBody>
@@ -299,14 +306,14 @@ function Payouts() {
                   <TableRow key={payout.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
+                        <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700 sm:flex">
                           {payout.driverName
                             .split(" ")
                             .map((n) => n[0])
                             .join("")
                             .slice(0, 2)}
                         </span>
-                        <span className="font-medium text-slate-900">
+                        <span className="max-w-[5rem] truncate font-medium text-slate-900 sm:max-w-[8rem] lg:max-w-none">
                           {payout.driverName}
                         </span>
                       </div>
@@ -314,7 +321,7 @@ function Payouts() {
                     <TableCell className="font-medium text-slate-900">
                       {payout.amountLabel}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       <span className="block text-slate-700">
                         {payout.method}
                       </span>
@@ -337,10 +344,12 @@ function Payouts() {
                         {payout.status}
                       </span>
                     </TableCell>
-                    <TableCell className="text-xs text-slate-500">
+                    <TableCell className="hidden text-xs text-slate-500 xl:table-cell">
                       {payout.reference}
                     </TableCell>
-                    <TableCell>{payout.requestedAt}</TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      {payout.requestedAt}
+                    </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -420,7 +429,7 @@ function Payouts() {
               </TableBody>
             )}
         </Table>
-        <div className="flex items-center justify-between border-t border-slate-200 px-5 py-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3.5 sm:px-5">
           <p className="text-xs text-slate-500">
             Showing{" "}
             <span className="font-semibold text-slate-700">

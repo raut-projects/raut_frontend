@@ -270,7 +270,7 @@ function RoutesPage() {
               <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
                 {card.label}
               </p>
-              <p className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900">
+              <p className="mt-1.5 text-lg font-bold tracking-tight sm:text-2xl text-slate-900">
                 {summaryPending ? "-" : card.value}
               </p>
               <p className="mt-0.5 text-xs text-slate-500">{card.hint}</p>
@@ -280,7 +280,7 @@ function RoutesPage() {
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-card">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5">
           <RefreshIndicator
             isFetching={isFetching}
             updatedAt={dataUpdatedAt}
@@ -291,18 +291,25 @@ function RoutesPage() {
           <TableHeader className="bg-slate-50 [&_tr]:border-slate-200">
             <TableRow className="hover:bg-transparent">
               <TableHead>Route</TableHead>
-              <TableHead>Driver</TableHead>
-              <TableHead>Vehicle</TableHead>
-              <TableHead>Distance</TableHead>
-              <TableHead>Seats</TableHead>
-              <TableHead>Rides</TableHead>
+              <TableHead className="hidden lg:table-cell">Driver</TableHead>
+              <TableHead className="hidden lg:table-cell">Vehicle</TableHead>
+              <TableHead className="hidden lg:table-cell">Distance</TableHead>
+              <TableHead className="hidden xl:table-cell">Seats</TableHead>
+              <TableHead className="hidden xl:table-cell">Rides</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
+              <TableHead className="hidden xl:table-cell">Created</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
 
-            {isPending && <TableSkeleton rows={PAGE_SIZE} cols={9} />}
+            {isPending && (
+              <TableSkeleton
+                rows={PAGE_SIZE}
+                cols={9}
+                mobileCols={3}
+                lgCols={6}
+              />
+            )}
 
             {isError && (
               <TableBody>
@@ -331,22 +338,25 @@ function RoutesPage() {
                     className="cursor-pointer focus-visible:outline-2 focus-visible:outline-brand-600"
                   >
                     <TableCell>
-                      <span className="block max-w-[18rem] truncate font-medium text-slate-900">
+                      <span className="block max-w-[5rem] truncate font-medium text-slate-900 sm:max-w-[10rem] xl:max-w-[18rem]">
                         {route.route}
                       </span>
                       <span className="block text-xs text-slate-400">
                         {route.id}
                       </span>
+                      <span className="block max-w-[5rem] truncate text-xs text-slate-400 lg:hidden">
+                        {route.driver}
+                      </span>
                     </TableCell>
-                    <TableCell>
-                      <span className="block text-slate-900">
+                    <TableCell className="hidden lg:table-cell">
+                      <span className="block max-w-[8rem] truncate text-slate-900">
                         {route.driver}
                       </span>
                       <span className="block text-xs text-slate-400">
                         {route.driverPhone}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       <span className="block max-w-56 truncate text-slate-900">
                         {route.vehicle}
                       </span>
@@ -354,7 +364,7 @@ function RoutesPage() {
                         {route.plateNumber}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       <span className="block text-slate-900">
                         {route.distance}
                       </span>
@@ -362,8 +372,10 @@ function RoutesPage() {
                         {route.duration}
                       </span>
                     </TableCell>
-                    <TableCell className="text-slate-700">{route.seats}</TableCell>
-                    <TableCell>
+                    <TableCell className="hidden text-slate-700 xl:table-cell">
+                      {route.seats}
+                    </TableCell>
+                    <TableCell className="hidden xl:table-cell">
                       <span className="block text-slate-900">
                         {route.totalRides} total
                       </span>
@@ -386,7 +398,9 @@ function RoutesPage() {
                         {route.status}
                       </span>
                     </TableCell>
-                    <TableCell>{route.created}</TableCell>
+                    <TableCell className="hidden xl:table-cell">
+                      {route.created}
+                    </TableCell>
                     <TableCell
                       className="text-right"
                       onClick={(event) => event.stopPropagation()}
@@ -446,7 +460,7 @@ function RoutesPage() {
               </TableBody>
             )}
         </Table>
-        <div className="flex items-center justify-between border-t border-slate-200 px-5 py-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3.5 sm:px-5">
           <p className="text-xs text-slate-500">
             Showing{" "}
             <span className="font-semibold text-slate-700">

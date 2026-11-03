@@ -219,7 +219,7 @@ function Rides() {
               <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
                 {card.label}
               </p>
-              <p className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900">
+              <p className="mt-1.5 text-lg font-bold tracking-tight sm:text-2xl text-slate-900">
                 {summaryPending ? "-" : card.value}
               </p>
               <p className="mt-0.5 text-xs text-slate-500">{card.hint}</p>
@@ -229,7 +229,7 @@ function Rides() {
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-card">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5">
           <RefreshIndicator
             isFetching={isFetching}
             updatedAt={dataUpdatedAt}
@@ -241,16 +241,23 @@ function Rides() {
             <TableRow className="hover:bg-transparent">
               <TableHead>Ride</TableHead>
               <TableHead>Customer</TableHead>
-              <TableHead>Driver</TableHead>
-              <TableHead>Route</TableHead>
-              <TableHead>Fare</TableHead>
+              <TableHead className="hidden lg:table-cell">Driver</TableHead>
+              <TableHead className="hidden xl:table-cell">Route</TableHead>
+              <TableHead className="hidden lg:table-cell">Fare</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Date</TableHead>
+              <TableHead className="hidden xl:table-cell">Date</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
 
-            {isPending && <TableSkeleton rows={PAGE_SIZE} cols={8} />}
+            {isPending && (
+              <TableSkeleton
+                rows={PAGE_SIZE}
+                cols={8}
+                mobileCols={4}
+                lgCols={6}
+              />
+            )}
 
             {isError && (
               <TableBody>
@@ -279,17 +286,20 @@ function Rides() {
                     className="cursor-pointer focus-visible:outline-2 focus-visible:outline-brand-600"
                   >
                     <TableCell className="font-medium text-slate-900">
-                      {ride.id}
+                      <span className="block">{ride.id}</span>
+                      <span className="block text-xs font-normal text-slate-400 lg:hidden">
+                        {ride.amount}
+                      </span>
                     </TableCell>
                     <TableCell>
-                      <span className="block text-slate-900">
+                      <span className="block max-w-[5rem] truncate text-slate-900 sm:max-w-none">
                         {ride.customer}
                       </span>
-                      <span className="block text-xs text-slate-400">
+                      <span className="block max-w-[5rem] truncate text-xs text-slate-400">
                         {ride.customerPhone}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       <span className="block text-slate-900">
                         {ride.driver}
                       </span>
@@ -297,12 +307,12 @@ function Rides() {
                         {ride.driverPhone}
                       </span>
                     </TableCell>
-                    <TableCell>
-                      <span className="block max-w-[16rem] truncate text-slate-700">
+                    <TableCell className="hidden xl:table-cell">
+                      <span className="block max-w-[12rem] truncate text-slate-700">
                         {ride.route}
                       </span>
                     </TableCell>
-                    <TableCell className="font-medium text-slate-900">
+                    <TableCell className="hidden font-medium text-slate-900 lg:table-cell">
                       {ride.amount}
                     </TableCell>
                     <TableCell>
@@ -318,7 +328,9 @@ function Rides() {
                         {ride.status}
                       </span>
                     </TableCell>
-                    <TableCell>{ride.date}</TableCell>
+                    <TableCell className="hidden xl:table-cell">
+                      {ride.date}
+                    </TableCell>
                     <TableCell
                       className="text-right"
                       onClick={(event) => event.stopPropagation()}
@@ -381,7 +393,7 @@ function Rides() {
               </TableBody>
             )}
         </Table>
-        <div className="flex items-center justify-between border-t border-slate-200 px-5 py-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3.5 sm:px-5">
           <p className="text-xs text-slate-500">
             Showing{" "}
             <span className="font-semibold text-slate-700">{rides.length}</span>{" "}

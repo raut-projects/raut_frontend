@@ -176,7 +176,7 @@ function Transactions() {
               }`}
             >
               <p className="text-xs font-medium uppercase tracking-wider text-slate-500">{card.label}</p>
-              <p className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900">
+              <p className="mt-1.5 text-lg font-bold tracking-tight sm:text-2xl text-slate-900">
                 {summaryPending ? '-' : card.value}
               </p>
               <p className="mt-0.5 text-xs text-slate-500">{card.hint}</p>
@@ -186,7 +186,7 @@ function Transactions() {
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-card">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5">
           <RefreshIndicator isFetching={isFetching} updatedAt={dataUpdatedAt} onRefresh={refetch} />
         </div>
         <div className="overflow-x-auto">
@@ -194,16 +194,23 @@ function Transactions() {
             <thead className="bg-slate-50">
               <tr>
                 <th className="table-th">Reference</th>
-                <th className="table-th">Name</th>
-                <th className="table-th">Type</th>
+                <th className="table-th hidden lg:table-cell">Name</th>
+                <th className="table-th hidden lg:table-cell">Type</th>
                 <th className="table-th">Amount</th>
                 <th className="table-th">Status</th>
-                <th className="table-th">Date</th>
-                <th className="table-th">Description</th>
+                <th className="table-th hidden lg:table-cell">Date</th>
+                <th className="table-th hidden xl:table-cell">Description</th>
               </tr>
             </thead>
 
-            {isPending && <TableSkeleton rows={PAGE_SIZE} cols={7} />}
+            {isPending && (
+              <TableSkeleton
+                rows={PAGE_SIZE}
+                cols={7}
+                mobileCols={3}
+                lgCols={6}
+              />
+            )}
 
             {isError && (
               <tbody>
@@ -220,16 +227,21 @@ function Transactions() {
                 {transactions.map((transaction) => (
                   <tr key={transaction.id} className="transition-colors hover:bg-slate-50">
                     <td className="table-td">
-                      <span className="block font-medium text-slate-900">{transaction.reference}</span>
+                      <span className="block max-w-[5rem] truncate font-medium text-slate-900 sm:max-w-none">
+                        {transaction.reference}
+                      </span>
                       <span className="block text-xs text-slate-400">{transaction.id}</span>
+                      <span className="block max-w-[5rem] truncate text-xs text-slate-400 lg:hidden">
+                        {transaction.userName}
+                      </span>
                     </td>
-                    <td className="table-td">
+                    <td className="table-td hidden lg:table-cell">
                       <span className="block text-slate-900">{transaction.userName}</span>
                       {transaction.userPhone !== '—' && (
                         <span className="block text-xs text-slate-400">{transaction.userPhone}</span>
                       )}
                     </td>
-                    <td className="table-td">
+                    <td className="table-td hidden lg:table-cell">
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                           typeStyles[transaction.type] ?? 'bg-slate-100 text-slate-700'
@@ -254,11 +266,11 @@ function Transactions() {
                         {transaction.status}
                       </span>
                     </td>
-                    <td className="table-td">
+                    <td className="table-td hidden lg:table-cell">
                       <span className="block text-slate-900">{transaction.created}</span>
                       <span className="block text-xs text-slate-400">{transaction.createdAt?.split(' ')[1] ?? ''}</span>
                     </td>
-                    <td className="table-td">
+                    <td className="table-td hidden xl:table-cell">
                       <span className="block max-w-[16rem] truncate text-slate-700">
                         {transaction.description || '—'}
                       </span>
@@ -276,7 +288,7 @@ function Transactions() {
             )}
           </table>
         </div>
-        <div className="flex items-center justify-between border-t border-slate-200 px-5 py-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3.5 sm:px-5">
           <p className="text-xs text-slate-500">
             Showing <span className="font-semibold text-slate-700">{transactions.length}</span> of{' '}
             <span className="font-semibold text-slate-700">{total}</span>

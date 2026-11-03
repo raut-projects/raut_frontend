@@ -20,6 +20,7 @@ import {
   Ticket,
   Users,
   Wallet,
+  BadgeAlert,
   type LucideIcon,
 } from "lucide-react";
 
@@ -97,7 +98,7 @@ const navGroups: NavGroup[] = [
     label: "Support",
     items: [
       { title: "Support Tickets", url: "/support-tickets", icon: Ticket },
-      { title: "Customer Issues", url: "/customer-issues", icon: Bug },
+      { title: "Customer Issues", url: "/customer-issues", icon: BadgeAlert },
     ],
   },
   {

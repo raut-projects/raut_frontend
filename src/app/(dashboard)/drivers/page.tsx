@@ -176,8 +176,8 @@ function Drivers() {
                 : `${total} ${status} driver${total === 1 ? "" : "s"}`}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
+        <div className="flex w-full items-center gap-3 sm:w-auto">
+          <div className="relative w-full sm:w-auto">
             <Search
               className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
               strokeWidth={2}
@@ -212,7 +212,7 @@ function Drivers() {
                 {s.label}
               </p>
               <p
-                className={`mt-1.5 text-2xl font-bold tracking-tight ${s.color}`}
+                className={`mt-1.5 text-lg font-bold tracking-tight sm:text-2xl ${s.color}`}
               >
                 {s.value}
               </p>
@@ -222,14 +222,14 @@ function Drivers() {
       </div>
 
       <Card className="gap-0 rounded-xl py-0 shadow-card ring-slate-200">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5">
           <RefreshIndicator
             isFetching={isFetching}
             updatedAt={dataUpdatedAt}
             onRefresh={refetch}
           />
           {selectedIds.size > 0 && (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="text-xs font-semibold text-slate-600">
                 {selectedIds.size} selected
               </span>
@@ -252,8 +252,7 @@ function Drivers() {
             </div>
           )}
         </div>
-        <div className="overflow-x-auto">
-          <Table className="min-w-full">
+        <Table className="min-w-full">
             <TableHeader className="bg-slate-50 [&_tr]:border-slate-200">
               <TableRow className="hover:bg-transparent">
                 <TableHead className="w-10 pr-4">
@@ -267,16 +266,23 @@ function Drivers() {
                   />
                 </TableHead>
                 <TableHead>Driver</TableHead>
-                <TableHead>Phone</TableHead>
+                <TableHead className="hidden lg:table-cell">Phone</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Rides</TableHead>
-                <TableHead>Rating</TableHead>
-                <TableHead>Joined</TableHead>
+                <TableHead className="hidden lg:table-cell">Rides</TableHead>
+                <TableHead className="hidden lg:table-cell">Rating</TableHead>
+                <TableHead className="hidden xl:table-cell">Joined</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
 
-            {isPending && <TableSkeleton rows={PAGE_SIZE} cols={8} />}
+            {isPending && (
+              <TableSkeleton
+                rows={PAGE_SIZE}
+                cols={8}
+                mobileCols={4}
+                lgCols={7}
+              />
+            )}
 
             {isError && (
               <TableBody>
@@ -317,7 +323,7 @@ function Drivers() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                        <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 sm:flex sm:h-10 sm:w-10">
                           <svg
                             className="h-5 w-5"
                             viewBox="0 0 24 24"
@@ -333,12 +339,14 @@ function Drivers() {
                             />
                           </svg>
                         </span>
-                        <span className="font-medium text-slate-900">
+                        <span className="max-w-[5rem] truncate font-medium text-slate-900 sm:max-w-[8rem] lg:max-w-none">
                           {r.name}
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell>{r.phone}</TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      {r.phone}
+                    </TableCell>
                     <TableCell>
                       <Badge
                         variant="outline"
@@ -351,10 +359,10 @@ function Drivers() {
                         {r.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="font-medium text-slate-900">
+                    <TableCell className="hidden font-medium text-slate-900 lg:table-cell">
                       {r.rides}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       <span className="inline-flex items-center gap-1 font-medium text-slate-900">
                         <svg
                           className="h-4 w-4 text-amber-400"
@@ -371,7 +379,9 @@ function Drivers() {
                         {r.rating.toFixed(1)}
                       </span>
                     </TableCell>
-                    <TableCell>{r.joined}</TableCell>
+                    <TableCell className="hidden xl:table-cell">
+                      {r.joined}
+                    </TableCell>
                     <TableCell
                       className="text-right"
                       onClick={(event) => event.stopPropagation()}
@@ -475,9 +485,8 @@ function Drivers() {
                 )}
               </TableBody>
             )}
-          </Table>
-        </div>
-        <div className="flex items-center justify-between border-t border-slate-200 px-5 py-3.5">
+        </Table>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3.5 sm:px-5">
           <p className="text-xs text-slate-500">
             Showing{" "}
             <span className="font-semibold text-slate-700">

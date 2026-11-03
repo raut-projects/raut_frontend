@@ -5,13 +5,24 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TableCell, TableRow } from '@/components/ui/table'
 
-export function TableSkeleton({ rows = 6, cols = 6 }) {
+export function TableSkeleton({
+  rows = 6,
+  cols = 6,
+  mobileCols = 4,
+  lgCols = cols,
+}) {
+  const cellClass = (col) => {
+    if (col >= lgCols) return "hidden xl:table-cell"
+    if (col >= mobileCols) return "hidden lg:table-cell"
+    return undefined
+  }
+
   return (
     <tbody>
       {Array.from({ length: rows }, (_, row) => (
         <TableRow key={row} className="hover:bg-transparent">
           {Array.from({ length: cols }, (_, col) => (
-            <TableCell key={col}>
+            <TableCell key={col} className={cellClass(col)}>
               <Skeleton className="h-3.5 w-full bg-slate-200" />
             </TableCell>
           ))}
