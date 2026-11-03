@@ -2,95 +2,96 @@
 
 import RequireAuth from "@/components/RequireAuth";
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useQueryClient } from '@tanstack/react-query'
-import { useToast } from '@/components/toastContext'
-import GateLoader from '@/components/GateLoader'
-import { useFromParam } from '@/lib/useFromParam'
-import { useSession } from '@/hooks/useSession'
-import { isAdminRole } from '@/lib/roles'
-import { requestAdminAccess, signOut } from '@/services/auth'
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/components/toastContext";
+import GateLoader from "@/components/GateLoader";
+import { useFromParam } from "@/lib/useFromParam";
+import { useSession } from "@/hooks/useSession";
+import { isAdminRole } from "@/lib/roles";
+import { requestAdminAccess, signOut } from "@/services/auth";
 
 const inputClass =
-  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100'
+  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100";
 
-const labelClass = 'mb-1.5 block text-xs font-semibold text-slate-600'
-const errorClass = 'mt-1 block text-xs font-medium text-rose-600'
+const labelClass = "mb-1.5 block text-xs font-semibold text-slate-600";
+const errorClass = "mt-1 block text-xs font-medium text-rose-600";
 
 function RequestAdmin() {
-  const router = useRouter()
-  const toast = useToast()
-  const session = useSession()
-  const queryClient = useQueryClient()
+  const router = useRouter();
+  const toast = useToast();
+  const session = useSession();
+  const queryClient = useQueryClient();
 
-  const [secret, setSecret] = useState('')
-  const [error, setError] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [visible, setVisible] = useState(false)
+  const [secret, setSecret] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [visible, setVisible] = useState(false);
 
-  const requested = useFromParam('/')
-  const from = requested === '/request-admin' ? '/' : requested
+  const requested = useFromParam("/");
+  const from = requested === "/request-admin" ? "/" : requested;
 
-  const isAdmin = Boolean(session) && isAdminRole(session.role)
-
-  useEffect(() => {
-    if (!session) router.replace('/login?from=%2Frequest-admin')
-  }, [session, router])
+  const isAdmin = Boolean(session) && isAdminRole(session.role);
 
   useEffect(() => {
-    if (isAdmin) router.replace(from)
-  }, [isAdmin, from, router])
+    if (!session) router.replace("/login?from=%2Frequest-admin");
+  }, [session, router]);
+
+  useEffect(() => {
+    if (isAdmin) router.replace(from);
+  }, [isAdmin, from, router]);
 
   if (!session || isAdmin) {
-    return <GateLoader />
+    return <GateLoader />;
   }
 
   const handleChange = (event) => {
-    setSecret(event.target.value)
-    setError('')
-  }
+    setSecret(event.target.value);
+    setError("");
+  };
 
   const handleSubmit = async (event) => {
-    event.preventDefault()
-    if (submitting) return
+    event.preventDefault();
+    if (submitting) return;
 
-    const value = secret.trim()
+    const value = secret.trim();
 
     if (!value) {
-      setError('Enter the admin secret.')
-      return
+      setError("Enter the admin secret.");
+      return;
     }
 
-    setSubmitting(true)
-    setError('')
+    setSubmitting(true);
+    setError("");
 
     try {
-      const result = await requestAdminAccess(value)
-      toast.success(result.message)
-      setSecret('')
-      router.replace(from)
+      const result = await requestAdminAccess(value);
+      toast.success(result.message);
+      setSecret("");
+      router.replace(from);
     } catch (submitError) {
-      const message = submitError?.message ?? 'That secret is not correct. Please try again.'
+      const message =
+        submitError?.message ?? "That secret is not correct. Please try again.";
 
       if (submitError?.requiresSignIn) {
-        toast.error(message)
-        signOut()
-        router.replace('/login')
-        return
+        toast.error(message);
+        signOut();
+        router.replace("/login");
+        return;
       }
 
-      setError(message)
+      setError(message);
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   const handleSignOut = () => {
-    signOut()
-    queryClient.clear()
-    router.replace('/login')
-  }
+    signOut();
+    queryClient.clear();
+    router.replace("/login");
+  };
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-4 py-12">
@@ -105,8 +106,8 @@ function RequestAdmin() {
             Admin access required
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Your account is signed in as {session.roleLabel ?? 'User'}. Enter the admin secret to
-            open the dashboard.
+            Your account is signed in as {session.roleLabel ?? "User"}. Enter
+            the admin secret to open the dashboard.
           </p>
         </div>
 
@@ -134,26 +135,35 @@ function RequestAdmin() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} noValidate className="space-y-4" aria-busy={submitting}>
+          <form
+            onSubmit={handleSubmit}
+            noValidate
+            className="space-y-4"
+            aria-busy={submitting}
+          >
             <label className="block">
               <span className={labelClass}>Admin secret</span>
               <div className="relative">
                 <input
                   id="request-admin-secret"
-                  type={visible ? 'text' : 'password'}
+                  type={visible ? "text" : "password"}
                   autoComplete="off"
                   value={secret}
                   onChange={handleChange}
                   placeholder="Enter the admin secret"
                   className={`${inputClass} pr-11`}
                   aria-invalid={Boolean(error)}
-                  aria-describedby={error ? 'request-admin-secret-error' : undefined}
+                  aria-describedby={
+                    error ? "request-admin-secret-error" : undefined
+                  }
                 />
                 <button
                   type="button"
                   onClick={() => setVisible((previous) => !previous)}
                   className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-400 transition-colors hover:text-slate-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
-                  aria-label={visible ? 'Hide the admin secret' : 'Show the admin secret'}
+                  aria-label={
+                    visible ? "Hide the admin secret" : "Show the admin secret"
+                  }
                 >
                   {visible ? (
                     <svg
@@ -211,13 +221,13 @@ function RequestAdmin() {
                   aria-hidden="true"
                 />
               )}
-              {submitting ? 'Checking…' : 'Unlock dashboard'}
+              {submitting ? "Checking…" : "Unlock dashboard"}
             </button>
           </form>
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-500">
-          Signed in with the wrong account?{' '}
+          Signed in with the wrong account?{" "}
           <button
             type="button"
             onClick={handleSignOut}
@@ -228,8 +238,7 @@ function RequestAdmin() {
         </p>
       </div>
     </div>
-  )
+  );
 }
 
-export default RequestAdmin
-
+export default RequestAdmin;

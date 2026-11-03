@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import { useState } from "react";
 import { EllipsisVertical, Search } from "lucide-react";
@@ -253,238 +253,238 @@ function Drivers() {
           )}
         </div>
         <Table className="min-w-full">
-            <TableHeader className="bg-slate-50 [&_tr]:border-slate-200">
+          <TableHeader className="bg-slate-50 [&_tr]:border-slate-200">
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="w-10 pr-4">
+                <Checkbox
+                  aria-label="Select all drivers"
+                  className="border-slate-300 focus-visible:ring-brand-500"
+                  checked={
+                    drivers.length > 0 && selectedIds.size === drivers.length
+                  }
+                  onCheckedChange={toggleSelectAll}
+                />
+              </TableHead>
+              <TableHead>Driver</TableHead>
+              <TableHead className="hidden lg:table-cell">Phone</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="hidden lg:table-cell">Rides</TableHead>
+              <TableHead className="hidden lg:table-cell">Rating</TableHead>
+              <TableHead className="hidden xl:table-cell">Joined</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+
+          {isPending && (
+            <TableSkeleton
+              rows={PAGE_SIZE}
+              cols={8}
+              mobileCols={4}
+              lgCols={7}
+            />
+          )}
+
+          {isError && (
+            <TableBody>
               <TableRow className="hover:bg-transparent">
-                <TableHead className="w-10 pr-4">
-                  <Checkbox
-                    aria-label="Select all drivers"
-                    className="border-slate-300 focus-visible:ring-brand-500"
-                    checked={
-                      drivers.length > 0 && selectedIds.size === drivers.length
-                    }
-                    onCheckedChange={toggleSelectAll}
-                  />
-                </TableHead>
-                <TableHead>Driver</TableHead>
-                <TableHead className="hidden lg:table-cell">Phone</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="hidden lg:table-cell">Rides</TableHead>
-                <TableHead className="hidden lg:table-cell">Rating</TableHead>
-                <TableHead className="hidden xl:table-cell">Joined</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableCell colSpan={8} className="p-0">
+                  <QueryError error={error} onRetry={refetch} />
+                </TableCell>
               </TableRow>
-            </TableHeader>
+            </TableBody>
+          )}
 
-            {isPending && (
-              <TableSkeleton
-                rows={PAGE_SIZE}
-                cols={8}
-                mobileCols={4}
-                lgCols={7}
-              />
-            )}
-
-            {isError && (
-              <TableBody>
-                <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={8} className="p-0">
-                    <QueryError error={error} onRetry={refetch} />
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            )}
-
-            {!isPending && !isError && (
-              <TableBody>
-                {drivers.map((r) => (
-                  <TableRow
-                    key={r.id}
-                    onClick={() => setViewTarget(r)}
-                    onKeyDown={(event) => {
-                      if (event.target !== event.currentTarget) return;
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        setViewTarget(r);
-                      }
-                    }}
-                    tabIndex={0}
-                    className="cursor-pointer focus-visible:outline-2 focus-visible:outline-brand-600"
+          {!isPending && !isError && (
+            <TableBody>
+              {drivers.map((r) => (
+                <TableRow
+                  key={r.id}
+                  onClick={() => setViewTarget(r)}
+                  onKeyDown={(event) => {
+                    if (event.target !== event.currentTarget) return;
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setViewTarget(r);
+                    }
+                  }}
+                  tabIndex={0}
+                  className="cursor-pointer focus-visible:outline-2 focus-visible:outline-brand-600"
+                >
+                  <TableCell
+                    className="pr-4"
+                    onClick={(event) => event.stopPropagation()}
                   >
-                    <TableCell
-                      className="pr-4"
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      <Checkbox
-                        aria-label={`Select ${r.name}`}
-                        className="border-slate-300 focus-visible:ring-brand-500"
-                        checked={selectedIds.has(r.id)}
-                        onCheckedChange={() => toggleSelect(r.id)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 sm:flex sm:h-10 sm:w-10">
-                          <svg
-                            className="h-5 w-5"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                            aria-hidden="true"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-                            />
-                          </svg>
-                        </span>
-                        <span className="max-w-[5rem] truncate font-medium text-slate-900 sm:max-w-[8rem] lg:max-w-none">
-                          {r.name}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      {r.phone}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={`gap-1.5 rounded-full border-transparent px-2.5 ring-1 ring-inset ${statusStyles[r.status] ?? statusStyles["Not a driver"]}`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${statusDots[r.status] ?? statusDots["Not a driver"]}`}
-                          aria-hidden="true"
-                        />
-                        {r.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden font-medium text-slate-900 lg:table-cell">
-                      {r.rides}
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <span className="inline-flex items-center gap-1 font-medium text-slate-900">
+                    <Checkbox
+                      aria-label={`Select ${r.name}`}
+                      className="border-slate-300 focus-visible:ring-brand-500"
+                      checked={selectedIds.has(r.id)}
+                      onCheckedChange={() => toggleSelect(r.id)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 sm:flex sm:h-10 sm:w-10">
                         <svg
-                          className="h-4 w-4 text-amber-400"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
+                          className="h-5 w-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
                           aria-hidden="true"
                         >
                           <path
-                            fillRule="evenodd"
-                            d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z"
-                            clipRule="evenodd"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
                           />
                         </svg>
-                        {r.rating.toFixed(1)}
                       </span>
-                    </TableCell>
-                    <TableCell className="hidden xl:table-cell">
-                      {r.joined}
-                    </TableCell>
-                    <TableCell
-                      className="text-right"
-                      onClick={(event) => event.stopPropagation()}
+                      <span className="max-w-[5rem] truncate font-medium text-slate-900 sm:max-w-[8rem] lg:max-w-none">
+                        {r.name}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    {r.phone}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={`gap-1.5 rounded-full border-transparent px-2.5 ring-1 ring-inset ${statusStyles[r.status] ?? statusStyles["Not a driver"]}`}
                     >
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                            aria-label={`Actions for ${r.name}`}
-                          >
-                            <EllipsisVertical
-                              className="h-4 w-4"
-                              aria-hidden="true"
-                            />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${statusDots[r.status] ?? statusDots["Not a driver"]}`}
+                        aria-hidden="true"
+                      />
+                      {r.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="hidden font-medium text-slate-900 lg:table-cell">
+                    {r.rides}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    <span className="inline-flex items-center gap-1 font-medium text-slate-900">
+                      <svg
+                        className="h-4 w-4 text-amber-400"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      {r.rating.toFixed(1)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="hidden xl:table-cell">
+                    {r.joined}
+                  </TableCell>
+                  <TableCell
+                    className="text-right"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                          aria-label={`Actions for ${r.name}`}
                         >
-                          <DropdownMenuItem
-                            onSelect={() => setViewTarget(r)}
-                            className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
-                          >
-                            View
-                          </DropdownMenuItem>
-                          {r.statusKey === "pending" && (
-                            <>
-                              <DropdownMenuItem
-                                onSelect={() =>
-                                  (
-                                    verifyDriver.mutate as unknown as (variables: {
-                                      driverId: typeof r.id;
-                                    }) => void
-                                  )({ driverId: r.id })
-                                }
-                                disabled={verifyDriver.isPending}
-                                className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
-                              >
-                                Verify
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                variant="destructive"
-                                onSelect={() => {
-                                  setRejectReason("");
-                                  setRejectTarget(r);
-                                }}
-                                className="px-2.5 py-1.5 text-xs font-medium"
-                              >
-                                Reject
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                          {r.statusKey === "verified" && (
+                          <EllipsisVertical
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                          />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className="w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
+                      >
+                        <DropdownMenuItem
+                          onSelect={() => setViewTarget(r)}
+                          className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
+                        >
+                          View
+                        </DropdownMenuItem>
+                        {r.statusKey === "pending" && (
+                          <>
+                            <DropdownMenuItem
+                              onSelect={() =>
+                                (
+                                  verifyDriver.mutate as unknown as (variables: {
+                                    driverId: typeof r.id;
+                                  }) => void
+                                )({ driverId: r.id })
+                              }
+                              disabled={verifyDriver.isPending}
+                              className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
+                            >
+                              Verify
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               variant="destructive"
                               onSelect={() => {
-                                setSuspendReason("");
-                                setSuspendTarget(r);
+                                setRejectReason("");
+                                setRejectTarget(r);
                               }}
                               className="px-2.5 py-1.5 text-xs font-medium"
                             >
-                              Suspend
+                              Reject
                             </DropdownMenuItem>
-                          )}
-                          {r.statusKey === "suspended" && (
-                            <DropdownMenuItem
-                              onSelect={() => unsuspendDriver.mutate()}
-                              disabled={unsuspendDriver.isPending}
-                              className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
-                            >
-                              Unsuspend
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuSeparator className="bg-slate-100" />
+                          </>
+                        )}
+                        {r.statusKey === "verified" && (
                           <DropdownMenuItem
                             variant="destructive"
-                            onSelect={() => setDeleteTarget(r)}
-                            disabled={deleteUser.isPending}
+                            onSelect={() => {
+                              setSuspendReason("");
+                              setSuspendTarget(r);
+                            }}
                             className="px-2.5 py-1.5 text-xs font-medium"
                           >
-                            Delete
+                            Suspend
                           </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {drivers.length === 0 && (
-                  <TableRow className="hover:bg-transparent">
-                    <TableCell
-                      colSpan={8}
-                      className="py-10 text-center text-slate-500"
-                    >
-                      No drivers match “{query}”.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            )}
+                        )}
+                        {r.statusKey === "suspended" && (
+                          <DropdownMenuItem
+                            onSelect={() => unsuspendDriver.mutate()}
+                            disabled={unsuspendDriver.isPending}
+                            className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
+                          >
+                            Unsuspend
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator className="bg-slate-100" />
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onSelect={() => setDeleteTarget(r)}
+                          disabled={deleteUser.isPending}
+                          className="px-2.5 py-1.5 text-xs font-medium"
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {drivers.length === 0 && (
+                <TableRow className="hover:bg-transparent">
+                  <TableCell
+                    colSpan={8}
+                    className="py-10 text-center text-slate-500"
+                  >
+                    No drivers match “{query}”.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          )}
         </Table>
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3.5 sm:px-5">
           <p className="text-xs text-slate-500">
@@ -632,4 +632,3 @@ function Drivers() {
 }
 
 export default Drivers;
-

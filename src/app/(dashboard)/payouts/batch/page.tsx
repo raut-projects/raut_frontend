@@ -35,9 +35,7 @@ const processingStatusStyles = {
 };
 
 function BatchStatus({ status }) {
-  const label = status
-    ? status[0].toUpperCase() + status.slice(1)
-    : "Queued";
+  const label = status ? status[0].toUpperCase() + status.slice(1) : "Queued";
 
   return (
     <span
@@ -72,7 +70,10 @@ function PayoutBatchReview() {
   const toast = useToast();
 
   const eligiblePayouts = useMemo(
-    () => payouts.filter((payout) => payout.id !== null && payout.issues.length === 0),
+    () =>
+      payouts.filter(
+        (payout) => payout.id !== null && payout.issues.length === 0,
+      ),
     [payouts],
   );
   const selectedPayouts = payouts.filter((payout) =>
@@ -177,7 +178,9 @@ function PayoutBatchReview() {
         },
       });
     } catch (batchError) {
-      toast.error(batchError?.message ?? "The payout batch could not be completed.");
+      toast.error(
+        batchError?.message ?? "The payout batch could not be completed.",
+      );
     } finally {
       batchActionInProgress.current = false;
       setIsCheckingBatch(false);
@@ -256,10 +259,7 @@ function PayoutBatchReview() {
         </div>
       </div>
 
-      <section
-        aria-label="Batch totals"
-        className="grid gap-4 sm:grid-cols-3"
-      >
+      <section aria-label="Batch totals" className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-card">
           <p className="text-sm font-medium text-slate-500">Pending payouts</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">
@@ -339,7 +339,8 @@ function PayoutBatchReview() {
             role="status"
             aria-live="polite"
           >
-            Approvals are being sent one at a time. This page will refresh as each request completes.
+            Approvals are being sent one at a time. This page will refresh as
+            each request completes.
           </p>
         )}
 
@@ -387,9 +388,7 @@ function PayoutBatchReview() {
                           checked={selectedIds.has(String(payout.id))}
                           onCheckedChange={() => togglePayout(payout.id)}
                           disabled={
-                            hasIssues ||
-                            !idIsValid ||
-                            approveBatch.isPending
+                            hasIssues || !idIsValid || approveBatch.isPending
                           }
                         />
                       </TableCell>
@@ -408,7 +407,10 @@ function PayoutBatchReview() {
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-700">
-                            <CircleAlert className="h-4 w-4" aria-hidden="true" />
+                            <CircleAlert
+                              className="h-4 w-4"
+                              aria-hidden="true"
+                            />
                             {payout.phoneVerified === false
                               ? "Unverified"
                               : "Not provided"}
@@ -418,11 +420,16 @@ function PayoutBatchReview() {
                       <TableCell>
                         {payout.previousFailureCount > 0 ? (
                           <span className="inline-flex items-center gap-1.5 text-sm font-medium text-rose-700">
-                            <CircleAlert className="h-4 w-4" aria-hidden="true" />
+                            <CircleAlert
+                              className="h-4 w-4"
+                              aria-hidden="true"
+                            />
                             {payout.previousFailureCount}
                           </span>
                         ) : (
-                          <span className="text-sm text-slate-500">None found</span>
+                          <span className="text-sm text-slate-500">
+                            None found
+                          </span>
                         )}
                       </TableCell>
                       <TableCell className="font-semibold tabular-nums text-slate-900">
@@ -435,7 +442,8 @@ function PayoutBatchReview() {
                           </span>
                           {hasIssues && (
                             <p className="max-w-64 text-xs text-rose-700">
-                              {payout.issues.join("; ")}. Excluded from batch approval.
+                              {payout.issues.join("; ")}. Excluded from batch
+                              approval.
                             </p>
                           )}
                           {!idIsValid && (
@@ -592,7 +600,10 @@ function PayoutBatchReview() {
       >
         <div className="space-y-3 text-sm text-slate-600">
           <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-amber-900">
-            <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+            <ShieldAlert
+              className="mt-0.5 h-5 w-5 shrink-0"
+              aria-hidden="true"
+            />
             <p>
               High-value batch approval is blocked. The backend does not yet
               provide a secure second-factor verification endpoint, so no
@@ -601,8 +612,8 @@ function PayoutBatchReview() {
           </div>
           <p>
             Connect a server-verified second-factor flow before enabling this
-            approval. A code entered only in the browser would not protect
-            these payouts.
+            approval. A code entered only in the browser would not protect these
+            payouts.
           </p>
         </div>
       </SidePanel>

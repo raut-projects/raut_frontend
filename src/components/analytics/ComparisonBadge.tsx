@@ -1,27 +1,27 @@
-import type { MetricDelta } from '../../types/index'
+import type { MetricDelta } from "../../types/index";
 
 interface ComparisonBadgeProps {
-  delta?: MetricDelta | null
+  delta?: MetricDelta | null;
 }
 
 export function ComparisonBadge({ delta }: ComparisonBadgeProps) {
-  if (!delta) return null
+  if (!delta) return null;
 
-  const isNew = delta.deltaPct === null
-  const positive = delta.delta > 0
-  const flat = delta.delta === 0
+  const isNew = delta.deltaPct === null;
+  const positive = delta.delta > 0;
+  const flat = delta.delta === 0;
   const text = isNew
     ? delta.current > 0
-      ? 'New'
-      : '—'
-    : `${flat ? '' : positive ? '↑ ' : '↓ '}${Math.abs(delta.deltaPct).toFixed(1)}%`
+      ? "New"
+      : "—"
+    : `${flat ? "" : positive ? "↑ " : "↓ "}${Math.abs(delta.deltaPct).toFixed(1)}%`;
   const tone = isNew
-    ? 'bg-slate-100 text-slate-600 ring-slate-200'
+    ? "bg-slate-100 text-slate-600 ring-slate-200"
     : flat
-      ? 'bg-slate-100 text-slate-600 ring-slate-200'
+      ? "bg-slate-100 text-slate-600 ring-slate-200"
       : positive
-        ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20'
-        : 'bg-rose-50 text-rose-700 ring-rose-600/20'
+        ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20"
+        : "bg-rose-50 text-rose-700 ring-rose-600/20";
 
   return (
     <span
@@ -30,5 +30,5 @@ export function ComparisonBadge({ delta }: ComparisonBadgeProps) {
     >
       {text}
     </span>
-  )
+  );
 }

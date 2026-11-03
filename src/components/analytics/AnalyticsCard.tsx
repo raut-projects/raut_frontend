@@ -1,18 +1,18 @@
-import type { ReactNode } from 'react'
-import { QueryError } from '../queryStates'
+import type { ReactNode } from "react";
+import { QueryError } from "../queryStates";
 
 interface AnalyticsCardProps {
-  title: string
-  subtitle?: string
-  badge?: string
-  loading?: boolean
-  error?: any
-  onRetry?: () => void
-  empty?: boolean
-  emptyMessage?: string
-  height?: number
-  footer?: ReactNode
-  children: ReactNode
+  title: string;
+  subtitle?: string;
+  badge?: string;
+  loading?: boolean;
+  error?: any;
+  onRetry?: () => void;
+  empty?: boolean;
+  emptyMessage?: string;
+  height?: number;
+  footer?: ReactNode;
+  children: ReactNode;
 }
 
 export function ChartSkeleton({ height = 260 }: { height?: number }) {
@@ -26,7 +26,7 @@ export function ChartSkeleton({ height = 260 }: { height?: number }) {
         />
       ))}
     </div>
-  )
+  );
 }
 
 export function AnalyticsCard({
@@ -37,7 +37,7 @@ export function AnalyticsCard({
   error,
   onRetry,
   empty,
-  emptyMessage = 'No data available for this period.',
+  emptyMessage = "No data available for this period.",
   height = 260,
   footer,
   children,
@@ -47,9 +47,15 @@ export function AnalyticsCard({
       <div className="card-header">
         <div>
           <h3 className="text-base font-semibold text-slate-900">{title}</h3>
-          {subtitle && <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>}
+          {subtitle && (
+            <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>
+          )}
         </div>
-        {badge && <span className="badge bg-slate-50 text-slate-600 ring-slate-500/20">{badge}</span>}
+        {badge && (
+          <span className="badge bg-slate-50 text-slate-600 ring-slate-500/20">
+            {badge}
+          </span>
+        )}
       </div>
 
       <div className="p-4 sm:p-6">
@@ -87,5 +93,5 @@ export function AnalyticsCard({
         <div className="border-t border-slate-100 px-6 py-3.5">{footer}</div>
       )}
     </div>
-  )
+  );
 }

@@ -1,19 +1,19 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { ChevronDown } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   RANGE_PRESETS,
   addDays,
@@ -23,23 +23,22 @@ import {
   getPresetRange,
   toDateInput,
   todayInput,
-} from '../../lib/dateRange'
-import type { AnalyticsPreset, AnalyticsRange } from '../../types/index'
+} from "../../lib/dateRange";
+import type { AnalyticsPreset, AnalyticsRange } from "../../types/index";
 
 interface AnalyticsToolbarProps {
-  range: AnalyticsRange
-  compare: boolean
-  comparisonReason?: string | null
-  disabled?: boolean
-  onRangeChange: (range: AnalyticsRange) => void
-  onCompareChange: (value: boolean) => void
-  onExportCsv: () => void
-  onExportPdf: () => void
+  range: AnalyticsRange;
+  compare: boolean;
+  comparisonReason?: string | null;
+  disabled?: boolean;
+  onRangeChange: (range: AnalyticsRange) => void;
+  onCompareChange: (value: boolean) => void;
+  onExportCsv: () => void;
+  onExportPdf: () => void;
 }
 
-const RANGE_OPTIONS: Array<{ value: AnalyticsPreset; label: string }> = RANGE_PRESETS.map(
-  ({ value, label }) => ({ value, label }),
-)
+const RANGE_OPTIONS: Array<{ value: AnalyticsPreset; label: string }> =
+  RANGE_PRESETS.map(({ value, label }) => ({ value, label }));
 
 export function AnalyticsToolbar({
   range,
@@ -51,42 +50,44 @@ export function AnalyticsToolbar({
   onExportCsv,
   onExportPdf,
 }: AnalyticsToolbarProps) {
-  const [customOpen, setCustomOpen] = useState(range.preset === 'custom')
-  const [customStart, setCustomStart] = useState(range.startStr)
-  const [customEnd, setCustomEnd] = useState(range.endStr)
-  const [customError, setCustomError] = useState('')
+  const [customOpen, setCustomOpen] = useState(range.preset === "custom");
+  const [customStart, setCustomStart] = useState(range.startStr);
+  const [customEnd, setCustomEnd] = useState(range.endStr);
+  const [customError, setCustomError] = useState("");
 
-  const maxDate = todayInput()
+  const maxDate = todayInput();
 
   const handlePresetClick = (preset: AnalyticsPreset) => {
-    setCustomError('')
+    setCustomError("");
 
-    if (preset === 'custom') {
-      if (range.preset !== 'custom') {
-        const span = diffDays(range.start, range.end) + 1
-        const nextStart = toDateInput(addDays(range.end, -(span - 1)))
-        setCustomStart(nextStart)
-        setCustomEnd(range.endStr)
-        const next = getCustomRange(nextStart, range.endStr)
-        if (next) onRangeChange(next)
+    if (preset === "custom") {
+      if (range.preset !== "custom") {
+        const span = diffDays(range.start, range.end) + 1;
+        const nextStart = toDateInput(addDays(range.end, -(span - 1)));
+        setCustomStart(nextStart);
+        setCustomEnd(range.endStr);
+        const next = getCustomRange(nextStart, range.endStr);
+        if (next) onRangeChange(next);
       }
-      setCustomOpen(true)
-      return
+      setCustomOpen(true);
+      return;
     }
 
-    setCustomOpen(false)
-    onRangeChange(getPresetRange(preset))
-  }
+    setCustomOpen(false);
+    onRangeChange(getPresetRange(preset));
+  };
 
   const applyCustomRange = () => {
-    const next = getCustomRange(customStart, customEnd)
+    const next = getCustomRange(customStart, customEnd);
     if (!next) {
-      setCustomError('Choose a valid range of up to 365 days ending today or earlier.')
-      return
+      setCustomError(
+        "Choose a valid range of up to 365 days ending today or earlier.",
+      );
+      return;
     }
-    setCustomError('')
-    onRangeChange(next)
-  }
+    setCustomError("");
+    onRangeChange(next);
+  };
 
   return (
     <div className="flex flex-col items-stretch gap-2 print:hidden sm:items-end">
@@ -97,7 +98,7 @@ export function AnalyticsToolbar({
           spacing={2}
           value={range.preset}
           onValueChange={(value) => {
-            if (value) handlePresetClick(value as AnalyticsPreset)
+            if (value) handlePresetClick(value as AnalyticsPreset);
           }}
           aria-label="Analytics range"
           className="gap-0 rounded-lg border border-slate-200 bg-white p-0.5 shadow-card"
@@ -116,8 +117,8 @@ export function AnalyticsToolbar({
         <div
           className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
             compare
-              ? 'border-brand-200 bg-brand-50 text-brand-700'
-              : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+              ? "border-brand-200 bg-brand-50 text-brand-700"
+              : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
           }`}
         >
           <Switch
@@ -144,7 +145,11 @@ export function AnalyticsToolbar({
               className="h-auto rounded-lg border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-card hover:bg-slate-50 disabled:opacity-50"
             >
               Export
-              <ChevronDown className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+              <ChevronDown
+                className="h-3.5 w-3.5"
+                strokeWidth={2}
+                aria-hidden="true"
+              />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -207,7 +212,9 @@ export function AnalyticsToolbar({
           >
             Apply
           </Button>
-          {customError && <p className="w-full text-xs text-rose-600">{customError}</p>}
+          {customError && (
+            <p className="w-full text-xs text-rose-600">{customError}</p>
+          )}
         </div>
       )}
 
@@ -215,5 +222,5 @@ export function AnalyticsToolbar({
         <p className="text-xs text-amber-600">{comparisonReason}</p>
       )}
     </div>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -351,171 +351,171 @@ function Payouts() {
             </TableRow>
           </TableHeader>
 
-            {isPending && (
-              <TableSkeleton
-                rows={PAGE_SIZE}
-                cols={7}
-                mobileCols={4}
-                lgCols={6}
-              />
-            )}
+          {isPending && (
+            <TableSkeleton
+              rows={PAGE_SIZE}
+              cols={7}
+              mobileCols={4}
+              lgCols={6}
+            />
+          )}
 
-            {isError && (
-              <TableBody>
-                <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={7} className="p-0">
-                    <QueryError error={error} onRetry={refetch} />
+          {isError && (
+            <TableBody>
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={7} className="p-0">
+                  <QueryError error={error} onRetry={refetch} />
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          )}
+
+          {!isPending && !isError && (
+            <TableBody>
+              {payouts.map((payout) => (
+                <TableRow key={payout.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700 sm:flex">
+                        {payout.driverName
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .slice(0, 2)}
+                      </span>
+                      <span className="max-w-[5rem] truncate font-medium text-slate-900 sm:max-w-[8rem] lg:max-w-none">
+                        {payout.driverName}
+                      </span>
+                    </div>
                   </TableCell>
-                </TableRow>
-              </TableBody>
-            )}
-
-            {!isPending && !isError && (
-              <TableBody>
-                {payouts.map((payout) => (
-                  <TableRow key={payout.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700 sm:flex">
-                          {payout.driverName
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")
-                            .slice(0, 2)}
-                        </span>
-                        <span className="max-w-[5rem] truncate font-medium text-slate-900 sm:max-w-[8rem] lg:max-w-none">
-                          {payout.driverName}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium text-slate-900">
-                      {payout.amountLabel}
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <span className="block text-slate-700">
-                        {payout.method}
+                  <TableCell className="font-medium text-slate-900">
+                    {payout.amountLabel}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    <span className="block text-slate-700">
+                      {payout.method}
+                    </span>
+                    {payout.methodDetails !== "—" && (
+                      <span className="block text-xs text-slate-400">
+                        {payout.methodDetails}
                       </span>
-                      {payout.methodDetails !== "—" && (
-                        <span className="block text-xs text-slate-400">
-                          {payout.methodDetails}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={`badge ring-1 ring-inset ${
+                        statusStyles[payout.status] ?? statusStyles.Pending
+                      }`}
+                    >
                       <span
-                        className={`badge ring-1 ring-inset ${
-                          statusStyles[payout.status] ?? statusStyles.Pending
-                        }`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${statusDots[payout.status] ?? statusDots.Pending}`}
-                          aria-hidden="true"
-                        />
-                        {payout.status}
-                      </span>
-                    </TableCell>
-                    <TableCell className="hidden text-xs text-slate-500 xl:table-cell">
-                      {payout.reference}
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      {payout.requestedAt}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                            aria-label={`Actions for ${payout.driverName}`}
-                          >
-                            <EllipsisVertical
-                              className="h-4 w-4"
-                              aria-hidden="true"
-                            />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
+                        className={`h-1.5 w-1.5 rounded-full ${statusDots[payout.status] ?? statusDots.Pending}`}
+                        aria-hidden="true"
+                      />
+                      {payout.status}
+                    </span>
+                  </TableCell>
+                  <TableCell className="hidden text-xs text-slate-500 xl:table-cell">
+                    {payout.reference}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    {payout.requestedAt}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                          aria-label={`Actions for ${payout.driverName}`}
                         >
+                          <EllipsisVertical
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                          />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className="w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
+                      >
+                        <DropdownMenuItem
+                          onSelect={() => setViewTarget(payout)}
+                          className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
+                        >
+                          View
+                        </DropdownMenuItem>
+                        {payout.isSettled && (
                           <DropdownMenuItem
-                            onSelect={() => setViewTarget(payout)}
+                            onSelect={() => {
+                              try {
+                                printPayoutReceipt(payout);
+                              } catch (receiptError) {
+                                toast.error(
+                                  receiptError?.message ??
+                                    "The receipt could not be opened.",
+                                );
+                              }
+                            }}
                             className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                           >
-                            View
+                            <FileDown className="h-4 w-4" aria-hidden="true" />
+                            Print / save receipt as PDF
                           </DropdownMenuItem>
-                          {payout.isSettled && (
+                        )}
+                        {payout.canApprove && (
+                          <>
+                            <DropdownMenuSeparator className="bg-slate-100" />
                             <DropdownMenuItem
                               onSelect={() => {
-                                try {
-                                  printPayoutReceipt(payout);
-                                } catch (receiptError) {
-                                  toast.error(
-                                    receiptError?.message ??
-                                      "The receipt could not be opened.",
-                                  );
-                                }
+                                setApproveNotes("");
+                                setApproveTarget(payout);
                               }}
                               className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                             >
-                              <FileDown className="h-4 w-4" aria-hidden="true" />
-                              Print / save receipt as PDF
+                              Approve
                             </DropdownMenuItem>
-                          )}
-                          {payout.canApprove && (
-                            <>
-                              <DropdownMenuSeparator className="bg-slate-100" />
-                              <DropdownMenuItem
-                                onSelect={() => {
-                                  setApproveNotes("");
-                                  setApproveTarget(payout);
-                                }}
-                                className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
-                              >
-                                Approve
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                variant="destructive"
-                                onSelect={() => {
-                                  setRejectReason("");
-                                  setRejectTarget(payout);
-                                }}
-                                className="px-2.5 py-1.5 text-xs font-medium"
-                              >
-                                Reject
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                          {payout.canRetry && (
-                            <>
-                              <DropdownMenuSeparator className="bg-slate-100" />
-                              <DropdownMenuItem
-                                onSelect={() => setRetryTarget(payout)}
-                                className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
-                              >
-                                Retry
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {payouts.length === 0 && (
-                  <TableRow className="hover:bg-transparent">
-                    <TableCell
-                      colSpan={7}
-                      className="py-10 text-center text-slate-500"
-                    >
-                      No payouts match these filters.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            )}
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onSelect={() => {
+                                setRejectReason("");
+                                setRejectTarget(payout);
+                              }}
+                              className="px-2.5 py-1.5 text-xs font-medium"
+                            >
+                              Reject
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        {payout.canRetry && (
+                          <>
+                            <DropdownMenuSeparator className="bg-slate-100" />
+                            <DropdownMenuItem
+                              onSelect={() => setRetryTarget(payout)}
+                              className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
+                            >
+                              Retry
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {payouts.length === 0 && (
+                <TableRow className="hover:bg-transparent">
+                  <TableCell
+                    colSpan={7}
+                    className="py-10 text-center text-slate-500"
+                  >
+                    No payouts match these filters.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          )}
         </Table>
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3.5 sm:px-5">
           <p className="text-xs text-slate-500">

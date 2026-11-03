@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import { useState } from "react";
 import { EllipsisVertical } from "lucide-react";
@@ -250,148 +250,146 @@ function Rides() {
             </TableRow>
           </TableHeader>
 
-            {isPending && (
-              <TableSkeleton
-                rows={PAGE_SIZE}
-                cols={8}
-                mobileCols={4}
-                lgCols={6}
-              />
-            )}
+          {isPending && (
+            <TableSkeleton
+              rows={PAGE_SIZE}
+              cols={8}
+              mobileCols={4}
+              lgCols={6}
+            />
+          )}
 
-            {isError && (
-              <TableBody>
-                <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={8} className="p-0">
-                    <QueryError error={error} onRetry={refetch} />
+          {isError && (
+            <TableBody>
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={8} className="p-0">
+                  <QueryError error={error} onRetry={refetch} />
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          )}
+
+          {!isPending && !isError && (
+            <TableBody>
+              {rides.map((ride) => (
+                <TableRow
+                  key={ride.id}
+                  onClick={() => setViewTarget(ride)}
+                  onKeyDown={(event) => {
+                    if (event.target !== event.currentTarget) return;
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setViewTarget(ride);
+                    }
+                  }}
+                  tabIndex={0}
+                  className="cursor-pointer focus-visible:outline-2 focus-visible:outline-brand-600"
+                >
+                  <TableCell className="font-medium text-slate-900">
+                    <span className="block">{ride.id}</span>
+                    <span className="block text-xs font-normal text-slate-400 lg:hidden">
+                      {ride.amount}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="block max-w-[5rem] truncate text-slate-900 sm:max-w-none">
+                      {ride.customer}
+                    </span>
+                    <span className="block max-w-[5rem] truncate text-xs text-slate-400">
+                      {ride.customerPhone}
+                    </span>
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    <span className="block text-slate-900">{ride.driver}</span>
+                    <span className="block text-xs text-slate-400">
+                      {ride.driverPhone}
+                    </span>
+                  </TableCell>
+                  <TableCell className="hidden xl:table-cell">
+                    <span className="block max-w-[12rem] truncate text-slate-700">
+                      {ride.route}
+                    </span>
+                  </TableCell>
+                  <TableCell className="hidden font-medium text-slate-900 lg:table-cell">
+                    {ride.amount}
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={`badge ring-1 ring-inset ${
+                        statusStyles[ride.status] ?? statusStyles.Pending
+                      }`}
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${statusDots[ride.status] ?? statusDots.Pending}`}
+                        aria-hidden="true"
+                      />
+                      {ride.status}
+                    </span>
+                  </TableCell>
+                  <TableCell className="hidden xl:table-cell">
+                    {ride.date}
+                  </TableCell>
+                  <TableCell
+                    className="text-right"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                          aria-label={`Actions for ${ride.id}`}
+                        >
+                          <EllipsisVertical
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                          />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className="w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
+                      >
+                        <DropdownMenuItem
+                          onSelect={() => setViewTarget(ride)}
+                          className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
+                        >
+                          View
+                        </DropdownMenuItem>
+                        {!TERMINAL_STATUSES.includes(ride.statusKey) && (
+                          <>
+                            <DropdownMenuSeparator className="bg-slate-100" />
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onSelect={() => {
+                                setCancelReason("");
+                                setCancelTarget(ride);
+                              }}
+                              className="px-2.5 py-1.5 text-xs font-medium"
+                            >
+                              Cancel ride
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              </TableBody>
-            )}
-
-            {!isPending && !isError && (
-              <TableBody>
-                {rides.map((ride) => (
-                  <TableRow
-                    key={ride.id}
-                    onClick={() => setViewTarget(ride)}
-                    onKeyDown={(event) => {
-                      if (event.target !== event.currentTarget) return;
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        setViewTarget(ride);
-                      }
-                    }}
-                    tabIndex={0}
-                    className="cursor-pointer focus-visible:outline-2 focus-visible:outline-brand-600"
+              ))}
+              {rides.length === 0 && (
+                <TableRow className="hover:bg-transparent">
+                  <TableCell
+                    colSpan={8}
+                    className="py-10 text-center text-slate-500"
                   >
-                    <TableCell className="font-medium text-slate-900">
-                      <span className="block">{ride.id}</span>
-                      <span className="block text-xs font-normal text-slate-400 lg:hidden">
-                        {ride.amount}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="block max-w-[5rem] truncate text-slate-900 sm:max-w-none">
-                        {ride.customer}
-                      </span>
-                      <span className="block max-w-[5rem] truncate text-xs text-slate-400">
-                        {ride.customerPhone}
-                      </span>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <span className="block text-slate-900">
-                        {ride.driver}
-                      </span>
-                      <span className="block text-xs text-slate-400">
-                        {ride.driverPhone}
-                      </span>
-                    </TableCell>
-                    <TableCell className="hidden xl:table-cell">
-                      <span className="block max-w-[12rem] truncate text-slate-700">
-                        {ride.route}
-                      </span>
-                    </TableCell>
-                    <TableCell className="hidden font-medium text-slate-900 lg:table-cell">
-                      {ride.amount}
-                    </TableCell>
-                    <TableCell>
-                      <span
-                        className={`badge ring-1 ring-inset ${
-                          statusStyles[ride.status] ?? statusStyles.Pending
-                        }`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${statusDots[ride.status] ?? statusDots.Pending}`}
-                          aria-hidden="true"
-                        />
-                        {ride.status}
-                      </span>
-                    </TableCell>
-                    <TableCell className="hidden xl:table-cell">
-                      {ride.date}
-                    </TableCell>
-                    <TableCell
-                      className="text-right"
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                            aria-label={`Actions for ${ride.id}`}
-                          >
-                            <EllipsisVertical
-                              className="h-4 w-4"
-                              aria-hidden="true"
-                            />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
-                        >
-                          <DropdownMenuItem
-                            onSelect={() => setViewTarget(ride)}
-                            className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
-                          >
-                            View
-                          </DropdownMenuItem>
-                          {!TERMINAL_STATUSES.includes(ride.statusKey) && (
-                            <>
-                              <DropdownMenuSeparator className="bg-slate-100" />
-                              <DropdownMenuItem
-                                variant="destructive"
-                                onSelect={() => {
-                                  setCancelReason("");
-                                  setCancelTarget(ride);
-                                }}
-                                className="px-2.5 py-1.5 text-xs font-medium"
-                              >
-                                Cancel ride
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {rides.length === 0 && (
-                  <TableRow className="hover:bg-transparent">
-                    <TableCell
-                      colSpan={8}
-                      className="py-10 text-center text-slate-500"
-                    >
-                      No rides match these filters.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            )}
+                    No rides match these filters.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          )}
         </Table>
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3.5 sm:px-5">
           <p className="text-xs text-slate-500">
@@ -475,4 +473,3 @@ function Rides() {
 }
 
 export default Rides;
-

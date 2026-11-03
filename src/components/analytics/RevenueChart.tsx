@@ -7,46 +7,81 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from 'recharts'
-import { AnalyticsCard } from './AnalyticsCard'
-import { ChartTooltip } from './ChartTooltip'
-import { ComparisonBadge } from './ComparisonBadge'
-import { axisProps, chartColors, chartHeight, chartMargin, gridProps } from '../../lib/chartTheme'
-import { formatCompactMoney, formatCount, formatMoney } from '../../services/mappers'
-import type { AnalyticsComparison, AnalyticsSeries, MetricDelta, RevenuePoint } from '../../types/index'
+} from "recharts";
+import { AnalyticsCard } from "./AnalyticsCard";
+import { ChartTooltip } from "./ChartTooltip";
+import { ComparisonBadge } from "./ComparisonBadge";
+import {
+  axisProps,
+  chartColors,
+  chartHeight,
+  chartMargin,
+  gridProps,
+} from "../../lib/chartTheme";
+import {
+  formatCompactMoney,
+  formatCount,
+  formatMoney,
+} from "../../services/mappers";
+import type {
+  AnalyticsComparison,
+  AnalyticsSeries,
+  MetricDelta,
+  RevenuePoint,
+} from "../../types/index";
 
 interface RevenueChartProps {
-  series: AnalyticsSeries<RevenuePoint>
-  previous?: AnalyticsSeries<RevenuePoint> | null
-  comparison?: AnalyticsComparison | null
-  loading?: boolean
-  error?: any
-  onRetry?: () => void
+  series: AnalyticsSeries<RevenuePoint>;
+  previous?: AnalyticsSeries<RevenuePoint> | null;
+  comparison?: AnalyticsComparison | null;
+  loading?: boolean;
+  error?: any;
+  onRetry?: () => void;
 }
 
-function StatChip({ label, value, delta }: { label: string; value: string; delta?: MetricDelta | null }) {
+function StatChip({
+  label,
+  value,
+  delta,
+}: {
+  label: string;
+  value: string;
+  delta?: MetricDelta | null;
+}) {
   return (
     <div>
-      <p className="text-[11px] uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="text-[11px] uppercase tracking-wide text-slate-400">
+        {label}
+      </p>
       <div className="mt-0.5 flex items-center gap-1.5">
         <p className="text-sm font-semibold text-slate-900">{value}</p>
         <ComparisonBadge delta={delta} />
       </div>
     </div>
-  )
+  );
 }
 
-export function RevenueChart({ series, previous, comparison, loading, error, onRetry }: RevenueChartProps) {
-  const { points, latest } = series
-  const singlePoint = points.length <= 1
-  const hasPrevious = Boolean(previous?.points.length)
-  const previousOffset = hasPrevious ? (previous?.points.length ?? 0) - points.length : 0
+export function RevenueChart({
+  series,
+  previous,
+  comparison,
+  loading,
+  error,
+  onRetry,
+}: RevenueChartProps) {
+  const { points, latest } = series;
+  const singlePoint = points.length <= 1;
+  const hasPrevious = Boolean(previous?.points.length);
+  const previousOffset = hasPrevious
+    ? (previous?.points.length ?? 0) - points.length
+    : 0;
   const chartData = points.map((point, index) => ({
     ...point,
-    previousTotalRevenue: previous?.points[index + previousOffset]?.totalRevenue ?? null,
-  }))
+    previousTotalRevenue:
+      previous?.points[index + previousOffset]?.totalRevenue ?? null,
+  }));
 
-  const empty = points.length === 0
+  const empty = points.length === 0;
 
   const footer = latest ? (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -71,13 +106,13 @@ export function RevenueChart({ series, previous, comparison, loading, error, onR
         delta={comparison?.revenue.transactions}
       />
     </div>
-  ) : null
+  ) : null;
 
   return (
     <AnalyticsCard
       title="Revenue analytics"
       subtitle="Revenue by period"
-      badge={singlePoint ? 'Current period' : 'Series'}
+      badge={singlePoint ? "Current period" : "Series"}
       loading={loading}
       error={error}
       onRetry={onRetry}
@@ -86,13 +121,24 @@ export function RevenueChart({ series, previous, comparison, loading, error, onR
       height={chartHeight}
       footer={footer}
     >
-      <div role="img" aria-label="Revenue per period, split between platform fees and driver earnings">
+      <div
+        role="img"
+        aria-label="Revenue per period, split between platform fees and driver earnings"
+      >
         <ResponsiveContainer width="100%" height={chartHeight}>
           <LineChart data={chartData} margin={chartMargin}>
             <CartesianGrid {...gridProps} />
             <XAxis dataKey="label" {...axisProps} minTickGap={20} />
-            <YAxis {...axisProps} width={58} tickFormatter={formatCompactMoney} />
-            <Tooltip content={<ChartTooltip formatter={(value) => formatMoney(value)} />} />
+            <YAxis
+              {...axisProps}
+              width={58}
+              tickFormatter={formatCompactMoney}
+            />
+            <Tooltip
+              content={
+                <ChartTooltip formatter={(value) => formatMoney(value)} />
+              }
+            />
             <Legend
               iconType="circle"
               iconSize={8}
@@ -137,5 +183,5 @@ export function RevenueChart({ series, previous, comparison, loading, error, onR
         </ResponsiveContainer>
       </div>
     </AnalyticsCard>
-  )
+  );
 }
