@@ -398,10 +398,10 @@ function SupportTicketsPage() {
                     {ticket.id}
                   </span>
                 </TableCell>
-                <TableCell className="max-w-[30rem] whitespace-normal">
+                <TableCell className="max-w-120 whitespace-normal">
                   <Link
                     href={`/support-tickets/${ticket.id}`}
-                    className="block max-w-[16rem] truncate font-medium text-slate-900 transition-colors hover:text-brand-600 sm:max-w-[26rem]"
+                    className="block max-w-[16rem] truncate font-medium text-slate-900 transition-colors hover:text-brand-600 sm:max-w-104"
                   >
                     {ticket.subject}
                   </Link>

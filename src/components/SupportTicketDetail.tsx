@@ -247,7 +247,7 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                 Support ticket
               </p>
-              <h1 className="mt-1 break-words text-2xl font-bold tracking-tight text-slate-900">
+              <h1 className="mt-1 wrap-break-words text-2xl font-bold tracking-tight text-slate-900">
                 {ticket.subject}
               </h1>
               <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -718,7 +718,7 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                       className="relative border-l border-slate-200 pl-4 last:border-transparent"
                     >
                       <span
-                        className="absolute -left-[5px] top-1 size-2 rounded-full bg-slate-300 ring-4 ring-white"
+                        className="absolute -left-1.25 top-1 size-2 rounded-full bg-slate-300 ring-4 ring-white"
                         aria-hidden="true"
                       />
                       <p className="text-sm font-medium text-slate-700">
