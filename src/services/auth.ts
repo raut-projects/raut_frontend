@@ -110,7 +110,7 @@ const toSession = (user, phone, fallbackRole) => {
   };
 };
 
-export async function loginWithEmail({ email, password }) {
+export async function loginWithEmail({ email, password, remember = true }) {
   const payload = await request(API_ROUTES.login, {
     method: "POST",
     body: {
@@ -141,6 +141,7 @@ export async function loginWithEmail({ email, password }) {
     accessToken,
     refreshToken: data.refresh_token ?? data.refreshToken ?? null,
     expiresIn: data.expires_in ?? data.expiresIn ?? null,
+    remember,
   });
 
   return session;
@@ -252,4 +253,14 @@ export async function requestAdminAccess(secret) {
     roleLabel: formatRole(role),
     message: envelopeMessage(payload) || "Admin access granted.",
   };
+}
+
+export async function resetPassword(email) {
+  const payload = await request(API_ROUTES.resetPassword, {
+    method: "POST",
+    body: { email: String(email ?? "").trim() },
+    auth: false,
+  });
+
+  return envelopeMessage(payload);
 }

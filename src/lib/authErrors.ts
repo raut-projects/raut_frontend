@@ -47,3 +47,31 @@ export function getLoginErrorMessage(error: unknown): string {
 
   return GENERIC_ERROR;
 }
+
+// Turns any failure from the reset request into plain, user-friendly copy.
+export function getPasswordResetErrorMessage(error: unknown): string {
+  const status = statusFrom(error);
+  const rawMessage = rawMessageFrom(error);
+
+  if (status === 0 && /took too long|timed out|timeout/i.test(rawMessage)) {
+    return "The request timed out. Check your connection and try again.";
+  }
+
+  if (status === 429) {
+    return "Too many reset requests. Please wait a minute and try again.";
+  }
+
+  if (status === 0) {
+    return "We couldn't reach the server. Check your internet connection and try again.";
+  }
+
+  if (status === 400 || status === 422) {
+    return "That email address was not accepted. Please check it and try again.";
+  }
+
+  if (status !== null && status >= 500) {
+    return "We couldn't send the reset email right now. Please try again shortly.";
+  }
+
+  return "We couldn't send the reset email. Please try again.";
+}

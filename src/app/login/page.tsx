@@ -6,10 +6,17 @@ import { useToast } from "@/components/toastContext";
 import GateLoader from "@/components/GateLoader";
 import { useFromParam } from "@/lib/useFromParam";
 import { useSession } from "@/hooks/useSession";
-import { loginWithEmail } from "@/services/auth";
+import {
+  loginWithEmail,
+  resetPassword as sendPasswordResetEmail,
+} from "@/services/auth";
 import { isAdminRole } from "@/lib/roles";
 import { validateEmail } from "@/lib/validation";
-import { getLoginErrorMessage } from "@/lib/authErrors";
+import {
+  getLoginErrorMessage,
+  getPasswordResetErrorMessage,
+} from "@/lib/authErrors";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const inputClass =
   "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100";
@@ -29,7 +36,10 @@ function Login() {
     {},
   );
   const [formError, setFormError] = useState("");
+  const [resetSent, setResetSent] = useState("");
+  const [remember, setRemember] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   const from = useFromParam("/");
 
@@ -56,6 +66,7 @@ function Login() {
     setEmail(event.target.value);
     setErrors((previous) => ({ ...previous, email: undefined }));
     setFormError("");
+    setResetSent("");
   };
 
   const handlePasswordChange = (event) => {
@@ -87,7 +98,7 @@ function Login() {
     resetFeedback();
 
     try {
-      const signedIn = await loginWithEmail({ email: value, password });
+      const signedIn = await loginWithEmail({ email: value, password, remember });
       const admin = isAdminRole(signedIn?.role);
       toast.success("Signed in successfully.");
       router.replace(
@@ -99,6 +110,34 @@ function Login() {
       setFormError(getLoginErrorMessage(error));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (submitting || resettingPassword) return;
+
+    const value = email.trim();
+    const emailError = validateEmail(value);
+    if (emailError) {
+      setErrors({ email: emailError });
+      return;
+    }
+
+    setErrors({});
+    setFormError("");
+    setResetSent("");
+    setResettingPassword(true);
+
+    try {
+      await sendPasswordResetEmail(value);
+      const message =
+        "If that email is registered, we've sent a password reset link.";
+      setResetSent(message);
+      toast.success(message);
+    } catch (error) {
+      setFormError(getPasswordResetErrorMessage(error));
+    } finally {
+      setResettingPassword(false);
     }
   };
 
@@ -143,6 +182,29 @@ function Login() {
             </div>
           )}
 
+          {resetSent && (
+            <div
+              role="status"
+              className="mb-5 flex items-start gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 p-3"
+            >
+              <svg
+                className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <p className="text-sm font-medium text-emerald-800">{resetSent}</p>
+            </div>
+          )}
+
           <form
             onSubmit={handleSubmit}
             noValidate
@@ -162,7 +224,9 @@ function Login() {
                 placeholder="admin@raut.africa"
                 className={inputClass}
                 aria-invalid={Boolean(errors.email)}
-                aria-describedby={errors.email ? "login-email-error" : undefined}
+                aria-describedby={
+                  errors.email ? "login-email-error" : undefined
+                }
               />
               {errors.email && (
                 <span id="login-email-error" className={errorClass}>
@@ -239,6 +303,31 @@ function Login() {
                 </span>
               )}
             </label>
+
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="login-remember"
+                  name="remember"
+                  checked={remember}
+                  onCheckedChange={(checked) => setRemember(Boolean(checked))}
+                />
+                <label
+                  htmlFor="login-remember"
+                  className="cursor-pointer select-none text-sm text-slate-600"
+                >
+                  Remember me
+                </label>
+              </div>
+              <button
+                type="button"
+                onClick={handlePasswordReset}
+                disabled={submitting || resettingPassword}
+                className="text-xs font-semibold text-slate-500 transition-colors hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {resettingPassword ? "Sending…" : "Forgot password?"}
+              </button>
+            </div>
 
             <button
               type="submit"

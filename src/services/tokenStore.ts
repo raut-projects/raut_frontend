@@ -2,32 +2,77 @@ const SESSION_KEY = "raut_admin_session";
 const ACCESS_TOKEN_KEY = "raut_admin_access_token";
 const REFRESH_TOKEN_KEY = "raut_admin_refresh_token";
 const EXPIRES_AT_KEY = "raut_admin_access_expires_at";
+const PERSIST_KEY = "raut_admin_persist";
+
+const STORAGE_KEYS = [
+  SESSION_KEY,
+  ACCESS_TOKEN_KEY,
+  REFRESH_TOKEN_KEY,
+  EXPIRES_AT_KEY,
+  PERSIST_KEY,
+];
 
 const listeners = new Set<() => void>();
 
-const read = (key) => {
+type Persistence = "local" | "session";
+
+const getStorage = (persistence: Persistence) => {
+  if (typeof window === "undefined") return null;
+
   try {
-    return localStorage.getItem(key);
+    return persistence === "session" ? window.sessionStorage : window.localStorage;
   } catch {
     return null;
   }
 };
 
-const write = (key, value) => {
+const readFrom = (storage: Storage | null, key: string) => {
+  if (!storage) return null;
+
   try {
-    localStorage.setItem(key, value);
+    return storage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const writeTo = (storage: Storage | null, key: string, value: string) => {
+  if (!storage) return;
+
+  try {
+    storage.setItem(key, value);
   } catch {
     // Storage can be unavailable (private mode). The session then lives in memory only.
   }
 };
 
-const remove = (key) => {
+const removeFrom = (storage: Storage | null, key: string) => {
+  if (!storage) return;
+
   try {
-    localStorage.removeItem(key);
+    storage.removeItem(key);
   } catch {
     // Ignore storage failures, the in-memory state is cleared either way.
   }
 };
+
+// "Remember me" chooses which storage keeps the session. A session marker in
+// sessionStorage wins over localStorage so an unchecked sign-in in one tab is
+// never resurrected from a persistent session in another.
+const getPersistence = (): Persistence => {
+  if (readFrom(getStorage("session"), PERSIST_KEY) === "session") {
+    return "session";
+  }
+
+  return "local";
+};
+
+const activeStorage = () => getStorage(getPersistence());
+
+const read = (key: string) => readFrom(activeStorage(), key);
+
+const write = (key: string, value: string) =>
+  writeTo(activeStorage(), key, value);
 
 const readSession = () => {
   const raw = read(SESSION_KEY);
@@ -66,11 +111,25 @@ export const saveSession = ({
   accessToken,
   refreshToken,
   expiresIn,
+  remember = true,
+}: {
+  session: Record<string, unknown>;
+  accessToken?: string | null;
+  refreshToken?: string | null;
+  expiresIn?: number | string | null;
+  remember?: boolean;
 }) => {
-  write(SESSION_KEY, JSON.stringify(session));
-  write(ACCESS_TOKEN_KEY, accessToken ?? "");
-  write(REFRESH_TOKEN_KEY, refreshToken ?? "");
-  write(EXPIRES_AT_KEY, String(computeExpiresAt(expiresIn)));
+  const persistence: Persistence = remember ? "local" : "session";
+  const target = getStorage(persistence);
+  const stale = getStorage(persistence === "local" ? "session" : "local");
+
+  STORAGE_KEYS.forEach((key) => removeFrom(stale, key));
+
+  writeTo(target, PERSIST_KEY, persistence);
+  writeTo(target, SESSION_KEY, JSON.stringify(session));
+  writeTo(target, ACCESS_TOKEN_KEY, accessToken ?? "");
+  writeTo(target, REFRESH_TOKEN_KEY, refreshToken ?? "");
+  writeTo(target, EXPIRES_AT_KEY, String(computeExpiresAt(expiresIn)));
   emit();
 };
 
@@ -106,10 +165,12 @@ export const updateSession = (patch) => {
 };
 
 export const clearSession = () => {
-  remove(SESSION_KEY);
-  remove(ACCESS_TOKEN_KEY);
-  remove(REFRESH_TOKEN_KEY);
-  remove(EXPIRES_AT_KEY);
+  const storages = [getStorage("local"), getStorage("session")];
+
+  storages.forEach((storage) => {
+    STORAGE_KEYS.forEach((key) => removeFrom(storage, key));
+  });
+
   emit();
 };
 

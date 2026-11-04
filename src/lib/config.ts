@@ -10,6 +10,8 @@ export const API_ROUTES = {
   login: "/auth/login",
   refresh: "/auth/refresh",
   me: "/auth/me",
+  resetPassword: "/auth/password/reset",
+  passwordUpdate: "/auth/password/update",
   notifications: "/notifications/",
   promote: "/admin/promote",
   users: "/admin/users",
