@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3,
-  Bug,
   Car,
   ChevronRight,
   CreditCard,
@@ -20,7 +19,7 @@ import {
   Ticket,
   Users,
   Wallet,
-  BadgeAlert,
+  // BadgeAlert,
   type LucideIcon,
 } from "lucide-react";
 
@@ -98,7 +97,7 @@ const navGroups: NavGroup[] = [
     label: "Support",
     items: [
       { title: "Support Tickets", url: "/support-tickets", icon: Ticket },
-      { title: "Customer Issues", url: "/customer-issues", icon: BadgeAlert },
+      // { title: "Customer Issues", url: "/customer-issues", icon: BadgeAlert },
     ],
   },
   {
@@ -146,10 +145,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   };
 
   const isItemActive = (item: NavItem) => isActive(item.activeOn ?? item.url);
-
-  // const displayName = session?.name ?? "Admin";
-  // const roleLabel = session?.roleLabel ?? "Admin";
-  // const initials = session?.initials ?? "A";
 
   const handleSignOut = () => {
     signOut();
@@ -264,25 +259,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarFooter className="border-t border-sidebar-border">
         <SidebarMenu>
-          {/* <SidebarMenuItem>
-            <SidebarMenuButton
-              size="lg"
-              tooltip={`${displayName} — ${roleLabel}`}
-              className="cursor-default"
-            >
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
-                {initials}
-              </span>
-              <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
-                <span className="truncate text-sm font-semibold text-slate-800">
-                  {displayName}
-                </span>
-                <span className="truncate text-xs text-slate-500">
-                  Role: {roleLabel}
-                </span>
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem> */}
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Logout"
