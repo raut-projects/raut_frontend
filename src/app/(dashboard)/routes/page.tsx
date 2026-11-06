@@ -29,6 +29,7 @@ import { useCancelRoute } from "@/hooks/useAdminActions";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useRouteSummary, useRoutes } from "@/hooks/useRoutes";
+import { usePageViewField } from "@/store/pageViewStore";
 import { ROUTE_STATUS_LABELS } from "@/services/mappers";
 
 const statusStyles = {
@@ -58,13 +59,16 @@ const inputClass =
   "rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100";
 
 function RoutesPage() {
-  const [status, setStatus] = useState("all");
-  const [driverId, setDriverId] = useState("");
-  const [origin, setOrigin] = useState("");
-  const [destination, setDestination] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [page, setPage] = useState(1);
+  const [status, setStatus] = usePageViewField("routes", "status");
+  const [driverId, setDriverId] = usePageViewField("routes", "driverId");
+  const [origin, setOrigin] = usePageViewField("routes", "origin");
+  const [destination, setDestination] = usePageViewField(
+    "routes",
+    "destination",
+  );
+  const [from, setFrom] = usePageViewField("routes", "from");
+  const [to, setTo] = usePageViewField("routes", "to");
+  const [page, setPage] = usePageViewField("routes", "page");
   const [viewTarget, setViewTarget] = useState(null);
   const [cancelTarget, setCancelTarget] = useState(null);
   const [cancelReason, setCancelReason] = useState("");

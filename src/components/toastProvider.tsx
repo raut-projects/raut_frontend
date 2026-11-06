@@ -1,11 +1,8 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ToastContext } from "./toastContext";
 import { useIsClient } from "../lib/useIsClient";
-
-const TOAST_DURATION = 4000;
+import { useToastStore } from "../store/toastStore";
 
 const toneStyles = {
   success: "border-emerald-200 bg-emerald-50 text-emerald-800",
@@ -74,50 +71,18 @@ function ToastViewport({ toasts, onDismiss }) {
 }
 
 export function ToastProvider({ children }) {
-  const [toasts, setToasts] = useState([]);
   const mounted = useIsClient();
-  const timers = useRef(new Map());
-
-  const dismiss = useCallback((id) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-
-    const timer = timers.current.get(id);
-    if (timer) {
-      clearTimeout(timer);
-      timers.current.delete(id);
-    }
-  }, []);
-
-  const push = useCallback(
-    (message, tone = "info") => {
-      const id = Date.now() + Math.random();
-      setToasts((prev) => [...prev, { id, message, tone }]);
-      timers.current.set(
-        id,
-        setTimeout(() => dismiss(id), TOAST_DURATION),
-      );
-      return id;
-    },
-    [dismiss],
-  );
-
-  const value = useMemo(
-    () => ({
-      toast: push,
-      success: (message) => push(message, "success"),
-      error: (message) => push(message, "error"),
-    }),
-    [push],
-  );
+  const toasts = useToastStore((state) => state.toasts);
+  const dismiss = useToastStore((state) => state.dismiss);
 
   return (
-    <ToastContext.Provider value={value}>
+    <>
       {children}
       {mounted &&
         createPortal(
           <ToastViewport toasts={toasts} onDismiss={dismiss} />,
           document.body,
         )}
-    </ToastContext.Provider>
+    </>
   );
 }

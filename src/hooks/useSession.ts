@@ -1,12 +1,5 @@
-import { useSyncExternalStore } from "react";
-import { getSessionSnapshot, subscribeSession } from "../services/tokenStore";
-
-const getServerSnapshot = () => null;
+import { useAuthStore } from "../store/authStore";
 
 export function useSession() {
-  return useSyncExternalStore(
-    subscribeSession,
-    getSessionSnapshot,
-    getServerSnapshot,
-  );
+  return useAuthStore((state) => state.session);
 }

@@ -38,6 +38,7 @@ import {
   useReactivateUser,
   useSetUserRole,
 } from "@/hooks/useAdminActions";
+import { usePageViewField } from "@/store/pageViewStore";
 
 const statusStyles = {
   Active: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
@@ -53,9 +54,9 @@ const roleStyles = {
 const PAGE_SIZE = 8;
 
 function Customers() {
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
-  const [page, setPage] = useState(1);
+  const [search, setSearch] = usePageViewField("customers", "search");
+  const [status, setStatus] = usePageViewField("customers", "status");
+  const [page, setPage] = usePageViewField("customers", "page");
   const [viewOpen, setViewOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [deactivateTarget, setDeactivateTarget] = useState(null);

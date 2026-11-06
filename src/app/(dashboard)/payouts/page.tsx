@@ -35,6 +35,7 @@ import {
   useRetryPayout,
 } from "@/hooks/useAdminActions";
 import { formatMoney } from "@/services/mappers";
+import { usePageViewField } from "@/store/pageViewStore";
 
 const statusStyles = {
   Pending: "bg-amber-50 text-amber-700 ring-amber-600/20",
@@ -126,12 +127,12 @@ function printPayoutReceipt(payout) {
 }
 
 function Payouts() {
-  const [status, setStatus] = useState("all");
-  const [method, setMethod] = useState("all");
-  const [driverId, setDriverId] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [page, setPage] = useState(1);
+  const [status, setStatus] = usePageViewField("payouts", "status");
+  const [method, setMethod] = usePageViewField("payouts", "method");
+  const [driverId, setDriverId] = usePageViewField("payouts", "driverId");
+  const [from, setFrom] = usePageViewField("payouts", "from");
+  const [to, setTo] = usePageViewField("payouts", "to");
+  const [page, setPage] = usePageViewField("payouts", "page");
   const [viewTarget, setViewTarget] = useState(null);
   const [approveTarget, setApproveTarget] = useState(null);
   const [approveNotes, setApproveNotes] = useState("");

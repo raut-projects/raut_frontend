@@ -46,8 +46,7 @@ import {
   Zap,
 } from "lucide-react";
 import { cn } from "cn";
-// import { useSupportTickets } from "./supportTicketsContext";
-import { useSupportTickets } from "@/components/supportTicketsContext";
+import { useSupportTickets } from "@/store/supportTicketsStore";
 import { TicketPriorityBadge, TicketStatusBadge } from "@/components/supportTicketBadges";
 import { useToast } from "@/components/toastContext";
 import { Badge } from "@/components/ui/badge";

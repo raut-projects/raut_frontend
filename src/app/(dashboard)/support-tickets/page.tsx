@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   AlertTriangle,
   Copy,
@@ -15,7 +15,7 @@ import {
   TicketPriorityBadge,
   TicketStatusBadge,
 } from "@/components/supportTicketBadges";
-import { useSupportTickets } from "@/components/supportTicketsContext";
+import { useSupportTickets } from "@/store/supportTicketsStore";
 import { useToast } from "@/components/toastContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/table";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useSession } from "@/hooks/useSession";
+import { usePageViewField } from "@/store/pageViewStore";
 import {
   countSupportTicketsByStatus,
   downloadSupportTicketsCsv,
@@ -71,14 +72,21 @@ function SupportTicketsPage() {
   const session = useSession();
   const actor = session?.name ?? "Admin";
   const { tickets, setTicketStatus } = useSupportTickets();
-  const [status, setStatus] = useState<SupportTicketStatus | "all">("all");
-  const [search, setSearch] = useState("");
-  const [priority, setPriority] = useState<SupportTicketPriority | "all">(
-    "all",
+  const [status, setStatus] = usePageViewField("supportTickets", "status");
+  const [search, setSearch] = usePageViewField("supportTickets", "search");
+  const [priority, setPriority] = usePageViewField(
+    "supportTickets",
+    "priority",
   );
-  const [category, setCategory] = useState("all");
-  const [assignee, setAssignee] = useState("all");
-  const [page, setPage] = useState(1);
+  const [category, setCategory] = usePageViewField(
+    "supportTickets",
+    "category",
+  );
+  const [assignee, setAssignee] = usePageViewField(
+    "supportTickets",
+    "assignee",
+  );
+  const [page, setPage] = usePageViewField("supportTickets", "page");
 
   const debouncedSearch = useDebouncedValue(search, 300);
 

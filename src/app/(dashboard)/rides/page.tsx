@@ -28,6 +28,7 @@ import ViewRidePanel from "@/components/viewRidePanel";
 import { useRideSummary, useRides } from "@/hooks/useRides";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useCancelRide } from "@/hooks/useAdminActions";
+import { usePageViewField } from "@/store/pageViewStore";
 
 const statusStyles = {
   Pending: "bg-amber-50 text-amber-700 ring-amber-600/20",
@@ -58,11 +59,11 @@ const controlClass =
   "rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100";
 
 function Rides() {
-  const [status, setStatus] = useState("all");
-  const [driverId, setDriverId] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [page, setPage] = useState(1);
+  const [status, setStatus] = usePageViewField("rides", "status");
+  const [driverId, setDriverId] = usePageViewField("rides", "driverId");
+  const [from, setFrom] = usePageViewField("rides", "from");
+  const [to, setTo] = usePageViewField("rides", "to");
+  const [page, setPage] = usePageViewField("rides", "page");
   const [viewTarget, setViewTarget] = useState(null);
   const [cancelTarget, setCancelTarget] = useState(null);
   const [cancelReason, setCancelReason] = useState("");

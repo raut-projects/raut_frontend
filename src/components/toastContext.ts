@@ -1,13 +1,18 @@
-import { createContext, useContext } from "react";
+"use client";
 
-export const ToastContext = createContext(null);
+import { useMemo } from "react";
+import { useToastStore, type ToastTone } from "../store/toastStore";
 
 export function useToast() {
-  const context = useContext(ToastContext);
-
-  if (!context) {
-    throw new Error("useToast must be used within a ToastProvider");
-  }
-
-  return context;
+  return useMemo(
+    () => ({
+      toast: (message: string, tone: ToastTone = "info") =>
+        useToastStore.getState().push(message, tone),
+      success: (message: string) =>
+        useToastStore.getState().push(message, "success"),
+      error: (message: string) =>
+        useToastStore.getState().push(message, "error"),
+    }),
+    [],
+  );
 }

@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { usePageViewField } from "@/store/pageViewStore";
 
 const statusStyles = {
   Pending: "bg-amber-50 text-amber-700 ring-amber-600/20",
@@ -58,11 +59,11 @@ const controlClass =
   "rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100";
 
 function Transactions() {
-  const [status, setStatus] = useState("all");
-  const [type, setType] = useState("all");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [page, setPage] = useState(1);
+  const [status, setStatus] = usePageViewField("transactions", "status");
+  const [type, setType] = usePageViewField("transactions", "type");
+  const [from, setFrom] = usePageViewField("transactions", "from");
+  const [to, setTo] = usePageViewField("transactions", "to");
+  const [page, setPage] = usePageViewField("transactions", "page");
 
   const params = { status, type, from, to, page, limit: PAGE_SIZE };
 

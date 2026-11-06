@@ -38,6 +38,7 @@ import {
   useUnsuspendDriver,
   useVerifyDriver,
 } from "@/hooks/useAdminActions";
+import { usePageViewField } from "@/store/pageViewStore";
 
 const statusStyles = {
   Verified: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
@@ -60,9 +61,9 @@ const statusDots = {
 const PAGE_SIZE = 8;
 
 function Drivers() {
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("all");
-  const [page, setPage] = useState(1);
+  const [query, setQuery] = usePageViewField("drivers", "query");
+  const [status, setStatus] = usePageViewField("drivers", "status");
+  const [page, setPage] = usePageViewField("drivers", "page");
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [suspendTarget, setSuspendTarget] = useState(null);
