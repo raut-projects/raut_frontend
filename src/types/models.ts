@@ -30,6 +30,17 @@ export interface Driver {
   verifiedAt: string
 }
 
+export interface AuthSession {
+  id: string | number | null
+  name: string
+  phone: string
+  role: string
+  roleLabel: string
+  initials: string
+  signedInAt: string
+  roleVerifiedAt?: number
+}
+
 export interface AuthUser {
   id: string | number | null
   full_name?: string

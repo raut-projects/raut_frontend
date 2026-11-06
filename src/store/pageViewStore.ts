@@ -67,59 +67,62 @@ type PageViewStore = {
     field: Field,
     value: PageViewValues[Page][Field],
   ) => void;
+  reset: () => void;
 };
 
-const initialViews: PageViewValues = {
-  routes: {
-    status: "all",
-    driverId: "",
-    origin: "",
-    destination: "",
-    from: "",
-    to: "",
-    page: 1,
-  },
-  rides: {
-    status: "all",
-    driverId: "",
-    from: "",
-    to: "",
-    page: 1,
-  },
-  drivers: {
-    query: "",
-    status: "all",
-    page: 1,
-  },
-  payouts: {
-    status: "all",
-    method: "all",
-    driverId: "",
-    from: "",
-    to: "",
-    page: 1,
-  },
-  transactions: {
-    status: "all",
-    type: "all",
-    from: "",
-    to: "",
-    page: 1,
-  },
-  customers: {
-    search: "",
-    status: "all",
-    page: 1,
-  },
-  supportTickets: {
-    status: "all",
-    search: "",
-    priority: "all",
-    category: "all",
-    assignee: "all",
-    page: 1,
-  },
-};
+function createInitialViews(): PageViewValues {
+  return {
+    routes: {
+      status: "all",
+      driverId: "",
+      origin: "",
+      destination: "",
+      from: "",
+      to: "",
+      page: 1,
+    },
+    rides: {
+      status: "all",
+      driverId: "",
+      from: "",
+      to: "",
+      page: 1,
+    },
+    drivers: {
+      query: "",
+      status: "all",
+      page: 1,
+    },
+    payouts: {
+      status: "all",
+      method: "all",
+      driverId: "",
+      from: "",
+      to: "",
+      page: 1,
+    },
+    transactions: {
+      status: "all",
+      type: "all",
+      from: "",
+      to: "",
+      page: 1,
+    },
+    customers: {
+      search: "",
+      status: "all",
+      page: 1,
+    },
+    supportTickets: {
+      status: "all",
+      search: "",
+      priority: "all",
+      category: "all",
+      assignee: "all",
+      page: 1,
+    },
+  };
+}
 
 function isUpdater<T>(
   value: T | ((previous: T) => T),
@@ -128,7 +131,8 @@ function isUpdater<T>(
 }
 
 export const usePageViewStore = create<PageViewStore>()((set) => ({
-  views: initialViews,
+  views: createInitialViews(),
+  reset: () => set({ views: createInitialViews() }),
   setField: (page, field, value) =>
     set((state) => ({
       views: {

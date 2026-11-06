@@ -39,6 +39,7 @@ import {
   useSetUserRole,
 } from "@/hooks/useAdminActions";
 import { usePageViewField } from "@/store/pageViewStore";
+import { useClampPage } from "@/hooks/useClampPage";
 
 const statusStyles = {
   Active: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
@@ -89,6 +90,8 @@ function Customers() {
   const items = data?.items ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  useClampPage(page, totalPages, setPage);
 
   const onSearchChange = (e) => {
     setSearch(e.target.value);

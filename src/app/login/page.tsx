@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/toastContext";
 import GateLoader from "@/components/GateLoader";
 import { useFromParam } from "@/lib/useFromParam";
-import { useSession } from "@/hooks/useSession";
+import { useAuthHydrated, useSession } from "@/hooks/useSession";
 import {
   loginWithEmail,
   resetPassword as sendPasswordResetEmail,
@@ -28,6 +28,7 @@ function Login() {
   const router = useRouter();
   const toast = useToast();
   const session = useSession();
+  const hydrated = useAuthHydrated();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -53,7 +54,7 @@ function Login() {
     if (sessionRedirect) router.replace(sessionRedirect);
   }, [sessionRedirect, router]);
 
-  if (session) {
+  if (!hydrated || session) {
     return <GateLoader />;
   }
 

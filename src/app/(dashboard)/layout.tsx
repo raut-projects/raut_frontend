@@ -1,22 +1,6 @@
 "use client";
 
-// import RequireAdmin from "@/components/RequireAdmin";
-// import Layout from "@/components/Layout";
-
-// export default function DashboardLayout({
-//   children,
-// }: {
-//   children: React.ReactNode;
-// }) {
-//   return (
-//     <RequireAdmin>
-//       <Layout>{children}</Layout>
-//     </RequireAdmin>
-//   );
-// }
-
 import RequireAdmin from "@/components/RequireAdmin";
-// import Layout from "@/components/Layout";
 import Header from "@/components/Header";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";

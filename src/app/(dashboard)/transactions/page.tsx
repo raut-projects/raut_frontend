@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { usePageViewField } from "@/store/pageViewStore";
+import { useClampPage } from "@/hooks/useClampPage";
 
 const statusStyles = {
   Pending: "bg-amber-50 text-amber-700 ring-amber-600/20",
@@ -83,6 +84,8 @@ function Transactions() {
   const transactions = data?.items ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  useClampPage(page, totalPages, setPage);
 
   const summaryCards = [
     {

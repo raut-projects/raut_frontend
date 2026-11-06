@@ -1,5 +1,6 @@
 import { API_ROUTES } from "../lib/config";
 import { firstRole, formatRole, isAdminRole, resolveRole } from "../lib/roles";
+import type { AuthSession } from "../types/models";
 import {
   ApiError,
   envelopeData,
@@ -15,6 +16,7 @@ import {
   updateSession,
   updateTokens,
 } from "./tokenStore";
+import { resetClientState } from "../store/resetClientState";
 
 export const normalizePhone = (value) =>
   String(value ?? "").replace(/[\s()\-.]/g, "");
@@ -82,7 +84,7 @@ const roleFromPayload = ({ user, data, accessToken }) =>
 const roleFromResponse = ({ user, data }) =>
   resolveRole(user?.role, user?.roles, data?.role, data?.roles);
 
-const toSession = (user, phone, fallbackRole) => {
+const toSession = (user, phone, fallbackRole): AuthSession => {
   const fallbackPhone = normalizePhone(phone);
   const role = firstRole(user?.role, user?.roles, fallbackRole) ?? "user";
 
@@ -110,7 +112,11 @@ const toSession = (user, phone, fallbackRole) => {
   };
 };
 
-export async function loginWithEmail({ email, password, remember = true }) {
+export async function loginWithEmail({
+  email,
+  password,
+  remember = true,
+}): Promise<AuthSession> {
   const payload = await request(API_ROUTES.login, {
     method: "POST",
     body: {
@@ -147,12 +153,13 @@ export async function loginWithEmail({ email, password, remember = true }) {
   return session;
 }
 
-export function getSession() {
+export function getSession(): AuthSession | null {
   return getSessionSnapshot();
 }
 
 export function signOut() {
   clearSession();
+  resetClientState();
 }
 
 export function getToken() {

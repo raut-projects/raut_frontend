@@ -40,6 +40,7 @@ type SupportTicketsState = {
   ) => void;
   escalateTicket: (id: string, actor: string) => void;
   addReply: (id: string, input: ReplyInput) => void;
+  reset: () => void;
 };
 
 const createId = (prefix: string) =>
@@ -93,6 +94,8 @@ export const useSupportTicketsStore = create<SupportTicketsState>()(
     return {
       tickets: createSupportTickets(),
       details: {},
+
+      reset: () => set({ tickets: createSupportTickets(), details: {} }),
 
       getTicket: (id) => get().tickets.find((ticket) => ticket.id === id),
 

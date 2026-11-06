@@ -12,6 +12,7 @@ type ToastState = {
   toasts: Toast[];
   push: (message: string, tone?: ToastTone) => number;
   dismiss: (id: number) => void;
+  clear: () => void;
 };
 
 const TOAST_DURATION = 4000;
@@ -51,5 +52,11 @@ export const useToastStore = create<ToastState>()((set, get) => ({
   dismiss: (id) => {
     clearTimer(id);
     set({ toasts: get().toasts.filter((toast) => toast.id !== id) });
+  },
+
+  clear: () => {
+    timers.forEach((timer) => clearTimeout(timer));
+    timers.clear();
+    set({ toasts: [] });
   },
 }));

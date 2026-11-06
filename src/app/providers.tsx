@@ -13,7 +13,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     hydrateAuth();
-  }, [hydrateAuth]);
+
+    return useAuthStore.subscribe((state, previous) => {
+      if (previous.session && !state.session) client.clear();
+    });
+  }, [client, hydrateAuth]);
 
   return (
     <QueryClientProvider client={client}>

@@ -3,20 +3,21 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import GateLoader from "./GateLoader";
-import { useSession } from "../hooks/useSession";
+import { useAuthHydrated, useSession } from "../hooks/useSession";
 
 function RequireAuth({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const session = useSession();
+  const hydrated = useAuthHydrated();
 
   useEffect(() => {
-    if (!session) {
+    if (hydrated && !session) {
       router.replace(`/login?from=${encodeURIComponent(pathname)}`);
     }
-  }, [session, pathname, router]);
+  }, [hydrated, session, pathname, router]);
 
-  if (!session) return <GateLoader />;
+  if (!hydrated || !session) return <GateLoader />;
 
   return children;
 }

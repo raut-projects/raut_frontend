@@ -3,7 +3,6 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3,
   Car,
@@ -125,7 +124,6 @@ const normalizePath = (value: string) => value.replace(/\/+$/, "") || "/";
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const router = useRouter();
-  const queryClient = useQueryClient();
   const session = useSession();
   const { setOpenMobile } = useSidebar();
 
@@ -148,7 +146,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const handleSignOut = () => {
     signOut();
-    queryClient.clear();
     setOpenMobile(false);
     router.replace("/login");
   };

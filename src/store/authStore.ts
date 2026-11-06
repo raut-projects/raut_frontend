@@ -1,33 +1,18 @@
 import { create } from "zustand";
-import {
-  clearSession,
-  getSessionSnapshot,
-  subscribeSession,
-} from "@/services/tokenStore";
-
-export type AuthSession = {
-  id: string | number | null;
-  name: string;
-  phone: string;
-  role: string;
-  roleLabel: string;
-  initials: string;
-  signedInAt: string;
-  roleVerifiedAt?: number;
-};
+import type { AuthSession } from "@/types/models";
+import { getSessionSnapshot, subscribeSession } from "@/services/tokenStore";
 
 type AuthState = {
   session: AuthSession | null;
+  hydrated: boolean;
   hydrate: () => void;
-  signOut: () => void;
 };
 
 let hydrated = false;
 
-const currentSession = () => (getSessionSnapshot() as AuthSession | null) ?? null;
-
 export const useAuthStore = create<AuthState>()((set) => ({
   session: null,
+  hydrated: false,
 
   // The session starts empty so the first client render matches the static
   // export. It is filled from the token store once the browser is available.
@@ -35,14 +20,10 @@ export const useAuthStore = create<AuthState>()((set) => ({
     if (hydrated || typeof window === "undefined") return;
 
     hydrated = true;
-    set({ session: currentSession() });
+    set({ session: getSessionSnapshot(), hydrated: true });
 
     subscribeSession(() => {
-      set({ session: currentSession() });
+      set({ session: getSessionSnapshot() });
     });
-  },
-
-  signOut: () => {
-    clearSession();
   },
 }));

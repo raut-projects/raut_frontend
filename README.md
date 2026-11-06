@@ -237,7 +237,7 @@ If the page is opened outside the WebView, it falls back to a browser alert. Can
 1. The administrator enters an email address and password on `/login`.
 2. `POST /auth/login` validates the credentials.
 3. The response returns the session, access token and optional refresh token.
-4. The session and tokens are persisted in `localStorage` and exposed through a small external store.
+4. The session and tokens are persisted in `localStorage` and exposed to React through the Zustand auth store.
 5. `RequireAdmin` revalidates the role every five minutes (`ROLE_REVALIDATE_MS`). A missing or stale role is checked against `GET /auth/me`.
 6. Non-admin accounts are redirected to `/request-admin`, where the admin secret is submitted to `POST /admin/promote`.
 7. If the promoted access token still does not grant an admin role, the user is asked to sign in again.
@@ -387,6 +387,22 @@ Page -> Hook -> Service -> API helper -> HTTP client -> Backend
 
 List services normalize pagination into `{ items, total, page, limit }`. Some summary cards fetch a larger overview page and calculate counts client-side. The dashboard uses `Promise.allSettled` so a failing analytics endpoint does not hide the rest of the page.
 
+### Client state (Zustand)
+
+Zustand stores hold shared client-only state. Server data stays in TanStack Query.
+
+| Store | Persistence | Responsibility |
+| --- | --- | --- |
+| `authStore` | Memory, hydrated from `tokenStore` | Mirrors the signed-in session for React components; tokens remain in `tokenStore`. |
+| `onboardingStore` | `localStorage` (`driver-onboarding-storage`) | Onboarding progress, token and language. |
+| `pageViewStore` | Memory | List filters and pagination retained across navigation within the tab. |
+| `supportTicketsStore` | Memory | Prototype ticket records, details, replies and status changes. |
+| `toastStore` | Memory | Transient toast notifications. |
+
+The auth store starts empty so the static export and the first client render match. `Providers` hydrates it after mount, and route gates wait for hydration before redirecting. Signing out clears the token store plus page views, support tickets and toasts. Onboarding progress is not cleared because it belongs to a separate driver flow.
+
+List filters and pagination survive navigation but reset on a full reload. Support ticket changes also reset on reload.
+
 ## Project structure
 
 ```text
@@ -460,8 +476,8 @@ raut_frontend/
 | `src/onboarding/` | Personal, driver, vehicle and payment step components |
 | `src/store/authStore.ts` | Browser session state synchronized with the token store |
 | `src/store/onboardingStore.ts` | Persisted onboarding progress, token and language |
-| `src/store/pageViewStore.ts` | In-memory list filters and pagination retained across navigation |
-| `src/store/supportTicketsStore.ts` | In-memory support ticket prototype data and updates |
+| `src/store/pageViewStore.ts` | In-memory list filters and pagination retained across navigation, reset on sign-out |
+| `src/store/supportTicketsStore.ts` | In-memory support ticket prototype data and updates, reset on sign-out |
 | `src/store/toastStore.ts` | Transient toast notifications |
 | `src/schemas/onboardingSchemas.ts` | Zod validation rules for each onboarding step |
 
@@ -511,7 +527,7 @@ Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Re
 ## Known limitations
 
 - Live Rides, Promotions, Admin Users, Audit Logs, Platform Config and System Health are placeholder pages.
-- Support ticket records and updates are held in memory only and are reset on a full page reload; backend integration is not implemented.
+- Support ticket records and updates are held in memory only and are reset on a full page reload or sign-out; backend integration is not implemented.
 - There is currently no automated test suite or CI configuration.
 - There is no role-level UI beyond the admin gate; every configured admin role sees every admin page.
 - The dashboard builds some summary cards from the analytics overview response and falls back to list totals when fields or endpoints are unavailable.

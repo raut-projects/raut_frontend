@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import GateLoader from "./GateLoader";
-import { useSession } from "../hooks/useSession";
+import { useAuthHydrated, useSession } from "../hooks/useSession";
 import { ROLE_REVALIDATE_MS } from "../lib/config";
 import { firstRole, formatRole, isAdminRole } from "../lib/roles";
-import { fetchCurrentUser } from "../services/auth";
-import { clearSession, updateSession } from "../services/tokenStore";
+import { fetchCurrentUser, signOut } from "../services/auth";
+import { updateSession } from "../services/tokenStore";
 
 let verification = null;
 
@@ -30,12 +30,13 @@ function RequireAdmin({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const session = useSession();
+  const hydrated = useAuthHydrated();
   const [check, setCheck] = useState("idle");
 
   const roleIsFresh = isRoleFresh(session);
 
   useEffect(() => {
-    if (!session || roleIsFresh) return undefined;
+    if (!hydrated || !session || roleIsFresh) return undefined;
 
     let active = true;
 
@@ -58,7 +59,7 @@ function RequireAdmin({ children }) {
 
         // The session is gone, so start over from the login page.
         if (error?.status === 401) {
-          clearSession();
+          signOut();
           setCheck("signed-out");
           return;
         }
@@ -71,11 +72,12 @@ function RequireAdmin({ children }) {
     return () => {
       active = false;
     };
-  }, [session, roleIsFresh]);
+  }, [hydrated, session, roleIsFresh]);
 
   const verified = roleIsFresh || check === "passed" || check === "failed";
-  const needsSignIn = !session || check === "signed-out";
-  const needsAdmin = Boolean(session) && verified && !isAdminRole(session.role);
+  const needsSignIn = hydrated && (!session || check === "signed-out");
+  const needsAdmin =
+    hydrated && Boolean(session) && verified && !isAdminRole(session.role);
 
   useEffect(() => {
     if (needsSignIn) {
@@ -88,7 +90,7 @@ function RequireAdmin({ children }) {
     }
   }, [needsSignIn, needsAdmin, pathname, router]);
 
-  if (needsSignIn || needsAdmin) return <GateLoader />;
+  if (!hydrated || needsSignIn || needsAdmin) return <GateLoader />;
 
   if (!verified) return <GateLoader />;
 

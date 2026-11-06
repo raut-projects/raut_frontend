@@ -30,6 +30,7 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useRouteSummary, useRoutes } from "@/hooks/useRoutes";
 import { usePageViewField } from "@/store/pageViewStore";
+import { useClampPage } from "@/hooks/useClampPage";
 import { ROUTE_STATUS_LABELS } from "@/services/mappers";
 
 const statusStyles = {
@@ -108,6 +109,8 @@ function RoutesPage() {
   const routes = data?.items ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  useClampPage(page, totalPages, setPage);
 
   const summaryCards = [
     {

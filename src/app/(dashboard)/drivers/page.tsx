@@ -39,6 +39,7 @@ import {
   useVerifyDriver,
 } from "@/hooks/useAdminActions";
 import { usePageViewField } from "@/store/pageViewStore";
+import { useClampPage } from "@/hooks/useClampPage";
 
 const statusStyles = {
   Verified: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
@@ -100,6 +101,8 @@ function Drivers() {
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const summary = data?.summary;
+
+  useClampPage(page, totalPages, setPage);
 
   const summaryCards = [
     {

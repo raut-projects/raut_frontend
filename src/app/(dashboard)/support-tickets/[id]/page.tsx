@@ -1,25 +1,5 @@
 "use client";
 
-// import SupportTicketDetail from "@/components/SupportTicketDetail";
-// import { createSupportTickets } from "@/lib/supportTickets";
-
-// export function generateStaticParams() {
-//   return createSupportTickets().map((ticket) => ({ id: ticket.id }));
-// }
-
-// export default async function SupportTicketDetailPage({
-//   params,
-// }: {
-//   params: Promise<{ id: string }>;
-// }) {
-//   const { id } = await params;
-
-//   return <SupportTicketDetail ticketId={id} />;
-// }
-
-// import SupportTicketDetail from "@/components/SupportTicketDetail";
-import { createSupportTickets } from "@/lib/supportTickets";
-
 import Link from "next/link";
 import { useRef, useState } from "react";
 import {
@@ -98,10 +78,6 @@ const getSlaClass = (status: string, priority: SupportTicketPriority) => {
 
   return "bg-slate-50 text-slate-600 ring-slate-500/20";
 };
-
-// export function generateStaticParams() {
-//   return createSupportTickets().map((ticket) => ({ id: ticket.id }));
-// }
 
 function SupportTicketDetail({ ticketId }: { ticketId: string }) {
   const {

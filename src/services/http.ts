@@ -12,6 +12,7 @@ import {
   isAccessTokenExpired,
   updateTokens,
 } from './tokenStore'
+import { resetClientState } from '../store/resetClientState'
 
 export class ApiError extends Error {
   status: number
@@ -210,6 +211,7 @@ export const request = async (
         return request(path, { method, body, auth, timeout, allowRefresh: false, form })
       }
       clearSession()
+      resetClientState()
     }
 
     throw new ApiError(pickErrorMessage(payload, response.status), response.status, payload)

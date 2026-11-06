@@ -36,6 +36,7 @@ import {
 } from "@/hooks/useAdminActions";
 import { formatMoney } from "@/services/mappers";
 import { usePageViewField } from "@/store/pageViewStore";
+import { useClampPage } from "@/hooks/useClampPage";
 
 const statusStyles = {
   Pending: "bg-amber-50 text-amber-700 ring-amber-600/20",
@@ -166,6 +167,8 @@ function Payouts() {
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const summary = data?.summary;
+
+  useClampPage(page, totalPages, setPage);
 
   const summaryCards = [
     {

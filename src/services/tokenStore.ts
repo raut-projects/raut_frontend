@@ -1,3 +1,5 @@
+import type { AuthSession } from "../types/models";
+
 const SESSION_KEY = "raut_admin_session";
 const ACCESS_TOKEN_KEY = "raut_admin_access_token";
 const REFRESH_TOKEN_KEY = "raut_admin_refresh_token";
@@ -74,7 +76,7 @@ const read = (key: string) => readFrom(activeStorage(), key);
 const write = (key: string, value: string) =>
   writeTo(activeStorage(), key, value);
 
-const readSession = () => {
+const readSession = (): AuthSession | null => {
   const raw = read(SESSION_KEY);
   if (!raw) return null;
 
@@ -86,9 +88,9 @@ const readSession = () => {
   }
 };
 
-let cachedSession = readSession();
+let cachedSession: AuthSession | null = readSession();
 
-export const getSessionSnapshot = () => cachedSession;
+export const getSessionSnapshot = (): AuthSession | null => cachedSession;
 
 export const subscribeSession = (listener: () => void) => {
   listeners.add(listener);
@@ -113,7 +115,7 @@ export const saveSession = ({
   expiresIn,
   remember = true,
 }: {
-  session: Record<string, unknown>;
+  session: AuthSession;
   accessToken?: string | null;
   refreshToken?: string | null;
   expiresIn?: number | string | null;
@@ -156,7 +158,7 @@ export const updateTokens = ({
   emit();
 };
 
-export const updateSession = (patch) => {
+export const updateSession = (patch: Partial<AuthSession>) => {
   const current = readSession();
   if (!current) return;
 

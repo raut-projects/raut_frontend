@@ -1,14 +1,11 @@
 "use client";
 
-import RequireAuth from "@/components/RequireAuth";
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/toastContext";
 import GateLoader from "@/components/GateLoader";
 import { useFromParam } from "@/lib/useFromParam";
-import { useSession } from "@/hooks/useSession";
+import { useAuthHydrated, useSession } from "@/hooks/useSession";
 import { isAdminRole } from "@/lib/roles";
 import { requestAdminAccess, signOut } from "@/services/auth";
 
@@ -22,7 +19,7 @@ function RequestAdmin() {
   const router = useRouter();
   const toast = useToast();
   const session = useSession();
-  const queryClient = useQueryClient();
+  const hydrated = useAuthHydrated();
 
   const [secret, setSecret] = useState("");
   const [error, setError] = useState("");
@@ -35,14 +32,14 @@ function RequestAdmin() {
   const isAdmin = Boolean(session) && isAdminRole(session.role);
 
   useEffect(() => {
-    if (!session) router.replace("/login?from=%2Frequest-admin");
-  }, [session, router]);
+    if (hydrated && !session) router.replace("/login?from=%2Frequest-admin");
+  }, [hydrated, session, router]);
 
   useEffect(() => {
     if (isAdmin) router.replace(from);
   }, [isAdmin, from, router]);
 
-  if (!session || isAdmin) {
+  if (!hydrated || !session || isAdmin) {
     return <GateLoader />;
   }
 
@@ -89,7 +86,6 @@ function RequestAdmin() {
 
   const handleSignOut = () => {
     signOut();
-    queryClient.clear();
     router.replace("/login");
   };
 

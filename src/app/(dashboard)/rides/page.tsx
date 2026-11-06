@@ -29,6 +29,7 @@ import { useRideSummary, useRides } from "@/hooks/useRides";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useCancelRide } from "@/hooks/useAdminActions";
 import { usePageViewField } from "@/store/pageViewStore";
+import { useClampPage } from "@/hooks/useClampPage";
 
 const statusStyles = {
   Pending: "bg-amber-50 text-amber-700 ring-amber-600/20",
@@ -92,6 +93,8 @@ function Rides() {
   const rides = data?.items ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  useClampPage(page, totalPages, setPage);
 
   const summaryCards = [
     {
