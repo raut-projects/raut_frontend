@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { EllipsisVertical, Search } from "lucide-react";
 import {
   QueryError,
@@ -8,7 +9,6 @@ import {
   TableSkeleton,
 } from "@/components/queryStates";
 import { ConfirmDialog, ReasonDialog } from "@/components/reasonDialog";
-import ViewDriverPanel from "@/components/viewDriverPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -62,6 +62,7 @@ const statusDots = {
 const PAGE_SIZE = 8;
 
 function Drivers() {
+  const router = useRouter();
   const [query, setQuery] = usePageViewField("drivers", "query");
   const [status, setStatus] = usePageViewField("drivers", "status");
   const [page, setPage] = usePageViewField("drivers", "page");
@@ -69,7 +70,6 @@ function Drivers() {
   const [rejectReason, setRejectReason] = useState("");
   const [suspendTarget, setSuspendTarget] = useState(null);
   const [suspendReason, setSuspendReason] = useState("");
-  const [viewTarget, setViewTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
@@ -303,12 +303,12 @@ function Drivers() {
               {drivers.map((r) => (
                 <TableRow
                   key={r.id}
-                  onClick={() => setViewTarget(r)}
+                  onClick={() => router.push(`/drivers/${encodeURIComponent(r.id)}`)}
                   onKeyDown={(event) => {
                     if (event.target !== event.currentTarget) return;
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
-                      setViewTarget(r);
+                      router.push(`/drivers/${encodeURIComponent(r.id)}`);
                     }
                   }}
                   tabIndex={0}
@@ -410,11 +410,25 @@ function Drivers() {
                         className="w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
                       >
                         <DropdownMenuItem
-                          onSelect={() => setViewTarget(r)}
+                          onSelect={() =>
+                            router.push(`/drivers/${encodeURIComponent(r.id)}`)
+                          }
                           className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                         >
-                          View
+                          Open profile
                         </DropdownMenuItem>
+                        {r.statusKey === "pending" && (
+                          <DropdownMenuItem
+                            onSelect={() =>
+                              router.push(
+                                `/drivers/${encodeURIComponent(r.id)}#driver-documents`,
+                              )
+                            }
+                            className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
+                          >
+                            Review documents
+                          </DropdownMenuItem>
+                        )}
                         {r.statusKey === "pending" && (
                           <>
                             <DropdownMenuItem
@@ -534,12 +548,6 @@ function Drivers() {
           </div>
         </div>
       </Card>
-
-      <ViewDriverPanel
-        open={Boolean(viewTarget)}
-        onClose={() => setViewTarget(null)}
-        driver={viewTarget}
-      />
 
       <ReasonDialog
         open={Boolean(rejectTarget)}

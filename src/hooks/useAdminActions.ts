@@ -87,7 +87,7 @@ export const useCancelRoute = () =>
 
 export const useApproveDocument = () =>
   useAction({
-    mutationFn: ({ documentId }) => approveDocument(documentId, ""),
+    mutationFn: ({ documentId, notes }) => approveDocument(documentId, notes),
     successMessage: "Document approved.",
     invalidate: [queryKeys.documents.all],
   });

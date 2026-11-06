@@ -315,6 +315,16 @@ export const mapDocument = (document) => {
     expiry: document?.expires_at ? formatDate(document.expires_at) : 'No expiry',
     uploadedAt: formatDate(document?.created_at),
     reviewedAt: document?.reviewed_at ? formatDate(document.reviewed_at) : null,
+    reviewedBy:
+      document?.reviewed_by_name ??
+      document?.reviewer_name ??
+      document?.admin_name ??
+      null,
+    reviewNotes:
+      document?.review_notes ??
+      document?.notes ??
+      document?.admin_notes ??
+      null,
     rejectionReason: document?.rejection_reason ?? null,
     isApproved: APPROVED_DOCUMENT_STATUSES.includes(statusKey),
     isRejected: statusKey === 'rejected',

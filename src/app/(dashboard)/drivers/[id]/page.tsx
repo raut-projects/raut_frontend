@@ -1,0 +1,1017 @@
+"use client";
+
+import { useCallback, useState } from "react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  Ban,
+  CarFront,
+  CircleCheck,
+  CircleHelp,
+  Clock3,
+  Download,
+  ExternalLink,
+  FileText,
+  Mail,
+  MessageSquare,
+  Phone,
+  ShieldAlert,
+  Star,
+  UserRound,
+} from "lucide-react";
+import { QueryError } from "@/components/queryStates";
+import { ReasonDialog } from "@/components/reasonDialog";
+import DocumentReviewDialog from "@/components/documentReviewDialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  useApproveDocument,
+  useRejectDocument,
+  useSuspendDriver,
+  useUnsuspendDriver,
+} from "@/hooks/useAdminActions";
+import { useDriverDetails } from "@/hooks/useDriverDetails";
+import { useDriverDocuments } from "@/hooks/useDriverDocuments";
+import { useToast } from "@/components/toastContext";
+import { useAuthStore } from "@/store/authStore";
+import { usePageViewField } from "@/store/pageViewStore";
+import {
+  formatDate,
+  formatDuration,
+  formatMoney,
+  formatRelative,
+} from "@/services/mappers";
+import { ApiError } from "@/services/http";
+
+const isRecord = (value) =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
+const firstValue = (records, keys) => {
+  for (const record of records) {
+    if (!isRecord(record)) continue;
+
+    for (const key of keys) {
+      const value = record[key];
+      if (value !== undefined && value !== null && value !== "") return value;
+    }
+  }
+
+  return null;
+};
+
+const displayValue = (value) => {
+  if (value === undefined || value === null || value === "") {
+    return "Not provided";
+  }
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (Array.isArray(value)) {
+    if (!value.length) return "None";
+    return value
+      .map((item) =>
+        isRecord(item)
+          ? (item.summary ??
+            item.title ??
+            item.reason ??
+            item.name ??
+            item.id ??
+            "Issue")
+          : item,
+      )
+      .join(", ");
+  }
+  if (isRecord(value)) {
+    return (
+      value.full_name ??
+      value.name ??
+      value.label ??
+      value.id ??
+      "Not provided"
+    );
+  }
+
+  return String(value);
+};
+
+const verificationLabel = (value) => {
+  if (value === true) return "Verified";
+  if (value === false) return "Not verified";
+  return "Verification not provided";
+};
+
+const formatPercent = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return "Not provided";
+  }
+
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return displayValue(value);
+
+  return `${Math.round((amount <= 1 ? amount * 100 : amount) * 10) / 10}%`;
+};
+
+const formatMoneyValue = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return "Not provided";
+  }
+
+  const amount = Number(value);
+  return Number.isFinite(amount) ? formatMoney(amount) : displayValue(value);
+};
+
+const formatHours = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return "Not provided";
+  }
+
+  const amount = Number(value);
+  return Number.isFinite(amount) ? `${amount}h` : displayValue(value);
+};
+
+function InfoField({ label, value, detail = null, badge = null }) {
+  return (
+    <div className="min-w-0 border-b border-slate-100 py-3 last:border-0">
+      <dt className="text-xs font-medium text-slate-500">{label}</dt>
+      <dd className="mt-1 flex flex-wrap items-center gap-2 text-sm font-medium text-slate-900">
+        <span className="break-words">{displayValue(value)}</span>
+        {badge && (
+          <Badge
+            variant="outline"
+            className={
+              badge === "Verified" || badge === "Valid"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : badge === "Expired"
+                  ? "border-rose-200 bg-rose-50 text-rose-700"
+                  : badge === "Not verified"
+                    ? "border-amber-200 bg-amber-50 text-amber-800"
+                    : "border-slate-200 bg-slate-50 text-slate-600"
+            }
+          >
+            {badge === "Verified" || badge === "Valid" ? (
+              <CircleCheck aria-hidden="true" />
+            ) : (
+              <CircleHelp aria-hidden="true" />
+            )}
+            {badge}
+          </Badge>
+        )}
+      </dd>
+      {detail && <p className="mt-1 text-xs text-slate-500">{detail}</p>}
+    </div>
+  );
+}
+
+function DriverSection({
+  icon: Icon,
+  title,
+  action = null,
+  children,
+  id = undefined,
+}) {
+  return (
+    <section id={id} className="border-t border-slate-200 pt-5">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900">
+          <Icon className="h-4 w-4 text-brand-600" aria-hidden="true" />
+          {title}
+        </h2>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function DriverDetailsPage() {
+  const { id: routeId } = useParams<{ id: string | string[] }>();
+  const driverId = Array.isArray(routeId) ? routeId[0] : routeId;
+  const router = useRouter();
+  const toast = useToast();
+  const sessionRole = useAuthStore((state) => state.session?.role);
+  const canReviewDocuments = [
+    "super_admin",
+    "platform_manager",
+    "operations_agent",
+    "operator",
+  ].includes(
+    String(sessionRole ?? "")
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_"),
+  );
+  const [, setRidesDriverId] = usePageViewField("rides", "driverId");
+  const [, setPayoutDriverId] = usePageViewField("payouts", "driverId");
+  const [, setPayoutFrom] = usePageViewField("payouts", "from");
+  const [, setPayoutTo] = usePageViewField("payouts", "to");
+  const [, setRidesPage] = usePageViewField("rides", "page");
+  const [, setPayoutsPage] = usePageViewField("payouts", "page");
+  const [rejectTarget, setRejectTarget] = useState(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [reviewTarget, setReviewTarget] = useState(null);
+  const [suspendOpen, setSuspendOpen] = useState(false);
+  const [suspendReason, setSuspendReason] = useState("");
+  const {
+    data: driver,
+    isPending: driverPending,
+    isError: driverIsError,
+    error: driverError,
+    refetch: refetchDriver,
+  } = useDriverDetails(driverId);
+  const {
+    data: documents,
+    isPending: documentsPending,
+    isError: documentsIsError,
+    error: documentsError,
+    refetch: refetchDocuments,
+  } = useDriverDocuments(driverId);
+  const approveDocument = useApproveDocument();
+  const rejectDocument = useRejectDocument();
+  const suspendDriver = useSuspendDriver();
+  const unsuspendDriver = useUnsuspendDriver();
+  const closeDocumentReview = useCallback(() => setReviewTarget(null), []);
+
+  if (driverPending) {
+    return (
+      <div className="space-y-6">
+        <div className="h-8 w-40 animate-pulse rounded bg-slate-200" />
+        <Card className="h-48 animate-pulse bg-slate-50" />
+        <Card className="h-64 animate-pulse bg-slate-50" />
+      </div>
+    );
+  }
+
+  if (driverIsError) {
+    if (driverError instanceof ApiError && driverError.status === 404) {
+      return (
+        <div className="space-y-6">
+          <Button asChild variant="outline">
+            <Link href="/drivers">
+              <ArrowLeft aria-hidden="true" />
+              Back to Drivers
+            </Link>
+          </Button>
+          <Card className="p-8 text-center">
+            <h1 className="text-lg font-semibold text-slate-900">
+              Driver not found
+            </h1>
+            <p className="mt-2 text-sm text-slate-500">
+              This driver may have been removed or the profile link is invalid.
+            </p>
+          </Card>
+        </div>
+      );
+    }
+
+    return (
+      <Card className="rounded-xl">
+        <QueryError error={driverError} onRetry={refetchDriver} />
+      </Card>
+    );
+  }
+
+  const profile = driver.profile ?? {};
+  const personal =
+    profile.personal_information ?? profile.personal ?? profile.account ?? {};
+  const vehicleValue =
+    profile.vehicle ?? profile.vehicle_info ?? profile.vehicle_details ?? {};
+  const vehicle = Array.isArray(vehicleValue)
+    ? (vehicleValue[0] ?? {})
+    : vehicleValue;
+  const performance = profile.performance ?? profile.metrics ?? {};
+  const earnings = profile.earnings ?? profile.earnings_summary ?? {};
+  const earningsPeriod =
+    earnings.last_30_days ?? earnings.last30Days ?? profile.last_30_days ?? {};
+  const activity = profile.activity ?? profile.activity_summary ?? {};
+  const records = [
+    profile,
+    personal,
+    vehicle,
+    performance,
+    earnings,
+    earningsPeriod,
+    activity,
+  ];
+  const items = documents ?? [];
+  const documentMutationPending =
+    approveDocument.isPending || rejectDocument.isPending;
+  const isSuspended = driver.statusKey === "suspended";
+  const email = driver.email === "—" ? "" : driver.email;
+  const phone = driver.phone === "—" ? "" : driver.phone;
+  const phoneVerified = firstValue(
+    [profile, personal],
+    ["phone_verified", "is_phone_verified", "phone_is_verified"],
+  );
+  const emailVerified = firstValue(
+    [profile, personal],
+    ["email_verified", "is_email_verified", "email_is_verified"],
+  );
+  const nationalId = firstValue(
+    [profile, personal],
+    ["national_id", "national_id_number", "identification_number", "id_number"],
+  );
+  const referralCode = firstValue([profile, personal], ["referral_code"]);
+  const referredBy = firstValue(
+    [profile, personal],
+    ["referred_by", "referrer", "referral_source"],
+  );
+  const online = firstValue(
+    [profile, personal, activity],
+    ["is_online", "online", "online_status", "availability_status"],
+  );
+  const onlineLabel =
+    online === null
+      ? "Online status unavailable"
+      : online === true
+        ? "Online"
+        : online === false
+          ? "Offline"
+          : displayValue(online);
+  const photoFields: [string, string[]][] = [
+    ["Front", ["front_photo", "front_image", "vehicle_front_photo"]],
+    ["Back", ["back_photo", "back_image", "vehicle_back_photo"]],
+    ["Left", ["left_photo", "left_image", "vehicle_left_photo"]],
+    ["Right", ["right_photo", "right_image", "vehicle_right_photo"]],
+    ["Interior", ["interior_photo", "interior_image", "vehicle_interior_photo"]],
+  ];
+  const vehiclePhotos = photoFields
+    .map(([label, keys]) => ({
+      label,
+      url: firstValue([vehicle, profile], keys),
+    }))
+    .filter((photo) => typeof photo.url === "string" && photo.url.length > 0);
+  const vehiclePhotoDocs = items.filter(
+    (document) => document.type === "vehicle_photo" && document.fileUrl,
+  );
+  const insuranceExpiry = firstValue(
+    [vehicle, profile],
+    ["insurance_expiry", "insurance_expires_at", "insurance_expiry_date"],
+  );
+  const insuranceValidity = firstValue(
+    [vehicle, profile],
+    ["insurance_valid", "is_insurance_valid"],
+  );
+  const activeIssues = firstValue(
+    [profile, activity],
+    ["active_issues", "open_issues", "current_issues", "flags"],
+  );
+  const historicalIssues = firstValue(
+    [profile, activity],
+    ["historical_issues", "resolved_disputes", "disputes"],
+  );
+  const dateJoined = firstValue([profile, personal], ["created_at", "joined_at"]);
+  const joinedRelative = dateJoined ? formatRelative(dateJoined) : null;
+
+  const navigateToRides = () => {
+    setRidesDriverId(String(driverId));
+    setRidesPage(1);
+    router.push("/rides");
+  };
+
+  const navigateToPayouts = () => {
+    setPayoutDriverId(String(driverId));
+    const end = new Date();
+    const start = new Date(end);
+    start.setDate(start.getDate() - 29);
+    setPayoutFrom(start.toISOString().slice(0, 10));
+    setPayoutTo(end.toISOString().slice(0, 10));
+    setPayoutsPage(1);
+    router.push("/payouts");
+  };
+
+  const exportProfile = () => {
+    try {
+      const exportData = {
+        driver: {
+          id: driver.id,
+          name: driver.name,
+          phone: driver.phone,
+          email: driver.email,
+          status: driver.status,
+          joined: driver.joined,
+          verifiedAt: driver.verifiedAt,
+          rides: driver.rides,
+          rating: driver.rating,
+          ratingCount: driver.ratingCount,
+          profile,
+        },
+        documents: items.map(
+          ({
+            fileUrl: _fileUrl,
+            ...document
+          }) => document,
+        ),
+        exportedAt: new Date().toISOString(),
+      };
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `driver-${driver.id}-data.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success("Driver data exported.");
+    } catch (error) {
+      toast.error(error?.message ?? "Could not export driver data.");
+    }
+  };
+
+  const getMetric = (keys) => firstValue(records, keys);
+  const driverRating =
+    getMetric(["rating_avg", "rating", "average_rating"]) ??
+    (driver.rating > 0 ? driver.rating : null);
+  const rideCount =
+    getMetric(["total_rides", "ride_count", "completed_rides"]) ?? driver.rides;
+  const ratingCount =
+    getMetric(["rating_count", "ratings_count", "total_ratings"]) ??
+    driver.ratingCount;
+  const getEarningsMetric = (keys) =>
+    firstValue([earningsPeriod, earnings], keys);
+  const detailFields: [string, string[]][] = [
+    ["Acceptance rate", ["acceptance_rate", "acceptanceRate"]],
+    ["Cancellation rate", ["cancellation_rate", "cancellationRate"]],
+    ["Completion rate", ["completion_rate", "completionRate"]],
+    ["On-time arrival", ["on_time_rate", "on_time_arrival_rate", "onTimeRate"]],
+  ];
+  const responseTime = getMetric([
+    "average_response_time_seconds",
+    "average_response_time",
+    "avg_response_time",
+    "response_time",
+  ]);
+  const performanceFields: {
+    label: string;
+    value: unknown;
+    detail?: string;
+  }[] = [
+    {
+      label: "Overall rating",
+      value:
+        driverRating !== null
+          ? `${Number(driverRating).toFixed(1)} / 5`
+          : "Not provided",
+      detail:
+        ratingCount > 0
+          ? `${displayValue(ratingCount)} ratings · ${displayValue(rideCount)} rides`
+          : "Rating count not provided",
+    },
+    ...detailFields.map(([label, keys]) => ({
+      label,
+      value: formatPercent(getMetric(keys)),
+    })),
+    {
+      label: "Average response time",
+      value: responseTime === null ? "Not provided" : formatDuration(responseTime),
+    },
+  ];
+
+  const earningsFields: [string, unknown][] = [
+    [
+      "Total rides",
+      getEarningsMetric(["rides_count", "total_rides", "ride_count"]),
+    ],
+    [
+      "Gross earnings",
+      formatMoneyValue(
+        getEarningsMetric(["gross_earnings", "gross_amount", "total_gross"]),
+      ),
+    ],
+    [
+      "Platform fee",
+      formatMoneyValue(
+        getEarningsMetric(["platform_fee", "platform_fees", "commission_amount"]),
+      ),
+    ],
+    [
+      "Net earnings",
+      formatMoneyValue(
+        getEarningsMetric(["net_earnings", "net_amount", "driver_earnings"]),
+      ),
+    ],
+    [
+      "Already paid out",
+      formatMoneyValue(
+        getEarningsMetric(["paid_out", "paid_amount", "total_paid"]),
+      ),
+    ],
+    [
+      "Pending payout",
+      formatMoneyValue(
+        getEarningsMetric(["pending_payout", "pending_amount", "unpaid_amount"]),
+      ),
+    ],
+  ];
+  const activityFields: [string, unknown][] = [
+    [
+      "Last online",
+      (() => {
+        const value = getMetric(["last_online", "last_seen_at", "last_active_at"]);
+        return value ? formatRelative(value) : null;
+      })(),
+    ],
+    [
+      "Active hours today",
+      formatHours(getMetric(["active_hours_today", "hours_active_today"])),
+    ],
+    [
+      "Average weekly hours",
+      formatHours(getMetric(["average_weekly_hours", "avg_weekly_hours"])),
+    ],
+    ["Peak hours", getMetric(["peak_hours", "peak_activity_hours"])],
+  ];
+
+  return (
+    <>
+      <div className="space-y-6">
+        <header className="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <Button asChild variant="outline" size="sm">
+              <Link href="/drivers">
+                <ArrowLeft aria-hidden="true" />
+                Back to Drivers
+              </Link>
+            </Button>
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                Driver #{driver.id}
+              </h1>
+              <p className="mt-1 truncate text-sm text-slate-500">
+                {driver.name}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge
+              variant="outline"
+              className={
+                driver.isActive
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-rose-200 bg-rose-50 text-rose-700"
+              }
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  driver.isActive ? "bg-emerald-500" : "bg-rose-500"
+                }`}
+                aria-hidden="true"
+              />
+              {driver.isActive ? "Active" : "Inactive"}
+            </Badge>
+            <Badge variant="outline" className="border-slate-200 text-slate-600">
+              {onlineLabel}
+            </Badge>
+            <Badge variant="outline" className="border-slate-200 text-slate-600">
+              {driver.status}
+            </Badge>
+          </div>
+        </header>
+
+        <div className="flex flex-wrap gap-2">
+          {isSuspended ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={unsuspendDriver.isPending}
+              onClick={() =>
+                (
+                  unsuspendDriver.mutate as unknown as (variables: {
+                    driverId: string;
+                  }) => void
+                )({ driverId: String(driverId) })
+              }
+            >
+              Reinstate
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={
+                suspendDriver.isPending ||
+                !driver.isActive ||
+                driver.statusKey !== "verified"
+              }
+              title={
+                driver.isActive && driver.statusKey === "verified"
+                  ? undefined
+                  : "Only active, verified drivers can be suspended."
+              }
+              onClick={() => {
+                setSuspendReason("");
+                setSuspendOpen(true);
+              }}
+            >
+              <ShieldAlert aria-hidden="true" />
+              Suspend
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            disabled
+            title="Blocking a driver is not supported by the current admin API."
+          >
+            <Ban aria-hidden="true" />
+            Block
+          </Button>
+          {email ? (
+            <Button asChild variant="outline">
+              <a href={`mailto:${encodeURIComponent(email)}`}>
+                <MessageSquare aria-hidden="true" />
+                Send Message
+              </a>
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              disabled
+              title="An email address is not available."
+            >
+              <MessageSquare aria-hidden="true" />
+              Send Message
+            </Button>
+          )}
+          <Button type="button" variant="outline" onClick={exportProfile}>
+            <Download aria-hidden="true" />
+            Export Data
+          </Button>
+        </div>
+
+        <DriverSection icon={UserRound} title="Personal Information">
+          <dl className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
+            <InfoField label="Name" value={driver.name} />
+            <InfoField
+              label="Phone"
+              value={phone}
+              badge={verificationLabel(phoneVerified)}
+            />
+            <InfoField
+              label="Email"
+              value={email}
+              badge={verificationLabel(emailVerified)}
+            />
+            <InfoField label="National ID" value={nationalId} />
+            <InfoField
+              label="Joined"
+              value={driver.joined}
+              detail={joinedRelative}
+            />
+            <InfoField label="Referral code" value={referralCode} />
+            <InfoField label="Referred by" value={referredBy} />
+          </dl>
+        </DriverSection>
+
+        <DriverSection icon={CarFront} title="Vehicle Information">
+          <dl className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
+            <InfoField
+              label="Make / model"
+              value={firstValue([vehicle, profile], ["make_model", "make_and_model", "model_name", "make", "model"])}
+            />
+            <InfoField label="Year" value={firstValue([vehicle, profile], ["year", "model_year"])} />
+            <InfoField label="Color" value={firstValue([vehicle, profile], ["color", "vehicle_color"])} />
+            <InfoField
+              label="Plate"
+              value={firstValue([vehicle, profile], ["plate_number", "license_plate", "registration_number", "plate"])}
+              badge={
+                firstValue([vehicle, profile], ["plate_verified", "vehicle_verified"]) === true
+                  ? "Verified"
+                  : firstValue([vehicle, profile], ["plate_verified", "vehicle_verified"]) === false
+                    ? "Not verified"
+                    : undefined
+              }
+            />
+            <InfoField
+              label="Insurance expiry"
+              value={insuranceExpiry ? formatDate(insuranceExpiry) : null}
+              badge={
+                insuranceValidity === true
+                  ? "Valid"
+                  : insuranceValidity === false
+                    ? "Expired"
+                    : undefined
+              }
+            />
+          </dl>
+          <div className="mt-4 border-t border-slate-100 pt-4">
+            <h3 className="text-xs font-medium text-slate-500">Vehicle photos</h3>
+            {vehiclePhotos.length > 0 || vehiclePhotoDocs.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {vehiclePhotos.map((photo) => (
+                  <a
+                    key={photo.label}
+                    href={photo.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-brand-600"
+                  >
+                    {photo.label}
+                    <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                  </a>
+                ))}
+                {vehiclePhotoDocs.map((photo, index) => (
+                  <a
+                    key={photo.id ?? photo.fileName ?? index}
+                    href={photo.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-brand-600"
+                  >
+                    {photo.fileName}
+                    <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-slate-500">
+                Vehicle photo details are not provided.
+              </p>
+            )}
+          </div>
+        </DriverSection>
+
+        <DriverSection
+          icon={FileText}
+          title="Documents"
+          id="driver-documents"
+          action={
+            !documentsPending && !documentsIsError ? (
+              <span className="text-xs text-slate-500">
+                {items.length} document{items.length === 1 ? "" : "s"}
+              </span>
+            ) : null
+          }
+        >
+          {documentsPending && (
+            <div className="space-y-3">
+              {[0, 1, 2].map((item) => (
+                <div
+                  key={item}
+                  className="h-16 animate-pulse rounded-lg bg-slate-100"
+                />
+              ))}
+            </div>
+          )}
+          {documentsIsError && (
+            <QueryError error={documentsError} onRetry={refetchDocuments} />
+          )}
+          {!documentsPending && !documentsIsError && items.length === 0 && (
+            <p className="rounded-lg border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500">
+              This driver has not uploaded any documents.
+            </p>
+          )}
+          {!documentsPending && !documentsIsError && items.length > 0 && (
+            <ul className="divide-y divide-slate-100">
+              {items.map((document) => (
+                <li
+                  key={document.id ?? document.fileName}
+                  className="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-1"
+                >
+                  <div className="min-w-0">
+                    <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-900">
+                      <span
+                        className={`h-2 w-2 rounded-full ${
+                          document.isApproved
+                            ? "bg-emerald-500"
+                            : document.isRejected
+                              ? "bg-rose-500"
+                              : "bg-amber-500"
+                        }`}
+                        aria-hidden="true"
+                      />
+                      {document.typeLabel}
+                      <Badge variant="outline">{document.status}</Badge>
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {document.reviewedAt
+                        ? `${document.status} ${document.reviewedAt}`
+                        : `Uploaded ${document.uploadedAt}`}
+                      {document.reviewedBy ? ` · by ${document.reviewedBy}` : ""}
+                    </p>
+                    {document.expiry !== "No expiry" && (
+                      <p className="mt-1 text-xs text-slate-500">
+                        Valid until {document.expiry}
+                      </p>
+                    )}
+                    {document.rejectionReason && (
+                      <p className="mt-1 text-xs text-rose-700">
+                        {document.rejectionReason}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={documentMutationPending}
+                      onClick={() => setReviewTarget(document)}
+                    >
+                      {document.statusKey === "pending" && canReviewDocuments
+                        ? "Review"
+                        : "View Document"}
+                      <ArrowUpRight aria-hidden="true" />
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </DriverSection>
+
+        <DriverSection icon={Star} title="Performance Metrics">
+          <dl className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
+            {performanceFields.map((field) => (
+              <InfoField
+                key={field.label}
+                label={field.label}
+                value={field.value}
+                detail={field.detail}
+              />
+            ))}
+          </dl>
+          <p className="mt-2 text-xs text-slate-500">
+            Detailed acceptance, cancellation, and arrival metrics are only
+            available when returned by the driver profile API.
+          </p>
+        </DriverSection>
+
+        <DriverSection
+          icon={Download}
+          title="Earnings · Last 30 Days"
+          action={
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={navigateToPayouts}
+            >
+              View Payouts
+              <ArrowUpRight aria-hidden="true" />
+            </Button>
+          }
+        >
+          <dl className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
+            {earningsFields.map(([label, value]) => (
+              <InfoField
+                key={label}
+                label={label}
+                value={
+                  label === "Total rides"
+                    ? displayValue(value)
+                    : value
+                }
+              />
+            ))}
+          </dl>
+          <p className="mt-2 text-xs text-slate-500">
+            Earnings and payout totals for this date range are not provided by
+            the current driver profile API.
+          </p>
+        </DriverSection>
+
+        <DriverSection icon={Clock3} title="Activity">
+          <dl className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-4">
+            {activityFields.map(([label, value]) => (
+              <InfoField key={label} label={label} value={value} />
+            ))}
+          </dl>
+        </DriverSection>
+
+        <DriverSection icon={ShieldAlert} title="Issues & Flags">
+          {activeIssues === null && historicalIssues === null ? (
+            <p className="text-sm text-slate-500">
+              Issue and dispute history is not provided by the current API.
+            </p>
+          ) : (
+            <div className="space-y-3 text-sm">
+              <p className="font-medium text-slate-800">
+                Active: {displayValue(activeIssues)}
+              </p>
+              <p className="text-slate-600">
+                Historical: {displayValue(historicalIssues)}
+              </p>
+            </div>
+          )}
+        </DriverSection>
+
+        <DriverSection icon={ArrowUpRight} title="Quick Links">
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={navigateToRides}>
+              View All Rides
+              <ArrowUpRight aria-hidden="true" />
+            </Button>
+            <Button type="button" variant="outline" onClick={navigateToPayouts}>
+              View Earnings
+              <ArrowUpRight aria-hidden="true" />
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled
+              title="Rating comments are not available in the current API."
+            >
+              View Ratings
+            </Button>
+            {email && (
+              <Button asChild variant="outline">
+                <a href={`mailto:${encodeURIComponent(email)}`}>
+                  <Mail aria-hidden="true" />
+                  Message Driver
+                </a>
+              </Button>
+            )}
+            {phone && (
+              <Button asChild variant="outline">
+                <a href={`tel:${encodeURIComponent(phone)}`}>
+                  <Phone aria-hidden="true" />
+                  Call Driver
+                </a>
+              </Button>
+            )}
+          </div>
+        </DriverSection>
+      </div>
+
+      {reviewTarget && (
+        <DocumentReviewDialog
+          key={reviewTarget.id}
+          open
+          document={reviewTarget}
+          onClose={closeDocumentReview}
+          onApprove={(documentId, notes) =>
+            (
+              approveDocument.mutate as unknown as (
+                variables: { documentId: string; notes: string },
+                options: { onSuccess: () => void },
+              ) => void
+            )(
+              { documentId, notes },
+              { onSuccess: () => setReviewTarget(null) },
+            )
+          }
+          onReject={(document) => {
+            setReviewTarget(null);
+            setRejectReason("");
+            setRejectTarget(document);
+          }}
+          allowReview={canReviewDocuments}
+          pending={documentMutationPending}
+        />
+      )}
+
+      <ReasonDialog
+        open={suspendOpen}
+        onClose={() => setSuspendOpen(false)}
+        title="Suspend driver"
+        description={`${driver.name} will be taken off the road.`}
+        confirmLabel="Suspend"
+        tone="danger"
+        placeholder="Why is the driver suspended?"
+        value={suspendReason}
+        onChange={setSuspendReason}
+        pending={suspendDriver.isPending}
+        onConfirm={async (reason) => {
+          await (
+            suspendDriver.mutateAsync as unknown as (variables: {
+              driverId: string;
+              reason: string;
+            }) => Promise<unknown>
+          )({ driverId: String(driverId), reason });
+          setSuspendOpen(false);
+        }}
+      />
+
+      <ReasonDialog
+        open={Boolean(rejectTarget)}
+        onClose={() => setRejectTarget(null)}
+        title="Reject document"
+        tone="danger"
+        description={
+          rejectTarget
+            ? `${rejectTarget.typeLabel} for ${driver.name} will be rejected.`
+            : undefined
+        }
+        confirmLabel="Reject"
+        placeholder="Why is this document rejected?"
+        value={rejectReason}
+        onChange={setRejectReason}
+        pending={rejectDocument.isPending}
+        onConfirm={async (reason) => {
+          await (
+            rejectDocument.mutateAsync as unknown as (variables: {
+              documentId: string;
+              reason: string;
+            }) => Promise<unknown>
+          )({ documentId: rejectTarget.id, reason });
+          setRejectTarget(null);
+        }}
+      />
+    </>
+  );
+}
+
+export default DriverDetailsPage;
