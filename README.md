@@ -245,6 +245,8 @@ If the page is opened outside the WebView, it falls back to a browser alert. Can
 
 If role revalidation fails because the server cannot be reached, the app keeps the last trusted role instead of signing the administrator out. A `401` still clears the session.
 
+Access-token expiry is also watched client-side. While an admin session is active, a timer is scheduled for the stored `expiresAt`; when it elapses, the app signs out and shows “Your session expired. Please sign in again.” There is no pre-expiry warning. Background tabs are checked when they regain focus or become visible. Requests still refresh an expired access token before using it, and a successful refresh moves the timer to the new expiry.
+
 The default admin roles are `admin` and `super_admin`. Override them with `NEXT_PUBLIC_ADMIN_ROLES`. Role aliases are normalized in `src/lib/roles.ts`:
 
 - `administrator` becomes `admin`.
