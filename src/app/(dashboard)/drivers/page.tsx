@@ -29,8 +29,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useDrivers } from "@/hooks/useDrivers";
+import { useAllDrivers } from "@/hooks/useDrivers";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { usePendingPayouts } from "@/hooks/usePayouts";
 import {
   useDeleteUser,
   useRejectDriver,
@@ -40,6 +41,7 @@ import {
 } from "@/hooks/useAdminActions";
 import { usePageViewField } from "@/store/pageViewStore";
 import { useClampPage } from "@/hooks/useClampPage";
+import { shortId } from "@/services/mappers";
 
 const statusStyles = {
   Verified: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
@@ -47,6 +49,7 @@ const statusStyles = {
   Incomplete: "bg-brand-50 text-brand-700 ring-brand-600/20",
   Rejected: "bg-rose-50 text-rose-700 ring-rose-600/20",
   Suspended: "bg-rose-50 text-rose-700 ring-rose-600/20",
+  Blocked: "bg-slate-100 text-slate-700 ring-slate-500/20",
   "Not a driver": "bg-slate-100 text-slate-600 ring-slate-500/20",
 };
 
@@ -56,15 +59,50 @@ const statusDots = {
   Incomplete: "bg-brand-500",
   Rejected: "bg-rose-500",
   Suspended: "bg-rose-500",
+  Blocked: "bg-slate-500",
   "Not a driver": "bg-slate-400",
 };
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 25;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const DRIVER_TABS = [
+  { value: "all", label: "All" },
+  { value: "pending", label: "Pending" },
+  { value: "active", label: "Active" },
+  { value: "suspended", label: "Suspended" },
+  { value: "blocked", label: "Blocked" },
+];
+
+const matchesStatusTab = (driver, tab) => {
+  if (tab === "all") return true;
+  if (tab === "active") {
+    return driver.statusKey === "verified" && driver.isActive;
+  }
+  if (tab === "blocked") {
+    return ["blocked", "rejected"].includes(driver.statusKey);
+  }
+  return driver.statusKey === tab;
+};
+
+const csvValue = (value) => {
+  const text = String(value ?? "");
+  const safeText = /^[\s]*[=+\-@]/.test(text) ? `'${text}` : text;
+  return `"${safeText.replace(/"/g, '""')}"`;
+};
 
 function Drivers() {
   const router = useRouter();
   const [query, setQuery] = usePageViewField("drivers", "query");
   const [status, setStatus] = usePageViewField("drivers", "status");
+  const [rating, setRating] = usePageViewField("drivers", "rating");
+  const [joinedFrom, setJoinedFrom] = usePageViewField("drivers", "joinedFrom");
+  const [joinedTo, setJoinedTo] = usePageViewField("drivers", "joinedTo");
+  const [hasIssues, setHasIssues] = usePageViewField("drivers", "hasIssues");
+  const [payoutPending, setPayoutPending] = usePageViewField(
+    "drivers",
+    "payoutPending",
+  );
   const [page, setPage] = usePageViewField("drivers", "page");
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -75,7 +113,6 @@ function Drivers() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const debouncedQuery = useDebouncedValue(query, 300);
-  const params = { search: debouncedQuery, status, page, limit: PAGE_SIZE };
 
   const {
     data,
@@ -83,10 +120,16 @@ function Drivers() {
     isError,
     error,
     isFetching,
-    isPlaceholderData,
     dataUpdatedAt,
     refetch,
-  } = useDrivers(params);
+  } = useAllDrivers();
+  const {
+    data: pendingPayouts,
+    isPending: pendingPayoutsPending,
+    isError: pendingPayoutsIsError,
+    error: pendingPayoutsError,
+    refetch: refetchPendingPayouts,
+  } = usePendingPayouts();
 
   const verifyDriver = useVerifyDriver();
   const rejectDriver = useRejectDriver();
@@ -97,39 +140,68 @@ function Drivers() {
     userId: string;
   }) => Promise<unknown>;
 
-  const drivers = data?.items ?? [];
-  const total = data?.total ?? 0;
+  const allDrivers = data?.items ?? [];
+  const statusTab = status === "verified" ? "active" : status;
+  const pendingPayoutDriverIds = new Set(
+    (pendingPayouts ?? [])
+      .map((payout) => payout.driverId)
+      .filter((driverId) => driverId !== null && driverId !== undefined)
+      .map(String),
+  );
+  const payoutDataAvailable = pendingPayouts !== undefined && !pendingPayoutsIsError;
+  const searchTerm = debouncedQuery.trim().toLocaleLowerCase();
+  const filteredDrivers = allDrivers.filter((driver) => {
+    const searchable = [
+      driver.name,
+      driver.phone,
+      driver.vehicle,
+      driver.plateNumber,
+      driver.id,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLocaleLowerCase();
+    if (searchTerm && !searchable.includes(searchTerm)) return false;
+    if (!matchesStatusTab(driver, statusTab)) return false;
+    if (rating === "4+" && driver.rating < 4) return false;
+    if (rating === "3+" && driver.rating < 3) return false;
+    if (rating === "unrated" && driver.ratingCount > 0) return false;
+
+    const joinedDate =
+      typeof driver.createdAt === "string"
+        ? driver.createdAt.slice(0, 10)
+        : "";
+    if (joinedFrom && (!joinedDate || joinedDate < joinedFrom)) return false;
+    if (joinedTo && (!joinedDate || joinedDate > joinedTo)) return false;
+    if (hasIssues === "yes" && driver.hasIssues !== true) return false;
+    if (hasIssues === "no" && driver.hasIssues !== false) return false;
+    if (
+      payoutPending === "yes" &&
+      !pendingPayoutDriverIds.has(String(driver.id))
+    ) {
+      return false;
+    }
+    if (
+      payoutPending === "no" &&
+      pendingPayoutDriverIds.has(String(driver.id))
+    ) {
+      return false;
+    }
+    return true;
+  });
+  const total = filteredDrivers.length;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const summary = data?.summary;
+  const drivers = filteredDrivers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const pendingOver24Hours = allDrivers.filter((driver) => {
+    const pendingSince = driver.pendingSince ?? driver.createdAt;
+    if (driver.statusKey !== "pending" || !pendingSince || !dataUpdatedAt) {
+      return false;
+    }
+    const createdAt = new Date(pendingSince).getTime();
+    return Number.isFinite(createdAt) && dataUpdatedAt - createdAt > DAY_MS;
+  }).length;
 
   useClampPage(page, totalPages, setPage);
-
-  const summaryCards = [
-    {
-      label: "Verified",
-      value: summary?.verified ?? 0,
-      color: "text-slate-900",
-      status: "verified",
-    },
-    {
-      label: "Pending",
-      value: summary?.pending ?? 0,
-      color: "text-slate-900",
-      status: "pending",
-    },
-    {
-      label: "Incomplete",
-      value: summary?.incomplete ?? 0,
-      color: "text-slate-900",
-      status: "incomplete",
-    },
-    {
-      label: "Total drivers",
-      value: summary?.total ?? total,
-      color: "text-slate-900",
-      status: "all",
-    },
-  ];
 
   const onQueryChange = (e) => {
     setQuery(e.target.value);
@@ -144,26 +216,86 @@ function Drivers() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === drivers.length && drivers.length > 0) {
+    if (
+      drivers.length > 0 &&
+      drivers.every((driver) => selectedIds.has(String(driver.id)))
+    ) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(drivers.map((d) => d.id)));
+      setSelectedIds(
+        (current) =>
+          new Set([...current, ...drivers.map((driver) => String(driver.id))]),
+      );
     }
   };
 
   const toggleSelect = (id) => {
+    const key = String(id);
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
+      if (next.has(key)) {
+        next.delete(key);
       } else {
-        next.add(id);
+        next.add(key);
       }
       return next;
     });
   };
 
   const clearSelection = () => setSelectedIds(new Set());
+
+  const updateFilter = (setter, value) => {
+    setter(value);
+    setPage(1);
+    setSelectedIds(new Set());
+  };
+
+  const exportCsv = () => {
+    const columns = [
+      "ID",
+      "Name",
+      "Phone",
+      "Online",
+      "Status",
+      "Vehicle",
+      "Plate",
+      "Rating",
+      "Joined",
+      "Has issues",
+      "Payout pending",
+    ];
+    const rows = filteredDrivers.map((driver) => [
+      driver.id,
+      driver.name,
+      driver.phone,
+      driver.online === null
+        ? "Unknown"
+        : driver.online
+          ? "Online"
+          : "Offline",
+      driver.status,
+      driver.vehicle ?? "",
+      driver.plateNumber ?? "",
+      driver.rating,
+      driver.joined,
+      driver.hasIssues === null ? "Unknown" : driver.hasIssues ? "Yes" : "No",
+      !payoutDataAvailable
+        ? "Unknown"
+        : pendingPayoutDriverIds.has(String(driver.id))
+          ? "Yes"
+          : "No",
+    ]);
+    const csv = [columns, ...rows]
+      .map((row) => row.map(csvValue).join(","))
+      .join("\r\n");
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "drivers.csv";
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
 
   return (
     <div className="space-y-6">
@@ -175,13 +307,11 @@ function Drivers() {
           <p className="mt-1 text-sm text-slate-500">
             {isPending
               ? "Loading fleet…"
-              : status === "all"
-                ? `${total} driver${total === 1 ? "" : "s"} on the fleet`
-                : `${total} ${status} driver${total === 1 ? "" : "s"}`}
+              : `${total} matching driver${total === 1 ? "" : "s"}`}
           </p>
         </div>
-        <div className="flex w-full items-center gap-3 sm:w-auto">
-          <div className="relative w-full sm:w-auto">
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+          <div className="relative w-full sm:w-64">
             <Search
               className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
               strokeWidth={2}
@@ -191,38 +321,164 @@ function Drivers() {
               type="search"
               value={query}
               onChange={onQueryChange}
-              placeholder="Search drivers…"
+              placeholder="Name, phone, vehicle or plate"
               aria-label="Search drivers"
-              className="h-9 w-full border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-brand-100 sm:w-64"
+              className="h-9 w-full border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-brand-100"
             />
           </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={exportCsv}
+            disabled={!filteredDrivers.length}
+            className="h-9 border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Export CSV
+          </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {summaryCards.map((s) => {
-          const active = status === s.status;
+      <div className="flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-amber-900">
+          <span className="font-semibold">{pendingOver24Hours}</span>{" "}
+          pending driver{pendingOver24Hours === 1 ? " has" : "s have"} been
+          waiting for more than 24 hours.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onStatusChange("pending")}
+          className="w-fit border-amber-300 bg-white text-amber-900 hover:bg-amber-100"
+        >
+          Review All
+        </Button>
+      </div>
+
+      <div
+        className="flex overflow-x-auto border-b border-slate-200"
+        role="tablist"
+        aria-label="Filter drivers by status"
+      >
+        {DRIVER_TABS.map((tab) => {
+          const active = statusTab === tab.value;
           return (
             <button
-              key={s.label}
+              key={tab.value}
               type="button"
-              onClick={() => onStatusChange(s.status)}
-              aria-pressed={active}
-              className={`cursor-pointer stat-card text-left transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
-                active ? "ring-2 ring-brand-500" : "hover:shadow-md"
+              role="tab"
+              aria-selected={active}
+              onClick={() => onStatusChange(tab.value)}
+              className={`-mb-px shrink-0 border-b-2 px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
+                active
+                  ? "border-brand-600 text-brand-700"
+                  : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700"
               }`}
             >
-              <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                {s.label}
-              </p>
-              <p
-                className={`mt-1.5 text-lg font-bold tracking-tight sm:text-2xl ${s.color}`}
-              >
-                {s.value}
-              </p>
+              {tab.label}
             </button>
           );
         })}
+      </div>
+
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="grid gap-1">
+          <span className="text-xs font-semibold text-slate-600">Rating</span>
+          <select
+            value={rating}
+            onChange={(event) => updateFilter(setRating, event.target.value)}
+            aria-label="Filter by rating"
+            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+          >
+            <option value="all">Any rating</option>
+            <option value="4+">4 stars and up</option>
+            <option value="3+">3 stars and up</option>
+            <option value="unrated">Unrated</option>
+          </select>
+        </label>
+        <fieldset className="flex flex-wrap items-end gap-2">
+          <legend className="mb-1 w-full text-xs font-semibold text-slate-600">
+            Joined date
+          </legend>
+          <Input
+            type="date"
+            value={joinedFrom}
+            max={joinedTo || undefined}
+            onChange={(event) =>
+              updateFilter(setJoinedFrom, event.target.value)
+            }
+            aria-label="Joined from date"
+            className="h-9 w-36 border-slate-200 bg-white text-sm text-slate-700 focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-brand-100"
+          />
+          <Input
+            type="date"
+            value={joinedTo}
+            min={joinedFrom || undefined}
+            onChange={(event) => updateFilter(setJoinedTo, event.target.value)}
+            aria-label="Joined to date"
+            className="h-9 w-36 border-slate-200 bg-white text-sm text-slate-700 focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-brand-100"
+          />
+        </fieldset>
+        <label className="grid gap-1">
+          <span className="text-xs font-semibold text-slate-600">
+            Has issues
+          </span>
+          <select
+            value={hasIssues}
+            onChange={(event) => updateFilter(setHasIssues, event.target.value)}
+            aria-label="Filter by issues"
+            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+          >
+            <option value="all">Any</option>
+            <option value="yes">Has issues</option>
+            <option value="no">No issues</option>
+          </select>
+        </label>
+        <label className="grid gap-1">
+          <span className="text-xs font-semibold text-slate-600">
+            Payout pending
+          </span>
+          <select
+            value={payoutPending}
+            onChange={(event) =>
+              updateFilter(setPayoutPending, event.target.value)
+            }
+            aria-label="Filter by pending payout"
+            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+          >
+            <option value="all">Any</option>
+            <option value="yes">Pending payout</option>
+            <option value="no">No pending payout</option>
+          </select>
+        </label>
+        {hasIssues !== "all" &&
+          allDrivers.some((driver) => driver.hasIssues === null) && (
+            <p className="basis-full text-xs text-slate-500">
+              Drivers without issue data are omitted from this filter.
+            </p>
+          )}
+        {(rating !== "all" ||
+          joinedFrom ||
+          joinedTo ||
+          hasIssues !== "all" ||
+          payoutPending !== "all") && (
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              setRating("all");
+              setJoinedFrom("");
+              setJoinedTo("");
+              setHasIssues("all");
+              setPayoutPending("all");
+              setPage(1);
+              setSelectedIds(new Set());
+            }}
+            className="h-9 px-2 text-sm text-slate-600"
+          >
+            Clear filters
+          </Button>
+        )}
       </div>
 
       <Card className="gap-0 rounded-xl py-0 shadow-card ring-slate-200">
@@ -264,41 +520,60 @@ function Drivers() {
                   aria-label="Select all drivers"
                   className="border-slate-300 focus-visible:ring-brand-500"
                   checked={
-                    drivers.length > 0 && selectedIds.size === drivers.length
+                    drivers.length > 0 &&
+                    drivers.every((driver) =>
+                      selectedIds.has(String(driver.id)),
+                    )
                   }
                   onCheckedChange={toggleSelectAll}
                 />
               </TableHead>
+              <TableHead>ID</TableHead>
               <TableHead>Driver</TableHead>
-              <TableHead className="hidden lg:table-cell">Phone</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="hidden lg:table-cell">Rides</TableHead>
-              <TableHead className="hidden lg:table-cell">Rating</TableHead>
-              <TableHead className="hidden xl:table-cell">Joined</TableHead>
+              <TableHead>Vehicle</TableHead>
+              <TableHead>Rating</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
 
-          {isPending && (
+          {(isPending || (payoutPending !== "all" && pendingPayoutsPending)) && (
             <TableSkeleton
               rows={PAGE_SIZE}
-              cols={8}
-              mobileCols={4}
-              lgCols={7}
+              cols={7}
+              mobileCols={5}
             />
           )}
 
           {isError && (
             <TableBody>
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={8} className="p-0">
+                <TableCell colSpan={7} className="p-0">
                   <QueryError error={error} onRetry={refetch} />
                 </TableCell>
               </TableRow>
             </TableBody>
           )}
 
-          {!isPending && !isError && (
+          {!isError &&
+            payoutPending !== "all" &&
+            pendingPayoutsIsError && (
+              <TableBody>
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={7} className="p-0">
+                    <QueryError
+                      error={pendingPayoutsError}
+                      onRetry={refetchPendingPayouts}
+                    />
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            )}
+
+          {!isPending &&
+            !isError &&
+            !(payoutPending !== "all" && pendingPayoutsPending) &&
+            !(payoutPending !== "all" && pendingPayoutsIsError) && (
             <TableBody>
               {drivers.map((r) => (
                 <TableRow
@@ -321,35 +596,39 @@ function Drivers() {
                     <Checkbox
                       aria-label={`Select ${r.name}`}
                       className="border-slate-300 focus-visible:ring-brand-500"
-                      checked={selectedIds.has(r.id)}
+                      checked={selectedIds.has(String(r.id))}
                       onCheckedChange={() => toggleSelect(r.id)}
                     />
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-3">
-                      <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 sm:flex sm:h-10 sm:w-10">
-                        <svg
-                          className="h-5 w-5"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          aria-hidden="true"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-                          />
-                        </svg>
-                      </span>
-                      <span className="max-w-20 truncate font-medium text-slate-900 sm:max-w-32 lg:max-w-none">
+                    <span className="whitespace-nowrap text-xs font-medium text-slate-500">
+                      {shortId(r.id, "DRV")}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="min-w-40">
+                      <p className="max-w-48 truncate font-medium text-slate-900">
                         {r.name}
+                      </p>
+                      <p className="mt-0.5 text-xs text-slate-500">{r.phone}</p>
+                      <span className="mt-1 inline-flex items-center gap-1.5 text-xs text-slate-500">
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            r.online === true
+                              ? "bg-emerald-500"
+                              : r.online === false
+                                ? "bg-slate-400"
+                                : "bg-amber-400"
+                          }`}
+                          aria-hidden="true"
+                        />
+                        {r.online === null
+                          ? "Online status unknown"
+                          : r.online
+                            ? "Online"
+                            : "Offline"}
                       </span>
                     </div>
-                  </TableCell>
-                  <TableCell className="hidden lg:table-cell">
-                    {r.phone}
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -363,10 +642,17 @@ function Drivers() {
                       {r.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="hidden font-medium text-slate-900 lg:table-cell">
-                    {r.rides}
+                  <TableCell>
+                    <p className="max-w-40 truncate text-sm font-medium text-slate-800">
+                      {r.vehicle ?? "Not provided"}
+                    </p>
+                    {r.plateNumber && (
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {r.plateNumber}
+                      </p>
+                    )}
                   </TableCell>
-                  <TableCell className="hidden lg:table-cell">
+                  <TableCell>
                     <span className="inline-flex items-center gap-1 font-medium text-slate-900">
                       <svg
                         className="h-4 w-4 text-amber-400"
@@ -380,16 +666,32 @@ function Drivers() {
                           clipRule="evenodd"
                         />
                       </svg>
-                      {r.rating.toFixed(1)}
+                      {r.ratingCount > 0 || r.rating > 0
+                        ? r.rating.toFixed(1)
+                        : "—"}
                     </span>
-                  </TableCell>
-                  <TableCell className="hidden xl:table-cell">
-                    {r.joined}
                   </TableCell>
                   <TableCell
                     className="text-right"
                     onClick={(event) => event.stopPropagation()}
                   >
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        type="button"
+                        variant="link"
+                        onClick={() =>
+                          router.push(
+                            `/drivers/${encodeURIComponent(r.id)}${
+                              r.statusKey === "pending"
+                                ? "#driver-documents"
+                                : ""
+                            }`,
+                          )
+                        }
+                        className="h-auto px-2 py-1 text-xs font-semibold text-brand-700"
+                      >
+                        {r.statusKey === "pending" ? "Review" : "View →"}
+                      </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -470,7 +772,13 @@ function Drivers() {
                         )}
                         {r.statusKey === "suspended" && (
                           <DropdownMenuItem
-                            onSelect={() => unsuspendDriver.mutate()}
+                            onSelect={() =>
+                              (
+                                unsuspendDriver.mutate as unknown as (variables: {
+                                  driverId: typeof r.id;
+                                }) => void
+                              )({ driverId: r.id })
+                            }
                             disabled={unsuspendDriver.isPending}
                             className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                           >
@@ -488,16 +796,17 @@ function Drivers() {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
               {drivers.length === 0 && (
                 <TableRow className="hover:bg-transparent">
                   <TableCell
-                    colSpan={8}
+                    colSpan={7}
                     className="py-10 text-center text-slate-500"
                   >
-                    No drivers match “{query}”.
+                    No drivers match the current search and filters.
                   </TableCell>
                 </TableRow>
               )}
@@ -508,21 +817,13 @@ function Drivers() {
           <p className="text-xs text-slate-500">
             Showing{" "}
             <span className="font-semibold text-slate-700">
-              {drivers.length}
+              {total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–
+              {Math.min(page * PAGE_SIZE, total)}
             </span>{" "}
             of <span className="font-semibold text-slate-700">{total}</span>
-            {totalPages > 1 && (
-              <>
-                {" "}
-                · Page{" "}
-                <span className="font-semibold text-slate-700">
-                  {page}
-                </span> of{" "}
-                <span className="font-semibold text-slate-700">
-                  {totalPages}
-                </span>
-              </>
-            )}
+            {" "}drivers · Page{" "}
+            <span className="font-semibold text-slate-700">{page}</span> of{" "}
+            <span className="font-semibold text-slate-700">{totalPages}</span>
           </p>
           <div className="flex gap-2">
             <Button
@@ -530,7 +831,7 @@ function Drivers() {
               variant="outline"
               size="sm"
               onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-              disabled={page <= 1 || isPlaceholderData}
+              disabled={page <= 1}
               className="h-auto border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:text-slate-400 disabled:opacity-100 disabled:hover:bg-white"
             >
               Previous
@@ -540,7 +841,7 @@ function Drivers() {
               variant="outline"
               size="sm"
               onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-              disabled={page >= totalPages || isPlaceholderData}
+              disabled={page >= totalPages}
               className="h-auto border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:text-slate-400 disabled:opacity-100 disabled:hover:bg-white"
             >
               Next

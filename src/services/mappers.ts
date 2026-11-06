@@ -175,6 +175,7 @@ export const DRIVER_STATUS_LABELS = {
   verified: 'Verified',
   rejected: 'Rejected',
   suspended: 'Suspended',
+  blocked: 'Blocked',
 }
 
 export const DOCUMENT_TYPE_LABELS = {
@@ -260,6 +261,76 @@ export const mapCustomer = (user) => ({
 
 export const mapDriver = (driver) => {
   const statusKey = driver?.driver_status ?? 'none'
+  const profile = driver?.profile ?? {}
+  const activity = profile?.activity ?? driver?.activity ?? {}
+  const personal =
+    profile?.personal_information ?? profile?.personal ?? profile?.account ?? {}
+  const vehicleValue =
+    driver?.vehicle ??
+    driver?.vehicle_info ??
+    profile?.vehicle ??
+    profile?.vehicle_info ??
+    profile?.vehicle_details ??
+    {}
+  const vehicle = Array.isArray(vehicleValue)
+    ? vehicleValue[0] ?? {}
+    : vehicleValue
+  const firstDriverValue = (sources, keys) => {
+    for (const source of sources) {
+      const value = firstOf(source, keys)
+      if (value !== null && value !== undefined && value !== '') return value
+    }
+    return null
+  }
+  const rawIssues = firstDriverValue(
+    [driver, profile, activity],
+    ['has_issues', 'active_issues', 'open_issues', 'current_issues', 'flags', 'issue_count'],
+  )
+  const rawIssueNumber = Number(rawIssues)
+  const hasIssues =
+    rawIssues === null
+      ? null
+      : typeof rawIssues === 'boolean'
+        ? rawIssues
+        : typeof rawIssues === 'number'
+          ? rawIssues > 0
+          : Array.isArray(rawIssues)
+            ? rawIssues.length > 0
+            : typeof rawIssues === 'object'
+              ? Object.keys(rawIssues).length > 0
+              : Number.isFinite(rawIssueNumber) &&
+                  String(rawIssues).trim() !== ''
+                ? rawIssueNumber > 0
+                : !['false', 'no', 'none'].includes(
+                    String(rawIssues).toLowerCase(),
+                  )
+  const vehicleMake = firstDriverValue([vehicle, driver, profile], ['make', 'manufacturer', 'vehicle_make'])
+  const vehicleModel = firstDriverValue([vehicle, driver, profile], ['model', 'vehicle_model'])
+  const vehicleType = firstDriverValue([vehicle, driver, profile], ['vehicle_type', 'type'])
+  const vehicleName = [vehicleMake, vehicleModel].filter(Boolean).join(' ')
+  const vehicleLabel =
+    vehicleName ||
+    (typeof vehicleValue === 'string' ? vehicleValue : null) ||
+    vehicleType ||
+    null
+  const rawOnline = firstDriverValue(
+    [driver, profile, personal, activity],
+    ['is_online', 'online', 'online_status', 'availability_status'],
+  )
+  const online =
+    typeof rawOnline === 'boolean'
+      ? rawOnline
+      : rawOnline === null
+        ? null
+        : ['online', 'available', 'active', 'true', '1'].includes(
+              String(rawOnline).toLowerCase(),
+            )
+          ? true
+          : ['offline', 'unavailable', 'inactive', 'false', '0'].includes(
+                String(rawOnline).toLowerCase(),
+              )
+            ? false
+            : null
 
   return {
     id: driver?.id ?? null,
@@ -273,6 +344,25 @@ export const mapDriver = (driver) => {
     ratingCount: Number(driver?.rating_count ?? 0),
     isActive: driver?.is_active !== false,
     joined: formatDate(driver?.created_at),
+    createdAt: driver?.created_at ?? personal?.created_at ?? null,
+    pendingSince: firstDriverValue(
+      [driver, profile, activity],
+      [
+        'application_submitted_at',
+        'driver_status_updated_at',
+        'status_changed_at',
+        'submitted_at',
+        'created_at',
+      ],
+    ),
+    vehicle: vehicleLabel,
+    plateNumber:
+      firstDriverValue(
+        [vehicle, driver, profile],
+        ['plate_number', 'license_plate', 'registration_number', 'plate'],
+      ) ?? null,
+    online,
+    hasIssues,
     verifiedAt: formatDate(driver?.driver_verified_at),
   }
 }

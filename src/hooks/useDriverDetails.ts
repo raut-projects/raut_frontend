@@ -7,5 +7,6 @@ export function useDriverDetails(driverId) {
     queryKey: queryKeys.drivers.detail(driverId),
     queryFn: () => getDriverDetails(driverId),
     enabled: Boolean(driverId),
+    refetchInterval: 30_000,
   });
 }

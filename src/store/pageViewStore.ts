@@ -25,6 +25,11 @@ type PageViewValues = {
   drivers: {
     query: string;
     status: string;
+    rating: string;
+    joinedFrom: string;
+    joinedTo: string;
+    hasIssues: string;
+    payoutPending: string;
     page: number;
   };
   payouts: {
@@ -91,6 +96,11 @@ function createInitialViews(): PageViewValues {
     drivers: {
       query: "",
       status: "all",
+      rating: "all",
+      joinedFrom: "",
+      joinedTo: "",
+      hasIssues: "all",
+      payoutPending: "all",
       page: 1,
     },
     payouts: {

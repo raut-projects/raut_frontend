@@ -17,6 +17,14 @@ export function usePayouts(params) {
   });
 }
 
+export function usePendingPayouts() {
+  return useQuery({
+    queryKey: queryKeys.payouts.batchReview,
+    queryFn: listPendingPayoutBatch,
+    refetchInterval: 30_000,
+  });
+}
+
 export function usePayoutBatchReview() {
   const pendingQuery = useQuery({
     queryKey: queryKeys.payouts.batchReview,

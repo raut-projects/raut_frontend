@@ -1,6 +1,6 @@
 import { useState } from "react";
 import SidePanel from "./SidePanel";
-import { ReasonDialog } from "./reasonDialog";
+import DocumentRejectionDialog from "./documentRejectionDialog";
 import { QueryError } from "./queryStates";
 import {
   useApproveDocument,
@@ -203,7 +203,6 @@ function DocumentCard({ document, onApprove, onReject, pending }) {
 
 function ViewDriverPanel({ open, onClose, driver }) {
   const [rejectTarget, setRejectTarget] = useState(null);
-  const [rejectReason, setRejectReason] = useState("");
 
   const {
     data: documents,
@@ -217,7 +216,6 @@ function ViewDriverPanel({ open, onClose, driver }) {
 
   const close = () => {
     setRejectTarget(null);
-    setRejectReason("");
     onClose();
   };
 
@@ -346,7 +344,6 @@ function ViewDriverPanel({ open, onClose, driver }) {
                         )({ documentId: document.id })
                       }
                       onReject={() => {
-                        setRejectReason("");
                         setRejectTarget(document);
                       }}
                     />
@@ -358,20 +355,15 @@ function ViewDriverPanel({ open, onClose, driver }) {
         )}
       </SidePanel>
 
-      <ReasonDialog
+      <DocumentRejectionDialog
+        key={rejectTarget?.id ?? "closed"}
         open={Boolean(rejectTarget)}
         onClose={() => setRejectTarget(null)}
-        title="Reject document"
-        tone="danger"
         description={
           rejectTarget
             ? `${rejectTarget.typeLabel} for ${driver?.name ?? "this driver"} will be rejected.`
             : undefined
         }
-        confirmLabel="Reject"
-        placeholder="Why is this document rejected?"
-        value={rejectReason}
-        onChange={setRejectReason}
         pending={rejectDocument.isPending}
         onConfirm={async (reason) => {
           await (

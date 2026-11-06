@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -12,7 +12,6 @@ import {
   CircleHelp,
   Clock3,
   Download,
-  ExternalLink,
   FileText,
   Mail,
   MessageSquare,
@@ -20,9 +19,11 @@ import {
   ShieldAlert,
   Star,
   UserRound,
+  X,
 } from "lucide-react";
 import { QueryError } from "@/components/queryStates";
 import { ReasonDialog } from "@/components/reasonDialog";
+import DocumentRejectionDialog from "@/components/documentRejectionDialog";
 import DocumentReviewDialog from "@/components/documentReviewDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -95,9 +96,24 @@ const displayValue = (value) => {
   return String(value);
 };
 
-const verificationLabel = (value) => {
+const verificationLabel = (value, verifiedAt) => {
   if (value === true) return "Verified";
   if (value === false) return "Not verified";
+  const normalized = String(value ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (["verified", "confirmed", "true", "1", "yes"].includes(normalized)) {
+    return "Verified";
+  }
+  if (
+    ["unverified", "not_verified", "false", "0", "no", "rejected"].includes(
+      normalized,
+    )
+  ) {
+    return "Not verified";
+  }
+  if (["pending", "in_progress"].includes(normalized)) {
+    return "Pending verification";
+  }
+  if (verifiedAt) return "Verified";
   return "Verification not provided";
 };
 
@@ -119,6 +135,12 @@ const formatMoneyValue = (value) => {
 
   const amount = Number(value);
   return Number.isFinite(amount) ? formatMoney(amount) : displayValue(value);
+};
+
+const numericValue = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount : null;
 };
 
 const formatHours = (value) => {
@@ -190,6 +212,11 @@ function DriverDetailsPage() {
   const router = useRouter();
   const toast = useToast();
   const sessionRole = useAuthStore((state) => state.session?.role);
+  const normalizedRole = String(sessionRole ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+  const canProcessPayouts = ["finance", "finance_manager"].includes(normalizedRole);
   const canReviewDocuments = [
     "super_admin",
     "platform_manager",
@@ -203,15 +230,16 @@ function DriverDetailsPage() {
   );
   const [, setRidesDriverId] = usePageViewField("rides", "driverId");
   const [, setPayoutDriverId] = usePageViewField("payouts", "driverId");
+  const [, setPayoutStatus] = usePageViewField("payouts", "status");
   const [, setPayoutFrom] = usePageViewField("payouts", "from");
   const [, setPayoutTo] = usePageViewField("payouts", "to");
   const [, setRidesPage] = usePageViewField("rides", "page");
   const [, setPayoutsPage] = usePageViewField("payouts", "page");
   const [rejectTarget, setRejectTarget] = useState(null);
-  const [rejectReason, setRejectReason] = useState("");
   const [reviewTarget, setReviewTarget] = useState(null);
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [suspendReason, setSuspendReason] = useState("");
+  const [lightboxPhoto, setLightboxPhoto] = useState(null);
   const {
     data: driver,
     isPending: driverPending,
@@ -219,6 +247,15 @@ function DriverDetailsPage() {
     error: driverError,
     refetch: refetchDriver,
   } = useDriverDetails(driverId);
+  useEffect(() => {
+    if (!lightboxPhoto) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setLightboxPhoto(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxPhoto]);
   const {
     data: documents,
     isPending: documentsPending,
@@ -301,11 +338,29 @@ function DriverDetailsPage() {
   const phone = driver.phone === "—" ? "" : driver.phone;
   const phoneVerified = firstValue(
     [profile, personal],
-    ["phone_verified", "is_phone_verified", "phone_is_verified"],
+    [
+      "phone_verified",
+      "is_phone_verified",
+      "phone_is_verified",
+      "phone_verification_status",
+    ],
+  );
+  const phoneVerifiedAt = firstValue(
+    [profile, personal],
+    ["phone_verified_at"],
   );
   const emailVerified = firstValue(
     [profile, personal],
-    ["email_verified", "is_email_verified", "email_is_verified"],
+    [
+      "email_verified",
+      "is_email_verified",
+      "email_is_verified",
+      "email_verification_status",
+    ],
+  );
+  const emailVerifiedAt = firstValue(
+    [profile, personal],
+    ["email_verified_at"],
   );
   const nationalId = firstValue(
     [profile, personal],
@@ -320,14 +375,22 @@ function DriverDetailsPage() {
     [profile, personal, activity],
     ["is_online", "online", "online_status", "availability_status"],
   );
+  const lastOnline = firstValue(
+    [profile, personal, activity],
+    ["last_online", "last_seen_at", "last_active_at"],
+  );
+  const normalizedOnline = String(online ?? "").trim().toLowerCase();
+  const isOnline =
+    online === true ||
+    ["online", "available", "true", "1"].includes(normalizedOnline);
   const onlineLabel =
-    online === null
-      ? "Online status unavailable"
-      : online === true
-        ? "Online"
-        : online === false
-          ? "Offline"
-          : displayValue(online);
+    isOnline
+      ? "Online"
+      : lastOnline
+        ? `Last online: ${formatRelative(lastOnline)}`
+        : online === null
+          ? "Online status unavailable"
+          : "Offline";
   const photoFields: [string, string[]][] = [
     ["Front", ["front_photo", "front_image", "vehicle_front_photo"]],
     ["Back", ["back_photo", "back_image", "vehicle_back_photo"]],
@@ -371,11 +434,19 @@ function DriverDetailsPage() {
 
   const navigateToPayouts = () => {
     setPayoutDriverId(String(driverId));
+    setPayoutStatus("all");
     const end = new Date();
     const start = new Date(end);
     start.setDate(start.getDate() - 29);
     setPayoutFrom(start.toISOString().slice(0, 10));
     setPayoutTo(end.toISOString().slice(0, 10));
+    setPayoutsPage(1);
+    router.push("/payouts");
+  };
+
+  const navigateToPendingPayouts = () => {
+    setPayoutDriverId(String(driverId));
+    setPayoutStatus("pending");
     setPayoutsPage(1);
     router.push("/payouts");
   };
@@ -430,6 +501,19 @@ function DriverDetailsPage() {
     driver.ratingCount;
   const getEarningsMetric = (keys) =>
     firstValue([earningsPeriod, earnings], keys);
+  const grossEarnings = numericValue(
+    getEarningsMetric(["gross_earnings", "gross_amount", "total_gross"]),
+  );
+  const platformFee = numericValue(
+    getEarningsMetric(["platform_fee", "platform_fees", "commission_amount"]),
+  );
+  const providedNetEarnings = numericValue(
+    getEarningsMetric(["net_earnings", "net_amount", "driver_earnings"]),
+  );
+  const netEarnings =
+    grossEarnings !== null && platformFee !== null
+      ? grossEarnings - platformFee
+      : providedNetEarnings;
   const detailFields: [string, string[]][] = [
     ["Acceptance rate", ["acceptance_rate", "acceptanceRate"]],
     ["Cancellation rate", ["cancellation_rate", "cancellationRate"]],
@@ -475,21 +559,25 @@ function DriverDetailsPage() {
     ],
     [
       "Gross earnings",
-      formatMoneyValue(
-        getEarningsMetric(["gross_earnings", "gross_amount", "total_gross"]),
-      ),
+      grossEarnings !== null
+        ? formatMoney(grossEarnings)
+        : formatMoneyValue(
+            netEarnings !== null && platformFee !== null
+              ? netEarnings + platformFee
+              : getEarningsMetric([
+                  "gross_earnings",
+                  "gross_amount",
+                  "total_gross",
+                ]),
+          ),
     ],
     [
       "Platform fee",
-      formatMoneyValue(
-        getEarningsMetric(["platform_fee", "platform_fees", "commission_amount"]),
-      ),
+      formatMoneyValue(platformFee),
     ],
     [
       "Net earnings",
-      formatMoneyValue(
-        getEarningsMetric(["net_earnings", "net_amount", "driver_earnings"]),
-      ),
+      formatMoneyValue(netEarnings),
     ],
     [
       "Already paid out",
@@ -508,7 +596,7 @@ function DriverDetailsPage() {
     [
       "Last online",
       (() => {
-        const value = getMetric(["last_online", "last_seen_at", "last_active_at"]);
+        const value = lastOnline;
         return value ? formatRelative(value) : null;
       })(),
     ],
@@ -580,7 +668,7 @@ function DriverDetailsPage() {
                 )({ driverId: String(driverId) })
               }
             >
-              Reinstate
+              Reactivate
             </Button>
           ) : (
             <Button
@@ -644,12 +732,12 @@ function DriverDetailsPage() {
             <InfoField
               label="Phone"
               value={phone}
-              badge={verificationLabel(phoneVerified)}
+              badge={verificationLabel(phoneVerified, phoneVerifiedAt)}
             />
             <InfoField
               label="Email"
               value={email}
-              badge={verificationLabel(emailVerified)}
+              badge={verificationLabel(emailVerified, emailVerifiedAt)}
             />
             <InfoField label="National ID" value={nationalId} />
             <InfoField
@@ -698,28 +786,47 @@ function DriverDetailsPage() {
             {vehiclePhotos.length > 0 || vehiclePhotoDocs.length > 0 ? (
               <div className="mt-2 flex flex-wrap gap-2">
                 {vehiclePhotos.map((photo) => (
-                  <a
+                  <button
                     key={photo.label}
-                    href={photo.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-brand-600"
+                    type="button"
+                    onClick={() =>
+                      setLightboxPhoto({ label: photo.label, url: photo.url })
+                    }
+                    className="group relative h-24 w-32 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
                   >
-                    {photo.label}
-                    <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                  </a>
+                    <img
+                      src={photo.url}
+                      alt=""
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    />
+                    <span className="absolute inset-x-0 bottom-0 bg-slate-950/70 px-2 py-1 text-xs font-medium text-white">
+                      {photo.label}
+                    </span>
+                  </button>
                 ))}
                 {vehiclePhotoDocs.map((photo, index) => (
-                  <a
+                  <button
                     key={photo.id ?? photo.fileName ?? index}
-                    href={photo.fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-brand-600"
+                    type="button"
+                    onClick={() =>
+                      setLightboxPhoto({
+                        label: photo.fileName || "Vehicle photo",
+                        url: photo.fileUrl,
+                      })
+                    }
+                    className="group relative h-24 w-32 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
                   >
-                    {photo.fileName}
-                    <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                  </a>
+                    <img
+                      src={photo.fileUrl}
+                      alt=""
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    />
+                    <span className="absolute inset-x-0 bottom-0 truncate bg-slate-950/70 px-2 py-1 text-xs font-medium text-white">
+                      {photo.fileName || "Vehicle photo"}
+                    </span>
+                  </button>
                 ))}
               </div>
             ) : (
@@ -807,10 +914,7 @@ function DriverDetailsPage() {
                       disabled={documentMutationPending}
                       onClick={() => setReviewTarget(document)}
                     >
-                      {document.statusKey === "pending" && canReviewDocuments
-                        ? "Review"
-                        : "View Document"}
-                      <ArrowUpRight aria-hidden="true" />
+                      View Document →
                     </Button>
                   </div>
                 </li>
@@ -840,15 +944,16 @@ function DriverDetailsPage() {
           icon={Download}
           title="Earnings · Last 30 Days"
           action={
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={navigateToPayouts}
-            >
-              View Payouts
-              <ArrowUpRight aria-hidden="true" />
-            </Button>
+            canProcessPayouts ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={navigateToPendingPayouts}
+              >
+                Process →
+              </Button>
+            ) : null
           }
         >
           <dl className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
@@ -952,12 +1057,47 @@ function DriverDetailsPage() {
           }
           onReject={(document) => {
             setReviewTarget(null);
-            setRejectReason("");
             setRejectTarget(document);
           }}
           allowReview={canReviewDocuments}
           pending={documentMutationPending}
         />
+      )}
+
+      {lightboxPhoto && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/90 p-4"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setLightboxPhoto(null);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-label={lightboxPhoto.label}
+            className="relative flex max-h-full max-w-full flex-col items-center gap-3"
+          >
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setLightboxPhoto(null)}
+              aria-label="Close vehicle photo"
+              className="absolute -right-2 -top-2 z-10 rounded-full bg-white text-slate-700 hover:bg-slate-100 sm:right-0 sm:top-0"
+            >
+              <X aria-hidden="true" />
+            </Button>
+            <img
+              src={lightboxPhoto.url}
+              alt={lightboxPhoto.label}
+              className="max-h-[80dvh] max-w-full rounded-lg object-contain"
+            />
+            <p className="text-sm font-medium text-white">
+              {lightboxPhoto.label}
+            </p>
+          </section>
+        </div>
       )}
 
       <ReasonDialog
@@ -982,20 +1122,15 @@ function DriverDetailsPage() {
         }}
       />
 
-      <ReasonDialog
+      <DocumentRejectionDialog
+        key={rejectTarget?.id ?? "closed"}
         open={Boolean(rejectTarget)}
         onClose={() => setRejectTarget(null)}
-        title="Reject document"
-        tone="danger"
         description={
           rejectTarget
             ? `${rejectTarget.typeLabel} for ${driver.name} will be rejected.`
             : undefined
         }
-        confirmLabel="Reject"
-        placeholder="Why is this document rejected?"
-        value={rejectReason}
-        onChange={setRejectReason}
         pending={rejectDocument.isPending}
         onConfirm={async (reason) => {
           await (
