@@ -30,7 +30,7 @@ This repository contains the **frontend only**. A compatible Raut backend API is
 
 ## Overview
 
-Raut's admin dashboard is a responsive web application built with React and Next.js (App Router). It is exported as static files, uses email and password authentication, token refresh, role-based route protection and TanStack Query for server state.
+Raut's admin dashboard is a responsive web application built with React and Next.js (App Router). It runs on the Next.js production server, uses email and password authentication, token refresh, role-based route protection and TanStack Query for server state.
 
 Administrators can review platform activity, inspect records in detail panels, filter and paginate lists, export analytics, and perform operational actions such as verifying drivers, suspending accounts, cancelling rides or routes, and approving payouts.
 
@@ -51,7 +51,7 @@ A separate onboarding route guides drivers through personal, licence, vehicle an
 | Settings | Read-only profile and access details for the signed-in administrator |
 | Live Rides | Placeholder page; tracking and live-trip data are not implemented yet |
 | Promotions | Placeholder page; campaign management is not implemented yet |
-| Support Tickets | Placeholder page; support workflows are not implemented yet |
+| Support Tickets | Local prototype for filtering, assigning, prioritizing, replying to and updating tickets; changes are not persisted to the backend |
 | Settings subpages | Placeholder pages for Admin Users, Audit Logs, Platform Config and System Health |
 | Driver onboarding | Four-step driver application flow with English/Swahili UI, validation, document uploads and Flutter WebView hand-off |
 | User experience | Responsive sidebar and header, loading skeletons, retryable error states, refresh indicators, toast feedback and print-friendly analytics |
@@ -66,7 +66,7 @@ Dashboard comparison is only available when the previous period falls inside the
 | [TypeScript 6](https://www.typescriptlang.org/) | Type-safe JavaScript |
 | [Next.js 16](https://nextjs.org/) | App Router, development server and production server |
 | [TanStack Query 5](https://tanstack.com/query) | Server state, caching, polling and mutations |
-| [Zustand 5](https://github.com/pmndrs/zustand) | Persisted driver onboarding state |
+| [Zustand 5](https://github.com/pmndrs/zustand) | Shared client state for authentication, onboarding, tickets, toasts and list views |
 | [React Hook Form 7](https://react-hook-form.com/) | Onboarding forms |
 | [Zod 4](https://zod.dev/) | Onboarding form validation |
 | [Recharts 3](https://github.com/recharts/recharts) | Dashboard analytics charts |
@@ -178,7 +178,8 @@ Run `npm run build` before `npm run start` or `npm run preview`.
 | `/transactions` | Admin | Transaction history |
 | `/live-rides` | Admin | Live rides placeholder (Coming soon) |
 | `/promotions` | Admin | Promotions placeholder (Coming soon) |
-| `/support-tickets` | Admin | Support tickets placeholder (Coming soon) |
+| `/support-tickets` | Admin | Support ticket prototype with filtering and ticket management |
+| `/support-tickets/[id]` | Admin | Ticket detail, assignment, status/priority updates and replies |
 | `/settings` | Admin | Signed-in account profile and access details |
 | `/settings/admin-users` | Admin | Admin users placeholder (Coming soon) |
 | `/settings/audit-logs` | Admin | Audit logs placeholder (Coming soon) |
@@ -252,7 +253,7 @@ The default admin roles are `admin` and `super_admin`. Override them with `NEXT_
 
 The dashboard currently has a single admin gate: every configured admin role can open every admin page. Fine-grained permissions must be enforced by the backend.
 
-Tokens are stored in browser `localStorage`. This keeps the static app usable across reloads, but it does not replace server-side authorization. The backend must enforce permissions for every admin endpoint.
+Tokens are stored in browser `localStorage`, so the session can be restored across reloads. This does not replace server-side authorization; the backend must enforce permissions for every admin endpoint.
 
 The onboarding flow writes its access token into the same token store used by API helpers, but it does not create an admin session.
 
@@ -381,7 +382,7 @@ Page -> Hook -> Service -> API helper -> HTTP client -> Backend
 - `src/hooks/*` wrap TanStack Query and admin mutations.
 - `src/services/*` contain endpoint functions, request behavior and mappers.
 - `src/lib/*` contains configuration, roles, query keys, date ranges, exports and the query client.
-- `src/store/onboardingStore.ts` holds the persisted onboarding state.
+- `src/store/*` contains shared client state; onboarding progress is persisted, while other stores are in memory.
 - `src/schemas/onboardingSchemas.ts` holds the onboarding validation schemas.
 
 List services normalize pagination into `{ items, total, page, limit }`. Some summary cards fetch a larger overview page and calculate counts client-side. The dashboard uses `Promise.allSettled` so a failing analytics endpoint does not hide the rest of the page.
@@ -405,7 +406,7 @@ raut_frontend/
 │  │  ├─ request-admin/    Admin promotion route
 │  │  ├─ globals.css       Tailwind import, theme tokens and shared component classes
 │  │  ├─ layout.tsx        Root layout, metadata and Inter font
-│  │  ├─ not-found.tsx     Static-export 404 page that redirects to the dashboard
+│  │  ├─ not-found.tsx     Not-found page that redirects to the dashboard
 │  │  └─ providers.tsx     TanStack Query and toast providers
 │  ├─ components/          Shared layout, navigation, panels, dialogs, toasts, charts and UI primitives
 │  │  ├─ analytics/        Dashboard metric cards and Recharts visualizations
@@ -415,7 +416,7 @@ raut_frontend/
 │  ├─ onboarding/          The four onboarding step components
 │  ├─ schemas/             Zod validation schemas
 │  ├─ services/            API services, HTTP client, token store, uploads and mappers
-│  ├─ store/               Zustand onboarding store
+│  ├─ store/               Zustand stores for authentication, onboarding, tickets, toasts and list views
 │  ├─ styles/              Legacy Flutter theme constants
 │  └─ types/               Shared TypeScript type definitions
 ├─ .env.example            Documented environment variables
@@ -457,7 +458,11 @@ raut_frontend/
 | `src/components/analytics/` | Dashboard metric cards and Recharts visualizations |
 | `src/components/ui/` | shadcn-style UI primitives built on Radix UI |
 | `src/onboarding/` | Personal, driver, vehicle and payment step components |
+| `src/store/authStore.ts` | Browser session state synchronized with the token store |
 | `src/store/onboardingStore.ts` | Persisted onboarding progress, token and language |
+| `src/store/pageViewStore.ts` | In-memory list filters and pagination retained across navigation |
+| `src/store/supportTicketsStore.ts` | In-memory support ticket prototype data and updates |
+| `src/store/toastStore.ts` | Transient toast notifications |
 | `src/schemas/onboardingSchemas.ts` | Zod validation rules for each onboarding step |
 
 ## UI and styling
@@ -487,7 +492,7 @@ npm run build
 
 The production build is written to `.next/`.
 
-Deploy the app to a host that can run the Next.js production server. The server is required for routes with runtime parameters, including `/drivers/{id}/`.
+Deploy the app to a host that can run the Next.js production server. The server is required for routes with runtime parameters, including `/support-tickets/[id]`.
 
 To run the production build locally:
 
@@ -505,7 +510,8 @@ Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Re
 
 ## Known limitations
 
-- Live Rides, Promotions, Support Tickets, Admin Users, Audit Logs, Platform Config and System Health are placeholder pages.
+- Live Rides, Promotions, Admin Users, Audit Logs, Platform Config and System Health are placeholder pages.
+- Support ticket records and updates are held in memory only and are reset on a full page reload; backend integration is not implemented.
 - There is currently no automated test suite or CI configuration.
 - There is no role-level UI beyond the admin gate; every configured admin role sees every admin page.
 - The dashboard builds some summary cards from the analytics overview response and falls back to list totals when fields or endpoints are unavailable.
@@ -514,7 +520,7 @@ Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Re
 - Batch approval uses the existing per-payout endpoint sequentially, so a batch can partially succeed. The UI blocks batches over TZS 50,000 because the backend does not yet provide a server-verified step-up 2FA flow; the backend must also enforce this threshold before high-value approvals are enabled.
 - Payout receipts open the browser print dialog, where they can be printed or saved as PDF.
 - Dashboard cards render zero or empty states when an analytics endpoint fails, so partial data is expected during backend incidents.
-- Admin data comes from the external Raut backend. The Next.js server is used to serve the app and its dynamic routes.
+- Admin data comes from the external Raut backend. The Next.js server serves the app and its dynamic routes, including `/support-tickets/[id]`.
 - The onboarding flow is designed for a Flutter WebView. Outside the WebView it falls back to browser alerts and redirects, and it is not linked from the admin navigation.
 - Onboarding validation and upload errors are shown inline, but step-level API failures use browser alerts.
 - The header search input is presentational and does not filter or search data yet.
