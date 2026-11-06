@@ -26,6 +26,13 @@ export const API_ROUTES = {
   analyticsDrivers: "/admin/analytics/drivers",
   analyticsRides: "/admin/analytics/rides",
   analyticsPeakHours: "/admin/analytics/peak-hours",
+  configPricing: "/admin/config/pricing",
+  configFeatures: "/admin/config/features",
+  configOperations: "/admin/config/operations",
+  configIntegrations: "/admin/config/integrations",
+  configIntegrationTest: (service: string) =>
+    `/admin/config/integrations/${service}/test`,
+  configHistory: "/admin/config/history",
 };
 
 // Analytics windows. `day|week|month` is sent as `period` to the analytics
