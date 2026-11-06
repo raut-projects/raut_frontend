@@ -704,3 +704,92 @@ export const mapNotification = (notification) => ({
   read: Boolean(notification?.is_read),
   to: notification?.ride_id ? '/rides' : notification?.route_id ? '/routes' : null,
 })
+
+export const INTEGRATION_STATUS_LABELS = {
+  connected: 'Connected',
+  degraded: 'Degraded',
+  disconnected: 'Disconnected',
+}
+
+const INTEGRATION_STATUSES = ['connected', 'degraded', 'disconnected']
+
+const integrationStatus = (value) =>
+  INTEGRATION_STATUSES.includes(value) ? value : 'disconnected'
+
+export const mapPricingConfig = (config) => ({
+  base_fare_tzs: Number(config?.base_fare_tzs ?? 0),
+  price_per_km_tzs: Number(config?.price_per_km_tzs ?? 0),
+  price_per_minute_tzs: Number(config?.price_per_minute_tzs ?? 0),
+  platform_fee_percent: Number(config?.platform_fee_percent ?? 0),
+  peak_hour_surge_percent: Number(config?.peak_hour_surge_percent ?? 0),
+  duo_discount_percent: Number(config?.duo_discount_percent ?? 0),
+  duo_distribution_percent: Number(config?.duo_distribution_percent ?? 0),
+  peak_hours: Array.isArray(config?.peak_hours)
+    ? config.peak_hours.map((slot) => ({
+        day: slot?.day ?? 'monday',
+        start: slot?.start ?? '00:00',
+        end: slot?.end ?? '00:00',
+      }))
+    : [],
+})
+
+export const mapFeatureFlags = (flags) => ({
+  scheduled_rides: Boolean(flags?.scheduled_rides),
+  duo: Boolean(flags?.duo),
+  ratings: Boolean(flags?.ratings),
+  in_app_chat: Boolean(flags?.in_app_chat),
+  corporate_accounts: Boolean(flags?.corporate_accounts),
+})
+
+export const mapOperationsConfig = (config) => ({
+  min_payout_amount_tzs: Number(config?.min_payout_amount_tzs ?? 0),
+  auto_payout_schedule: config?.auto_payout_schedule ?? 'weekly',
+  document_expiry_reminder_days: Number(config?.document_expiry_reminder_days ?? 0),
+  max_concurrent_requests: Number(config?.max_concurrent_requests ?? 0),
+  request_timeout_seconds: Number(config?.request_timeout_seconds ?? 0),
+  session_token_expiry_minutes: Number(config?.session_token_expiry_minutes ?? 0),
+})
+
+export const mapIntegration = (integration) => ({
+  key: integration?.key ?? '',
+  name: integration?.name ?? integration?.key ?? EMPTY,
+  status: integrationStatus(integration?.status),
+  identifier: integration?.identifier ?? '',
+  identifier_label: integration?.identifier_label ?? 'Identifier',
+  docs_url: integration?.docs_url ?? null,
+})
+
+export const mapIntegrationTestResult = (result) => ({
+  status: integrationStatus(result?.status),
+  message: result?.message ?? 'The test finished without a message.',
+  latency_ms:
+    result?.latency_ms === null || result?.latency_ms === undefined
+      ? undefined
+      : Number(result.latency_ms),
+})
+
+export const mapConfigHistoryEntry = (entry) => ({
+  id: entry?.id ?? '',
+  created_at: entry?.created_at ?? null,
+  admin_name: entry?.admin_name ?? 'Unknown admin',
+  admin_role: entry?.admin_role ?? '',
+  field: entry?.field ?? '',
+  old_value: entry?.old_value ?? null,
+  new_value: entry?.new_value ?? null,
+  note: entry?.note ?? null,
+})
+
+export const mapConfigHistory = (response) => {
+  const items = Array.isArray(response?.items) ? response.items.map(mapConfigHistoryEntry) : []
+  const pagination = response?.pagination ?? {}
+
+  return {
+    items,
+    pagination: {
+      page: Number(pagination.page ?? 1),
+      limit: Number(pagination.limit ?? items.length),
+      total_items: Number(pagination.total_items ?? items.length),
+      total_pages: Number(pagination.total_pages ?? 1),
+    },
+  }
+}

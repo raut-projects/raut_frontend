@@ -48,6 +48,14 @@ export const queryKeys = {
   notifications: {
     all: ["notifications"],
   },
+  config: {
+    all: ["config"],
+    pricing: ["config", "pricing"],
+    features: ["config", "features"],
+    operations: ["config", "operations"],
+    integrations: ["config", "integrations"],
+    history: (params) => ["config", "history", params],
+  },
   me: {
     all: ["me"],
   },

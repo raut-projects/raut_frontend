@@ -113,7 +113,7 @@ const navGroups: NavGroup[] = [
 ];
 
 const settingsItems = [
-  { title: "Platform Config", url: "/settings/platform" },
+  { title: "Platform Config", url: "/settings/platform-config" },
   { title: "Admin Users", url: "/settings/admin-users" },
   { title: "Audit Logs", url: "/settings/audit-logs" },
   { title: "System Health", url: "/settings/system-health" },
