@@ -536,11 +536,8 @@ function DriverDetailsPage() {
             </Button>
             <div className="min-w-0">
               <h1 className="truncate text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
-                Driver #{driver.id}
-              </h1>
-              <p className="mt-1 truncate text-sm text-slate-500">
                 {driver.name}
-              </p>
+              </h1>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
