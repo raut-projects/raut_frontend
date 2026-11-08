@@ -1,9 +1,9 @@
+import { queryClient } from "@/lib/queryClient";
 import { usePageViewStore } from "./pageViewStore";
-import { useSupportTicketsStore } from "./supportTicketsStore";
 import { useToastStore } from "./toastStore";
 
 export function resetClientState() {
+  queryClient.clear();
   usePageViewStore.getState().reset();
-  useSupportTicketsStore.getState().reset();
   useToastStore.getState().clear();
 }

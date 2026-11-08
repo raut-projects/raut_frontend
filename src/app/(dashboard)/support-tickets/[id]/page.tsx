@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -15,18 +15,14 @@ import {
   Paperclip,
   Phone,
   ReceiptText,
-  RefreshCw,
   Send,
   ShieldAlert,
-  Smartphone,
   Star,
   UserRound,
-  Wallet,
-  X,
-  Zap,
 } from "lucide-react";
 import { cn } from "cn";
-import { useSupportTickets } from "@/store/supportTicketsStore";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSupportAgents, useSupportTicket } from "@/hooks/useSupportTickets";
 import { TicketPriorityBadge, TicketStatusBadge } from "@/components/supportTicketBadges";
 import { useToast } from "@/components/toastContext";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +35,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
-import { useSession } from "@/hooks/useSession";
+import { queryKeys } from "@/lib/queryKeys";
 import {
   formatTicketDateTime,
   formatTicketJoinedDate,
@@ -49,6 +45,14 @@ import {
   TICKET_STATUS_LABELS,
 } from "@/lib/supportTickets";
 import type { SupportTicketPriority } from "@/lib/supportTickets";
+import {
+  addSupportTicketMessage,
+  assignSupportTicket,
+  claimSupportTicket,
+  escalateSupportTicket,
+  updateSupportTicketPriority,
+  updateSupportTicketStatus,
+} from "@/services/supportTickets";
 
 const labelClass = "text-xs font-semibold uppercase tracking-wide text-slate-400";
 const valueClass = "mt-1 text-sm text-slate-700";
@@ -80,26 +84,67 @@ const getSlaClass = (status: string, priority: SupportTicketPriority) => {
 };
 
 function SupportTicketDetail({ ticketId }: { ticketId: string }) {
-  const {
-    getTicket,
-    getDetail,
-    assignTicket,
-    setTicketPriority,
-    setTicketStatus,
-    escalateTicket,
-    addReply,
-  } = useSupportTickets();
-  const ticket = getTicket(ticketId);
-  const detail = getDetail(ticketId);
+  const queryClient = useQueryClient();
+  const ticketQuery = useSupportTicket(ticketId);
+  const agentsQuery = useSupportAgents();
+  const ticket = ticketQuery.data?.ticket;
+  const detail = ticketQuery.data?.detail;
   const toast = useToast();
-  const session = useSession();
-  const actor = session?.name ?? "Admin";
 
   const [reply, setReply] = useState("");
   const [internalNote, setInternalNote] = useState(false);
-  const [attachedFile, setAttachedFile] = useState<string | null>(null);
-  const [smsCopy, setSmsCopy] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const runAction = async (
+    action: Promise<unknown>,
+    successMessage: string,
+  ): Promise<boolean> => {
+    setIsSaving(true);
+    try {
+      await action;
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.supportTickets.all,
+      });
+      toast.success(successMessage);
+      return true;
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "The action could not be completed.",
+      );
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (ticketQuery.isPending) {
+    return (
+      <div className="mx-auto max-w-3xl rounded-xl border border-slate-200 bg-white px-6 py-12 text-center shadow-card">
+        <p className="text-sm text-slate-500">Loading ticket details…</p>
+      </div>
+    );
+  }
+
+  if (ticketQuery.isError) {
+    return (
+      <div className="mx-auto max-w-3xl rounded-xl border border-slate-200 bg-white px-6 py-12 text-center shadow-card">
+        <p className="text-sm font-semibold text-rose-700">
+          {ticketQuery.error instanceof Error
+            ? ticketQuery.error.message
+            : "Ticket details could not be loaded."}
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => void ticketQuery.refetch()}
+          className="mt-4"
+        >
+          Try again
+        </Button>
+      </div>
+    );
+  }
 
   if (!ticket || !detail) {
     return (
@@ -123,12 +168,18 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
   const requesterInitials = getInitials(ticket.requester);
   const profileHref =
     ticket.requesterType === "Driver" ? "/drivers" : "/customers";
-  const phoneHref = `tel:${detail.user.phone.replace(/\s/g, "")}`;
-  const smsHref = `sms:${detail.user.phone.replace(/\s/g, "")}`;
+  const phoneHref = detail.user.phone
+    ? `tel:${detail.user.phone.replace(/\s/g, "")}`
+    : undefined;
+  const smsHref = detail.user.phone
+    ? `sms:${detail.user.phone.replace(/\s/g, "")}`
+    : undefined;
   const slaLabel =
     ticket.status === "resolved" || ticket.status === "closed"
       ? "Met"
-      : formatTicketSla(detail.slaMinutes);
+      : detail.slaMinutes !== undefined
+        ? formatTicketSla(detail.slaMinutes)
+        : "Not provided";
 
   const copyTicketId = async () => {
     try {
@@ -139,14 +190,25 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
     }
   };
 
+  const isUnassigned = ticket.assignee === "Unassigned" && !ticket.assigneeId;
+
   const handleAssign = () => {
-    assignTicket(ticket.id, actor, actor);
-    toast.success(`${ticket.id} assigned to ${actor}.`);
+    void runAction(
+      claimSupportTicket(ticket.id),
+      `${ticket.id} assigned to you.`,
+    );
+  };
+
+  const handleReassign = (agentId: string) => {
+    void runAction(
+      assignSupportTicket(ticket.id, agentId),
+      `${ticket.id} assignment updated.`,
+    );
   };
 
   const handlePriority = (priority: SupportTicketPriority) => {
-    setTicketPriority(ticket.id, priority, actor);
-    toast.success(
+    void runAction(
+      updateSupportTicketPriority(ticket.id, priority),
       `Priority changed to ${TICKET_PRIORITY_LABELS[priority].toLowerCase()}.`,
     );
   };
@@ -154,8 +216,8 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
   const handleToggleStatus = () => {
     const nextStatus = ticket.status === "closed" ? "open" : "closed";
 
-    setTicketStatus(ticket.id, nextStatus, actor);
-    toast.success(
+    void runAction(
+      updateSupportTicketStatus(ticket.id, nextStatus),
       `${ticket.id} marked ${TICKET_STATUS_LABELS[nextStatus].toLowerCase()}.`,
     );
   };
@@ -166,18 +228,10 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
       return;
     }
 
-    escalateTicket(ticket.id, actor);
-    toast.success(`${ticket.id} escalated to urgent priority.`);
-  };
-
-  const handleAttach = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-
-    if (!file) return;
-
-    setAttachedFile(file.name);
-    toast.success(`${file.name} attached.`);
-    event.target.value = "";
+    void runAction(
+      escalateSupportTicket(ticket.id),
+      `${ticket.id} escalated.`,
+    );
   };
 
   const handleSendReply = () => {
@@ -188,29 +242,15 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
       return;
     }
 
-    addReply(ticket.id, {
-      body,
-      internal: internalNote,
-      author: actor,
-      attachments: attachedFile ? [attachedFile] : undefined,
-    });
-    setReply("");
-    setInternalNote(false);
-    setAttachedFile(null);
-    setSmsCopy(false);
-    toast.success(internalNote ? "Internal note added." : "Reply sent.");
-  };
-
-  const handleRefund = () => {
-    toast.success(`Refund request recorded for ${detail.rideId}.`);
-  };
-
-  const handleViewRide = () => {
-    toast.success(`Ride ${detail.rideId} details are ready to review.`);
-  };
-
-  const handleCheckPayment = () => {
-    toast.success(`Payment status refreshed for ${detail.rideId}.`);
+    void (async () => {
+      const saved = await runAction(
+        addSupportTicketMessage(ticket.id, { body, internal: internalNote }),
+        internalNote ? "Internal note added." : "Reply sent.",
+      );
+      if (!saved) return;
+      setReply("");
+      setInternalNote(false);
+    })();
   };
 
   return (
@@ -271,11 +311,67 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                 variant="outline"
                 size="sm"
                 onClick={handleAssign}
-                disabled={ticket.assignee === actor}
+                disabled={!isUnassigned || isSaving}
               >
                 <UserRound className="size-3.5" aria-hidden="true" />
-                {ticket.assignee === actor ? "Assigned to Me" : "Assign to Me"}
+                {isUnassigned ? "Assign to Me" : `Assigned to ${ticket.assignee}`}
               </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isSaving}
+                  >
+                    Reassign
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-56 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
+                >
+                  {agentsQuery.isPending && (
+                    <DropdownMenuItem disabled>
+                      Loading support agents…
+                    </DropdownMenuItem>
+                  )}
+                  {agentsQuery.isError && (
+                    <DropdownMenuItem disabled>
+                      Could not load support agents
+                    </DropdownMenuItem>
+                  )}
+                  {(agentsQuery.data ?? []).map((agent) => (
+                    <DropdownMenuItem
+                      key={agent.id}
+                      onSelect={() => handleReassign(agent.id)}
+                      disabled={isSaving}
+                      className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
+                    >
+                      <span>
+                        {agent.name}
+                        <span className="ml-1 text-slate-400">
+                          · {agent.role}
+                        </span>
+                      </span>
+                      {ticket.assigneeId === agent.id && (
+                        <Check
+                          className="ml-auto size-3.5"
+                          aria-hidden="true"
+                        />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                  {!agentsQuery.isPending &&
+                    !agentsQuery.isError &&
+                    (agentsQuery.data?.length ?? 0) === 0 && (
+                      <DropdownMenuItem disabled>
+                        No eligible agents
+                      </DropdownMenuItem>
+                    )}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -292,6 +388,7 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                     <DropdownMenuItem
                       key={priority}
                       onSelect={() => handlePriority(priority)}
+                      disabled={isSaving}
                       className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                     >
                       {TICKET_PRIORITY_LABELS[priority]}
@@ -311,6 +408,7 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                 variant="outline"
                 size="sm"
                 onClick={handleToggleStatus}
+                disabled={isSaving}
               >
                 {ticket.status === "closed" ? "Reopen" : "Close"}
               </Button>
@@ -320,7 +418,7 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                 variant="outline"
                 size="sm"
                 onClick={handleEscalate}
-                disabled={ticket.priority === "urgent"}
+                disabled={ticket.priority === "urgent" || isSaving}
               >
                 Escalate
               </Button>
@@ -366,38 +464,48 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                     <dt className={labelClass}>Phone</dt>
                     <dd className="mt-1 flex flex-wrap items-center gap-2">
                       <span className="text-sm text-slate-700">
-                        {detail.user.phone}
+                        {detail.user.phone ?? "—"}
                       </span>
-                      <Button asChild variant="outline" size="xs">
-                        <a href={phoneHref}>
-                          <Phone className="size-3" aria-hidden="true" />
-                          Call
-                        </a>
-                      </Button>
-                      <Button asChild variant="outline" size="xs">
-                        <a href={smsHref}>
-                          <MessageSquare
-                            className="size-3"
-                            aria-hidden="true"
-                          />
-                          SMS
-                        </a>
-                      </Button>
+                      {phoneHref && (
+                        <Button asChild variant="outline" size="xs">
+                          <a href={phoneHref}>
+                            <Phone className="size-3" aria-hidden="true" />
+                            Call
+                          </a>
+                        </Button>
+                      )}
+                      {smsHref && (
+                        <Button asChild variant="outline" size="xs">
+                          <a href={smsHref}>
+                            <MessageSquare
+                              className="size-3"
+                              aria-hidden="true"
+                            />
+                            SMS
+                          </a>
+                        </Button>
+                      )}
                     </dd>
                   </div>
                   <div>
                     <dt className={labelClass}>Account</dt>
-                    <dd className={valueClass}>{detail.user.accountId}</dd>
+                    <dd className={valueClass}>
+                      {detail.user.accountId ?? "—"}
+                    </dd>
                   </div>
                   <div>
                     <dt className={labelClass}>Joined</dt>
                     <dd className={valueClass}>
-                      {formatTicketJoinedDate(detail.user.joinedAt)}
+                      {detail.user.joinedAt
+                        ? formatTicketJoinedDate(detail.user.joinedAt)
+                        : "—"}
                     </dd>
                   </div>
                   <div>
                     <dt className={labelClass}>Total rides</dt>
-                    <dd className={valueClass}>{detail.user.totalRides}</dd>
+                    <dd className={valueClass}>
+                      {detail.user.totalRides ?? "—"}
+                    </dd>
                   </div>
                   <div>
                     <dt className={labelClass}>Rating</dt>
@@ -406,7 +514,9 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                         className="size-3.5 fill-amber-400 text-amber-400"
                         aria-hidden="true"
                       />
-                      {detail.user.rating.toFixed(1)}
+                      {detail.user.rating !== undefined
+                        ? detail.user.rating.toFixed(1)
+                        : "—"}
                     </dd>
                   </div>
                 </dl>
@@ -438,13 +548,13 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                 <div>
                   <dt className={labelClass}>Created</dt>
                   <dd className={valueClass}>
-                    {formatTicketDateTime(ticket.createdAt)}
+                    {ticket.createdAt ? formatTicketDateTime(ticket.createdAt) : "—"}
                   </dd>
                 </div>
                 <div>
                   <dt className={labelClass}>Last updated</dt>
                   <dd className={valueClass}>
-                    {formatTicketDateTime(ticket.updatedAt)}
+                    {ticket.updatedAt ? formatTicketDateTime(ticket.updatedAt) : "—"}
                   </dd>
                 </div>
                 <div>
@@ -472,6 +582,11 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
               </div>
 
               <div className="mt-3 space-y-3">
+                {detail.messages.length === 0 && (
+                  <p className={cn(cardClass, "text-sm text-slate-500")}>
+                    No messages were returned for this ticket.
+                  </p>
+                )}
                 {detail.messages.map((message) => {
                   const isInternal = Boolean(message.internal);
                   const isBot = message.role === "Bot";
@@ -581,6 +696,7 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                   onChange={(event) => setReply(event.target.value)}
                   placeholder="Write a reply to the requester..."
                   className="min-h-28 bg-white"
+                  disabled={isSaving}
                 />
 
                 <div className="mt-3 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
@@ -590,118 +706,32 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                       onCheckedChange={(checked) =>
                         setInternalNote(Boolean(checked))
                       }
+                      disabled={isSaving}
                     />
                     Internal note (not visible to user)
                   </label>
 
                   <div className="flex flex-wrap items-center gap-2">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      className="hidden"
-                      onChange={handleAttach}
-                      aria-hidden="true"
-                      tabIndex={-1}
-                    />
                     <Button
                       type="button"
-                      variant="outline"
                       size="sm"
-                      onClick={() => fileInputRef.current?.click()}
+                      onClick={handleSendReply}
+                      disabled={isSaving || !reply.trim()}
                     >
-                      <Paperclip className="size-3.5" aria-hidden="true" />
-                      <span className="max-w-32 truncate">
-                        {attachedFile ?? "Attach File"}
-                      </span>
-                    </Button>
-                    {attachedFile && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => setAttachedFile(null)}
-                        aria-label="Remove attachment"
-                      >
-                        <X className="size-3.5" aria-hidden="true" />
-                      </Button>
-                    )}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      aria-pressed={smsCopy}
-                      onClick={() => setSmsCopy((current) => !current)}
-                      className={
-                        smsCopy
-                          ? "border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100"
-                          : undefined
-                      }
-                    >
-                      <Smartphone className="size-3.5" aria-hidden="true" />
-                      Send SMS Copy
-                    </Button>
-                    <Button type="button" size="sm" onClick={handleSendReply}>
                       <Send className="size-3.5" aria-hidden="true" />
-                      Send Reply
+                      {internalNote ? "Add Note" : "Send Reply"}
                     </Button>
                   </div>
                 </div>
 
                 <p className="mt-2 text-xs text-slate-400">
-                  {smsCopy
-                    ? "A copy will also be sent by SMS."
-                    : "Replies and notes are stored locally for this session."}
+                  Replies and internal notes are sent to the support service.
                 </p>
               </div>
             </section>
           </div>
 
           <aside className="space-y-6">
-            <section aria-labelledby="ticket-quick-actions-heading">
-              <h2
-                id="ticket-quick-actions-heading"
-                className={sectionTitleClass}
-              >
-                <span className={sectionIconClass}>
-                  <Zap className="size-4" aria-hidden="true" />
-                </span>
-                Quick Actions
-              </h2>
-
-              <div className={cn(cardClass, "mt-3 space-y-2")}>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRefund}
-                  className="w-full justify-start"
-                >
-                  <Wallet className="size-3.5" aria-hidden="true" />
-                  Refund Ride
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleViewRide}
-                  className="w-full justify-start"
-                >
-                  <ReceiptText className="size-3.5" aria-hidden="true" />
-                  View Ride Details
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCheckPayment}
-                  className="w-full justify-start"
-                >
-                  <RefreshCw className="size-3.5" aria-hidden="true" />
-                  Check Payment
-                </Button>
-              </div>
-            </section>
-
             <section aria-labelledby="ticket-history-heading">
               <h2 id="ticket-history-heading" className={sectionTitleClass}>
                 <span className={sectionIconClass}>
@@ -711,28 +741,34 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
               </h2>
 
               <div className={cn(cardClass, "mt-3")}>
-                <ol className="space-y-4">
-                  {[...detail.history].reverse().map((entry) => (
-                    <li
-                      key={entry.id}
-                      className="relative border-l border-slate-200 pl-4 last:border-transparent"
-                    >
-                      <span
-                        className="absolute -left-1.25 top-1 size-2 rounded-full bg-slate-300 ring-4 ring-white"
-                        aria-hidden="true"
-                      />
-                      <p className="text-sm font-medium text-slate-700">
-                        {entry.label}
-                      </p>
-                      <time
-                        dateTime={entry.createdAt}
-                        className="mt-0.5 block text-xs text-slate-400"
+                {detail.history.length === 0 ? (
+                  <p className="text-sm text-slate-500">
+                    No ticket history was provided.
+                  </p>
+                ) : (
+                  <ol className="space-y-4">
+                    {[...detail.history].reverse().map((entry) => (
+                      <li
+                        key={entry.id}
+                        className="relative border-l border-slate-200 pl-4 last:border-transparent"
                       >
-                        {formatTicketDateTime(entry.createdAt)}
-                      </time>
-                    </li>
-                  ))}
-                </ol>
+                        <span
+                          className="absolute -left-1.25 top-1 size-2 rounded-full bg-slate-300 ring-4 ring-white"
+                          aria-hidden="true"
+                        />
+                        <p className="text-sm font-medium text-slate-700">
+                          {entry.label}
+                        </p>
+                        <time
+                          dateTime={entry.createdAt}
+                          className="mt-0.5 block text-xs text-slate-400"
+                        >
+                          {formatTicketDateTime(entry.createdAt)}
+                        </time>
+                      </li>
+                    ))}
+                  </ol>
+                )}
               </div>
             </section>
           </aside>
@@ -743,4 +779,3 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
 }
 
 export default SupportTicketDetail;
-

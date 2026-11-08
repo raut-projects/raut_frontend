@@ -51,7 +51,7 @@ A separate onboarding route guides drivers through personal, licence, vehicle an
 | Settings | Read-only profile and access details for the signed-in administrator |
 | Live Rides | Placeholder page; tracking and live-trip data are not implemented yet |
 | Promotions | Placeholder page; campaign management is not implemented yet |
-| Support Tickets | Local prototype for filtering, assigning, prioritizing, replying to and updating tickets; changes are not persisted to the backend |
+| Support Tickets | API-backed ticket list, creation, search and filters, agent assignment, replies and internal notes, status/priority updates, escalation and CSV export |
 | Settings subpages | Placeholder pages for Admin Users, Audit Logs, Platform Config and System Health |
 | Driver onboarding | Four-step driver application flow with English/Swahili UI, validation, document uploads and Flutter WebView hand-off |
 | User experience | Responsive sidebar and header, loading skeletons, retryable error states, refresh indicators, toast feedback and print-friendly analytics |
@@ -178,8 +178,9 @@ Run `npm run build` before `npm run start` or `npm run preview`.
 | `/transactions` | Admin | Transaction history |
 | `/live-rides` | Admin | Live rides placeholder (Coming soon) |
 | `/promotions` | Admin | Promotions placeholder (Coming soon) |
-| `/support-tickets` | Admin | Support ticket prototype with filtering and ticket management |
-| `/support-tickets/[id]` | Admin | Ticket detail, assignment, status/priority updates and replies |
+| `/support-tickets` | Admin | API-backed ticket search, filters, pagination, status actions and CSV export |
+| `/support-tickets/new` | Admin | Create a support ticket for a rider or driver |
+| `/support-tickets/[id]` | Admin | Ticket detail, agent assignment, replies/internal notes, status/priority updates and escalation |
 | `/settings` | Admin | Signed-in account profile and access details |
 | `/settings/admin-users` | Admin | Admin users placeholder (Coming soon) |
 | `/settings/audit-logs` | Admin | Audit logs placeholder (Coming soon) |
@@ -338,6 +339,17 @@ Raw API records are normalized in `src/services/mappers.ts`. Mappers provide con
 | `PUT` | `/admin/payouts/{id}/approve` | Approve a payout |
 | `PUT` | `/admin/payouts/{id}/reject` | Reject a payout |
 | `PUT` | `/admin/payouts/{id}/retry` | Retry a payout |
+| `POST` | `/admin/support/tickets` | Create a support ticket |
+| `GET` | `/admin/support/tickets` | List and filter support tickets |
+| `GET` | `/admin/support/agents` | List eligible ticket assignees and roles |
+| `GET` | `/admin/support/tickets/{ticket_id}` | Get ticket details |
+| `GET` | `/admin/support/tickets/{ticket_id}/messages` | List ticket messages and internal notes |
+| `POST` | `/admin/support/tickets/{ticket_id}/messages` | Reply or add an internal note |
+| `PATCH` | `/admin/support/tickets/{ticket_id}/assignment` | Assign or reassign a ticket |
+| `POST` | `/admin/support/tickets/{ticket_id}/assign-to-me` | Claim an unassigned ticket |
+| `PATCH` | `/admin/support/tickets/{ticket_id}/status` | Update ticket status |
+| `PATCH` | `/admin/support/tickets/{ticket_id}/priority` | Change ticket priority |
+| `POST` | `/admin/support/tickets/{ticket_id}/escalate` | Escalate a ticket |
 | `GET` | `/admin/analytics/overview` | Aggregate dashboard metrics |
 | `GET` | `/admin/analytics/revenue` | Revenue analytics |
 | `GET` | `/admin/analytics/drivers` | Driver performance analytics |
@@ -349,6 +361,8 @@ Raw API records are normalized in `src/services/mappers.ts`. Mappers provide con
 | `PUT` | `/drivers/payment-details` | Save mobile-money payout details during onboarding |
 
 Analytics endpoints receive a `period` of `day`, `week` or `month`, plus `days_back` where applicable. Dashboard custom ranges are capped at 365 days.
+
+Support ticket creation sends `requester_id`, `requester_type`, `subject`, `category`, `priority` and `message`. Replies and internal notes send `body` and `is_internal`; assignments send `assignee_id`.
 
 The unused legacy onboarding helper also references `POST /drivers/register` and `POST /drivers/onboarding/complete`. They are not part of the active UI flow.
 
@@ -365,6 +379,7 @@ Polling is configured per hook:
 
 - Dashboard, customer lists and notifications refetch every 60 seconds.
 - Driver, ride, route, payout and transaction lists refetch every 30 seconds.
+- Support ticket lists and details refetch every 30 seconds; eligible agents are cached for 5 minutes.
 - Ride, route and transaction summary queries refetch every 60 seconds.
 - Driver documents load on demand when a driver detail panel opens.
 - List queries use `keepPreviousData` so pagination and filter changes do not flash an empty table.
@@ -398,12 +413,11 @@ Zustand stores hold shared client-only state. Server data stays in TanStack Quer
 | `authStore` | Memory, hydrated from `tokenStore` | Mirrors the signed-in session for React components; tokens remain in `tokenStore`. |
 | `onboardingStore` | `localStorage` (`driver-onboarding-storage`) | Onboarding progress, token and language. |
 | `pageViewStore` | Memory | List filters and pagination retained across navigation within the tab. |
-| `supportTicketsStore` | Memory | Prototype ticket records, details, replies and status changes. |
 | `toastStore` | Memory | Transient toast notifications. |
 
-The auth store starts empty so the static export and the first client render match. `Providers` hydrates it after mount, and route gates wait for hydration before redirecting. Signing out clears the token store plus page views, support tickets and toasts. Onboarding progress is not cleared because it belongs to a separate driver flow.
+The auth store starts empty so the static export and the first client render match. `Providers` hydrates it after mount, and route gates wait for hydration before redirecting. Signing out clears the token store, query cache, page views and toasts. Onboarding progress is not cleared because it belongs to a separate driver flow.
 
-List filters and pagination survive navigation but reset on a full reload. Support ticket changes also reset on reload.
+List filters and pagination survive navigation but reset on a full reload. Support ticket records and changes are fetched from the backend.
 
 ## Project structure
 
@@ -434,7 +448,7 @@ raut_frontend/
 │  ├─ onboarding/          The four onboarding step components
 │  ├─ schemas/             Zod validation schemas
 │  ├─ services/            API services, HTTP client, token store, uploads and mappers
-│  ├─ store/               Zustand stores for authentication, onboarding, tickets, toasts and list views
+│  ├─ store/               Zustand stores for authentication, onboarding, toasts and list views
 │  ├─ styles/              Legacy Flutter theme constants
 │  └─ types/               Shared TypeScript type definitions
 ├─ .env.example            Documented environment variables
@@ -451,7 +465,8 @@ raut_frontend/
 | Path | Responsibility |
 | --- | --- |
 | `src/services/http.ts` | Authenticated fetch wrapper, token refresh, timeout and error handling |
-| `src/services/api.ts` | `apiGet`, `apiPost`, `apiPut`, `apiDelete` and query-string building |
+| `src/services/api.ts` | `apiGet`, `apiPost`, `apiPatch`, `apiPut`, `apiDelete` and query-string building |
+| `src/services/supportTickets.ts` | Support ticket endpoints, API response mapping and ticket mutation payloads |
 | `src/services/auth.ts` | Email and password sign-in, session creation, role resolution and admin promotion |
 | `src/services/adminActions.ts` | Verify/reject/suspend drivers, cancel rides/routes and manage users |
 | `src/services/dashboard.ts` | Analytics aggregation, comparison windows and dashboard mapping |
@@ -479,7 +494,6 @@ raut_frontend/
 | `src/store/authStore.ts` | Browser session state synchronized with the token store |
 | `src/store/onboardingStore.ts` | Persisted onboarding progress, token and language |
 | `src/store/pageViewStore.ts` | In-memory list filters and pagination retained across navigation, reset on sign-out |
-| `src/store/supportTicketsStore.ts` | In-memory support ticket prototype data and updates, reset on sign-out |
 | `src/store/toastStore.ts` | Transient toast notifications |
 | `src/schemas/onboardingSchemas.ts` | Zod validation rules for each onboarding step |
 
@@ -529,7 +543,6 @@ Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Re
 ## Known limitations
 
 - Live Rides, Promotions, Admin Users, Audit Logs, Platform Config and System Health are placeholder pages.
-- Support ticket records and updates are held in memory only and are reset on a full page reload or sign-out; backend integration is not implemented.
 - There is currently no automated test suite or CI configuration.
 - There is no role-level UI beyond the admin gate; every configured admin role sees every admin page.
 - The dashboard builds some summary cards from the analytics overview response and falls back to list totals when fields or endpoints are unavailable.

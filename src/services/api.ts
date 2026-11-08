@@ -43,6 +43,12 @@ export const apiPost = async (path: string, body?: unknown, { auth = true }: Bod
   return envelopeData(payload) ?? {};
 };
 
+export const apiPatch = async (path: string, body?: unknown, { auth = true }: BodyOptions = {}) => {
+  const payload = await request(path, { method: "PATCH", body, auth });
+
+  return envelopeData(payload) ?? {};
+};
+
 export const apiPut = async (path: string, body?: unknown, { auth = true }: BodyOptions = {}) => {
   const payload = await request(path, { method: "PUT", body, auth });
 

@@ -33,6 +33,22 @@ export const API_ROUTES = {
   configIntegrationTest: (service: string) =>
     `/admin/config/integrations/${service}/test`,
   configHistory: "/admin/config/history",
+  supportTickets: "/admin/support/tickets",
+  supportAgents: "/admin/support/agents",
+  supportTicket: (ticketId: string) =>
+    `/admin/support/tickets/${encodeURIComponent(ticketId)}`,
+  supportTicketMessages: (ticketId: string) =>
+    `/admin/support/tickets/${encodeURIComponent(ticketId)}/messages`,
+  supportTicketAssignment: (ticketId: string) =>
+    `/admin/support/tickets/${encodeURIComponent(ticketId)}/assignment`,
+  supportTicketAssignToMe: (ticketId: string) =>
+    `/admin/support/tickets/${encodeURIComponent(ticketId)}/assign-to-me`,
+  supportTicketStatus: (ticketId: string) =>
+    `/admin/support/tickets/${encodeURIComponent(ticketId)}/status`,
+  supportTicketPriority: (ticketId: string) =>
+    `/admin/support/tickets/${encodeURIComponent(ticketId)}/priority`,
+  supportTicketEscalate: (ticketId: string) =>
+    `/admin/support/tickets/${encodeURIComponent(ticketId)}/escalate`,
 };
 
 // Analytics windows. `day|week|month` is sent as `period` to the analytics

@@ -1,21 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   Copy,
   Download,
   EllipsisVertical,
   Eye,
+  Plus,
   Search,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import {
   TicketPriorityBadge,
   TicketStatusBadge,
 } from "@/components/supportTicketBadges";
-import { useSupportTickets } from "@/store/supportTicketsStore";
 import { useToast } from "@/components/toastContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,12 +36,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { useSession } from "@/hooks/useSession";
-import { usePageViewField } from "@/store/pageViewStore";
 import {
-  countSupportTicketsByStatus,
+  useSupportTickets,
+} from "@/hooks/useSupportTickets";
+import { usePageViewField } from "@/store/pageViewStore";
+import { queryKeys } from "@/lib/queryKeys";
+import {
   downloadSupportTicketsCsv,
-  filterSupportTickets,
   formatTicketUpdated,
   SUPPORT_TICKET_ASSIGNEES,
   SUPPORT_TICKET_CATEGORIES,
@@ -49,9 +51,9 @@ import {
   TICKET_STATUS_LABELS,
 } from "@/lib/supportTickets";
 import type {
-  SupportTicketPriority,
   SupportTicketStatus,
 } from "@/lib/supportTickets";
+import { listSupportTickets, updateSupportTicketStatus } from "@/services/supportTickets";
 
 const PAGE_SIZE = 25;
 
@@ -69,15 +71,11 @@ const controlClass =
 
 function SupportTicketsPage() {
   const toast = useToast();
-  const session = useSession();
-  const actor = session?.name ?? "Admin";
-  const { tickets, setTicketStatus } = useSupportTickets();
+  const queryClient = useQueryClient();
+  const [isExporting, setIsExporting] = useState(false);
   const [status, setStatus] = usePageViewField("supportTickets", "status");
   const [search, setSearch] = usePageViewField("supportTickets", "search");
-  const [priority, setPriority] = usePageViewField(
-    "supportTickets",
-    "priority",
-  );
+  const [priority, setPriority] = usePageViewField("supportTickets", "priority");
   const [category, setCategory] = usePageViewField(
     "supportTickets",
     "category",
@@ -89,53 +87,32 @@ function SupportTicketsPage() {
   const [page, setPage] = usePageViewField("supportTickets", "page");
 
   const debouncedSearch = useDebouncedValue(search, 300);
-
-  const searchableTickets = useMemo(
-    () =>
-      filterSupportTickets(tickets, {
-        status: "all",
-        search: debouncedSearch,
-        priority,
-        category,
-        assignee,
-      }),
-    [tickets, debouncedSearch, priority, category, assignee],
+  const params = useMemo(
+    () => ({
+      page,
+      limit: PAGE_SIZE,
+      search: debouncedSearch,
+      status,
+      priority,
+      category,
+      assignee,
+    }),
+    [page, debouncedSearch, status, priority, category, assignee],
   );
+  const ticketQuery = useSupportTickets(params);
+  const urgentQuery = useSupportTickets({
+    page: 1,
+    limit: 1,
+    status: "open",
+    priority: "urgent",
+  });
 
-  const statusCounts = useMemo(
-    () => countSupportTicketsByStatus(searchableTickets),
-    [searchableTickets],
-  );
-
-  const filteredTickets = useMemo(
-    () =>
-      filterSupportTickets(tickets, {
-        status,
-        search: debouncedSearch,
-        priority,
-        category,
-        assignee,
-      }),
-    [tickets, status, debouncedSearch, priority, category, assignee],
-  );
-
-  const urgentCount = useMemo(
-    () =>
-      tickets.filter(
-        (ticket) =>
-          ticket.priority === "urgent" && ticket.status === "open",
-      ).length,
-    [tickets],
-  );
-
-  const total = filteredTickets.length;
+  const visibleTickets = ticketQuery.data?.items ?? [];
+  const total = ticketQuery.data?.total ?? 0;
+  const urgentCount = urgentQuery.data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const startIndex = (currentPage - 1) * PAGE_SIZE;
-  const visibleTickets = filteredTickets.slice(
-    startIndex,
-    startIndex + PAGE_SIZE,
-  );
   const rangeStart = total === 0 ? 0 : startIndex + 1;
   const rangeEnd = Math.min(startIndex + PAGE_SIZE, total);
   const rangeLabel =
@@ -147,6 +124,10 @@ function SupportTicketsPage() {
     priority !== "all" ||
     category !== "all" ||
     assignee !== "all";
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, setPage, totalPages]);
 
   const resetPage = () => setPage(1);
 
@@ -160,7 +141,7 @@ function SupportTicketsPage() {
     resetPage();
   };
 
-  const onPriorityChange = (next: SupportTicketPriority | "all") => {
+  const onPriorityChange = (next: (typeof priority)) => {
     setPriority(next);
     resetPage();
   };
@@ -197,11 +178,22 @@ function SupportTicketsPage() {
     ticketId: string,
     nextStatus: SupportTicketStatus,
   ) => {
-    setTicketStatus(ticketId, nextStatus, actor);
-
-    toast.success(
-      `${ticketId} marked ${TICKET_STATUS_LABELS[nextStatus].toLowerCase()}.`,
-    );
+    void updateSupportTicketStatus(ticketId, nextStatus)
+      .then(() => {
+        toast.success(
+          `${ticketId} marked ${TICKET_STATUS_LABELS[nextStatus].toLowerCase()}.`,
+        );
+        return queryClient.invalidateQueries({
+          queryKey: queryKeys.supportTickets.all,
+        });
+      })
+      .catch((error: unknown) => {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Could not update the ticket status.",
+        );
+      });
   };
 
   const copyTicketId = async (ticketId: string) => {
@@ -213,16 +205,60 @@ function SupportTicketsPage() {
     }
   };
 
-  const exportTickets = () => {
-    if (filteredTickets.length === 0) {
+  const exportTickets = async () => {
+    if (total === 0) {
       toast.error("There are no tickets to export.");
       return;
     }
 
-    downloadSupportTicketsCsv(filteredTickets);
-    toast.success(
-      `Exported ${filteredTickets.length} ticket${filteredTickets.length === 1 ? "" : "s"}.`,
-    );
+    setIsExporting(true);
+    try {
+      const filters = {
+        search: debouncedSearch,
+        status,
+        priority,
+        category,
+        assignee,
+      };
+      const exported = [];
+      const seen = new Set<string>();
+      let exportPage = 1;
+      let exportTotal = total;
+
+      while (exported.length < exportTotal) {
+        const result = await listSupportTickets({
+          ...filters,
+          page: exportPage,
+          limit: 100,
+        });
+        const newItems = result.items.filter((ticket) => !seen.has(ticket.id));
+        if (newItems.length === 0) break;
+        newItems.forEach((ticket) => seen.add(ticket.id));
+        exported.push(...newItems);
+        exportTotal = result.total;
+        exportPage += 1;
+      }
+
+      if (exported.length === 0) {
+        toast.error("No tickets were returned for export.");
+        return;
+      }
+      if (exported.length < exportTotal) {
+        throw new Error(
+          "The ticket list did not return every matching record. Please try exporting again.",
+        );
+      }
+      downloadSupportTicketsCsv(exported);
+      toast.success(
+        `Exported ${exported.length} ticket${exported.length === 1 ? "" : "s"}.`,
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not export tickets.",
+      );
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -234,6 +270,21 @@ function SupportTicketsPage() {
         <p className="mt-1 text-sm text-slate-500">
           Review and respond to rider and driver support requests.
         </p>
+      </div>
+
+      {urgentQuery.isError && (
+        <p role="status" className="text-sm text-rose-700">
+          Could not load the urgent ticket count.
+        </p>
+      )}
+
+      <div className="flex justify-end">
+        <Button asChild size="sm">
+          <Link href="/support-tickets/new">
+            <Plus className="size-4" aria-hidden="true" />
+            Create ticket
+          </Link>
+        </Button>
       </div>
 
       <div
@@ -256,15 +307,6 @@ function SupportTicketsPage() {
               }`}
             >
               {tab.label}
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                  active
-                    ? "bg-slate-900 text-white"
-                    : "bg-slate-100 text-slate-500"
-                }`}
-              >
-                {statusCounts[tab.value]}
-              </span>
             </button>
           );
         })}
@@ -290,9 +332,7 @@ function SupportTicketsPage() {
           <select
             value={priority}
             onChange={(event) =>
-              onPriorityChange(
-                event.target.value as SupportTicketPriority | "all",
-              )
+              onPriorityChange(event.target.value as typeof priority)
             }
             aria-label="Filter tickets by priority"
             className={`${controlClass} pl-3 pr-8`}
@@ -376,11 +416,11 @@ function SupportTicketsPage() {
             variant="outline"
             size="sm"
             onClick={exportTickets}
-            disabled={total === 0}
+            disabled={total === 0 || isExporting}
             className="h-auto border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
           >
             <Download className="size-3.5" aria-hidden="true" />
-            Export
+            {isExporting ? "Exporting…" : "Export"}
           </Button>
         </div>
 
@@ -399,6 +439,38 @@ function SupportTicketsPage() {
           </TableHeader>
 
           <TableBody>
+            {ticketQuery.isError && (
+              <TableRow className="hover:bg-transparent">
+                <TableCell
+                  colSpan={6}
+                  className="px-4 py-12 text-center whitespace-normal"
+                >
+                  <p className="text-sm font-medium text-rose-700">
+                    {ticketQuery.error instanceof Error
+                      ? ticketQuery.error.message
+                      : "Support tickets could not be loaded."}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void ticketQuery.refetch()}
+                    className="mt-3"
+                  >
+                    Try again
+                  </Button>
+                </TableCell>
+              </TableRow>
+            )}
+            {ticketQuery.isPending && (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={6} className="px-4 py-12 text-center">
+                  <span className="text-sm text-slate-500">
+                    Loading support tickets…
+                  </span>
+                </TableCell>
+              </TableRow>
+            )}
             {visibleTickets.map((ticket) => (
               <TableRow key={ticket.id}>
                 <TableCell>
@@ -408,7 +480,7 @@ function SupportTicketsPage() {
                 </TableCell>
                 <TableCell className="max-w-120 whitespace-normal">
                   <Link
-                    href={`/support-tickets/${ticket.id}`}
+                    href={`/support-tickets/${encodeURIComponent(ticket.id)}`}
                     className="block max-w-[16rem] truncate font-medium text-slate-900 transition-colors hover:text-brand-600 sm:max-w-104"
                   >
                     {ticket.subject}
@@ -459,7 +531,9 @@ function SupportTicketsPage() {
                         asChild
                         className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                       >
-                        <Link href={`/support-tickets/${ticket.id}`}>
+                        <Link
+                          href={`/support-tickets/${encodeURIComponent(ticket.id)}`}
+                        >
                           <Eye className="size-3.5" aria-hidden="true" />
                           View ticket
                         </Link>
@@ -517,7 +591,9 @@ function SupportTicketsPage() {
               </TableRow>
             ))}
 
-            {visibleTickets.length === 0 && (
+            {!ticketQuery.isError &&
+              !ticketQuery.isPending &&
+              visibleTickets.length === 0 && (
               <TableRow className="hover:bg-transparent">
                 <TableCell
                   colSpan={6}

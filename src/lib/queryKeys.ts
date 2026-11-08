@@ -59,4 +59,10 @@ export const queryKeys = {
   me: {
     all: ["me"],
   },
+  supportTickets: {
+    all: ["support-tickets"],
+    list: (params) => ["support-tickets", "list", params],
+    detail: (ticketId) => ["support-tickets", "detail", ticketId],
+    agents: ["support-tickets", "agents"],
+  },
 };
