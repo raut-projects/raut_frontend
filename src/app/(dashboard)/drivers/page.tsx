@@ -610,7 +610,7 @@ function Drivers() {
                       <p className="max-w-48 truncate font-medium text-slate-900">
                         {r.name}
                       </p>
-                      <p className="mt-0.5 text-xs text-slate-500">{r.phone}</p>
+                      {/* <p className="mt-0.5 text-xs text-slate-500">{r.phone}</p>
                       <span className="mt-1 inline-flex items-center gap-1.5 text-xs text-slate-500">
                         <span
                           className={`h-1.5 w-1.5 rounded-full ${
