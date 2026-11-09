@@ -1,0 +1,210 @@
+
+name: RAUT Frontend — CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+
+  pull_request:
+    branches:
+      - main
+      - staging
+
+env:
+  NODE_VERSION: "20.x"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production bundle
+        run: npm run build
+
+  build-and-push-image:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [lint, build]
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/frontend
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VITE_API_URL=https://api.server.raut.app
+
+  deploy-production:
+    name: Deploy to Production VPS
+    runs-on: ubuntu-latest
+    needs: [build-and-push-image]
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+
+            mkdir -p /opt/raut_frontend
+
+            if [ ! -f /opt/raut_frontend/.env.production ]; then
+              echo "ERROR: .env.production does not exist!"
+              exit 1
+            fi
+
+            cat > /opt/raut_frontend/docker-compose.yml <<'EOF'
+            services:
+              frontend:
+                image: ghcr.io/${{ github.repository }}/frontend:latest
+                container_name: raut-frontend
+                restart: unless-stopped
+                ports:
+                  - "3000:80"
+                healthcheck:
+                  test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+                  interval: 30s
+                  timeout: 3s
+                  start_period: 5s
+                  retries: 3
+                labels:
+                  - "com.raut.service=frontend"
+                  - "com.raut.environment=production"
+            EOF
+
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io \
+              -u "${{ github.actor }}" --password-stdin
+
+            cd /opt/raut_frontend
+
+            docker compose pull
+            docker compose up -d
+
+            echo "Waiting for frontend to start..."
+            sleep 10
+
+            if ! docker ps --filter "name=raut-frontend" --filter "status=running" | grep -q raut-frontend; then
+              echo "ERROR: Frontend container is not running"
+              docker logs raut-frontend --tail 50
+              exit 1
+            fi
+
+            CURRENT_IMAGE=$(docker inspect raut-frontend --format '{{.Config.Image}}')
+            EXPECTED_IMAGE="ghcr.io/${{ github.repository }}/frontend:latest"
+
+            if [ "$CURRENT_IMAGE" != "$EXPECTED_IMAGE" ]; then
+              echo "ERROR: Container using wrong image"
+              exit 1
+            fi
+
+            echo "Waiting for health check..."
+
+            for i in {1..10}; do
+              HEALTH=$(docker inspect raut-frontend --format '{{.State.Health.Status}}' 2>/dev/null || echo "none")
+
+              if [ "$HEALTH" = "healthy" ]; then
+                echo "Frontend is healthy!"
+                break
+              fi
+
+              if [ "$i" -eq 10 ]; then
+                echo "ERROR: Frontend failed health check"
+                docker logs raut-frontend --tail 50
+                exit 1
+              fi
+
+              sleep 3
+            done
+
+            if ! curl -f -s http://localhost:3000 > /dev/null; then
+              echo "ERROR: Frontend is not responding"
+              docker logs raut-frontend --tail 50
+              exit 1
+            fi
+
+            echo "Frontend deployment verified successfully"
+
+      - name: Deployment notification
+        if: success()
+        run: |
+          echo "RAUT Frontend deployed to Production successfully"
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Image: ghcr.io/${{ github.repository }}/frontend:latest"
+
+      - name: Deployment failed
+        if: failure()
+        run: |
+          echo "RAUT Frontend production deployment failed"
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
