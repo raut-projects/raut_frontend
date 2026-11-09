@@ -6,25 +6,14 @@ import type {
   PromotionListResult,
   PromotionPayload,
   PromotionStatus,
-  Referral,
-  ReferralConfig,
-  ReferralConfigFormValues,
-  ReferralLeader,
-  ReferralListParams,
-  ReferralListResult,
-  ReferralOverview,
-  ReferralStats,
 } from "@/lib/marketing";
 import {
   MARKETING_USES_MOCK_DATA,
   mockCreatePromotion,
   mockDeletePromotion,
   mockGetPromotion,
-  mockGetReferralOverview,
   mockListPromotions,
-  mockListReferrals,
   mockUpdatePromotion,
-  mockUpdateReferralConfig,
 } from "@/lib/mockMarketing";
 import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
 
@@ -86,23 +75,6 @@ const listItems = (data: unknown, ...keys: string[]) => {
   return objectArray(items);
 };
 
-const nameFrom = (value: unknown) => {
-  if (typeof value === "string") return value;
-  const record = asRecord(value);
-  const direct = text(
-    firstValue(record, "name", "full_name", "fullName", "display_name"),
-  );
-
-  if (direct) return direct;
-
-  return [
-    text(firstValue(record, "first_name", "firstName")),
-    text(firstValue(record, "last_name", "lastName")),
-  ]
-    .filter(Boolean)
-    .join(" ");
-};
-
 const normalizeDiscountType = (value: unknown): DiscountType => {
   const type = text(value).toLowerCase().replace(/[-\s]/g, "_");
 
@@ -142,19 +114,6 @@ const normalizeStatus = (
   if (Number.isFinite(start) && start > now) return "scheduled";
 
   return "active";
-};
-
-const normalizeUserType = (
-  value: unknown,
-): ReferralLeader["userType"] => {
-  const type = text(value).toLowerCase();
-
-  if (type === "driver") return "driver";
-  if (type === "rider" || type === "customer" || type === "passenger") {
-    return "rider";
-  }
-
-  return "other";
 };
 
 export function mapPromotion(value: unknown): Promotion {
@@ -340,267 +299,4 @@ export async function deletePromotion(promotionId: string) {
   if (MARKETING_USES_MOCK_DATA) return mockDeletePromotion(promotionId);
 
   return apiDelete(API_ROUTES.marketingPromotion(promotionId));
-}
-
-function mapReferralStats(value: unknown): ReferralStats {
-  const record = asRecord(value);
-
-  return {
-    totalReferrals: number(
-      firstValue(record, "total_referrals", "totalReferrals", "total", "shared"),
-    ),
-    successfulReferrals: number(
-      firstValue(
-        record,
-        "successful_referrals",
-        "successfulReferrals",
-        "successful",
-        "converted",
-      ),
-    ),
-    rewardsPaidTzs: number(
-      firstValue(record, "rewards_paid_tzs", "rewardsPaidTzs", "rewards_paid", "rewardsPaid"),
-    ),
-    newUserLtvTzs: number(
-      firstValue(
-        record,
-        "new_user_ltv_tzs",
-        "newUserLtvTzs",
-        "new_user_ltv",
-        "newUserLtv",
-        "average_ltv_tzs",
-      ),
-    ),
-    averageRidesPerUser: optionalNumber(
-      firstValue(
-        record,
-        "average_rides_per_user",
-        "averageRidesPerUser",
-        "avg_rides_per_user",
-        "avgRidesPerUser",
-      ),
-    ),
-    roiPercent: number(
-      firstValue(record, "roi_percent", "roiPercent", "roi"),
-    ),
-    periodLabel:
-      text(firstValue(record, "period_label", "periodLabel", "period")) ||
-      new Date().toLocaleDateString("en-US", {
-        month: "long",
-        year: "numeric",
-        timeZone: "UTC",
-      }),
-  };
-}
-
-function mapReferralConfig(value: unknown): ReferralConfig {
-  const record = asRecord(value);
-  const status = text(firstValue(record, "status", "state")).toLowerCase();
-
-  return {
-    status: status === "inactive" || status === "disabled" ? "inactive" : "active",
-    referrerRewardTzs: number(
-      firstValue(
-        record,
-        "referrer_reward_tzs",
-        "referrerRewardTzs",
-        "referrer_reward",
-        "referrerReward",
-      ),
-    ),
-    refereeRewardTzs: number(
-      firstValue(
-        record,
-        "referee_reward_tzs",
-        "refereeRewardTzs",
-        "referee_reward",
-        "refereeReward",
-      ),
-    ),
-    maxReferralsPerUser: number(
-      firstValue(
-        record,
-        "max_referrals_per_user",
-        "maxReferralsPerUser",
-        "max_referrals",
-        "maxReferrals",
-      ),
-      50,
-    ),
-    rewardExpiryDays: number(
-      firstValue(
-        record,
-        "reward_expiry_days",
-        "rewardExpiryDays",
-        "expiry_days",
-        "expiryDays",
-      ),
-      30,
-    ),
-  };
-}
-
-function mapReferralLeader(value: unknown, index: number): ReferralLeader {
-  const record = asRecord(value);
-
-  return {
-    id:
-      text(firstValue(record, "id", "user_id", "userId", "referrer_id")) ||
-      `leader-${index}`,
-    name:
-      nameFrom(firstValue(record, "user", "referrer")) ||
-      text(firstValue(record, "name", "referrer_name", "referrerName")) ||
-      "Unknown user",
-    userType: normalizeUserType(
-      firstValue(record, "user_type", "userType", "type", "role"),
-    ),
-    referrals: number(
-      firstValue(record, "referrals", "referral_count", "referralCount", "count"),
-    ),
-    rewardsTzs: number(
-      firstValue(record, "rewards_tzs", "rewardsTzs", "earned_tzs", "earnedTzs"),
-    ),
-  };
-}
-
-export async function getReferralOverview(
-  period = "month",
-): Promise<ReferralOverview> {
-  if (MARKETING_USES_MOCK_DATA) return mockGetReferralOverview(period);
-
-  const data = await apiGet(API_ROUTES.marketingReferralOverview, {
-    params: { period },
-  });
-  const record = asRecord(data);
-  const stats = asRecord(
-    firstValue(record, "stats", "statistics") ?? record,
-  );
-  const config = asRecord(
-    firstValue(record, "config", "program", "program_config", "programConfig") ?? record,
-  );
-  const leaders = objectArray(
-    firstValue(
-      record,
-      "top_referrers",
-      "topReferrers",
-      "leaderboard",
-      "top_users",
-      "topUsers",
-    ),
-  );
-
-  return {
-    stats: mapReferralStats(stats),
-    config: mapReferralConfig(config),
-    topReferrers: leaders.map(mapReferralLeader),
-  };
-}
-
-function mapReferral(value: unknown): Referral {
-  const record = asRecord(value);
-  const referrerValue = firstValue(record, "referrer", "referrer_user");
-  const refereeValue = firstValue(record, "referee", "referee_user");
-  const referrer = asRecord(referrerValue);
-  const referee = asRecord(refereeValue);
-
-  return {
-    id: requiredText(record, "id", "referral_id", "referralId", "reference"),
-    referrerName:
-      nameFrom(referrerValue) ||
-      text(firstValue(record, "referrer_name", "referrerName")) ||
-      "Unknown",
-    referrerId:
-      text(
-        firstValue(referrer, "id", "user_id", "userId") ??
-          firstValue(record, "referrer_id", "referrerId"),
-      ) || undefined,
-    referrerType: normalizeUserType(
-      firstValue(referrer, "type", "role", "user_type") ??
-        firstValue(record, "referrer_type", "referrerType"),
-    ),
-    refereeName:
-      nameFrom(refereeValue) ||
-      text(firstValue(record, "referee_name", "refereeName")) ||
-      "Unknown",
-    refereeId:
-      text(
-        firstValue(referee, "id", "user_id", "userId") ??
-          firstValue(record, "referee_id", "refereeId"),
-      ) || undefined,
-    createdAt: text(
-      firstValue(record, "created_at", "createdAt", "date", "referred_at"),
-    ),
-    status:
-      text(firstValue(record, "status", "reward_status", "rewardStatus")).toLowerCase() ||
-      "pending",
-    referrerRewardTzs: number(
-      firstValue(
-        record,
-        "referrer_reward_tzs",
-        "referrerRewardTzs",
-        "referrer_reward",
-        "referrerReward",
-      ),
-    ),
-    refereeRewardTzs: number(
-      firstValue(
-        record,
-        "referee_reward_tzs",
-        "refereeRewardTzs",
-        "referee_reward",
-        "refereeReward",
-      ),
-    ),
-  };
-}
-
-export async function listReferrals(
-  params: ReferralListParams = {},
-): Promise<ReferralListResult> {
-  if (MARKETING_USES_MOCK_DATA) return mockListReferrals(params);
-
-  const page = params.page ?? 1;
-  const limit = params.limit ?? 25;
-  const data = await apiGet(API_ROUTES.marketingReferrals, {
-    params: {
-      page,
-      page_size: limit,
-      search: params.search?.trim() || undefined,
-      status:
-        params.status && params.status !== "all" ? params.status : undefined,
-      from: params.from || undefined,
-      to: params.to || undefined,
-    },
-  });
-  const record = asRecord(data);
-  const items = listItems(data, "referrals").map(mapReferral);
-  const pagination = asRecord(
-    record.pagination ?? asRecord(record.meta).pagination,
-  );
-  const total = Number(
-    firstValue(pagination, "total_items", "total_count", "total") ??
-      firstValue(record, "total", "total_count", "total_items") ??
-      items.length,
-  );
-
-  return {
-    items,
-    total: Number.isFinite(total) ? total : items.length,
-    page,
-    limit,
-  };
-}
-
-export async function updateReferralConfig(
-  config: ReferralConfigFormValues,
-) {
-  if (MARKETING_USES_MOCK_DATA) return mockUpdateReferralConfig(config);
-
-  return apiPatch(API_ROUTES.marketingReferralConfig, {
-    status: config.status,
-    referrer_reward_tzs: Number(config.referrerRewardTzs),
-    referee_reward_tzs: Number(config.refereeRewardTzs),
-    max_referrals_per_user: Number(config.maxReferralsPerUser),
-    reward_expiry_days: Number(config.rewardExpiryDays),
-  });
 }

@@ -3,6 +3,11 @@ import { create } from "zustand";
 import type { AdminUserStatus } from "@/lib/adminUsers";
 import type { PromotionTab } from "@/lib/marketing";
 import type {
+  ReferralCodeTab,
+  ReferralDatePreset,
+  ReferralUserTypeFilter,
+} from "@/lib/referralCodes";
+import type {
   SupportTicketPriority,
   SupportTicketStatus,
 } from "@/lib/supportTickets";
@@ -68,12 +73,13 @@ type PageViewValues = {
     page: number;
   };
   marketingReferrals: {
-    status: string;
+    status: ReferralCodeTab;
     search: string;
+    type: ReferralUserTypeFilter;
+    range: ReferralDatePreset;
     from: string;
     to: string;
     page: number;
-    expanded: boolean;
   };
   adminUsers: {
     status: AdminUserStatus;
@@ -159,10 +165,11 @@ function createInitialViews(): PageViewValues {
     marketingReferrals: {
       status: "all",
       search: "",
+      type: "all",
+      range: "all",
       from: "",
       to: "",
       page: 1,
-      expanded: false,
     },
     adminUsers: {
       status: "active",
@@ -204,7 +211,9 @@ export function usePageViewField<
   (
     value:
       | PageViewValues[Page][Field]
-      | ((previous: PageViewValues[Page][Field]) => PageViewValues[Page][Field]),
+      | ((
+          previous: PageViewValues[Page][Field],
+        ) => PageViewValues[Page][Field]),
   ) => void,
 ] {
   const value = usePageViewStore((state) => state.views[page][field]);
@@ -212,10 +221,11 @@ export function usePageViewField<
     (
       nextValue:
         | PageViewValues[Page][Field]
-        | ((previous: PageViewValues[Page][Field]) => PageViewValues[Page][Field]),
+        | ((
+            previous: PageViewValues[Page][Field],
+          ) => PageViewValues[Page][Field]),
     ) => {
-      const currentValue =
-        usePageViewStore.getState().views[page][field];
+      const currentValue = usePageViewStore.getState().views[page][field];
 
       usePageViewStore
         .getState()

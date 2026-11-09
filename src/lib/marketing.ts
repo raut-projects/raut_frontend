@@ -105,82 +105,6 @@ export type PromotionPayload = {
   status: Exclude<PromotionStatus, "expired">;
 };
 
-export type ReferralProgramStatus = "active" | "inactive";
-
-export type ReferralConfig = {
-  status: ReferralProgramStatus;
-  referrerRewardTzs: number;
-  refereeRewardTzs: number;
-  maxReferralsPerUser: number;
-  rewardExpiryDays: number;
-};
-
-export type ReferralConfigFormValues = {
-  status: ReferralProgramStatus;
-  referrerRewardTzs: string;
-  refereeRewardTzs: string;
-  maxReferralsPerUser: string;
-  rewardExpiryDays: string;
-};
-
-export type ReferralStats = {
-  totalReferrals: number;
-  successfulReferrals: number;
-  rewardsPaidTzs: number;
-  newUserLtvTzs: number;
-  averageRidesPerUser?: number;
-  roiPercent: number;
-  periodLabel: string;
-};
-
-export type ReferralLeader = {
-  id: string;
-  name: string;
-  userType: "rider" | "driver" | "other";
-  referrals: number;
-  rewardsTzs: number;
-};
-
-export type ReferralOverview = {
-  stats: ReferralStats;
-  config: ReferralConfig;
-  topReferrers: ReferralLeader[];
-};
-
-export type ReferralRewardStatus = "pending" | "completed" | "expired" | string;
-
-export type Referral = {
-  id: string;
-  referrerName: string;
-  referrerId?: string;
-  referrerType?: "rider" | "driver" | "other";
-  refereeName: string;
-  refereeId?: string;
-  createdAt: string;
-  status: ReferralRewardStatus;
-  referrerRewardTzs: number;
-  refereeRewardTzs: number;
-};
-
-export type ReferralFilters = {
-  status?: string;
-  search?: string;
-  from?: string;
-  to?: string;
-};
-
-export type ReferralListParams = ReferralFilters & {
-  page?: number;
-  limit?: number;
-};
-
-export type ReferralListResult = {
-  items: Referral[];
-  total: number;
-  page: number;
-  limit: number;
-};
-
 export const PROMOTION_STATUS_LABELS: Record<PromotionStatus, string> = {
   active: "Active",
   scheduled: "Scheduled",
@@ -199,14 +123,6 @@ export const DISCOUNT_TYPE_LABELS: Record<DiscountType, string> = {
   percentage: "Percentage off",
   fixed: "Fixed amount",
   free_ride: "Free ride",
-};
-
-export const REFERRAL_STATUS_LABELS: Record<string, string> = {
-  pending: "Pending",
-  completed: "Completed",
-  expired: "Expired",
-  active: "Active",
-  inactive: "Inactive",
 };
 
 export const PROMOTION_DEFAULT_FORM: PromotionFormValues = {
@@ -468,55 +384,4 @@ export function toPromotionPayload(
     in_app_banner: values.inAppBanner,
     status,
   };
-}
-
-const csvEscape = (value: unknown) => {
-  const text = value === null || value === undefined ? "" : String(value);
-
-  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-};
-
-const csvRow = (...cells: unknown[]) => cells.map(csvEscape).join(",");
-
-export function buildReferralsCsv(referrals: Referral[]) {
-  return [
-    csvRow(
-      "Referral ID",
-      "Referrer",
-      "Referrer ID",
-      "Referee",
-      "Referee ID",
-      "Date",
-      "Status",
-      "Referrer reward (TZS)",
-      "Referee reward (TZS)",
-    ),
-    ...referrals.map((referral) =>
-      csvRow(
-        referral.id,
-        referral.referrerName,
-        referral.referrerId ?? "",
-        referral.refereeName,
-        referral.refereeId ?? "",
-        referral.createdAt,
-        referral.status,
-        referral.referrerRewardTzs,
-        referral.refereeRewardTzs,
-      ),
-    ),
-  ].join("\n");
-}
-
-export function downloadReferralsCsv(referrals: Referral[]) {
-  const content = buildReferralsCsv(referrals);
-  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-
-  link.href = url;
-  link.download = `raut-referrals-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
 }

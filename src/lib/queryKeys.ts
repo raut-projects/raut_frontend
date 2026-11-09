@@ -75,12 +75,28 @@ export const queryKeys = {
     promotions: {
       all: ["marketing", "promotions"],
       list: (params) => ["marketing", "promotions", "list", params],
-      detail: (promotionId) => ["marketing", "promotions", "detail", promotionId],
+      detail: (promotionId) => [
+        "marketing",
+        "promotions",
+        "detail",
+        promotionId,
+      ],
     },
     referrals: {
       all: ["marketing", "referrals"],
-      overview: (period) => ["marketing", "referrals", "overview", period],
-      list: (params) => ["marketing", "referrals", "list", params],
+      codes: {
+        all: ["marketing", "referrals", "codes"],
+        list: (params) => ["marketing", "referrals", "codes", "list", params],
+        stats: ["marketing", "referrals", "codes", "stats"],
+        users: (search, userType) => [
+          "marketing",
+          "referrals",
+          "codes",
+          "users",
+          userType,
+          search,
+        ],
+      },
     },
   },
 };

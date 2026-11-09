@@ -1,10 +1,14 @@
-import { API_BASE_URL_RAW } from "./env";
+import { API_BASE_URL_RAW, REFERRAL_BASE_URL_RAW } from "./env";
 
 const rawBaseUrl = API_BASE_URL_RAW;
 
 export const API_BASE_URL = rawBaseUrl.trim().replace(/\/+$/, "");
 
 export const isApiConfigured = Boolean(API_BASE_URL);
+
+export const REFERRAL_BASE_URL = (
+  REFERRAL_BASE_URL_RAW.trim() || "https://raut.app/signup"
+).replace(/\/+$/, "");
 
 export const API_ROUTES = {
   login: "/auth/login",
@@ -55,9 +59,12 @@ export const API_ROUTES = {
   marketingPromotions: "/admin/marketing/promotions",
   marketingPromotion: (promotionId: string) =>
     `/admin/marketing/promotions/${encodeURIComponent(promotionId)}`,
-  marketingReferralOverview: "/admin/marketing/referrals/overview",
-  marketingReferralConfig: "/admin/marketing/referrals/config",
-  marketingReferrals: "/admin/marketing/referrals",
+  marketingReferralCodes: "/admin/marketing/referrals/codes",
+  marketingReferralCodeStats: "/admin/marketing/referrals/codes/stats",
+  marketingReferralCode: (codeId: string) =>
+    `/admin/marketing/referrals/codes/${encodeURIComponent(codeId)}`,
+  marketingReferralCodeSend: (codeId: string) =>
+    `/admin/marketing/referrals/codes/${encodeURIComponent(codeId)}/send`,
 };
 
 // Analytics windows. `day|week|month` is sent as `period` to the analytics

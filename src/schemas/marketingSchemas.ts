@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 const PROMO_CODE_PATTERN = /^[A-Z0-9-]+$/;
+const REFERRAL_CODE_PATTERN = /^[A-Z0-9-]+$/;
 const PEAK_HOURS_PATTERN =
   /[A-Za-z]{3}(?:\s*-\s*[A-Za-z]{3})?\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)?(?:\s*-\s*\d{1,2}(?::\d{2})?\s*(?:am|pm))?/i;
 
@@ -28,7 +29,11 @@ const addNumberIssue = (
 
   if (!trimmed) {
     if (required) {
-      ctx.addIssue({ code: "custom", path: [path], message: `${label} is required` });
+      ctx.addIssue({
+        code: "custom",
+        path: [path],
+        message: `${label} is required`,
+      });
     }
     return;
   }
@@ -36,12 +41,20 @@ const addNumberIssue = (
   const amount = numeric(trimmed);
 
   if (!Number.isFinite(amount)) {
-    ctx.addIssue({ code: "custom", path: [path], message: `${label} must be a number` });
+    ctx.addIssue({
+      code: "custom",
+      path: [path],
+      message: `${label} must be a number`,
+    });
     return;
   }
 
   if (integer && !Number.isInteger(amount)) {
-    ctx.addIssue({ code: "custom", path: [path], message: `${label} must be a whole number` });
+    ctx.addIssue({
+      code: "custom",
+      path: [path],
+      message: `${label} must be a whole number`,
+    });
   }
 
   if (amount < min || amount > max) {
@@ -140,11 +153,19 @@ export const promotionFormSchema = z
     const end = new Date(values.endsAt);
 
     if (Number.isNaN(start.getTime())) {
-      ctx.addIssue({ code: "custom", path: ["startsAt"], message: "Start date is invalid" });
+      ctx.addIssue({
+        code: "custom",
+        path: ["startsAt"],
+        message: "Start date is invalid",
+      });
     }
 
     if (Number.isNaN(end.getTime())) {
-      ctx.addIssue({ code: "custom", path: ["endsAt"], message: "End date is invalid" });
+      ctx.addIssue({
+        code: "custom",
+        path: ["endsAt"],
+        message: "End date is invalid",
+      });
     }
 
     if (
@@ -220,33 +241,167 @@ export const promotionFormSchema = z
 
 export type PromotionFormSchema = z.infer<typeof promotionFormSchema>;
 
-export const referralConfigSchema = z.object({
-  status: z.enum(["active", "inactive"]),
-  referrerRewardTzs: z.string(),
-  refereeRewardTzs: z.string(),
-  maxReferralsPerUser: z.string(),
-  rewardExpiryDays: z.string(),
-}).superRefine((values, ctx) => {
-  addNumberIssue(values.referrerRewardTzs, "referrerRewardTzs", ctx, {
-    label: "Referrer reward",
-    min: 0,
-  });
-  addNumberIssue(values.refereeRewardTzs, "refereeRewardTzs", ctx, {
-    label: "Referee reward",
-    min: 0,
-  });
-  addNumberIssue(values.maxReferralsPerUser, "maxReferralsPerUser", ctx, {
-    label: "Max referrals per user",
-    min: 1,
-    max: 1000,
-    integer: true,
-  });
-  addNumberIssue(values.rewardExpiryDays, "rewardExpiryDays", ctx, {
-    label: "Reward expiry",
-    min: 1,
-    max: 365,
-    integer: true,
-  });
-});
+export const referralCodeSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(2, "Referral name needs at least 2 characters")
+      .max(100, "Referral name must be 100 characters or fewer"),
+    assignedUserId: z.string().min(1, "Select a rider or driver"),
+    userType: z.enum(["rider", "driver"]),
+    code: z
+      .string()
+      .trim()
+      .min(3, "Referral code needs at least 3 characters")
+      .max(20, "Referral code must be 20 characters or fewer")
+      .regex(REFERRAL_CODE_PATTERN, "Use only letters, numbers and hyphens"),
+    referrerRewardTzs: z.string(),
+    newUserRewardTzs: z.string(),
+    rewardType: z.enum(["ride_credit", "cash_credit", "discount"]),
+    maxUses: z.string(),
+    expiryDate: z.string().min(1, "Expiry date is required"),
+    status: z.enum(["active", "inactive"]),
+  })
+  .superRefine((values, ctx) => {
+    addNumberIssue(values.referrerRewardTzs, "referrerRewardTzs", ctx, {
+      label: "Referrer reward",
+      min: 0,
+    });
+    addNumberIssue(values.newUserRewardTzs, "newUserRewardTzs", ctx, {
+      label: "New user reward",
+      min: 0,
+    });
+    addNumberIssue(values.maxUses, "maxUses", ctx, {
+      label: "Maximum uses",
+      min: 1,
+      max: 1000,
+      integer: true,
+    });
 
-export type ReferralConfigSchema = z.infer<typeof referralConfigSchema>;
+    const expiry = new Date(`${values.expiryDate}T00:00:00`);
+
+    if (Number.isNaN(expiry.getTime())) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["expiryDate"],
+        message: "Expiry date is invalid",
+      });
+      return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (expiry.getTime() < today.getTime()) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["expiryDate"],
+        message: "Expiry date cannot be in the past",
+      });
+    }
+  });
+
+export type ReferralCodeSchema = z.infer<typeof referralCodeSchema>;
+
+export const referralCodeEditSchema = z
+  .object({
+    maxUses: z.string(),
+    expiryDate: z.string().min(1, "Expiry date is required"),
+  })
+  .superRefine((values, ctx) => {
+    addNumberIssue(values.maxUses, "maxUses", ctx, {
+      label: "Maximum uses",
+      min: 1,
+      max: 1000,
+      integer: true,
+    });
+
+    const expiry = new Date(`${values.expiryDate}T00:00:00`);
+
+    if (Number.isNaN(expiry.getTime())) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["expiryDate"],
+        message: "Expiry date is invalid",
+      });
+      return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (expiry.getTime() < today.getTime()) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["expiryDate"],
+        message: "Expiry date cannot be in the past",
+      });
+    }
+  });
+
+export type ReferralCodeEditSchema = z.infer<typeof referralCodeEditSchema>;
+
+export const referralCodeBulkEditSchema = z
+  .object({
+    updateExpiry: z.boolean(),
+    expiryDate: z.string(),
+    updateMaxUses: z.boolean(),
+    maxUses: z.string(),
+  })
+  .superRefine((values, ctx) => {
+    if (!values.updateExpiry && !values.updateMaxUses) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["form"],
+        message: "Choose at least one setting to update",
+      });
+      return;
+    }
+
+    if (values.updateMaxUses) {
+      addNumberIssue(values.maxUses, "maxUses", ctx, {
+        label: "Maximum uses",
+        min: 1,
+        max: 1000,
+        integer: true,
+      });
+    }
+
+    if (!values.updateExpiry) return;
+
+    if (!values.expiryDate) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["expiryDate"],
+        message: "Expiry date is required",
+      });
+      return;
+    }
+
+    const expiry = new Date(`${values.expiryDate}T00:00:00`);
+
+    if (Number.isNaN(expiry.getTime())) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["expiryDate"],
+        message: "Expiry date is invalid",
+      });
+      return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (expiry.getTime() < today.getTime()) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["expiryDate"],
+        message: "Expiry date cannot be in the past",
+      });
+    }
+  });
+
+export type ReferralCodeBulkEditSchema = z.infer<
+  typeof referralCodeBulkEditSchema
+>;
