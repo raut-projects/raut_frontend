@@ -2,6 +2,7 @@ export const queryKeys = {
   customers: {
     all: ["customers"],
     list: (params) => ["customers", "list", params],
+    stats: ["customers", "stats"],
   },
   drivers: {
     all: ["drivers"],
