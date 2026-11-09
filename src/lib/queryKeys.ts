@@ -100,4 +100,25 @@ export const queryKeys = {
       },
     },
   },
+  referrals: {
+    all: ["referrals"],
+    programs: {
+      all: ["referrals", "programs"],
+      list: (params) => ["referrals", "programs", "list", params],
+      detail: (programId) => ["referrals", "programs", "detail", programId],
+    },
+    users: {
+      all: ["referrals", "users"],
+      list: (params) => ["referrals", "users", "list", params],
+      detail: (userId) => ["referrals", "users", "detail", userId],
+    },
+    relationships: {
+      all: ["referrals", "relationships"],
+      list: (params) => ["referrals", "relationships", "list", params],
+    },
+    stats: (params) => ["referrals", "stats", params],
+    topReferrers: (limit) => ["referrals", "top-referrers", limit],
+    pendingPayments: ["referrals", "payments", "pending"],
+    myCode: ["referrals", "my-code"],
+  },
 };

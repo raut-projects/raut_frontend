@@ -14,16 +14,6 @@ import {
   type ReferralSendChannel,
   type ReferralUserType,
 } from "@/lib/referralCodes";
-import {
-  MARKETING_USES_MOCK_DATA,
-  mockCreateReferralCode,
-  mockDeleteReferralCode,
-  mockGetReferralCodeStats,
-  mockListReferralCodes,
-  mockSearchReferralUsers,
-  mockSendReferralCode,
-  mockUpdateReferralCode,
-} from "@/lib/mockReferralCodes";
 import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
 
 type RecordValue = Record<string, unknown>;
@@ -402,8 +392,6 @@ function mapReferralUser(
 export async function listReferralCodes(
   params: ReferralCodeListParams = {},
 ): Promise<ReferralCodeListResult> {
-  if (MARKETING_USES_MOCK_DATA) return mockListReferralCodes(params);
-
   const page = params.page ?? 1;
   const limit = params.limit ?? 10;
   const data = await apiGet(API_ROUTES.marketingReferralCodes, {
@@ -433,8 +421,6 @@ export async function listReferralCodes(
 }
 
 export async function getReferralCodeStats(): Promise<ReferralCodeStats> {
-  if (MARKETING_USES_MOCK_DATA) return mockGetReferralCodeStats();
-
   const data = await apiGet(API_ROUTES.marketingReferralCodeStats);
 
   return mapReferralStats(data);
@@ -443,8 +429,6 @@ export async function getReferralCodeStats(): Promise<ReferralCodeStats> {
 export async function createReferralCode(
   payload: ReferralCodePayload,
 ): Promise<ReferralCode> {
-  if (MARKETING_USES_MOCK_DATA) return mockCreateReferralCode(payload);
-
   const data = await apiPost(API_ROUTES.marketingReferralCodes, payload);
   const record = asRecord(data);
   const createdValue =
@@ -508,10 +492,6 @@ export async function updateReferralCode(
   code: ReferralCode,
   payload: ReferralCodeUpdatePayload,
 ): Promise<ReferralCode> {
-  if (MARKETING_USES_MOCK_DATA) {
-    return mockUpdateReferralCode(code.id, payload);
-  }
-
   const data = await apiPatch(API_ROUTES.marketingReferralCode(code.id), payload);
   const record = asRecord(data);
   const updatedValue = firstValue(
@@ -575,8 +555,6 @@ export async function updateReferralCode(
 }
 
 export async function deleteReferralCode(codeId: string): Promise<void> {
-  if (MARKETING_USES_MOCK_DATA) return mockDeleteReferralCode(codeId);
-
   await apiDelete(API_ROUTES.marketingReferralCode(codeId));
 }
 
@@ -584,10 +562,6 @@ export async function sendReferralCode(
   codeId: string,
   channel: ReferralSendChannel,
 ): Promise<void> {
-  if (MARKETING_USES_MOCK_DATA) {
-    return mockSendReferralCode(codeId, channel);
-  }
-
   await apiPost(API_ROUTES.marketingReferralCodeSend(codeId), { channel });
 }
 
@@ -603,10 +577,6 @@ export async function searchReferralUsers({
   const query = search.trim();
 
   if (query.length < 2) return [];
-
-  if (MARKETING_USES_MOCK_DATA) {
-    return mockSearchReferralUsers({ search: query, userType, limit });
-  }
 
   const data = await apiGet(API_ROUTES.users, {
     params: {

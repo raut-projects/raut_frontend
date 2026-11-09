@@ -65,6 +65,26 @@ export const API_ROUTES = {
     `/admin/marketing/referrals/codes/${encodeURIComponent(codeId)}`,
   marketingReferralCodeSend: (codeId: string) =>
     `/admin/marketing/referrals/codes/${encodeURIComponent(codeId)}/send`,
+  referralPrograms: "/referrals/programs",
+  referralProgram: (programId: string) =>
+    `/referrals/programs/${encodeURIComponent(programId)}`,
+  referralProgramEnroll: (programId: string) =>
+    `/referrals/programs/${encodeURIComponent(programId)}/enroll`,
+  referralProgramBulkEnroll: (programId: string) =>
+    `/referrals/programs/${encodeURIComponent(programId)}/enroll/bulk`,
+  referralProgramUserEnrollment: (programId: string, userId: string) =>
+    `/referrals/programs/${encodeURIComponent(programId)}/enroll/${encodeURIComponent(userId)}`,
+  referralUsers: "/referrals/users",
+  referralUser: (userId: string) =>
+    `/referrals/users/${encodeURIComponent(userId)}`,
+  referralRelationships: "/referrals/relationships",
+  referralStats: "/referrals/stats",
+  referralTopReferrers: "/referrals/top-referrers",
+  referralPendingPayments: "/referrals/payments/pending",
+  referralPaymentPay: (paymentId: string) =>
+    `/referrals/payments/${encodeURIComponent(paymentId)}/pay`,
+  myReferralCode: "/referrals/my-code",
+  processReferral: "/referrals/process",
 };
 
 // Analytics windows. `day|week|month` is sent as `period` to the analytics
