@@ -30,12 +30,12 @@ function CardSkeleton() {
       <Skeleton className="h-4 w-2/3 bg-slate-200" />
       <Skeleton className="h-3 w-full bg-slate-100" />
       <div className="grid grid-cols-2 gap-3">
-        {Array.from({ length: 4 }, (_, index) => (
-          <div key={index} className="space-y-2">
+        { Array.from({ length: 4 }, (_, index) => (
+          <div key={ index } className="space-y-2">
             <Skeleton className="h-2.5 w-16 bg-slate-200" />
             <Skeleton className="h-3.5 w-full bg-slate-100" />
           </div>
-        ))}
+        )) }
       </div>
       <Skeleton className="h-9 w-full bg-slate-100" />
     </div>
@@ -106,14 +106,27 @@ export default function MarketingPage() {
             Create and manage rider promotions, discounts and referral rewards.
           </p>
         </div>
-        <RefreshIndicator
-          isFetching={query.isFetching}
-          updatedAt={query.dataUpdatedAt}
-          onRefresh={() => void query.refetch()}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            onClick={ () => void setPage(1) }
+            className="h-9 px-3 text-sm font-semibold"
+          >
+            <Link href="/marketing/promotions/new" className="flex items-center gap-2">
+              <Plus className="size-4" aria-hidden="true" />
+              Create New Promotion
+            </Link>
+          </Button>
+          <RefreshIndicator
+            isFetching={ query.isFetching }
+            updatedAt={ query.dataUpdatedAt }
+            onRefresh={ () => void query.refetch() }
+          />
+        </div>
       </div>
 
-      <MarketingTabs value={status} onChange={handleTab} />
+      <MarketingTabs value={ status } onChange={ handleTab } />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative w-full sm:max-w-md">
@@ -123,33 +136,33 @@ export default function MarketingPage() {
           />
           <Input
             type="search"
-            value={search}
-            onChange={(event) => {
+            value={ search }
+            onChange={ (event) => {
               setSearch(event.target.value);
               setPage(1);
-            }}
+            } }
             placeholder="Search promotions by code or name."
             aria-label="Search promotions"
             className="h-9 bg-white pl-9"
           />
         </div>
         <p className="text-xs text-slate-500 sm:ml-auto">
-          Showing{" "}
-          <span className="font-semibold text-slate-700">{rangeLabel}</span> of{" "}
-          <span className="font-semibold text-slate-700">{total}</span> promotion
-          {total === 1 ? "" : "s"}
+          Showing{ " " }
+          <span className="font-semibold text-slate-700">{ rangeLabel }</span> of{ " " }
+          <span className="font-semibold text-slate-700">{ total }</span> promotion
+          { total === 1 ? "" : "s" }
         </p>
       </div>
 
-      {query.isError ? (
+      { query.isError ? (
         <div className="rounded-xl border border-slate-200 bg-white shadow-card">
-          <QueryError error={query.error} onRetry={query.refetch} />
+          <QueryError error={ query.error } onRetry={ query.refetch } />
         </div>
       ) : query.isPending ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }, (_, index) => (
-            <CardSkeleton key={index} />
-          ))}
+          { Array.from({ length: 6 }, (_, index) => (
+            <CardSkeleton key={ index } />
+          )) }
         </div>
       ) : promotions.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-16 text-center shadow-card">
@@ -158,12 +171,12 @@ export default function MarketingPage() {
           </span>
           <div>
             <p className="text-sm font-semibold text-slate-800">
-              No {status === "draft" ? "drafts" : status} promotions
+              No { status === "draft" ? "drafts" : status } promotions
             </p>
             <p className="mt-1 text-sm text-slate-500">
-              {search.trim()
+              { search.trim()
                 ? "No promotion matches this search. Try another code or name."
-                : "Create a campaign to start rewarding riders."}
+                : "Create a campaign to start rewarding riders." }
             </p>
           </div>
           <Button asChild className="mt-1 bg-brand-600 text-white hover:bg-brand-700">
@@ -175,33 +188,33 @@ export default function MarketingPage() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {promotions.map((promotion) => (
+          { promotions.map((promotion) => (
             <PromotionCard
-              key={promotion.id}
-              promotion={promotion}
-              onDelete={setPendingDelete}
+              key={ promotion.id }
+              promotion={ promotion }
+              onDelete={ setPendingDelete }
               deleting={
                 remove.isPending && pendingDelete?.id === promotion.id
               }
             />
-          ))}
+          )) }
         </div>
-      )}
+      ) }
 
-      {!query.isError && !query.isPending && totalPages > 1 && (
+      { !query.isError && !query.isPending && totalPages > 1 && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-card">
           <p className="text-xs text-slate-500">
-            Page{" "}
-            <span className="font-semibold text-slate-700">{currentPage}</span> of{" "}
-            <span className="font-semibold text-slate-700">{totalPages}</span>
+            Page{ " " }
+            <span className="font-semibold text-slate-700">{ currentPage }</span> of{ " " }
+            <span className="font-semibold text-slate-700">{ totalPages }</span>
           </p>
           <div className="flex gap-2">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage <= 1}
+              onClick={ () => setPage(Math.max(1, currentPage - 1)) }
+              disabled={ currentPage <= 1 }
               className="h-auto border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:text-slate-400 disabled:opacity-100"
             >
               Previous
@@ -210,32 +223,21 @@ export default function MarketingPage() {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage >= totalPages}
+              onClick={ () => setPage(Math.min(totalPages, currentPage + 1)) }
+              disabled={ currentPage >= totalPages }
               className="h-auto border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:text-slate-400 disabled:opacity-100"
             >
               Next
             </Button>
           </div>
         </div>
-      )}
-
-      <Button
-        asChild
-        variant="outline"
-        className="h-12 w-full border-dashed border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50"
-      >
-        <Link href="/marketing/promotions/new">
-          <Plus className="size-4" aria-hidden="true" />
-          Create New Promotion
-        </Link>
-      </Button>
+      ) }
 
       <ConfirmDialog
-        open={Boolean(pendingDelete)}
-        onClose={() => {
+        open={ Boolean(pendingDelete) }
+        onClose={ () => {
           if (!remove.isPending) setPendingDelete(null);
-        }}
+        } }
         title="Delete promotion"
         description={
           pendingDelete
@@ -244,8 +246,8 @@ export default function MarketingPage() {
         }
         confirmLabel="Delete promotion"
         tone="danger"
-        pending={remove.isPending}
-        onConfirm={handleDelete}
+        pending={ remove.isPending }
+        onConfirm={ handleDelete }
       />
     </div>
   );
