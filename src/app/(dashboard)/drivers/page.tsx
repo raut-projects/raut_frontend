@@ -610,24 +610,6 @@ function Drivers() {
                       <p className="max-w-48 truncate font-medium text-slate-900">
                         {r.name}
                       </p>
-                      {/* <p className="mt-0.5 text-xs text-slate-500">{r.phone}</p>
-                      <span className="mt-1 inline-flex items-center gap-1.5 text-xs text-slate-500">
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            r.online === true
-                              ? "bg-emerald-500"
-                              : r.online === false
-                                ? "bg-slate-400"
-                                : "bg-amber-400"
-                          }`}
-                          aria-hidden="true"
-                        />
-                        {r.online === null
-                          ? "Online status unknown"
-                          : r.online
-                            ? "Online"
-                            : "Offline"}
-                      </span>
                     </div>
                   </TableCell>
                   <TableCell>
