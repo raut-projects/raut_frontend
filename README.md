@@ -50,7 +50,7 @@ A separate onboarding route guides drivers through personal, licence, vehicle an
 | Notifications | Unread count in the header, notification panel, mark one/all as read, dismiss notifications |
 | Settings | Read-only profile and access details for the signed-in administrator |
 | Live Rides | Placeholder page; tracking and live-trip data are not implemented yet |
-| Marketing | API-backed promotions list with status tabs (active, scheduled, expired and drafts), search, pagination and delete; create/edit campaigns with discount, eligibility, schedule, usage limits, budget cap and DUO/peak-hour rules; referral program settings, leaderboard, referral history filters and CSV export |
+| Marketing | API-backed promotions list with status tabs (active, scheduled, expired and drafts), search, pagination and delete; create/edit campaigns with discount, eligibility, schedule, usage limits, budget cap and DUO/peak-hour rules; referral programs, user enrollment and referral activity |
 | Support Tickets | API-backed ticket list, creation, search and filters, agent assignment, replies and internal notes, status/priority updates, escalation and CSV export |
 | Admin Users | API-backed admin list with Active/Invited/Deactivated tabs, search and pagination, invite and edit side panels, deactivate/reactivate, and a printable/exportable role permission matrix |
 | Settings subpages | Placeholder pages for Audit Logs, Platform Config and System Health |
@@ -148,7 +148,8 @@ Dashboard comparison is only available when the previous period falls inside the
 | --- | --- | --- | --- |
 | `NEXT_PUBLIC_API_BASE_URL` | Yes | None | Base URL of the Raut backend API, for example `http://localhost:8000`. Trailing slashes are removed automatically. Inlined at build time, so rebuild after changing it. |
 | `NEXT_PUBLIC_ADMIN_ROLES` | No | `admin,super_admin` | Comma-separated list of roles allowed through the admin gate. Values such as `administrator`, `superadmin`, `super-admin` and `owner` are normalized. Other known roles such as `platform_manager`, `operator`, `support`, `analyst`, `finance` and `marketing` are normalized but do not grant access unless added here. Inlined at build time. |
-| `NEXT_PUBLIC_USE_MOCK_MARKETING` | No | `true` | Serves the built-in sample promotions and referrals while the backend marketing endpoints are unavailable. Set to `false` to use the real API. Inlined at build time. |
+| `NEXT_PUBLIC_REFERRAL_BASE_URL` | No | `https://raut.app/signup` | Base URL used to build referral signup links (`{base}?ref=CODE`). Inlined at build time, so rebuild after changing it. |
+| `NEXT_PUBLIC_USE_MOCK_MARKETING` | No | `true` | Serves built-in sample promotions while the promotions API is unavailable. Referral APIs always use the backend. Set to `false` to disable promotion samples. Inlined at build time. |
 | `NEXT_PUBLIC_USE_MOCK_ADMIN_USERS` | No | `true` | Serves the built-in sample admin users while the backend admin-users endpoints are unavailable. Set to `false` to use the real API. Inlined at build time. |
 
 ## Available scripts
@@ -183,7 +184,7 @@ Run `npm run build` before `npm run start` or `npm run preview`.
 | `/marketing` | Admin | API-backed promotion campaigns grouped by status tab, with search, pagination and delete |
 | `/marketing/promotions/new` | Admin | Create a promotion campaign and activate it or save it as a draft |
 | `/marketing/promotions/[id]/edit` | Admin | Edit an existing campaign and save changes or a draft |
-| `/marketing/referrals` | Admin | Referral rewards settings, program on/off, top referrers and expandable referral history with CSV export |
+| `/marketing/referrals` | Admin | Referral-code stats, status tabs, search, user-type/date filters, pagination, Create Referral dialog, shareable Referral Created dialog, row actions and bulk selection actions |
 | `/support-tickets` | Admin | API-backed ticket search, filters, pagination, status actions and CSV export |
 | `/support-tickets/new` | Admin | Create a support ticket for a rider or driver |
 | `/support-tickets/[id]` | Admin | Ticket detail, agent assignment, replies/internal notes, status/priority updates and escalation |
@@ -293,9 +294,7 @@ export const API_ROUTES = {
   analyticsRides: '/admin/analytics/rides',
   analyticsPeakHours: '/admin/analytics/peak-hours',
   marketingPromotions: '/admin/marketing/promotions',
-  marketingReferralOverview: '/admin/marketing/referrals/overview',
-  marketingReferralConfig: '/admin/marketing/referrals/config',
-  marketingReferrals: '/admin/marketing/referrals',
+  users: '/admin/users',
 }
 ```
 
@@ -373,9 +372,23 @@ Raw API records are normalized in `src/services/mappers.ts`. Mappers provide con
 | `GET` | `/admin/marketing/promotions/{id}` | Get a promotion campaign |
 | `PATCH` | `/admin/marketing/promotions/{id}` | Update a promotion campaign |
 | `DELETE` | `/admin/marketing/promotions/{id}` | Delete a promotion campaign |
-| `GET` | `/admin/marketing/referrals/overview` | Referral stats, program config and top referrers (`period=month`) |
-| `PATCH` | `/admin/marketing/referrals/config` | Update referral program status and rewards |
-| `GET` | `/admin/marketing/referrals` | List referral history (`status`, `search`, `from`, `to`, `page`, `page_size`) |
+| `POST` | `/referrals/programs` | Create a referral program |
+| `GET` | `/referrals/programs` | List referral programs (`active_only`) |
+| `GET` | `/referrals/programs/{program_id}` | Get a referral program |
+| `PUT` | `/referrals/programs/{program_id}` | Update a referral program |
+| `POST` | `/referrals/programs/{program_id}/enroll` | Enroll a user (`user_id`) |
+| `POST` | `/referrals/programs/{program_id}/enroll/bulk` | Bulk enroll users (`user_ids`) |
+| `DELETE` | `/referrals/programs/{program_id}/enroll/{user_id}` | Unenroll a user |
+| `GET` | `/referrals/users` | List users with referral codes (`limit`, `offset`) |
+| `GET` | `/referrals/users/{user_id}` | Get a user's referral details |
+| `GET` | `/referrals/relationships` | List relationships (`limit`, `offset`, `status`) |
+| `GET` | `/referrals/stats` | Referral stats (`period`) |
+| `GET` | `/referrals/top-referrers` | Top referrers (`limit`) |
+| `GET` | `/referrals/payments/pending` | List pending referral payments |
+| `POST` | `/referrals/payments/{payment_id}/pay` | Mark payment as paid |
+| `GET` | `/referrals/my-code` | Get the authenticated user's referral code |
+| `POST` | `/referrals/process` | Process a referral code |
+| `GET` | `/admin/users` | Search riders and drivers for referral assignment (`search`, `is_driver`, `page`, `page_size`) |
 | `GET` | `/admin/analytics/overview` | Aggregate dashboard metrics |
 | `GET` | `/admin/analytics/revenue` | Revenue analytics |
 | `GET` | `/admin/analytics/drivers` | Driver performance analytics |
@@ -390,11 +403,13 @@ Analytics endpoints receive a `period` of `day`, `week` or `month`, plus `days_b
 
 Support ticket creation sends `requester_id`, `requester_type`, `subject`, `category`, `priority` and `message`. Replies and internal notes send `body` and `is_internal`; assignments send `assignee_id`.
 
-Promotion create/update sends `code`, `name`, `description`, `discount_type`, `discount_value`, optional caps (`max_discount_tzs`, `max_ride_value_tzs`, `minimum_ride_tzs`), `eligibility` (`new_users`, `existing_users`, `phones`), `starts_at`, `ends_at`, `per_user_limit`, `total_uses_limit`, `budget_cap_tzs`, `peak_hours_only`, `peak_hours_label`, `duo_only`, notification flags and `status` (`draft`, `active` or `scheduled`). Referral config updates send `status`, `referrer_reward_tzs`, `referee_reward_tzs`, `max_referrals_per_user` and `reward_expiry_days`.
+Promotion create/update sends `code`, `name`, `description`, `discount_type`, `discount_value`, optional caps (`max_discount_tzs`, `max_ride_value_tzs`, `minimum_ride_tzs`), `eligibility` (`new_users`, `existing_users`, `phones`), `starts_at`, `ends_at`, `per_user_limit`, `total_uses_limit`, `budget_cap_tzs`, `peak_hours_only`, `peak_hours_label`, `duo_only`, notification flags and `status` (`draft`, `active` or `scheduled`). Referral codes are exposed through the documented referral-user endpoints; the contract does not define admin endpoints to create, edit, delete, or send individual codes.
 
-The marketing endpoints above are the frontend-side contract. Response mapping is intentionally tolerant in `src/services/marketing.ts`, but if the backend uses different paths or field names, update that service and `API_ROUTES` rather than the page components.
+The marketing endpoints above are the frontend-side contract. Response mapping is intentionally tolerant in `src/services/marketing.ts` and `src/services/referrals.ts`; if the backend uses different paths or field names, update those services and `API_ROUTES` rather than the page components.
 
-Until those endpoints exist, mock mode is on by default (`NEXT_PUBLIC_USE_MOCK_MARKETING` unset or `true`). It serves sample promotions and referrals from `src/lib/mockMarketing.ts`, shows a **Sample data** badge, and keeps create, edit, delete and referral settings working in memory for the current session. Set `NEXT_PUBLIC_USE_MOCK_MARKETING=false` and rebuild to switch to the real API; the endpoint definitions stay in place.
+Referral API types live in `src/lib/referrals.ts`, endpoint functions in `src/services/referrals.ts`, and React Query hooks in `src/hooks/useReferrals.ts`. The `reward_config` value is JSON-safe and deliberately opaque to the frontend. Referral users and their activity are available in the Users & codes section of Programs & activity, using `GET /referrals/users` and `GET /referrals/users/{user_id}`; the backend does not define admin endpoints for managing individual codes.
+
+Marketing mock mode is on by default (`NEXT_PUBLIC_USE_MOCK_MARKETING` unset or `true`) for promotions only. It serves sample promotions from `src/lib/mockMarketing.ts` and shows a **Sample data** badge on the promotions page. Referral APIs always use the backend. Set `NEXT_PUBLIC_USE_MOCK_MARKETING=false` and rebuild to disable promotion samples.
 
 Admin User Management uses the same approach. `src/services/adminUsers.ts` maps list, invite, update and activate/deactivate responses tolerantly, including `user`, `admin`, `page_size` and pagination aliases. Invite sends `name`, `phone`, `email`, `role`, `two_factor_required` and `send_welcome_sms`; updates send `role`, `permissions` and `two_factor_required`. Until the endpoints are available, set `NEXT_PUBLIC_USE_MOCK_ADMIN_USERS` unset or `true` to use the seeded admins in `src/lib/mockAdminUsers.ts`. Mock changes stay in memory for the current session; set the flag to `false` and rebuild to use the real API.
 
@@ -414,7 +429,7 @@ Polling is configured per hook:
 - Dashboard, customer lists and notifications refetch every 60 seconds.
 - Driver, ride, route, payout and transaction lists refetch every 30 seconds.
 - Support ticket lists and details refetch every 30 seconds; eligible agents are cached for 5 minutes.
-- Promotion lists and referral history refetch every 60 seconds; referral overview stats and program settings are cached for 5 minutes.
+- Promotion lists, referral-code lists and referral stats refetch every 60 seconds; referral-code stats are cached for 1 minute.
 - Ride, route and transaction summary queries refetch every 60 seconds.
 - Driver documents load on demand when a driver detail panel opens.
 - List queries use `keepPreviousData` so pagination and filter changes do not flash an empty table.
@@ -452,7 +467,7 @@ Zustand stores hold shared client-only state. Server data stays in TanStack Quer
 
 The auth store starts empty so the static export and the first client render match. `Providers` hydrates it after mount, and route gates wait for hydration before redirecting. Signing out clears the token store, query cache, page views and toasts. Onboarding progress is not cleared because it belongs to a separate driver flow.
 
-List filters and pagination survive navigation but reset on a full reload. Support ticket, promotion and referral records are fetched from the backend; the promotion tabs and referral history expanded state are kept in `pageViewStore`.
+List filters and pagination survive navigation but reset on a full reload. Support ticket, promotion and referral-code records are fetched from the backend; promotion tabs plus referral status, search, user type, date range and page are kept in `pageViewStore`.
 
 ## Project structure
 
@@ -477,7 +492,7 @@ raut_frontend/
 │  │  └─ providers.tsx     TanStack Query and toast providers
 │  ├─ components/          Shared layout, navigation, panels, dialogs, toasts, charts and UI primitives
 │  │  ├─ analytics/        Dashboard metric cards and Recharts visualizations
-│  │  ├─ marketing/        Promotion cards, form, referral stats, leaderboard, history table and dialog
+│  │  ├─ marketing/        Promotion cards/forms plus referral stats, tabs, table, create and success dialogs
 │  │  ├─ platformConfig/   Platform configuration forms and shared config primitives
 │  │  └─ ui/               shadcn-style components (sidebar, table, badge, sheet, tooltip and others)
 │  ├─ hooks/               TanStack Query hooks and session helpers
@@ -504,10 +519,13 @@ raut_frontend/
 | `src/services/http.ts` | Authenticated fetch wrapper, token refresh, timeout and error handling |
 | `src/services/api.ts` | `apiGet`, `apiPost`, `apiPatch`, `apiPut`, `apiDelete` and query-string building |
 | `src/services/supportTickets.ts` | Support ticket endpoints, API response mapping and ticket mutation payloads |
-| `src/services/marketing.ts` | Promotion and referral endpoints, tolerant response mapping, mutation payloads and the mock-mode switch |
-| `src/lib/mockMarketing.ts` | Sample promotions, referrals, in-memory mock CRUD/list behavior and the mock-data flag |
-| `src/lib/marketing.ts` | Promotion/referral types, status labels, form defaults, date/currency formatting, promo-code generation, CSV parsing and payload mapping |
-| `src/schemas/marketingSchemas.ts` | Zod validation for promotion campaigns and referral program settings |
+| `src/services/marketing.ts` | Promotion endpoints, tolerant response mapping, mutation payloads and the mock-mode switch |
+| `src/services/referrals.ts` | Referral-program, enrollment, stats, user, relationship, payment, and user referral-code API functions |
+| `src/hooks/useReferrals.ts` | React Query hooks and mutation invalidation for referral-program APIs |
+| `src/lib/mockMarketing.ts` | Sample promotions, in-memory mock CRUD/list behavior and the promotion mock-data flag |
+| `src/lib/referrals.ts` | Referral API request/response types and JSON-safe reward configuration |
+| `src/lib/marketing.ts` | Promotion types, status labels, form defaults, date/currency formatting, promo-code generation, CSV parsing and payload mapping |
+| `src/schemas/marketingSchemas.ts` | Zod validation for promotion campaigns |
 | `src/services/adminUsers.ts` | Admin user list, invite, update and activate/deactivate endpoints with tolerant response mapping and the mock-mode switch |
 | `src/lib/mockAdminUsers.ts` | Seeded admin users, in-memory mock list/CRUD behavior and the mock-data flag |
 | `src/lib/adminUsers.ts` | Admin role catalog, permission matrix, status labels, formatting helpers and matrix CSV export |
@@ -599,9 +617,10 @@ Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Re
 - Payout receipts open the browser print dialog, where they can be printed or saved as PDF.
 - Dashboard cards render zero or empty states when an analytics endpoint fails, so partial data is expected during backend incidents.
 - Admin data comes from the external Raut backend. The Next.js server serves the app and its dynamic routes, including `/support-tickets/[id]` and `/marketing/promotions/[id]/edit`.
-- The marketing API paths and payload field names are defined by this frontend contract. If the backend differs, adjust `API_ROUTES` and `src/services/marketing.ts`; the UI already tolerates several field aliases and derives promotion status from dates when the API omits it.
-- Marketing mock mode is enabled by default until the backend endpoints are ready. Sample mutations are held in memory and reset on a full reload; set `NEXT_PUBLIC_USE_MOCK_MARKETING=false` to use the real API.
-- Referral CSV export loads every matching page before downloading, so very large referral histories can take a moment; the table itself stays paginated.
+- The marketing and referral API paths and payload field names are defined by this frontend contract. If the backend differs, adjust `API_ROUTES` and the corresponding service; the existing referral-code UI tolerates several field aliases and derives status from dates and pending counts when the API omits it.
+- Marketing mock mode applies to promotions only. Sample promotion changes are held in memory and reset on a full reload; referral APIs always use the real backend.
+- Referral assignment search queries `/admin/users` with `is_driver` set from the selected user type. The user must be assigned before a code can be created.
+- Referral edit only changes expiry and maximum uses; status changes use the separate activate/deactivate actions. Delete is available only when completed and pending referral counts are both zero, and Send to User currently supports SMS and email.
 - DUO-only promotion targeting is disabled in the form when the DUO feature flag is switched off in platform configuration.
 - The onboarding flow is designed for a Flutter WebView. Outside the WebView it falls back to browser alerts and redirects, and it is not linked from the admin navigation.
 - Onboarding validation and upload errors are shown inline, but step-level API failures use browser alerts.

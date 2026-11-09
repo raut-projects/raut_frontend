@@ -28,7 +28,11 @@ const addNumberIssue = (
 
   if (!trimmed) {
     if (required) {
-      ctx.addIssue({ code: "custom", path: [path], message: `${label} is required` });
+      ctx.addIssue({
+        code: "custom",
+        path: [path],
+        message: `${label} is required`,
+      });
     }
     return;
   }
@@ -36,12 +40,20 @@ const addNumberIssue = (
   const amount = numeric(trimmed);
 
   if (!Number.isFinite(amount)) {
-    ctx.addIssue({ code: "custom", path: [path], message: `${label} must be a number` });
+    ctx.addIssue({
+      code: "custom",
+      path: [path],
+      message: `${label} must be a number`,
+    });
     return;
   }
 
   if (integer && !Number.isInteger(amount)) {
-    ctx.addIssue({ code: "custom", path: [path], message: `${label} must be a whole number` });
+    ctx.addIssue({
+      code: "custom",
+      path: [path],
+      message: `${label} must be a whole number`,
+    });
   }
 
   if (amount < min || amount > max) {
@@ -140,11 +152,19 @@ export const promotionFormSchema = z
     const end = new Date(values.endsAt);
 
     if (Number.isNaN(start.getTime())) {
-      ctx.addIssue({ code: "custom", path: ["startsAt"], message: "Start date is invalid" });
+      ctx.addIssue({
+        code: "custom",
+        path: ["startsAt"],
+        message: "Start date is invalid",
+      });
     }
 
     if (Number.isNaN(end.getTime())) {
-      ctx.addIssue({ code: "custom", path: ["endsAt"], message: "End date is invalid" });
+      ctx.addIssue({
+        code: "custom",
+        path: ["endsAt"],
+        message: "End date is invalid",
+      });
     }
 
     if (
@@ -219,34 +239,3 @@ export const promotionFormSchema = z
   });
 
 export type PromotionFormSchema = z.infer<typeof promotionFormSchema>;
-
-export const referralConfigSchema = z.object({
-  status: z.enum(["active", "inactive"]),
-  referrerRewardTzs: z.string(),
-  refereeRewardTzs: z.string(),
-  maxReferralsPerUser: z.string(),
-  rewardExpiryDays: z.string(),
-}).superRefine((values, ctx) => {
-  addNumberIssue(values.referrerRewardTzs, "referrerRewardTzs", ctx, {
-    label: "Referrer reward",
-    min: 0,
-  });
-  addNumberIssue(values.refereeRewardTzs, "refereeRewardTzs", ctx, {
-    label: "Referee reward",
-    min: 0,
-  });
-  addNumberIssue(values.maxReferralsPerUser, "maxReferralsPerUser", ctx, {
-    label: "Max referrals per user",
-    min: 1,
-    max: 1000,
-    integer: true,
-  });
-  addNumberIssue(values.rewardExpiryDays, "rewardExpiryDays", ctx, {
-    label: "Reward expiry",
-    min: 1,
-    max: 365,
-    integer: true,
-  });
-});
-
-export type ReferralConfigSchema = z.infer<typeof referralConfigSchema>;

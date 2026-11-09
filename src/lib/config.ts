@@ -1,10 +1,14 @@
-import { API_BASE_URL_RAW } from "./env";
+import { API_BASE_URL_RAW, REFERRAL_BASE_URL_RAW } from "./env";
 
 const rawBaseUrl = API_BASE_URL_RAW;
 
 export const API_BASE_URL = rawBaseUrl.trim().replace(/\/+$/, "");
 
 export const isApiConfigured = Boolean(API_BASE_URL);
+
+export const REFERRAL_BASE_URL = (
+  REFERRAL_BASE_URL_RAW.trim() || "https://raut.app/signup"
+).replace(/\/+$/, "");
 
 export const API_ROUTES = {
   login: "/auth/login",
@@ -55,9 +59,26 @@ export const API_ROUTES = {
   marketingPromotions: "/admin/marketing/promotions",
   marketingPromotion: (promotionId: string) =>
     `/admin/marketing/promotions/${encodeURIComponent(promotionId)}`,
-  marketingReferralOverview: "/admin/marketing/referrals/overview",
-  marketingReferralConfig: "/admin/marketing/referrals/config",
-  marketingReferrals: "/admin/marketing/referrals",
+  referralPrograms: "/referrals/programs",
+  referralProgram: (programId: string) =>
+    `/referrals/programs/${encodeURIComponent(programId)}`,
+  referralProgramEnroll: (programId: string) =>
+    `/referrals/programs/${encodeURIComponent(programId)}/enroll`,
+  referralProgramBulkEnroll: (programId: string) =>
+    `/referrals/programs/${encodeURIComponent(programId)}/enroll/bulk`,
+  referralProgramUserEnrollment: (programId: string, userId: string) =>
+    `/referrals/programs/${encodeURIComponent(programId)}/enroll/${encodeURIComponent(userId)}`,
+  referralUsers: "/referrals/users",
+  referralUser: (userId: string) =>
+    `/referrals/users/${encodeURIComponent(userId)}`,
+  referralRelationships: "/referrals/relationships",
+  referralStats: "/referrals/stats",
+  referralTopReferrers: "/referrals/top-referrers",
+  referralPendingPayments: "/referrals/payments/pending",
+  referralPaymentPay: (paymentId: string) =>
+    `/referrals/payments/${encodeURIComponent(paymentId)}/pay`,
+  myReferralCode: "/referrals/my-code",
+  processReferral: "/referrals/process",
 };
 
 // Analytics windows. `day|week|month` is sent as `period` to the analytics

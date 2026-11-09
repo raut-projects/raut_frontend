@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { EllipsisVertical } from "lucide-react";
 import ViewCustomerPanel from "@/components/viewCustomerPanel";
+import { FilterStatCards } from "@/components/FilterStatCards";
 import {
   QueryError,
   RefreshIndicator,
@@ -30,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useCustomers } from "@/hooks/useCustomers";
+import { useCustomerStats, useCustomers } from "@/hooks/useCustomers";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
   useDeactivateUser,
@@ -81,6 +82,7 @@ function Customers() {
     dataUpdatedAt,
     refetch,
   } = useCustomers(params);
+  const customerStatsQuery = useCustomerStats();
 
   const deactivateUser = useDeactivateUser();
   const reactivateUser = useReactivateUser();
@@ -90,8 +92,25 @@ function Customers() {
   const items = data?.items ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const fallbackCustomerStats = items.reduce(
+    (stats, customer) => {
+      if (customer.isActive) stats.active += 1;
+      else stats.inactive += 1;
+      return stats;
+    },
+    { total: items.length, active: 0, inactive: 0 },
+  );
+  const customerStats =
+    customerStatsQuery.data ??
+    (customerStatsQuery.isError ? fallbackCustomerStats : null);
 
   useClampPage(page, totalPages, setPage);
+
+  const onStatusSelect = (nextStatus) => {
+    setStatus(nextStatus);
+    setPage(1);
+    setSelectedIds(new Set());
+  };
 
   const onSearchChange = (e) => {
     setSearch(e.target.value);
@@ -99,11 +118,7 @@ function Customers() {
     setSelectedIds(new Set());
   };
 
-  const onStatusChange = (e) => {
-    setStatus(e.target.value);
-    setPage(1);
-    setSelectedIds(new Set());
-  };
+  const onStatusChange = (e) => onStatusSelect(e.target.value);
 
   const toggleSelectAll = () => {
     if (selectedIds.size === items.length && items.length > 0) {
@@ -185,12 +200,44 @@ function Customers() {
         </div>
       </div>
 
+      <FilterStatCards
+        columns="three"
+        selectedFilter={status}
+        onSelect={onStatusSelect}
+        isLoading={customerStatsQuery.isPending && !customerStats}
+        partialMessage={
+          customerStatsQuery.isError && !customerStatsQuery.data
+            ? "Global statistics are unavailable. Counts show the current page with its active filters."
+            : undefined
+        }
+        cards={[
+          {
+            label: "All customers",
+            value: customerStats?.total ?? null,
+            filter: "all",
+          },
+          {
+            label: "Active",
+            value: customerStats?.active ?? null,
+            filter: "active",
+          },
+          {
+            label: "Inactive",
+            value: customerStats?.inactive ?? null,
+            filter: "inactive",
+          },
+        ]}
+      />
+
       <div className="rounded-xl border border-slate-200 bg-white shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5">
           <RefreshIndicator
-            isFetching={isFetching}
-            updatedAt={dataUpdatedAt}
-            onRefresh={refetch}
+            isFetching={isFetching || customerStatsQuery.isFetching}
+            updatedAt={Math.max(dataUpdatedAt, customerStatsQuery.dataUpdatedAt)}
+            onRefresh={() => {
+              void refetch();
+              void customerStatsQuery.refetch();
+            }}
           />
           {selectedIds.size > 0 && (
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -299,12 +346,12 @@ function Customers() {
                           />
                         </svg>
                       </span>
-                      <span className="max-w-[5rem] truncate font-medium text-slate-900 sm:max-w-[8rem] lg:max-w-none">
+                      <span className="max-w-20 truncate font-medium text-slate-900 sm:max-w-32 lg:max-w-none">
                         {c.name}
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="hidden max-w-[8rem] truncate lg:table-cell">
+                  <TableCell className="hidden max-w-32 truncate lg:table-cell">
                     {c.email}
                   </TableCell>
                   <TableCell className="hidden font-medium text-slate-900 lg:table-cell">

@@ -2,6 +2,7 @@ export const queryKeys = {
   customers: {
     all: ["customers"],
     list: (params) => ["customers", "list", params],
+    stats: ["customers", "stats"],
   },
   drivers: {
     all: ["drivers"],
@@ -75,12 +76,33 @@ export const queryKeys = {
     promotions: {
       all: ["marketing", "promotions"],
       list: (params) => ["marketing", "promotions", "list", params],
-      detail: (promotionId) => ["marketing", "promotions", "detail", promotionId],
+      detail: (promotionId) => [
+        "marketing",
+        "promotions",
+        "detail",
+        promotionId,
+      ],
     },
-    referrals: {
-      all: ["marketing", "referrals"],
-      overview: (period) => ["marketing", "referrals", "overview", period],
-      list: (params) => ["marketing", "referrals", "list", params],
+  },
+  referrals: {
+    all: ["referrals"],
+    programs: {
+      all: ["referrals", "programs"],
+      list: (params) => ["referrals", "programs", "list", params],
+      detail: (programId) => ["referrals", "programs", "detail", programId],
     },
+    users: {
+      all: ["referrals", "users"],
+      list: (params) => ["referrals", "users", "list", params],
+      detail: (userId) => ["referrals", "users", "detail", userId],
+    },
+    relationships: {
+      all: ["referrals", "relationships"],
+      list: (params) => ["referrals", "relationships", "list", params],
+    },
+    stats: (params) => ["referrals", "stats", params],
+    topReferrers: (limit) => ["referrals", "top-referrers", limit],
+    pendingPayments: ["referrals", "payments", "pending"],
+    myCode: ["referrals", "my-code"],
   },
 };

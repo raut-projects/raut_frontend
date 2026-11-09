@@ -6,21 +6,13 @@ import {
 } from "@tanstack/react-query";
 
 import { queryKeys } from "@/lib/queryKeys";
-import type {
-  PromotionListParams,
-  PromotionPayload,
-  ReferralConfigFormValues,
-  ReferralListParams,
-} from "@/lib/marketing";
+import type { PromotionListParams, PromotionPayload } from "@/lib/marketing";
 import {
   createPromotion,
   deletePromotion,
   getPromotion,
-  getReferralOverview,
   listPromotions,
-  listReferrals,
   updatePromotion,
-  updateReferralConfig,
 } from "@/services/marketing";
 
 export function usePromotions(params: PromotionListParams) {
@@ -75,37 +67,6 @@ export function useDeletePromotion() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.marketing.promotions.all,
-      });
-    },
-  });
-}
-
-export function useReferralOverview(period = "month") {
-  return useQuery({
-    queryKey: queryKeys.marketing.referrals.overview(period),
-    queryFn: () => getReferralOverview(period),
-    staleTime: 5 * 60_000,
-  });
-}
-
-export function useReferrals(params: ReferralListParams) {
-  return useQuery({
-    queryKey: queryKeys.marketing.referrals.list(params),
-    queryFn: () => listReferrals(params),
-    placeholderData: keepPreviousData,
-    refetchInterval: 60_000,
-  });
-}
-
-export function useUpdateReferralConfig() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (config: ReferralConfigFormValues) =>
-      updateReferralConfig(config),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.marketing.referrals.all,
       });
     },
   });

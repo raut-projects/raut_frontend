@@ -8,6 +8,7 @@ import {
   RefreshIndicator,
   TableSkeleton,
 } from "@/components/queryStates";
+import { FilterStatCards } from "@/components/FilterStatCards";
 import { ConfirmDialog, ReasonDialog } from "@/components/reasonDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,7 @@ const DRIVER_TABS = [
   { value: "all", label: "All" },
   { value: "pending", label: "Pending" },
   { value: "active", label: "Active" },
+  { value: "incomplete", label: "Incomplete" },
   { value: "suspended", label: "Suspended" },
   { value: "blocked", label: "Blocked" },
 ];
@@ -200,6 +202,21 @@ function Drivers() {
     const createdAt = new Date(pendingSince).getTime();
     return Number.isFinite(createdAt) && dataUpdatedAt - createdAt > DAY_MS;
   }).length;
+  const driverStats = data
+    ? {
+        total: data.summary?.total ?? allDrivers.length,
+        active: allDrivers.filter((driver) =>
+          matchesStatusTab(driver, "active"),
+        ).length,
+        pending:
+          data.summary?.pending ??
+          allDrivers.filter((driver) => driver.statusKey === "pending").length,
+        incomplete:
+          data.summary?.incomplete ??
+          allDrivers.filter((driver) => driver.statusKey === "incomplete")
+            .length,
+      }
+    : null;
 
   useClampPage(page, totalPages, setPage);
 
@@ -337,6 +354,42 @@ function Drivers() {
           </Button>
         </div>
       </div>
+
+      <FilterStatCards
+        columns="four"
+        selectedFilter={statusTab}
+        onSelect={onStatusChange}
+        isLoading={isPending && !driverStats}
+        partialMessage={
+          data && !data.summary
+            ? "Driver statistics are based on the records currently loaded."
+            : isError && !data
+              ? "Driver statistics are unavailable; no records are loaded."
+              : undefined
+        }
+        cards={[
+          {
+            label: "All drivers",
+            value: driverStats?.total ?? null,
+            filter: "all",
+          },
+          {
+            label: "Active",
+            value: driverStats?.active ?? null,
+            filter: "active",
+          },
+          {
+            label: "Pending",
+            value: driverStats?.pending ?? null,
+            filter: "pending",
+          },
+          {
+            label: "Incomplete",
+            value: driverStats?.incomplete ?? null,
+            filter: "incomplete",
+          },
+        ]}
+      />
 
       <div className="flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-amber-900">

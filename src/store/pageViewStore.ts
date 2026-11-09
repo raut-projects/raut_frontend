@@ -67,14 +67,6 @@ type PageViewValues = {
     search: string;
     page: number;
   };
-  marketingReferrals: {
-    status: string;
-    search: string;
-    from: string;
-    to: string;
-    page: number;
-    expanded: boolean;
-  };
   adminUsers: {
     status: AdminUserStatus;
     search: string;
@@ -156,14 +148,6 @@ function createInitialViews(): PageViewValues {
       search: "",
       page: 1,
     },
-    marketingReferrals: {
-      status: "all",
-      search: "",
-      from: "",
-      to: "",
-      page: 1,
-      expanded: false,
-    },
     adminUsers: {
       status: "active",
       search: "",
@@ -204,7 +188,9 @@ export function usePageViewField<
   (
     value:
       | PageViewValues[Page][Field]
-      | ((previous: PageViewValues[Page][Field]) => PageViewValues[Page][Field]),
+      | ((
+          previous: PageViewValues[Page][Field],
+        ) => PageViewValues[Page][Field]),
   ) => void,
 ] {
   const value = usePageViewStore((state) => state.views[page][field]);
@@ -212,10 +198,11 @@ export function usePageViewField<
     (
       nextValue:
         | PageViewValues[Page][Field]
-        | ((previous: PageViewValues[Page][Field]) => PageViewValues[Page][Field]),
+        | ((
+            previous: PageViewValues[Page][Field],
+          ) => PageViewValues[Page][Field]),
     ) => {
-      const currentValue =
-        usePageViewStore.getState().views[page][field];
+      const currentValue = usePageViewStore.getState().views[page][field];
 
       usePageViewStore
         .getState()
