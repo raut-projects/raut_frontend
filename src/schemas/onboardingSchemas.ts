@@ -38,7 +38,7 @@ export const vehicleInfoSchema = z.object({
   ]),
   ownerName: z.string().min(2, 'Owner name required'),
   ownerEmail: z.string().email('Valid email required'),
-  ownerPhone: z.string().min(10, 'Valid phone required'),
+  ownerPhone: z.string().min(9, 'Valid phone required'),
   frontPhotoUrl: z.string().min(1, 'Front photo required'),
   rearPhotoUrl: z.string().min(1, 'Rear photo required'),
   insuranceDocUrl: z.string().min(1, 'Insurance document required'),
@@ -51,7 +51,7 @@ export const vehicleInfoSchema = z.object({
 export const paymentDetailsSchema = z.object({
   accountName: z.string().min(2, 'Account name required'),
   address: z.string().min(5, 'Address required'),
-  mobileMoneyNumber: z.string().min(10, 'Valid mobile money number required'),
+  mobileMoneyNumber: z.string().min(9, 'Valid mobile money number required'),
   mobileNetwork: z.enum(['vodacom', 'airtel', 'halotel', 'mixx']),
 });
 
