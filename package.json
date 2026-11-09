@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "vercel-build": "if [ \"$VERCEL_GIT_COMMIT_REF\" != \"staging\" ]; then echo 'Skipping build for non-staging branch' && exit 0; else next build; fi",
     "start": "next start",
     "preview": "next start",
     "lint": "eslint .",
