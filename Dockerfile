@@ -24,8 +24,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Build arguments
-ARG VITE_API_URL
-ENV NEXT_PUBLIC_API_URL=$VITE_API_URL
+ARG NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 
 # Build the application
 RUN pnpm run build
