@@ -258,7 +258,8 @@ export default function VehicleInfoStep() {
       });
 
       // Backend auto-links documents with vehicle_id
-      const vehicle = response.data;
+      // apiPost already unwraps the envelope, so response is the vehicle object
+      const vehicle = response;
 
       updateVehicleInfo({ ...data, vehicleId: vehicle.id });
       markStepComplete(3);
