@@ -348,9 +348,6 @@ function RoutesPage() {
                     <span className="block max-w-[5rem] truncate font-medium text-slate-900 sm:max-w-[10rem] xl:max-w-[18rem]">
                       {route.route}
                     </span>
-                    <span className="block text-xs text-slate-400">
-                      {route.id}
-                    </span>
                     <span className="block max-w-[5rem] truncate text-xs text-slate-400 lg:hidden">
                       {route.driver}
                     </span>
@@ -358,9 +355,6 @@ function RoutesPage() {
                   <TableCell className="hidden lg:table-cell">
                     <span className="block max-w-[8rem] truncate text-slate-900">
                       {route.driver}
-                    </span>
-                    <span className="block text-xs text-slate-400">
-                      {route.driverPhone}
                     </span>
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
@@ -375,9 +369,6 @@ function RoutesPage() {
                     <span className="block text-slate-900">
                       {route.distance}
                     </span>
-                    <span className="block text-xs text-slate-400">
-                      {route.duration}
-                    </span>
                   </TableCell>
                   <TableCell className="hidden text-slate-700 xl:table-cell">
                     {route.seats}
@@ -385,9 +376,6 @@ function RoutesPage() {
                   <TableCell className="hidden xl:table-cell">
                     <span className="block text-slate-900">
                       {route.totalRides} total
-                    </span>
-                    <span className="block text-xs text-slate-400">
-                      {route.activeRides} active
                     </span>
                   </TableCell>
                   <TableCell>

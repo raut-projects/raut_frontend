@@ -282,9 +282,9 @@ function Transactions() {
                     <span className="block max-w-[5rem] truncate font-medium text-slate-900 sm:max-w-none">
                       {transaction.reference}
                     </span>
-                    <span className="block text-xs text-slate-400">
+                    {/* <span className="block text-xs text-slate-400">
                       {transaction.id}
-                    </span>
+                    </span> */}
                     <span className="block max-w-[5rem] truncate text-xs text-slate-400 lg:hidden">
                       {transaction.userName}
                     </span>
@@ -293,11 +293,11 @@ function Transactions() {
                     <span className="block text-slate-900">
                       {transaction.userName}
                     </span>
-                    {transaction.userPhone !== "—" && (
+                    {/* {transaction.userPhone !== "—" && (
                       <span className="block text-xs text-slate-400">
                         {transaction.userPhone}
                       </span>
-                    )}
+                    )} */}
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
                     <span
@@ -331,9 +331,9 @@ function Transactions() {
                     <span className="block text-slate-900">
                       {transaction.created}
                     </span>
-                    <span className="block text-xs text-slate-400">
+                    {/* <span className="block text-xs text-slate-400">
                       {transaction.createdAt?.split(" ")[1] ?? ""}
-                    </span>
+                    </span> */}
                   </TableCell>
                   <TableCell className="hidden xl:table-cell">
                     <span className="block max-w-[16rem] truncate text-slate-700">
