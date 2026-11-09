@@ -8,6 +8,7 @@ import {
   Car,
   ChevronRight,
   CreditCard,
+  Gift,
   LayoutDashboard,
   LogOut,
   Map as MapIcon,
@@ -53,6 +54,7 @@ type NavItem = {
   icon: LucideIcon;
   badge?: string;
   activeOn?: string;
+  exact?: boolean;
 };
 
 type NavGroup = {
@@ -90,7 +92,10 @@ const navGroups: NavGroup[] = [
   },
   {
     label: "Marketing",
-    items: [{ title: "Promotions", url: "/promotions", icon: Megaphone }],
+    items: [
+      { title: "Promotions", url: "/marketing", icon: Megaphone, exact: true },
+      { title: "Referrals", url: "/marketing/referrals", icon: Gift },
+    ],
   },
   {
     label: "Support",
@@ -142,7 +147,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     );
   };
 
-  const isItemActive = (item: NavItem) => isActive(item.activeOn ?? item.url);
+  const isItemActive = (item: NavItem) => {
+    if (item.exact) return currentPath === normalizePath(item.url);
+
+    return isActive(item.activeOn ?? item.url);
+  };
 
   const handleSignOut = () => {
     signOut();

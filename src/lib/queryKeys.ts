@@ -65,4 +65,17 @@ export const queryKeys = {
     detail: (ticketId) => ["support-tickets", "detail", ticketId],
     agents: ["support-tickets", "agents"],
   },
+  marketing: {
+    all: ["marketing"],
+    promotions: {
+      all: ["marketing", "promotions"],
+      list: (params) => ["marketing", "promotions", "list", params],
+      detail: (promotionId) => ["marketing", "promotions", "detail", promotionId],
+    },
+    referrals: {
+      all: ["marketing", "referrals"],
+      overview: (period) => ["marketing", "referrals", "overview", period],
+      list: (params) => ["marketing", "referrals", "list", params],
+    },
+  },
 };

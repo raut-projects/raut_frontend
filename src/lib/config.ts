@@ -49,6 +49,12 @@ export const API_ROUTES = {
     `/admin/support/tickets/${encodeURIComponent(ticketId)}/priority`,
   supportTicketEscalate: (ticketId: string) =>
     `/admin/support/tickets/${encodeURIComponent(ticketId)}/escalate`,
+  marketingPromotions: "/admin/marketing/promotions",
+  marketingPromotion: (promotionId: string) =>
+    `/admin/marketing/promotions/${encodeURIComponent(promotionId)}`,
+  marketingReferralOverview: "/admin/marketing/referrals/overview",
+  marketingReferralConfig: "/admin/marketing/referrals/config",
+  marketingReferrals: "/admin/marketing/referrals",
 };
 
 // Analytics windows. `day|week|month` is sent as `period` to the analytics

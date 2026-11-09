@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { create } from "zustand";
+import type { PromotionTab } from "@/lib/marketing";
 import type {
   SupportTicketPriority,
   SupportTicketStatus,
@@ -59,6 +60,19 @@ type PageViewValues = {
     category: string;
     assignee: string;
     page: number;
+  };
+  marketingPromotions: {
+    status: PromotionTab;
+    search: string;
+    page: number;
+  };
+  marketingReferrals: {
+    status: string;
+    search: string;
+    from: string;
+    to: string;
+    page: number;
+    expanded: boolean;
   };
 };
 
@@ -130,6 +144,19 @@ function createInitialViews(): PageViewValues {
       category: "all",
       assignee: "all",
       page: 1,
+    },
+    marketingPromotions: {
+      status: "active",
+      search: "",
+      page: 1,
+    },
+    marketingReferrals: {
+      status: "all",
+      search: "",
+      from: "",
+      to: "",
+      page: 1,
+      expanded: false,
     },
   };
 }

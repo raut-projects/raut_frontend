@@ -21,7 +21,8 @@ const titles = {
   "/routes": "Routes",
   "/payouts": "Payouts",
   "/transactions": "Transactions",
-  "/promotions": "Promotions",
+  "/marketing": "Promotions",
+  "/marketing/referrals": "Referrals",
   "/support-tickets": "Support Tickets",
   "/settings": "Settings",
   "/settings/platform": "Platform Config",
@@ -30,9 +31,17 @@ const titles = {
   "/settings/system-health": "System Health",
 };
 
+function resolveTitle(pathname: string) {
+  if (titles[pathname]) return titles[pathname];
+  if (pathname.startsWith("/marketing/promotions")) return "Promotions";
+  if (pathname.startsWith("/marketing/referrals")) return "Referrals";
+
+  return "Raut";
+}
+
 function Header() {
   const pathname = usePathname().replace(/\/+$/, "") || "/";
-  const title = titles[pathname] ?? "Raut";
+  const title = resolveTitle(pathname);
 
   const mounted = useIsClient();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
