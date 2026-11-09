@@ -279,10 +279,10 @@ function Transactions() {
               {transactions.map((transaction) => (
                 <TableRow key={transaction.id}>
                   <TableCell>
-                    <span className="block max-w-[5rem] truncate font-medium text-slate-900 sm:max-w-none">
+                    <span className="block max-w-20 truncate font-medium text-slate-900 sm:max-w-32 lg:max-w-none">
                       {transaction.reference}
                     </span>
-                    <span className="block max-w-[5rem] truncate text-xs text-slate-400 lg:hidden">
+                    <span className="block max-w-20 truncate text-xs text-slate-400 lg:hidden">
                       {transaction.userName}
                     </span>
                   </TableCell>

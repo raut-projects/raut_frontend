@@ -346,12 +346,12 @@ function Customers() {
                           />
                         </svg>
                       </span>
-                      <span className="max-w-[5rem] truncate font-medium text-slate-900 sm:max-w-[8rem] lg:max-w-none">
+                      <span className="max-w-20 truncate font-medium text-slate-900 sm:max-w-32 lg:max-w-none">
                         {c.name}
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="hidden max-w-[8rem] truncate lg:table-cell">
+                  <TableCell className="hidden max-w-32 truncate lg:table-cell">
                     {c.email}
                   </TableCell>
                   <TableCell className="hidden font-medium text-slate-900 lg:table-cell">
