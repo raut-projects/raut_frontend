@@ -183,7 +183,7 @@ export default function PaymentDetailsStep() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full mt-5 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full mt-8 mb-6 rounded-lg bg-brand-600 px-4 py-5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isSubmitting ? t("submitting") : t("completeOnboarding")}
       </button>
