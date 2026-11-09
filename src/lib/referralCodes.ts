@@ -31,6 +31,7 @@ export type ReferralCode = {
   rewardType: ReferralRewardType;
   rewardsTzs: number;
   status: ReferralCodeStatus;
+  startDate: string;
   expiryDate: string;
   createdAt: string;
 };
@@ -79,6 +80,7 @@ export type ReferralCodeFormValues = {
   newUserRewardTzs: string;
   rewardType: ReferralRewardType;
   maxUses: string;
+  startDate: string;
   expiryDate: string;
   status: ReferralCodeCreateStatus;
 };
@@ -92,6 +94,7 @@ export type ReferralCodePayload = {
   new_user_reward_tzs: number;
   reward_type: ReferralRewardType;
   max_uses: number;
+  start_date: string;
   expiry_date: string;
   status: ReferralCodeCreateStatus;
 };
@@ -178,6 +181,10 @@ export function defaultReferralExpiryDate(offsetDays = 30) {
   return toDateKey(date);
 }
 
+export function defaultReferralStartDate() {
+  return toDateKey(new Date());
+}
+
 export function createReferralCodeDefaultForm(): ReferralCodeFormValues {
   return {
     name: "",
@@ -188,6 +195,7 @@ export function createReferralCodeDefaultForm(): ReferralCodeFormValues {
     newUserRewardTzs: "1000",
     rewardType: "ride_credit",
     maxUses: "20",
+    startDate: defaultReferralStartDate(),
     expiryDate: defaultReferralExpiryDate(),
     status: "active",
   };
@@ -338,6 +346,7 @@ export function toReferralCodePayload(
     new_user_reward_tzs: Number(values.newUserRewardTzs),
     reward_type: values.rewardType,
     max_uses: Number(values.maxUses),
+    start_date: values.startDate,
     expiry_date: values.expiryDate,
     status: values.status,
   };

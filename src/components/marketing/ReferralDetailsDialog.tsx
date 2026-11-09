@@ -138,6 +138,14 @@ export function ReferralDetailsDialog({
             value={code.pendingReferrals.toLocaleString("en-US")}
           />
           <Detail
+            label="Starts"
+            value={
+              code.startDate
+                ? formatReferralDate(code.startDate)
+                : "Not provided"
+            }
+          />
+          <Detail
             label="Expiry"
             value={
               code.expiryDate ? formatReferralDate(code.expiryDate) : "No expiry"

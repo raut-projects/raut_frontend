@@ -195,6 +195,17 @@ function mapReferralCode(
       "expiry",
     ),
   );
+  const startDate = text(
+    firstValue(
+      record,
+      "start_date",
+      "startDate",
+      "starts_at",
+      "startsAt",
+      "valid_from",
+      "validFrom",
+    ),
+  );
 
   return {
     id,
@@ -295,6 +306,7 @@ function mapReferralCode(
       expiryDate,
       pendingReferrals,
     ),
+    startDate,
     expiryDate,
     createdAt: text(
       firstValue(record, "created_at", "createdAt", "date", "created_on"),
@@ -476,6 +488,16 @@ export async function createReferralCode(
           "expiresAt",
         ),
       ) || payload.expiry_date,
+    start_date:
+      text(
+        firstValue(
+          createdRecord,
+          "start_date",
+          "startDate",
+          "starts_at",
+          "startsAt",
+        ),
+      ) || payload.start_date,
     status: firstValue(createdRecord, "status", "state") ?? payload.status,
   };
 

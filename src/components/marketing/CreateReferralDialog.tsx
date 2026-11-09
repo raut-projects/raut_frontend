@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { useCreateReferralCode } from "@/hooks/useMarketing";
 import {
   createReferralCodeDefaultForm,
+  defaultReferralStartDate,
   generateReferralCode,
   REFERRAL_REWARD_TYPE_LABELS,
   toReferralCodePayload,
@@ -313,11 +314,28 @@ export function CreateReferralDialog({
             )}
           </label>
 
-          <label className="block sm:col-span-2">
+          <label className="block">
+            <span className={labelClass}>Start Date</span>
+            <Input
+              type="date"
+              value={values.startDate}
+              min={defaultReferralStartDate()}
+              max={values.expiryDate || undefined}
+              onChange={(event) => update("startDate", event.target.value)}
+              aria-invalid={Boolean(errors.startDate)}
+              className={inputClass}
+            />
+            {errors.startDate && (
+              <span className={errorClass}>{errors.startDate}</span>
+            )}
+          </label>
+
+          <label className="block">
             <span className={labelClass}>Expiry Date</span>
             <Input
               type="date"
               value={values.expiryDate}
+              min={values.startDate || undefined}
               onChange={(event) => update("expiryDate", event.target.value)}
               aria-invalid={Boolean(errors.expiryDate)}
               className={inputClass}

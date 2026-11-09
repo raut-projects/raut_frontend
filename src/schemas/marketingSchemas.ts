@@ -260,6 +260,7 @@ export const referralCodeSchema = z
     newUserRewardTzs: z.string(),
     rewardType: z.enum(["ride_credit", "cash_credit", "discount"]),
     maxUses: z.string(),
+    startDate: z.string().min(1, "Start date is required"),
     expiryDate: z.string().min(1, "Expiry date is required"),
     status: z.enum(["active", "inactive"]),
   })
@@ -279,13 +280,42 @@ export const referralCodeSchema = z
       integer: true,
     });
 
+    const start = new Date(`${values.startDate}T00:00:00`);
     const expiry = new Date(`${values.expiryDate}T00:00:00`);
+
+    if (Number.isNaN(start.getTime())) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["startDate"],
+        message: "Start date is invalid",
+      });
+    } else {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (start.getTime() < today.getTime()) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["startDate"],
+          message: "Start date cannot be in the past",
+        });
+      }
+    }
 
     if (Number.isNaN(expiry.getTime())) {
       ctx.addIssue({
         code: "custom",
         path: ["expiryDate"],
         message: "Expiry date is invalid",
+      });
+      return;
+    }
+
+    if (!Number.isNaN(start.getTime()) && expiry.getTime() < start.getTime()) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["expiryDate"],
+        message: "Expiry date must be on or after the start date",
       });
       return;
     }

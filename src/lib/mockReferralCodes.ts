@@ -223,6 +223,7 @@ const seedReferralCodes = (): ReferralCode[] =>
       rewardType: REWARD_TYPES[index % REWARD_TYPES.length],
       rewardsTzs: uses * referrerRewardTzs,
       status,
+      startDate: dateKeyFromNow(-index - 1),
       expiryDate,
       createdAt: daysFromNow(-index - 1),
     };
@@ -340,6 +341,7 @@ export async function mockCreateReferralCode(
     rewardType: payload.reward_type,
     rewardsTzs: 0,
     status: normalizeReferralStatus(payload.status, payload.expiry_date, 0),
+    startDate: payload.start_date,
     expiryDate: payload.expiry_date,
     createdAt,
   };
