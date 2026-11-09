@@ -19,6 +19,7 @@ import {
   Ticket,
   Users,
   Wallet,
+  CarFront,
   // BadgeAlert,
   type LucideIcon,
 } from "lucide-react";
@@ -77,7 +78,7 @@ const navGroups: NavGroup[] = [
     label: "Operations",
     items: [
       { title: "Live Rides", url: "/live-rides", icon: MapIcon },
-      { title: "Drivers", url: "/drivers", icon: Car },
+      { title: "Drivers", url: "/drivers", icon: CarFront },
       { title: "Customers", url: "/customers", icon: Users },
       { title: "Rides", url: "/rides", icon: MapPin },
       { title: "Routes", url: "/routes", icon: Route, badge: "DUO" },
@@ -93,7 +94,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Marketing",
     items: [
-      { title: "Promotions", url: "/marketing", icon: Megaphone, exact: true },
+      { title: "Promotions", url: "/marketing/promotions", icon: Megaphone, exact: true },
       { title: "Referrals", url: "/marketing/referrals", icon: Gift },
     ],
   },

@@ -65,6 +65,11 @@ export const queryKeys = {
     detail: (ticketId) => ["support-tickets", "detail", ticketId],
     agents: ["support-tickets", "agents"],
   },
+  adminUsers: {
+    all: ["admin-users"],
+    list: (params) => ["admin-users", "list", params],
+    detail: (userId) => ["admin-users", "detail", userId],
+  },
   marketing: {
     all: ["marketing"],
     promotions: {

@@ -52,7 +52,8 @@ A separate onboarding route guides drivers through personal, licence, vehicle an
 | Live Rides | Placeholder page; tracking and live-trip data are not implemented yet |
 | Marketing | API-backed promotions list with status tabs (active, scheduled, expired and drafts), search, pagination and delete; create/edit campaigns with discount, eligibility, schedule, usage limits, budget cap and DUO/peak-hour rules; referral program settings, leaderboard, referral history filters and CSV export |
 | Support Tickets | API-backed ticket list, creation, search and filters, agent assignment, replies and internal notes, status/priority updates, escalation and CSV export |
-| Settings subpages | Placeholder pages for Admin Users, Audit Logs, Platform Config and System Health |
+| Admin Users | API-backed admin list with Active/Invited/Deactivated tabs, search and pagination, invite and edit side panels, deactivate/reactivate, and a printable/exportable role permission matrix |
+| Settings subpages | Placeholder pages for Audit Logs, Platform Config and System Health |
 | Driver onboarding | Four-step driver application flow with English/Swahili UI, validation, document uploads and Flutter WebView hand-off |
 | User experience | Responsive sidebar and header, loading skeletons, retryable error states, refresh indicators, toast feedback and print-friendly analytics |
 
@@ -148,6 +149,7 @@ Dashboard comparison is only available when the previous period falls inside the
 | `NEXT_PUBLIC_API_BASE_URL` | Yes | None | Base URL of the Raut backend API, for example `http://localhost:8000`. Trailing slashes are removed automatically. Inlined at build time, so rebuild after changing it. |
 | `NEXT_PUBLIC_ADMIN_ROLES` | No | `admin,super_admin` | Comma-separated list of roles allowed through the admin gate. Values such as `administrator`, `superadmin`, `super-admin` and `owner` are normalized. Other known roles such as `platform_manager`, `operator`, `support`, `analyst`, `finance` and `marketing` are normalized but do not grant access unless added here. Inlined at build time. |
 | `NEXT_PUBLIC_USE_MOCK_MARKETING` | No | `true` | Serves the built-in sample promotions and referrals while the backend marketing endpoints are unavailable. Set to `false` to use the real API. Inlined at build time. |
+| `NEXT_PUBLIC_USE_MOCK_ADMIN_USERS` | No | `true` | Serves the built-in sample admin users while the backend admin-users endpoints are unavailable. Set to `false` to use the real API. Inlined at build time. |
 
 ## Available scripts
 
@@ -186,7 +188,7 @@ Run `npm run build` before `npm run start` or `npm run preview`.
 | `/support-tickets/new` | Admin | Create a support ticket for a rider or driver |
 | `/support-tickets/[id]` | Admin | Ticket detail, agent assignment, replies/internal notes, status/priority updates and escalation |
 | `/settings` | Admin | Signed-in account profile and access details |
-| `/settings/admin-users` | Admin | Admin users placeholder (Coming soon) |
+| `/settings/admin-users` | Admin | Admin user list with status tabs, search, invite and edit panels, deactivate/reactivate and a role permission matrix |
 | `/settings/audit-logs` | Admin | Audit logs placeholder (Coming soon) |
 | `/settings/platform` | Admin | Platform configuration placeholder (Coming soon) |
 | `/settings/system-health` | Admin | System health placeholder (Coming soon) |
@@ -257,6 +259,7 @@ The default admin roles are `admin` and `super_admin`. Override them with `NEXT_
 - `administrator` becomes `admin`.
 - `superadmin`, `super-admin` and `owner` become `super_admin`.
 - `platform_manager`, `operator`, `support`, `analyst`, `finance` and `marketing` remain as their own roles.
+- The Admin Users page also understands `operations_agent`, `support_agent`, `finance_manager`, `finance_agent`, `marketing_manager` and `marketing_agent` as distinct roles. These are labels for the permission matrix and do not add admin-gate access unless listed in `NEXT_PUBLIC_ADMIN_ROLES`.
 
 The dashboard currently has a single admin gate: every configured admin role can open every admin page. Fine-grained permissions must be enforced by the backend.
 
@@ -276,6 +279,8 @@ export const API_ROUTES = {
   notifications: '/notifications/',
   promote: '/admin/promote',
   users: '/admin/users',
+  adminUserInvite: '/admin/users/invite',
+  adminUser: (userId) => `/admin/users/${userId}`,
   drivers: '/admin/drivers',
   rides: '/admin/rides',
   routes: '/admin/routes',
@@ -328,6 +333,9 @@ Raw API records are normalized in `src/services/mappers.ts`. Mappers provide con
 | `GET` | `/notifications/` | List notifications |
 | `POST` | `/notifications/{id}/read` | Mark a notification as read |
 | `GET` | `/admin/users` | List users/customers |
+| `GET` | `/admin/users` | List admin users (`status`, `search`, `page`, `page_size`) |
+| `POST` | `/admin/users/invite` | Invite an admin user |
+| `PATCH` | `/admin/users/{id}` | Update an admin user's role, permission overrides and 2FA |
 | `PUT` | `/admin/users/{id}/role` | Change a user's role |
 | `PUT` | `/admin/users/{id}/deactivate` | Deactivate a user |
 | `PUT` | `/admin/users/{id}/reactivate` | Reactivate a user |
@@ -387,6 +395,8 @@ Promotion create/update sends `code`, `name`, `description`, `discount_type`, `d
 The marketing endpoints above are the frontend-side contract. Response mapping is intentionally tolerant in `src/services/marketing.ts`, but if the backend uses different paths or field names, update that service and `API_ROUTES` rather than the page components.
 
 Until those endpoints exist, mock mode is on by default (`NEXT_PUBLIC_USE_MOCK_MARKETING` unset or `true`). It serves sample promotions and referrals from `src/lib/mockMarketing.ts`, shows a **Sample data** badge, and keeps create, edit, delete and referral settings working in memory for the current session. Set `NEXT_PUBLIC_USE_MOCK_MARKETING=false` and rebuild to switch to the real API; the endpoint definitions stay in place.
+
+Admin User Management uses the same approach. `src/services/adminUsers.ts` maps list, invite, update and activate/deactivate responses tolerantly, including `user`, `admin`, `page_size` and pagination aliases. Invite sends `name`, `phone`, `email`, `role`, `two_factor_required` and `send_welcome_sms`; updates send `role`, `permissions` and `two_factor_required`. Until the endpoints are available, set `NEXT_PUBLIC_USE_MOCK_ADMIN_USERS` unset or `true` to use the seeded admins in `src/lib/mockAdminUsers.ts`. Mock changes stay in memory for the current session; set the flag to `false` and rebuild to use the real API.
 
 The unused legacy onboarding helper also references `POST /drivers/register` and `POST /drivers/onboarding/complete`. They are not part of the active UI flow.
 
@@ -498,6 +508,10 @@ raut_frontend/
 | `src/lib/mockMarketing.ts` | Sample promotions, referrals, in-memory mock CRUD/list behavior and the mock-data flag |
 | `src/lib/marketing.ts` | Promotion/referral types, status labels, form defaults, date/currency formatting, promo-code generation, CSV parsing and payload mapping |
 | `src/schemas/marketingSchemas.ts` | Zod validation for promotion campaigns and referral program settings |
+| `src/services/adminUsers.ts` | Admin user list, invite, update and activate/deactivate endpoints with tolerant response mapping and the mock-mode switch |
+| `src/lib/mockAdminUsers.ts` | Seeded admin users, in-memory mock list/CRUD behavior and the mock-data flag |
+| `src/lib/adminUsers.ts` | Admin role catalog, permission matrix, status labels, formatting helpers and matrix CSV export |
+| `src/schemas/adminUserSchemas.ts` | Zod validation for inviting and editing admin users |
 | `src/services/auth.ts` | Email and password sign-in, session creation, role resolution and admin promotion |
 | `src/services/adminActions.ts` | Verify/reject/suspend drivers, cancel rides/routes and manage users |
 | `src/services/dashboard.ts` | Analytics aggregation, comparison windows and dashboard mapping |
@@ -573,9 +587,11 @@ Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Re
 
 ## Known limitations
 
-- Live Rides, Admin Users, Audit Logs, Platform Config and System Health are placeholder pages.
+- Live Rides, Audit Logs, Platform Config and System Health are placeholder pages.
 - There is currently no automated test suite or CI configuration.
-- There is no role-level UI beyond the admin gate; every configured admin role sees every admin page.
+- There is no role-level UI beyond the admin gate; every configured admin role sees every admin page. The Admin Users page is also intentionally not gated by role for now: any signed-in admin can open it.
+- The Admin Users permission matrix and per-admin overrides are informational. They are displayed, printed and exported, but the backend must enforce them before they restrict access.
+- Admin Users mock mode is enabled by default until the backend endpoints are ready. Sample invites, role changes and status changes are held in memory and reset on a full reload; set `NEXT_PUBLIC_USE_MOCK_ADMIN_USERS=false` to use the real API.
 - The dashboard builds some summary cards from the analytics overview response and falls back to list totals when fields or endpoints are unavailable.
 - Driver, document and payout summaries fetch up to 100 records and calculate some totals client-side.
 - Batch payout review loads all pending payouts and checks failed payouts for driver-level history. Phone verification is only considered verified when the API explicitly provides a verification flag or timestamp. Pending payouts refresh every 30 seconds; approved and processing statuses refresh every 10 seconds, and failure history refreshes every five minutes.

@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { create } from "zustand";
+import type { AdminUserStatus } from "@/lib/adminUsers";
 import type { PromotionTab } from "@/lib/marketing";
 import type {
   SupportTicketPriority,
@@ -73,6 +74,11 @@ type PageViewValues = {
     to: string;
     page: number;
     expanded: boolean;
+  };
+  adminUsers: {
+    status: AdminUserStatus;
+    search: string;
+    page: number;
   };
 };
 
@@ -157,6 +163,11 @@ function createInitialViews(): PageViewValues {
       to: "",
       page: 1,
       expanded: false,
+    },
+    adminUsers: {
+      status: "active",
+      search: "",
+      page: 1,
     },
   };
 }
