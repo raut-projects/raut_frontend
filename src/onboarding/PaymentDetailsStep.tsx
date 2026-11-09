@@ -1,10 +1,11 @@
 import { useForm, Controller } from "react-hook-form";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { paymentDetailsSchema } from "../schemas/onboardingSchemas";
 import useOnboardingStore from "../store/onboardingStore";
 import TanzaniaPhoneInput from "../components/TanzaniaPhoneInput";
 import { useTranslation } from "../lib/i18n";
-import { apiPost } from "../services/api";
+import { apiGet, apiPost } from "../services/api";
 
 declare global {
   interface Window {
@@ -36,8 +37,9 @@ const MOBILE_NETWORKS = [
 ];
 
 export default function PaymentDetailsStep() {
-  const { paymentDetails, updatePaymentDetails, language, token } =
+  const { paymentDetails, updatePaymentDetails, language } =
     useOnboardingStore();
+  const [referralCode, setReferralCode] = useState("");
 
   const t = useTranslation(language);
 
@@ -61,6 +63,21 @@ export default function PaymentDetailsStep() {
         mobile_network: data.mobileNetwork,
       });
 
+      const normalizedReferralCode = referralCode.trim().toUpperCase();
+      if (normalizedReferralCode) {
+        const currentUser = await apiGet("/auth/me");
+        const refereeId = currentUser.user?.id ?? currentUser.id;
+        if (!refereeId) {
+          throw new Error("Could not identify your account to apply the referral code.");
+        }
+
+        await apiPost("/referrals/process", {
+          referral_code: normalizedReferralCode,
+          referee_id: refereeId,
+          referee_type: "driver",
+        });
+      }
+
       updatePaymentDetails(data);
 
       // Notify Flutter app that onboarding is complete
@@ -75,7 +92,11 @@ export default function PaymentDetailsStep() {
       }
     } catch (error) {
       console.error("Error saving payment details:", error);
-      alert("Failed to save payment details. Please try again.");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to save payment details. Please try again.",
+      );
     }
   };
 
@@ -177,6 +198,22 @@ export default function PaymentDetailsStep() {
         {errors.mobileNetwork && (
           <p className={errorClass}>{errors.mobileNetwork.message}</p>
         )}
+      </div>
+
+      <div>
+        <label htmlFor="referralCode" className={labelClass}>
+          {t("referralCode")}
+        </label>
+        <input
+          id="referralCode"
+          type="text"
+          value={referralCode}
+          onChange={(event) => setReferralCode(event.target.value.toUpperCase())}
+          className={inputClass}
+          placeholder={t("referralCodeOptional")}
+          autoCapitalize="characters"
+          autoComplete="off"
+        />
       </div>
 
       {/* Submit Button */}
