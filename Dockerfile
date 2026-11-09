@@ -34,6 +34,9 @@ RUN pnpm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
+# Install curl for health checks
+RUN apk add --no-cache curl
+
 ENV NODE_ENV=production
 
 # Create a non-root user
