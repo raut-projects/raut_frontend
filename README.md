@@ -50,7 +50,7 @@ A separate onboarding route guides drivers through personal, licence, vehicle an
 | Notifications | Unread count in the header, notification panel, mark one/all as read, dismiss notifications |
 | Settings | Read-only profile and access details for the signed-in administrator |
 | Live Rides | Placeholder page; tracking and live-trip data are not implemented yet |
-| Marketing | API-backed promotions list with status tabs (active, scheduled, expired and drafts), search, pagination and delete; create/edit campaigns with discount, eligibility, schedule, usage limits, budget cap and DUO/peak-hour rules; referral programs and activity; read-only referral-code directory with user details, stats and pagination |
+| Marketing | API-backed promotions list with status tabs (active, scheduled, expired and drafts), search, pagination and delete; create/edit campaigns with discount, eligibility, schedule, usage limits, budget cap and DUO/peak-hour rules; referral programs, user enrollment and referral activity |
 | Support Tickets | API-backed ticket list, creation, search and filters, agent assignment, replies and internal notes, status/priority updates, escalation and CSV export |
 | Admin Users | API-backed admin list with Active/Invited/Deactivated tabs, search and pagination, invite and edit side panels, deactivate/reactivate, and a printable/exportable role permission matrix |
 | Settings subpages | Placeholder pages for Audit Logs, Platform Config and System Health |
@@ -407,7 +407,7 @@ Promotion create/update sends `code`, `name`, `description`, `discount_type`, `d
 
 The marketing endpoints above are the frontend-side contract. Response mapping is intentionally tolerant in `src/services/marketing.ts` and `src/services/referrals.ts`; if the backend uses different paths or field names, update those services and `API_ROUTES` rather than the page components.
 
-Referral API types live in `src/lib/referrals.ts`, endpoint functions in `src/services/referrals.ts`, and React Query hooks in `src/hooks/useReferrals.ts`. The `reward_config` value is JSON-safe and deliberately opaque to the frontend. The Referral codes directory lists codes returned by `GET /referrals/users` and opens details through `GET /referrals/users/{user_id}`; it does not call undocumented per-code endpoints.
+Referral API types live in `src/lib/referrals.ts`, endpoint functions in `src/services/referrals.ts`, and React Query hooks in `src/hooks/useReferrals.ts`. The `reward_config` value is JSON-safe and deliberately opaque to the frontend. Referral users and their activity are available in the Users & codes section of Programs & activity, using `GET /referrals/users` and `GET /referrals/users/{user_id}`; the backend does not define admin endpoints for managing individual codes.
 
 Marketing mock mode is on by default (`NEXT_PUBLIC_USE_MOCK_MARKETING` unset or `true`) for promotions only. It serves sample promotions from `src/lib/mockMarketing.ts` and shows a **Sample data** badge on the promotions page. Referral APIs always use the backend. Set `NEXT_PUBLIC_USE_MOCK_MARKETING=false` and rebuild to disable promotion samples.
 

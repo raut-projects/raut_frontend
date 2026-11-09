@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import type { ReactNode } from "react";
 import {
   Check,
   ChevronLeft,
   ChevronRight,
   CircleAlert,
-  ClipboardList,
   Pencil,
   Plus,
   RefreshCw,
@@ -19,6 +17,13 @@ import { useToast } from "@/components/toastContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   Table,
   TableBody,
@@ -549,11 +554,7 @@ function RewardFields({
   );
 }
 
-export function ReferralProgramsDashboard({
-  viewSwitcher,
-}: {
-  viewSwitcher: ReactNode;
-}) {
+export function ReferralProgramsDashboard() {
   const toast = useToast();
   const [section, setSection] = useState<ReferralSection>("programs");
   const [period, setPeriod] = useState("month");
@@ -788,12 +789,7 @@ export function ReferralProgramsDashboard({
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <div className="min-w-0 flex-1">
-          <SectionNav value={section} onChange={setSection} />
-        </div>
-        {viewSwitcher}
-      </div>
+      <SectionNav value={section} onChange={setSection} />
 
       {section === "programs" && (
         <div className="space-y-5">
@@ -907,30 +903,31 @@ export function ReferralProgramsDashboard({
             )}
           </section>
 
-          {editor && (
-            <form
-              onSubmit={saveProgram}
-              className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-card sm:p-5"
+          <Sheet
+            open={Boolean(editor)}
+            onOpenChange={(open) => {
+              if (!open && !createProgram.isPending && !updateProgram.isPending) {
+                setEditor(null);
+              }
+            }}
+          >
+            <SheetContent
+              side="right"
+              className="gap-0 overflow-y-auto p-0 sm:max-w-2xl"
+              style={{ width: "min(94vw, 42rem)", maxWidth: "42rem" }}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="font-semibold text-slate-900">
-                    {editor.programId ? "Edit program" : "Create a program"}
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Configure when each reward is issued and which users qualify.
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setEditor(null)}
-                  disabled={createProgram.isPending || updateProgram.isPending}
-                >
-                  Cancel
-                </Button>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {editor && (
+                <>
+                  <SheetHeader className="border-b border-slate-200 pr-12">
+                    <SheetTitle>
+                      {editor.programId ? "Edit program" : "Create a program"}
+                    </SheetTitle>
+                    <SheetDescription>
+                      Configure when each reward is issued and which users qualify.
+                    </SheetDescription>
+                  </SheetHeader>
+                  <form onSubmit={saveProgram} className="space-y-5 px-4 py-5 sm:px-6">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <label className={LABEL_CLASS}>
                   Program name
                   <Input
@@ -1087,7 +1084,7 @@ export function ReferralProgramsDashboard({
                   />
                 ))}
               </div>
-              <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-4 py-3 sm:-mx-6 sm:px-6">
                 <div className="flex flex-wrap gap-4">
                   <label className="flex items-center gap-2 text-sm text-slate-600">
                     <input
@@ -1124,16 +1121,31 @@ export function ReferralProgramsDashboard({
                     Active
                   </label>
                 </div>
-                <Button
-                  type="submit"
-                  disabled={createProgram.isPending || updateProgram.isPending}
-                  className="bg-brand-600 text-white hover:bg-brand-700"
-                >
-                  {editor.programId ? "Save changes" : "Create program"}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setEditor(null)}
+                    disabled={createProgram.isPending || updateProgram.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={
+                      createProgram.isPending || updateProgram.isPending
+                    }
+                    className="bg-brand-600 text-white hover:bg-brand-700"
+                  >
+                    {editor.programId ? "Save changes" : "Create program"}
+                  </Button>
+                </div>
               </div>
-            </form>
-          )}
+                  </form>
+                </>
+              )}
+            </SheetContent>
+          </Sheet>
 
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
             <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-5">
@@ -1560,16 +1572,32 @@ export function ReferralProgramsDashboard({
             </div>
           </section>
 
-          {detailUserId && (
-            <UserDetailPanel
-              user={userDetailQuery.data}
-              isPending={userDetailQuery.isPending}
-              isError={userDetailQuery.isError}
-              error={userDetailQuery.error}
-              onRetry={userDetailQuery.refetch}
-              onClose={() => setDetailUserId("")}
-            />
-          )}
+          <Sheet
+            open={Boolean(detailUserId)}
+            onOpenChange={(open) => {
+              if (!open) setDetailUserId("");
+            }}
+          >
+            <SheetContent
+              side="right"
+              className="gap-0 overflow-y-auto p-0 sm:max-w-lg"
+              style={{ width: "min(92vw, 32rem)" }}
+            >
+              <SheetHeader className="border-b border-slate-200 pr-12">
+                <SheetTitle>Referral details</SheetTitle>
+                <SheetDescription>
+                  Referral code and activity for this user.
+                </SheetDescription>
+              </SheetHeader>
+              <UserDetailPanel
+                user={userDetailQuery.data}
+                isPending={userDetailQuery.isPending}
+                isError={userDetailQuery.isError}
+                error={userDetailQuery.error}
+                onRetry={userDetailQuery.refetch}
+              />
+            </SheetContent>
+          </Sheet>
         </div>
       )}
 
@@ -1845,14 +1873,12 @@ function UserDetailPanel({
   isError,
   error,
   onRetry,
-  onClose,
 }: {
   user: ReferralUser | undefined;
   isPending: boolean;
   isError: boolean;
   error: Error | null;
   onRetry: () => void;
-  onClose: () => void;
 }) {
   const referredBy = Array.isArray(user?.referred_by) ? user.referred_by : [];
   const referredUsers = Array.isArray(user?.referred_users)
@@ -1867,53 +1893,49 @@ function UserDetailPanel({
   ];
 
   return (
-    <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <ClipboardList
-            className="size-4 text-brand-600"
-            aria-hidden="true"
-          />
-          <h3 className="font-semibold text-slate-900">Referral details</h3>
-        </div>
-        <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-          Close
-        </Button>
-      </div>
+    <div className="space-y-5 px-4 pb-6 pt-5">
       {isError ? (
         <QueryError error={error} onRetry={onRetry} />
       ) : isPending || !user ? (
-        <p className="py-5 text-sm text-slate-500">Loading user details…</p>
+        <div className="space-y-3" aria-label="Loading user details">
+          <div className="h-16 animate-pulse rounded-lg bg-slate-100" />
+          <div className="h-24 animate-pulse rounded-lg bg-slate-100" />
+          <div className="h-24 animate-pulse rounded-lg bg-slate-100" />
+        </div>
       ) : (
         <>
-          <div className="grid gap-3 border-b border-slate-100 pb-4 sm:grid-cols-3">
+          <div className="grid gap-4 rounded-lg bg-slate-50 p-4">
             <div>
               <p className="text-xs text-slate-500">Name</p>
               <p className="mt-1 text-sm font-medium text-slate-900">
                 {displayText(user, "name", user.user_id)}
               </p>
             </div>
-            <div>
-              <p className="text-xs text-slate-500">Referral code</p>
-              <p className="mt-1 text-sm font-medium text-slate-900">
-                {displayText(user, "referral_code")}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-500">Phone</p>
-              <p className="mt-1 text-sm font-medium text-slate-900">
-                {displayText(user, "phone")}
-              </p>
+            <div className="grid gap-3 border-t border-slate-200 pt-3 sm:grid-cols-2">
+              <div>
+                <p className="text-xs text-slate-500">Referral code</p>
+                <p className="mt-1 break-all text-sm font-medium text-slate-900">
+                  {displayText(user, "referral_code")}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Phone</p>
+                <p className="mt-1 break-all text-sm font-medium text-slate-900">
+                  {displayText(user, "phone")}
+                </p>
+              </div>
             </div>
           </div>
-          <div className="grid gap-4 lg:grid-cols-3">
+          <div className="space-y-5">
             {lists.map((list) => (
               <div key={list.title}>
-                <h4 className="mb-2 text-sm font-semibold text-slate-800">
+                <h4 className="mb-2 text-sm font-semibold text-slate-900">
                   {list.title}
                 </h4>
                 {list.values.length === 0 ? (
-                  <p className="text-sm text-slate-500">None recorded.</p>
+                  <p className="rounded-lg border border-dashed border-slate-200 px-3 py-4 text-sm text-slate-500">
+                    None recorded.
+                  </p>
                 ) : (
                   <ul className="space-y-2">
                     {list.values.map((entry, index) => {
@@ -1968,6 +1990,6 @@ function UserDetailPanel({
           </div>
         </>
       )}
-    </section>
+    </div>
   );
 }
