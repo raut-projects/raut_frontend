@@ -83,22 +83,6 @@ export const queryKeys = {
         promotionId,
       ],
     },
-    referrals: {
-      all: ["marketing", "referrals"],
-      codes: {
-        all: ["marketing", "referrals", "codes"],
-        list: (params) => ["marketing", "referrals", "codes", "list", params],
-        stats: ["marketing", "referrals", "codes", "stats"],
-        users: (search, userType) => [
-          "marketing",
-          "referrals",
-          "codes",
-          "users",
-          userType,
-          search,
-        ],
-      },
-    },
   },
   referrals: {
     all: ["referrals"],

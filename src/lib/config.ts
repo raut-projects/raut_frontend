@@ -59,12 +59,6 @@ export const API_ROUTES = {
   marketingPromotions: "/admin/marketing/promotions",
   marketingPromotion: (promotionId: string) =>
     `/admin/marketing/promotions/${encodeURIComponent(promotionId)}`,
-  marketingReferralCodes: "/admin/marketing/referrals/codes",
-  marketingReferralCodeStats: "/admin/marketing/referrals/codes/stats",
-  marketingReferralCode: (codeId: string) =>
-    `/admin/marketing/referrals/codes/${encodeURIComponent(codeId)}`,
-  marketingReferralCodeSend: (codeId: string) =>
-    `/admin/marketing/referrals/codes/${encodeURIComponent(codeId)}/send`,
   referralPrograms: "/referrals/programs",
   referralProgram: (programId: string) =>
     `/referrals/programs/${encodeURIComponent(programId)}`,

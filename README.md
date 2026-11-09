@@ -520,13 +520,11 @@ raut_frontend/
 | `src/services/api.ts` | `apiGet`, `apiPost`, `apiPatch`, `apiPut`, `apiDelete` and query-string building |
 | `src/services/supportTickets.ts` | Support ticket endpoints, API response mapping and ticket mutation payloads |
 | `src/services/marketing.ts` | Promotion endpoints, tolerant response mapping, mutation payloads and the mock-mode switch |
-| `src/services/referralCodes.ts` | Legacy referral-code helpers; the active referral-code directory uses the documented referral-user API |
 | `src/services/referrals.ts` | Referral-program, enrollment, stats, user, relationship, payment, and user referral-code API functions |
 | `src/hooks/useReferrals.ts` | React Query hooks and mutation invalidation for referral-program APIs |
 | `src/lib/mockMarketing.ts` | Sample promotions, in-memory mock CRUD/list behavior and the promotion mock-data flag |
 | `src/lib/referrals.ts` | Referral API request/response types and JSON-safe reward configuration |
 | `src/lib/marketing.ts` | Promotion types, status labels, form defaults, date/currency formatting, promo-code generation, CSV parsing and payload mapping |
-| `src/lib/referralCodes.ts` | Referral-code types, status/user-type/reward labels, defaults, code generation, link building, filters, action eligibility and payload mapping |
 | `src/schemas/marketingSchemas.ts` | Zod validation for promotion campaigns |
 | `src/services/adminUsers.ts` | Admin user list, invite, update and activate/deactivate endpoints with tolerant response mapping and the mock-mode switch |
 | `src/lib/mockAdminUsers.ts` | Seeded admin users, in-memory mock list/CRUD behavior and the mock-data flag |

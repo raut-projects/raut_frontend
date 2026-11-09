@@ -3,11 +3,6 @@ import { create } from "zustand";
 import type { AdminUserStatus } from "@/lib/adminUsers";
 import type { PromotionTab } from "@/lib/marketing";
 import type {
-  ReferralCodeTab,
-  ReferralDatePreset,
-  ReferralUserTypeFilter,
-} from "@/lib/referralCodes";
-import type {
   SupportTicketPriority,
   SupportTicketStatus,
 } from "@/lib/supportTickets";
@@ -70,15 +65,6 @@ type PageViewValues = {
   marketingPromotions: {
     status: PromotionTab;
     search: string;
-    page: number;
-  };
-  marketingReferrals: {
-    status: ReferralCodeTab;
-    search: string;
-    type: ReferralUserTypeFilter;
-    range: ReferralDatePreset;
-    from: string;
-    to: string;
     page: number;
   };
   adminUsers: {
@@ -160,15 +146,6 @@ function createInitialViews(): PageViewValues {
     marketingPromotions: {
       status: "active",
       search: "",
-      page: 1,
-    },
-    marketingReferrals: {
-      status: "all",
-      search: "",
-      type: "all",
-      range: "all",
-      from: "",
-      to: "",
       page: 1,
     },
     adminUsers: {
