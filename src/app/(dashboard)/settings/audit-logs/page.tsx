@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Activity,
   CalendarDays,
@@ -173,10 +173,6 @@ function AuditLogsPage() {
       toDate,
   );
   const invalidDateRange = Boolean(fromDate && toDate && fromDate > toDate);
-
-  useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
 
   const resetPage = () => setPage(1);
 
