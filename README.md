@@ -53,7 +53,7 @@ A separate onboarding route guides drivers through personal, licence, vehicle an
 | Marketing | API-backed promotions list with status tabs (active, scheduled, expired and drafts), search, pagination, activate/deactivate and delete; create/edit campaigns with discount, eligibility, schedule, usage limits, budget cap and DUO/peak-hour rules; referral programs, user enrollment and referral activity |
 | Support Tickets | API-backed ticket list, creation, search and filters, agent assignment, replies and internal notes, status/priority updates, escalation and CSV export |
 | Admin Users | API-backed admin list with Active/Invited/Deactivated tabs, search and pagination, invite and edit side panels, deactivate/reactivate, and a printable/exportable role permission matrix |
-| Settings subpages | Placeholder pages for Audit Logs, Platform Config and System Health |
+| Settings subpages | Mock-data audit log review; Platform Config and System Health placeholders |
 | Driver onboarding | Four-step driver application flow with English/Swahili UI, validation, document uploads and Flutter WebView hand-off |
 | User experience | Responsive sidebar and header, loading skeletons, retryable error states, refresh indicators, toast feedback and print-friendly analytics |
 
@@ -189,7 +189,7 @@ Run `pnpm run build` before `pnpm run start` or `pnpm run preview`.
 | `/support-tickets/[id]` | Admin | Ticket detail, agent assignment, replies/internal notes, status/priority updates and escalation |
 | `/settings` | Admin | Signed-in account profile and access details |
 | `/settings/admin-users` | Admin | Admin user list with status tabs, search, invite and edit panels, deactivate/reactivate and a role permission matrix |
-| `/settings/audit-logs` | Admin | Audit logs placeholder (Coming soon) |
+| `/settings/audit-logs` | Admin | Searchable, filterable mock audit events with detail panel and CSV export |
 | `/settings/platform` | Admin | Platform configuration placeholder (Coming soon) |
 | `/settings/system-health` | Admin | System health placeholder (Coming soon) |
 | `*` | Public | Render the not-found page |
@@ -611,7 +611,7 @@ Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Re
 
 ## Known limitations
 
-- Live Rides, Audit Logs, Platform Config and System Health are placeholder pages.
+- Live Rides, Platform Config and System Health are placeholder pages. Audit Logs currently uses illustrative mock data and is not connected to a backend audit endpoint.
 - There is currently no automated test suite or CI configuration.
 - There is no role-level UI beyond the admin gate; every configured admin role sees every admin page. The Admin Users page is also intentionally not gated by role for now: any signed-in admin can open it.
 - The Admin Users permission matrix and per-admin overrides are informational. They are displayed, printed and exported, but the backend must enforce them before they restrict access.
