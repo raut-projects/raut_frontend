@@ -310,18 +310,6 @@ function SystemHealthPage() {
         </span>
       </header>
 
-      <aside
-        role="note"
-        className="flex items-start gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3.5 text-sm text-sky-950"
-      >
-        <Activity className="mt-0.5 size-4 shrink-0 text-sky-700" aria-hidden="true" />
-        <p className="leading-6">
-          <span className="font-semibold">Illustrative sample data.</span>{" "}
-          Service statuses, metrics, jobs and incidents below are examples only
-          and are not connected to live platform telemetry.
-        </p>
-      </aside>
-
       <section
         aria-label="Overall system status"
         className="rounded-xl border border-amber-200 bg-white px-4 py-4 sm:px-5"
