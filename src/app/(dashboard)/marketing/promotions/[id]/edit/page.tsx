@@ -9,7 +9,11 @@ import { QueryError } from "@/components/queryStates";
 import { useToast } from "@/components/toastContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePromotion, useUpdatePromotion } from "@/hooks/useMarketing";
-import { promotionToFormValues, type PromotionPayload } from "@/lib/marketing";
+import {
+  derivePromotionStatus,
+  promotionToFormValues,
+  type PromotionPayload,
+} from "@/lib/marketing";
 import { usePageViewStore } from "@/store/pageViewStore";
 
 export default function EditPromotionPage() {
@@ -25,14 +29,22 @@ export default function EditPromotionPage() {
       await update.mutateAsync(payload);
       usePageViewStore
         .getState()
-        .setField("marketingPromotions", "status", payload.status);
+        .setField(
+          "marketingPromotions",
+          "status",
+          derivePromotionStatus({
+            isActive: payload.is_active,
+            startsAt: payload.start_date,
+            endsAt: payload.end_date,
+          }),
+        );
       usePageViewStore.getState().setField("marketingPromotions", "page", 1);
       toast.success(
-        payload.status === "draft"
-          ? "Promotion saved as a draft."
-          : "Promotion updated.",
+        payload.is_active
+          ? "Promotion updated."
+          : "Promotion saved as a draft.",
       );
-      router.push("/marketing");
+      router.push("/marketing/promotions");
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -90,10 +102,10 @@ export default function EditPromotionPage() {
           key={query.data.id}
           mode="edit"
           initialValues={promotionToFormValues(query.data)}
-          initialStatus={query.data.status}
+          initialIsActive={query.data.isActive}
           isSubmitting={update.isPending}
           onSubmit={handleSubmit}
-          onCancel={() => router.push("/marketing")}
+          onCancel={() => router.push("/marketing/promotions")}
         />
       ) : null}
     </div>

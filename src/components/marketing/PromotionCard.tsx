@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, Pencil, Trash2, Users } from "lucide-react";
+import { CalendarDays, Pencil, Power, Trash2, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -59,11 +59,15 @@ function audienceLabels(promotion: Promotion) {
 export function PromotionCard({
   promotion,
   onDelete,
+  onToggleStatus,
   deleting = false,
+  toggling = false,
 }: {
   promotion: Promotion;
   onDelete: (promotion: Promotion) => void;
+  onToggleStatus: (promotion: Promotion) => void;
   deleting?: boolean;
+  toggling?: boolean;
 }) {
   const budgetPercent = promotionBudgetPercent(promotion);
   const usageLimit =
@@ -162,7 +166,7 @@ export function PromotionCard({
         ))}
       </div>
 
-      <div className="mt-5 flex items-center justify-between gap-2 border-t border-slate-100 pt-4">
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-4">
         <Button
           asChild
           variant="outline"
@@ -173,6 +177,21 @@ export function PromotionCard({
             <Pencil className="size-3.5" aria-hidden="true" />
             Edit
           </Link>
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => onToggleStatus(promotion)}
+          disabled={toggling}
+          className={
+            promotion.isActive
+              ? "text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+              : "text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+          }
+        >
+          <Power className="size-3.5" aria-hidden="true" />
+          {promotion.isActive ? "Deactivate" : "Activate"}
         </Button>
         <Button
           type="button"

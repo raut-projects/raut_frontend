@@ -56,9 +56,13 @@ export const API_ROUTES = {
     `/admin/support/tickets/${encodeURIComponent(ticketId)}/priority`,
   supportTicketEscalate: (ticketId: string) =>
     `/admin/support/tickets/${encodeURIComponent(ticketId)}/escalate`,
-  marketingPromotions: "/admin/marketing/promotions",
+  marketingPromotions: "/promotions/",
   marketingPromotion: (promotionId: string) =>
-    `/admin/marketing/promotions/${encodeURIComponent(promotionId)}`,
+    `/promotions/${encodeURIComponent(promotionId)}`,
+  marketingPromotionActivate: (promotionId: string) =>
+    `/promotions/${encodeURIComponent(promotionId)}/activate`,
+  marketingPromotionDeactivate: (promotionId: string) =>
+    `/promotions/${encodeURIComponent(promotionId)}/deactivate`,
   referralPrograms: "/referrals/programs",
   referralProgram: (programId: string) =>
     `/referrals/programs/${encodeURIComponent(programId)}`,

@@ -30,7 +30,6 @@ import {
   type DiscountType,
   type PromotionFormValues,
   type PromotionPayload,
-  type PromotionStatus,
 } from "@/lib/marketing";
 import { promotionFormSchema } from "@/schemas/marketingSchemas";
 
@@ -158,14 +157,14 @@ function errorText(errors: FieldErrors, key: string) {
 export function PromotionForm({
   mode,
   initialValues,
-  initialStatus,
+  initialIsActive,
   isSubmitting,
   onSubmit,
   onCancel,
 }: {
   mode: "create" | "edit";
   initialValues?: PromotionFormValues;
-  initialStatus?: PromotionStatus;
+  initialIsActive?: boolean;
   isSubmitting: boolean;
   onSubmit: (payload: PromotionPayload) => Promise<void>;
   onCancel: () => void;
@@ -202,21 +201,16 @@ export function PromotionForm({
   const minimumRideEnabled = useWatch({ control, name: "minimumRideEnabled" });
   const startsAt = useWatch({ control, name: "startsAt" });
 
-  const resolveStatus = (
-    values: PromotionFormValues,
-    intent: "draft" | "live",
-  ): PromotionPayload["status"] => {
-    if (intent === "draft") return "draft";
-    if (mode === "edit" && initialStatus === "active") return "active";
+  const resolveIsActive = (intent: "draft" | "live") => {
+    if (intent === "draft") return false;
+    if (mode === "edit") return initialIsActive ?? true;
 
-    const start = new Date(values.startsAt).getTime();
-
-    return Number.isFinite(start) && start > Date.now() ? "scheduled" : "active";
+    return true;
   };
 
   const submitWith = (intent: "draft" | "live") => {
     void handleSubmit(async (values) => {
-      await onSubmit(toPromotionPayload(values, resolveStatus(values, intent)));
+      await onSubmit(toPromotionPayload(values, resolveIsActive(intent)));
     })();
   };
 
@@ -530,7 +524,7 @@ export function PromotionForm({
         description="Decide who can redeem this promotion."
       >
         <div className="grid gap-2 sm:grid-cols-2">
-          <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm has-[:checked]:border-brand-300 has-[:checked]:bg-brand-50">
+          <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm has-checked:border-brand-300 has-checked:bg-brand-50">
             <input
               type="checkbox"
               className="mt-0.5 h-4 w-4 accent-brand-600"
@@ -544,7 +538,7 @@ export function PromotionForm({
             </span>
           </label>
 
-          <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm has-[:checked]:border-brand-300 has-[:checked]:bg-brand-50">
+          <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm has-checked:border-brand-300 has-checked:bg-brand-50">
             <input
               type="checkbox"
               className="mt-0.5 h-4 w-4 accent-brand-600"

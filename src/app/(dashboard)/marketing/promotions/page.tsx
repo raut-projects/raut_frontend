@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Megaphone, Plus, Search } from "lucide-react";
 
 import { MarketingTabs } from "@/components/marketing/MarketingTabs";
-import { MockDataBadge } from "@/components/marketing/MockDataBadge";
 import { PromotionCard } from "@/components/marketing/PromotionCard";
 import { QueryError, RefreshIndicator } from "@/components/queryStates";
 import { ConfirmDialog } from "@/components/reasonDialog";
@@ -14,7 +13,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { useDeletePromotion, usePromotions } from "@/hooks/useMarketing";
+import {
+  useActivatePromotion,
+  useDeactivatePromotion,
+  useDeletePromotion,
+  usePromotions,
+} from "@/hooks/useMarketing";
 import type { Promotion, PromotionTab } from "@/lib/marketing";
 import { usePageViewField } from "@/store/pageViewStore";
 
@@ -48,6 +52,7 @@ export default function MarketingPage() {
   const [search, setSearch] = usePageViewField("marketingPromotions", "search");
   const [page, setPage] = usePageViewField("marketingPromotions", "page");
   const [pendingDelete, setPendingDelete] = useState<Promotion | null>(null);
+  const [pendingStatusId, setPendingStatusId] = useState<string | null>(null);
 
   const debouncedSearch = useDebouncedValue(search, 300);
   const params = useMemo(
@@ -57,6 +62,8 @@ export default function MarketingPage() {
 
   const query = usePromotions(params);
   const remove = useDeletePromotion();
+  const activate = useActivatePromotion();
+  const deactivate = useDeactivatePromotion();
   const promotions = query.data?.items ?? [];
   const total = query.data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -92,6 +99,28 @@ export default function MarketingPage() {
     }
   };
 
+  const handleToggleStatus = async (promotion: Promotion) => {
+    setPendingStatusId(promotion.id);
+
+    try {
+      if (promotion.isActive) {
+        await deactivate.mutateAsync(promotion.id);
+        toast.success(`${promotion.code} deactivated.`);
+      } else {
+        await activate.mutateAsync(promotion.id);
+        toast.success(`${promotion.code} activated.`);
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : `Could not ${promotion.isActive ? "deactivate" : "activate"} the promotion.`,
+      );
+    } finally {
+      setPendingStatusId(null);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -100,7 +129,6 @@ export default function MarketingPage() {
             <h2 className="text-2xl font-bold tracking-tight text-slate-900">
               Promotions &amp; Marketing
             </h2>
-            <MockDataBadge />
           </div>
           <p className="mt-1 text-sm text-slate-500">
             Create and manage rider promotions, discounts and referral rewards.
@@ -193,9 +221,11 @@ export default function MarketingPage() {
               key={ promotion.id }
               promotion={ promotion }
               onDelete={ setPendingDelete }
+              onToggleStatus={ handleToggleStatus }
               deleting={
                 remove.isPending && pendingDelete?.id === promotion.id
               }
+              toggling={ pendingStatusId === promotion.id }
             />
           )) }
         </div>
