@@ -190,19 +190,19 @@ function RoutesPage() {
             Routes
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            {isPending
+            { isPending
               ? "Loading routes."
               : status === "all"
                 ? `${total} route${total === 1 ? "" : "s"} on record`
-                : `${total} ${ROUTE_STATUS_LABELS[status] ?? status} route${total === 1 ? "" : "s"}`}
+                : `${total} ${ROUTE_STATUS_LABELS[status] ?? status} route${total === 1 ? "" : "s"}` }
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <select
-            value={status}
-            onChange={(event) => onStatusChange(event.target.value)}
+            value={ status }
+            onChange={ (event) => onStatusChange(event.target.value) }
             aria-label="Filter routes by status"
-            className={controlClass}
+            className={ controlClass }
           >
             <option value="all">All statuses</option>
             <option value="active">Active</option>
@@ -211,87 +211,86 @@ function RoutesPage() {
           </select>
 
           <select
-            value={driverId}
-            onChange={(event) => onDriverChange(event.target.value)}
+            value={ driverId }
+            onChange={ (event) => onDriverChange(event.target.value) }
             aria-label="Filter routes by driver"
-            className={`${controlClass} max-w-48`}
+            className={ `${controlClass} max-w-48` }
           >
             <option value="">All drivers</option>
-            {drivers.map((driver) => (
-              <option key={driver.id} value={driver.id}>
-                {driver.name}
+            { drivers.map((driver) => (
+              <option key={ driver.id } value={ driver.id }>
+                { driver.name }
               </option>
-            ))}
+            )) }
           </select>
 
           <input
             type="search"
-            value={origin}
-            onChange={(event) => onOriginChange(event.target.value)}
+            value={ origin }
+            onChange={ (event) => onOriginChange(event.target.value) }
             placeholder="Search origin"
             aria-label="Filter routes by origin"
-            className={`${inputClass} w-44`}
+            className={ `${inputClass} w-44` }
           />
 
           <input
             type="search"
-            value={destination}
-            onChange={(event) => onDestinationChange(event.target.value)}
+            value={ destination }
+            onChange={ (event) => onDestinationChange(event.target.value) }
             placeholder="Search destination"
             aria-label="Filter routes by destination"
-            className={`${inputClass} w-44`}
+            className={ `${inputClass} w-44` }
           />
 
           <input
             type="date"
-            value={from}
-            onChange={(event) => onFromChange(event.target.value)}
+            value={ from }
+            onChange={ (event) => onFromChange(event.target.value) }
             aria-label="Routes created from"
-            className={inputClass}
+            className={ inputClass }
           />
 
           <input
             type="date"
-            value={to}
-            onChange={(event) => onToChange(event.target.value)}
+            value={ to }
+            onChange={ (event) => onToChange(event.target.value) }
             aria-label="Routes created until"
-            className={inputClass}
+            className={ inputClass }
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {summaryCards.map((card) => {
+        { summaryCards.map((card) => {
           const active = status === card.status;
 
           return (
             <button
-              key={card.label}
+              key={ card.label }
               type="button"
-              onClick={() => onStatusChange(card.status)}
-              aria-pressed={active}
-              className={`cursor-pointer stat-card text-left transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
-                active ? "ring-2 ring-brand-500" : "hover:shadow-md"
-              }`}
+              onClick={ () => onStatusChange(card.status) }
+              aria-pressed={ active }
+              className={ `cursor-pointer stat-card text-left transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${active ? "ring-2 ring-brand-500" : "hover:shadow-md"
+                }` }
             >
               <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                {card.label}
+                { card.label }
               </p>
               <p className="mt-1.5 text-lg font-bold tracking-tight sm:text-2xl text-slate-900">
-                {summaryPending ? "-" : card.value}
+                { summaryPending ? "-" : card.value }
               </p>
-              <p className="mt-0.5 text-xs text-slate-500">{card.hint}</p>
+              <p className="mt-0.5 text-xs text-slate-500">{ card.hint }</p>
             </button>
           );
-        })}
+        }) }
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5">
           <RefreshIndicator
-            isFetching={isFetching}
-            updatedAt={dataUpdatedAt}
-            onRefresh={refetch}
+            isFetching={ isFetching }
+            updatedAt={ dataUpdatedAt }
+            onRefresh={ refetch }
           />
         </div>
         <Table className="min-w-full">
@@ -309,96 +308,94 @@ function RoutesPage() {
             </TableRow>
           </TableHeader>
 
-          {isPending && (
+          { isPending && (
             <TableSkeleton
-              rows={PAGE_SIZE}
-              cols={9}
-              mobileCols={3}
-              lgCols={6}
+              rows={ PAGE_SIZE }
+              cols={ 9 }
+              mobileCols={ 3 }
+              lgCols={ 6 }
             />
-          )}
+          ) }
 
-          {isError && (
+          { isError && (
             <TableBody>
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={9} className="p-0">
-                  <QueryError error={error} onRetry={refetch} />
+                <TableCell colSpan={ 9 } className="p-0">
+                  <QueryError error={ error } onRetry={ refetch } />
                 </TableCell>
               </TableRow>
             </TableBody>
-          )}
+          ) }
 
-          {!isPending && !isError && (
+          { !isPending && !isError && (
             <TableBody>
-              {routes.map((route) => (
+              { routes.map((route) => (
                 <TableRow
-                  key={route.routeId}
-                  onClick={() => setViewTarget(route)}
-                  onKeyDown={(event) => {
+                  key={ route.routeId }
+                  onClick={ () => setViewTarget(route) }
+                  onKeyDown={ (event) => {
                     if (event.target !== event.currentTarget) return;
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
                       setViewTarget(route);
                     }
-                  }}
-                  tabIndex={0}
+                  } }
+                  tabIndex={ 0 }
                   className="cursor-pointer focus-visible:outline-2 focus-visible:outline-brand-600"
                 >
                   <TableCell>
                     <span className="block max-w-20 truncate font-medium text-slate-900 sm:max-w-40 xl:max-w-[18rem]">
-                      {route.route}
+                      { route.route }
                     </span>
                     <span className="block max-w-20 truncate text-xs text-slate-400 lg:hidden">
-                      {route.driver}
+                      { route.driver }
                     </span>
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
                     <span className="block max-w-32 truncate text-slate-900">
-                      {route.driver}
+                      { route.driver }
                     </span>
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
                     <span className="block max-w-56 truncate text-slate-900">
-                      {route.vehicle}
+                      { route.vehicle }
                     </span>
                     <span className="block text-xs text-slate-400">
-                      {route.plateNumber}
+                      { route.plateNumber }
                     </span>
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
                     <span className="block text-slate-900">
-                      {route.distance}
+                      { route.distance }
                     </span>
                   </TableCell>
                   <TableCell className="hidden text-slate-700 xl:table-cell">
-                    {route.seats}
+                    { route.seats }
                   </TableCell>
                   <TableCell className="hidden xl:table-cell">
                     <span className="block text-slate-900">
-                      {route.totalRides} total
+                      { route.totalRides } total
                     </span>
                   </TableCell>
                   <TableCell>
                     <span
-                      className={`badge ring-1 ring-inset ${
-                        statusStyles[route.status] ?? statusStyles.Active
-                      }`}
+                      className={ `badge ring-1 ring-inset ${statusStyles[route.status] ?? statusStyles.Active
+                        }` }
                     >
                       <span
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          statusDots[route.status] ?? statusDots.Active
-                        }`}
+                        className={ `h-1.5 w-1.5 rounded-full ${statusDots[route.status] ?? statusDots.Active
+                          }` }
                         aria-hidden="true"
                       />
-                      {route.status}
+                      { route.status }
                     </span>
                   </TableCell>
                   <TableCell className="hidden xl:table-cell">
-                    {route.created}
+                    { route.created }
                   </TableCell>
                   <TableCell
                     className="text-right"
-                    onClick={(event) => event.stopPropagation()}
+                    onClick={ (event) => event.stopPropagation() }
                   >
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -407,7 +404,7 @@ function RoutesPage() {
                           variant="ghost"
                           size="icon"
                           className="text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                          aria-label={`Actions for ${route.id}`}
+                          aria-label={ `Actions for ${route.id}` }
                         >
                           <EllipsisVertical
                             className="h-4 w-4"
@@ -420,74 +417,74 @@ function RoutesPage() {
                         className="w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
                       >
                         <DropdownMenuItem
-                          onSelect={() => setViewTarget(route)}
+                          onSelect={ () => setViewTarget(route) }
                           className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                         >
                           View
                         </DropdownMenuItem>
-                        {route.canCancel && (
+                        { route.canCancel && (
                           <>
                             <DropdownMenuSeparator className="bg-slate-100" />
                             <DropdownMenuItem
                               variant="destructive"
-                              onSelect={() => openCancelDialog(route)}
+                              onSelect={ () => openCancelDialog(route) }
                               className="px-2.5 py-1.5 text-xs font-medium"
                             >
                               Cancel route
                             </DropdownMenuItem>
                           </>
-                        )}
+                        ) }
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))}
-              {routes.length === 0 && (
+              )) }
+              { routes.length === 0 && (
                 <TableRow className="hover:bg-transparent">
                   <TableCell
-                    colSpan={9}
+                    colSpan={ 9 }
                     className="py-10 text-center text-slate-500"
                   >
                     No routes match these filters.
                   </TableCell>
                 </TableRow>
-              )}
+              ) }
             </TableBody>
-          )}
+          ) }
         </Table>
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3.5 sm:px-5">
           <p className="text-xs text-slate-500">
-            Showing{" "}
+            Showing{ " " }
             <span className="font-semibold text-slate-700">
-              {routes.length}
-            </span>{" "}
-            of <span className="font-semibold text-slate-700">{total}</span>
-            {totalPages > 1 && (
+              { routes.length }
+            </span>{ " " }
+            of <span className="font-semibold text-slate-700">{ total }</span>
+            { totalPages > 1 && (
               <>
-                {" "}
-                - Page{" "}
+                { " " }
+                - Page{ " " }
                 <span className="font-semibold text-slate-700">
-                  {page}
-                </span> of{" "}
+                  { page }
+                </span> of{ " " }
                 <span className="font-semibold text-slate-700">
-                  {totalPages}
+                  { totalPages }
                 </span>
               </>
-            )}
+            ) }
           </p>
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-              disabled={page <= 1 || isPlaceholderData}
+              onClick={ () => setPage((prev) => Math.max(1, prev - 1)) }
+              disabled={ page <= 1 || isPlaceholderData }
               className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400 disabled:hover:bg-white"
             >
               Previous
             </button>
             <button
               type="button"
-              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-              disabled={page >= totalPages || isPlaceholderData}
+              onClick={ () => setPage((prev) => Math.min(totalPages, prev + 1)) }
+              disabled={ page >= totalPages || isPlaceholderData }
               className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400 disabled:hover:bg-white"
             >
               Next
@@ -497,30 +494,29 @@ function RoutesPage() {
       </div>
 
       <ViewRoutePanel
-        open={Boolean(viewTarget)}
-        onClose={() => setViewTarget(null)}
-        route={viewTarget}
+        open={ Boolean(viewTarget) }
+        onClose={ () => setViewTarget(null) }
+        route={ viewTarget }
       />
 
       <ReasonDialog
-        open={Boolean(cancelTarget)}
-        onClose={closeCancelDialog}
+        open={ Boolean(cancelTarget) }
+        onClose={ closeCancelDialog }
         title="Cancel route"
         description={
           cancelTarget
-            ? `${cancelTarget.route} (${cancelTarget.id}) will be cancelled${
-                cancelRides ? " along with its active rides" : ""
-              }.`
+            ? `${cancelTarget.route} (${cancelTarget.id}) will be cancelled${cancelRides ? " along with its active rides" : ""
+            }.`
             : undefined
         }
         confirmLabel="Cancel route"
         label="Reason"
         tone="danger"
         placeholder="Why is this route being cancelled?"
-        value={cancelReason}
-        onChange={setCancelReason}
-        pending={cancelRoute.isPending}
-        onConfirm={async (reason) => {
+        value={ cancelReason }
+        onChange={ setCancelReason }
+        pending={ cancelRoute.isPending }
+        onConfirm={ async (reason) => {
           await cancelRoute.mutateAsync({
             routeId: cancelTarget.routeId,
             reason,
@@ -529,13 +525,13 @@ function RoutesPage() {
 
           if (viewTarget?.routeId === cancelTarget.routeId) setViewTarget(null);
           setCancelTarget(null);
-        }}
+        } }
       >
         <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
           <input
             type="checkbox"
-            checked={cancelRides}
-            onChange={(event) => setCancelRides(event.target.checked)}
+            checked={ cancelRides }
+            onChange={ (event) => setCancelRides(event.target.checked) }
             className="mt-0.5 h-4 w-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500"
           />
           <span>

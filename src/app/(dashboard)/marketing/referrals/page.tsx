@@ -172,8 +172,8 @@ function rewardFromProgram(
     durationDays: stringValue(reward.duration_days, "90"),
     trigger:
       reward.trigger === "signup" ||
-      reward.trigger === "onboarding_complete" ||
-      reward.trigger === "document_verified"
+        reward.trigger === "onboarding_complete" ||
+        reward.trigger === "document_verified"
         ? reward.trigger
         : "first_ride",
   };
@@ -387,21 +387,20 @@ function SectionNav({
       aria-label="Referral management sections"
       className="flex gap-1 overflow-x-auto border-b border-slate-200"
     >
-      {sections.map((section) => (
+      { sections.map((section) => (
         <button
-          key={section.value}
+          key={ section.value }
           type="button"
-          aria-pressed={value === section.value}
-          onClick={() => onChange(section.value)}
-          className={`shrink-0 border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors ${
-            value === section.value
+          aria-pressed={ value === section.value }
+          onClick={ () => onChange(section.value) }
+          className={ `shrink-0 border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors ${value === section.value
               ? "border-brand-600 text-brand-700"
               : "border-transparent text-slate-500 hover:text-slate-800"
-          }`}
+            }` }
         >
-          {section.label}
+          { section.label }
         </button>
-      ))}
+      )) }
     </nav>
   );
 }
@@ -417,11 +416,11 @@ function StatTile({
 }) {
   return (
     <div className="min-w-0 border-l-2 border-brand-200 pl-3">
-      <p className="text-xs font-medium text-slate-500">{label}</p>
+      <p className="text-xs font-medium text-slate-500">{ label }</p>
       <p className="mt-1 truncate text-xl font-semibold tabular-nums text-slate-900">
-        {value}
+        { value }
       </p>
-      {detail && <p className="mt-0.5 text-xs text-slate-500">{detail}</p>}
+      { detail && <p className="mt-0.5 text-xs text-slate-500">{ detail }</p> }
     </div>
   );
 }
@@ -440,53 +439,53 @@ function RewardFields({
   return (
     <fieldset className="space-y-3 rounded-xl border border-slate-200 p-4">
       <legend className="px-1 text-sm font-semibold text-slate-800">
-        {title}
+        { title }
       </legend>
-      {allowDisable && (
+      { allowDisable && (
         <label className="flex items-center gap-2 text-sm text-slate-600">
           <input
             type="checkbox"
-            checked={reward.enabled}
-            onChange={(event) =>
+            checked={ reward.enabled }
+            onChange={ (event) =>
               onChange({ ...reward, enabled: event.target.checked })
             }
             className="size-4 rounded border-slate-300 accent-brand-600"
           />
           This user receives a reward
         </label>
-      )}
-      {reward.enabled && (
+      ) }
+      { reward.enabled && (
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className={LABEL_CLASS}>
+          <label className={ LABEL_CLASS }>
             Reward type
             <select
-              value={reward.type}
-              onChange={(event) =>
+              value={ reward.type }
+              onChange={ (event) =>
                 onChange({ ...reward, type: event.target.value as RewardType })
               }
-              className={INPUT_CLASS}
+              className={ INPUT_CLASS }
             >
               <option value="fixed">Fixed amount</option>
               <option value="percentage">Percentage</option>
               <option value="commission">Commission</option>
             </select>
           </label>
-          {reward.type === "fixed" ? (
-            <label className={LABEL_CLASS}>
+          { reward.type === "fixed" ? (
+            <label className={ LABEL_CLASS }>
               Amount (TZS)
               <Input
                 type="number"
                 min="1"
                 step="1"
                 required
-                value={reward.amount}
-                onChange={(event) =>
+                value={ reward.amount }
+                onChange={ (event) =>
                   onChange({ ...reward, amount: event.target.value })
                 }
               />
             </label>
           ) : (
-            <label className={LABEL_CLASS}>
+            <label className={ LABEL_CLASS }>
               Rate (0.02 = 2%)
               <Input
                 type="number"
@@ -494,53 +493,53 @@ function RewardFields({
                 max="1"
                 step="0.001"
                 required
-                value={reward.rate}
-                onChange={(event) =>
+                value={ reward.rate }
+                onChange={ (event) =>
                   onChange({ ...reward, rate: event.target.value })
                 }
               />
             </label>
-          )}
-          {reward.type === "percentage" && (
-            <label className={LABEL_CLASS}>
+          ) }
+          { reward.type === "percentage" && (
+            <label className={ LABEL_CLASS }>
               Maximum amount (TZS, optional)
               <Input
                 type="number"
                 min="1"
                 step="1"
-                value={reward.maxAmount}
-                onChange={(event) =>
+                value={ reward.maxAmount }
+                onChange={ (event) =>
                   onChange({ ...reward, maxAmount: event.target.value })
                 }
               />
             </label>
-          )}
-          {reward.type === "commission" && (
-            <label className={LABEL_CLASS}>
+          ) }
+          { reward.type === "commission" && (
+            <label className={ LABEL_CLASS }>
               Duration (days)
               <Input
                 type="number"
                 min="1"
                 step="1"
                 required
-                value={reward.durationDays}
-                onChange={(event) =>
+                value={ reward.durationDays }
+                onChange={ (event) =>
                   onChange({ ...reward, durationDays: event.target.value })
                 }
               />
             </label>
-          )}
-          <label className={LABEL_CLASS}>
+          ) }
+          <label className={ LABEL_CLASS }>
             Reward trigger
             <select
-              value={reward.trigger}
-              onChange={(event) =>
+              value={ reward.trigger }
+              onChange={ (event) =>
                 onChange({
                   ...reward,
                   trigger: event.target.value as RewardTrigger,
                 })
               }
-              className={INPUT_CLASS}
+              className={ INPUT_CLASS }
             >
               <option value="signup">Signup</option>
               <option value="first_ride">First ride</option>
@@ -549,7 +548,7 @@ function RewardFields({
             </select>
           </label>
         </div>
-      )}
+      ) }
     </fieldset>
   );
 }
@@ -617,10 +616,10 @@ export function ReferralProgramsDashboard() {
   const currentUpdatedAt =
     section === "programs"
       ? Math.max(
-          programsQuery.dataUpdatedAt,
-          statsQuery.dataUpdatedAt,
-          topReferrersQuery.dataUpdatedAt,
-        )
+        programsQuery.dataUpdatedAt,
+        statsQuery.dataUpdatedAt,
+        topReferrersQuery.dataUpdatedAt,
+      )
       : currentQuery.dataUpdatedAt;
   const currentIsFetching =
     currentQuery.isFetching ||
@@ -770,14 +769,14 @@ export function ReferralProgramsDashboard() {
         </div>
         <div className="flex items-center gap-2">
           <RefreshIndicator
-            isFetching={currentIsFetching}
-            updatedAt={currentUpdatedAt}
-            onRefresh={refreshCurrentSection}
+            isFetching={ currentIsFetching }
+            updatedAt={ currentUpdatedAt }
+            onRefresh={ refreshCurrentSection }
           />
-          {section === "programs" && (
+          { section === "programs" && (
             <Button
               type="button"
-              onClick={() =>
+              onClick={ () =>
                 setEditor({ programId: null, draft: emptyProgramDraft() })
               }
               className="h-9 bg-brand-600 px-3 text-sm font-semibold text-white hover:bg-brand-700"
@@ -785,13 +784,13 @@ export function ReferralProgramsDashboard() {
               <Plus aria-hidden="true" />
               Create program
             </Button>
-          )}
+          ) }
         </div>
       </div>
 
-      <SectionNav value={section} onChange={setSection} />
+      <SectionNav value={ section } onChange={ setSection } />
 
-      {section === "programs" && (
+      { section === "programs" && (
         <div className="space-y-5">
           <section className="rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-card sm:px-5">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -806,9 +805,9 @@ export function ReferralProgramsDashboard() {
               <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
                 Period
                 <select
-                  value={period}
-                  onChange={(event) => setPeriod(event.target.value)}
-                  className={INPUT_CLASS}
+                  value={ period }
+                  onChange={ (event) => setPeriod(event.target.value) }
+                  className={ INPUT_CLASS }
                 >
                   <option value="day">Today</option>
                   <option value="week">This week</option>
@@ -816,14 +815,14 @@ export function ReferralProgramsDashboard() {
                 </select>
               </label>
             </div>
-            {statsQuery.isPending && !statsQuery.data ? (
+            { statsQuery.isPending && !statsQuery.data ? (
               <div className="grid gap-5 sm:grid-cols-3 xl:grid-cols-6">
-                {Array.from({ length: 6 }, (_, index) => (
+                { Array.from({ length: 6 }, (_, index) => (
                   <div
-                    key={index}
+                    key={ index }
                     className="h-14 animate-pulse rounded bg-slate-100"
                   />
-                ))}
+                )) }
               </div>
             ) : (
               <>
@@ -872,7 +871,7 @@ export function ReferralProgramsDashboard() {
                     }
                   />
                 </div>
-                {statsQuery.isError && (
+                { statsQuery.isError && (
                   <div
                     role="alert"
                     className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800"
@@ -883,267 +882,267 @@ export function ReferralProgramsDashboard() {
                         aria-hidden="true"
                       />
                       Referral statistics could not be loaded
-                      {statsQuery.error?.message
+                      { statsQuery.error?.message
                         ? `: ${statsQuery.error.message}`
-                        : "."}
+                        : "." }
                     </span>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => void statsQuery.refetch()}
-                      disabled={statsQuery.isFetching}
+                      onClick={ () => void statsQuery.refetch() }
+                      disabled={ statsQuery.isFetching }
                       className="border-rose-200 bg-white text-rose-800 hover:bg-rose-100"
                     >
                       Try again
                     </Button>
                   </div>
-                )}
+                ) }
               </>
-            )}
+            ) }
           </section>
 
           <Sheet
-            open={Boolean(editor)}
-            onOpenChange={(open) => {
+            open={ Boolean(editor) }
+            onOpenChange={ (open) => {
               if (!open && !createProgram.isPending && !updateProgram.isPending) {
                 setEditor(null);
               }
-            }}
+            } }
           >
             <SheetContent
               side="right"
               className="gap-0 overflow-y-auto p-0 sm:max-w-2xl"
-              style={{ width: "min(94vw, 42rem)", maxWidth: "42rem" }}
+              style={ { width: "min(94vw, 42rem)", maxWidth: "42rem" } }
             >
-              {editor && (
+              { editor && (
                 <>
                   <SheetHeader className="border-b border-slate-200 pr-12">
                     <SheetTitle>
-                      {editor.programId ? "Edit program" : "Create a program"}
+                      { editor.programId ? "Edit program" : "Create a program" }
                     </SheetTitle>
                     <SheetDescription>
                       Configure when each reward is issued and which users qualify.
                     </SheetDescription>
                   </SheetHeader>
-                  <form onSubmit={saveProgram} className="space-y-5 px-4 py-5 sm:px-6">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className={LABEL_CLASS}>
-                  Program name
-                  <Input
-                    required
-                    maxLength={120}
-                    value={editor.draft.name}
-                    onChange={(event) =>
-                      setEditor({
-                        ...editor,
-                        draft: { ...editor.draft, name: event.target.value },
-                      })
-                    }
-                  />
-                </label>
-                <label className={`${LABEL_CLASS} sm:col-span-2`}>
-                  Description
-                  <Input
-                    value={editor.draft.description}
-                    onChange={(event) =>
-                      setEditor({
-                        ...editor,
-                        draft: {
-                          ...editor.draft,
-                          description: event.target.value,
-                        },
-                      })
-                    }
-                  />
-                </label>
-                <label className={LABEL_CLASS}>
-                  Eligible referee type
-                  <select
-                    value={editor.draft.target}
-                    onChange={(event) =>
-                      setEditor({
-                        ...editor,
-                        draft: {
-                          ...editor.draft,
-                          target: event.target.value as ProgramTarget,
-                        },
-                      })
-                    }
-                    className={INPUT_CLASS}
-                  >
-                    <option value="all">Riders and drivers</option>
-                    <option value="rider">Riders only</option>
-                    <option value="driver">Drivers only</option>
-                  </select>
-                </label>
-                <label className={LABEL_CLASS}>
-                  Priority
-                  <Input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={editor.draft.priority}
-                    onChange={(event) =>
-                      setEditor({
-                        ...editor,
-                        draft: {
-                          ...editor.draft,
-                          priority: event.target.value,
-                        },
-                      })
-                    }
-                  />
-                </label>
-                <label className={LABEL_CLASS}>
-                  Maximum referrals per user
-                  <Input
-                    type="number"
-                    min="1"
-                    step="1"
-                    placeholder="No limit"
-                    value={editor.draft.maxReferrals}
-                    onChange={(event) =>
-                      setEditor({
-                        ...editor,
-                        draft: {
-                          ...editor.draft,
-                          maxReferrals: event.target.value,
-                        },
-                      })
-                    }
-                  />
-                </label>
-                <label className={LABEL_CLASS}>
-                  Reward expiry (days)
-                  <Input
-                    type="number"
-                    min="1"
-                    step="1"
-                    placeholder="No expiry"
-                    value={editor.draft.expiryDays}
-                    onChange={(event) =>
-                      setEditor({
-                        ...editor,
-                        draft: {
-                          ...editor.draft,
-                          expiryDays: event.target.value,
-                        },
-                      })
-                    }
-                  />
-                </label>
-                <label className={LABEL_CLASS}>
-                  Start date
-                  <Input
-                    type="date"
-                    value={editor.draft.startDate}
-                    onChange={(event) =>
-                      setEditor({
-                        ...editor,
-                        draft: {
-                          ...editor.draft,
-                          startDate: event.target.value,
-                        },
-                      })
-                    }
-                  />
-                </label>
-                <label className={LABEL_CLASS}>
-                  End date
-                  <Input
-                    type="date"
-                    value={editor.draft.endDate}
-                    onChange={(event) =>
-                      setEditor({
-                        ...editor,
-                        draft: {
-                          ...editor.draft,
-                          endDate: event.target.value,
-                        },
-                      })
-                    }
-                  />
-                </label>
-              </div>
-              <div className="grid gap-3 lg:grid-cols-2">
-                {(["referrer", "referee"] as const).map((party) => (
-                  <RewardFields
-                    key={party}
-                    title={
-                      party === "referrer" ? "Referrer reward" : "Referee reward"
-                    }
-                    reward={editor.draft[party]}
-                    allowDisable={party === "referee"}
-                    onChange={(reward) =>
-                      setEditor({
-                        ...editor,
-                        draft: { ...editor.draft, [party]: reward },
-                      })
-                    }
-                  />
-                ))}
-              </div>
-              <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-4 py-3 sm:-mx-6 sm:px-6">
-                <div className="flex flex-wrap gap-4">
-                  <label className="flex items-center gap-2 text-sm text-slate-600">
-                    <input
-                      type="checkbox"
-                      checked={editor.draft.isDefault}
-                      onChange={(event) =>
-                        setEditor({
-                          ...editor,
-                          draft: {
-                            ...editor.draft,
-                            isDefault: event.target.checked,
-                          },
-                        })
-                      }
-                      className="size-4 rounded border-slate-300 accent-brand-600"
-                    />
-                    Default for new users
-                  </label>
-                  <label className="flex items-center gap-2 text-sm text-slate-600">
-                    <input
-                      type="checkbox"
-                      checked={editor.draft.isActive}
-                      onChange={(event) =>
-                        setEditor({
-                          ...editor,
-                          draft: {
-                            ...editor.draft,
-                            isActive: event.target.checked,
-                          },
-                        })
-                      }
-                      className="size-4 rounded border-slate-300 accent-brand-600"
-                    />
-                    Active
-                  </label>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setEditor(null)}
-                    disabled={createProgram.isPending || updateProgram.isPending}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={
-                      createProgram.isPending || updateProgram.isPending
-                    }
-                    className="bg-brand-600 text-white hover:bg-brand-700"
-                  >
-                    {editor.programId ? "Save changes" : "Create program"}
-                  </Button>
-                </div>
-              </div>
+                  <form onSubmit={ saveProgram } className="space-y-5 px-4 py-5 sm:px-6">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className={ LABEL_CLASS }>
+                        Program name
+                        <Input
+                          required
+                          maxLength={ 120 }
+                          value={ editor.draft.name }
+                          onChange={ (event) =>
+                            setEditor({
+                              ...editor,
+                              draft: { ...editor.draft, name: event.target.value },
+                            })
+                          }
+                        />
+                      </label>
+                      <label className={ `${LABEL_CLASS} sm:col-span-2` }>
+                        Description
+                        <Input
+                          value={ editor.draft.description }
+                          onChange={ (event) =>
+                            setEditor({
+                              ...editor,
+                              draft: {
+                                ...editor.draft,
+                                description: event.target.value,
+                              },
+                            })
+                          }
+                        />
+                      </label>
+                      <label className={ LABEL_CLASS }>
+                        Eligible referee type
+                        <select
+                          value={ editor.draft.target }
+                          onChange={ (event) =>
+                            setEditor({
+                              ...editor,
+                              draft: {
+                                ...editor.draft,
+                                target: event.target.value as ProgramTarget,
+                              },
+                            })
+                          }
+                          className={ INPUT_CLASS }
+                        >
+                          <option value="all">Riders and drivers</option>
+                          <option value="rider">Riders only</option>
+                          <option value="driver">Drivers only</option>
+                        </select>
+                      </label>
+                      <label className={ LABEL_CLASS }>
+                        Priority
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={ editor.draft.priority }
+                          onChange={ (event) =>
+                            setEditor({
+                              ...editor,
+                              draft: {
+                                ...editor.draft,
+                                priority: event.target.value,
+                              },
+                            })
+                          }
+                        />
+                      </label>
+                      <label className={ LABEL_CLASS }>
+                        Maximum referrals per user
+                        <Input
+                          type="number"
+                          min="1"
+                          step="1"
+                          placeholder="No limit"
+                          value={ editor.draft.maxReferrals }
+                          onChange={ (event) =>
+                            setEditor({
+                              ...editor,
+                              draft: {
+                                ...editor.draft,
+                                maxReferrals: event.target.value,
+                              },
+                            })
+                          }
+                        />
+                      </label>
+                      <label className={ LABEL_CLASS }>
+                        Reward expiry (days)
+                        <Input
+                          type="number"
+                          min="1"
+                          step="1"
+                          placeholder="No expiry"
+                          value={ editor.draft.expiryDays }
+                          onChange={ (event) =>
+                            setEditor({
+                              ...editor,
+                              draft: {
+                                ...editor.draft,
+                                expiryDays: event.target.value,
+                              },
+                            })
+                          }
+                        />
+                      </label>
+                      <label className={ LABEL_CLASS }>
+                        Start date
+                        <Input
+                          type="date"
+                          value={ editor.draft.startDate }
+                          onChange={ (event) =>
+                            setEditor({
+                              ...editor,
+                              draft: {
+                                ...editor.draft,
+                                startDate: event.target.value,
+                              },
+                            })
+                          }
+                        />
+                      </label>
+                      <label className={ LABEL_CLASS }>
+                        End date
+                        <Input
+                          type="date"
+                          value={ editor.draft.endDate }
+                          onChange={ (event) =>
+                            setEditor({
+                              ...editor,
+                              draft: {
+                                ...editor.draft,
+                                endDate: event.target.value,
+                              },
+                            })
+                          }
+                        />
+                      </label>
+                    </div>
+                    <div className="grid gap-3 lg:grid-cols-2">
+                      { (["referrer", "referee"] as const).map((party) => (
+                        <RewardFields
+                          key={ party }
+                          title={
+                            party === "referrer" ? "Referrer reward" : "Referee reward"
+                          }
+                          reward={ editor.draft[party] }
+                          allowDisable={ party === "referee" }
+                          onChange={ (reward) =>
+                            setEditor({
+                              ...editor,
+                              draft: { ...editor.draft, [party]: reward },
+                            })
+                          }
+                        />
+                      )) }
+                    </div>
+                    <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-4 py-3 sm:-mx-6 sm:px-6">
+                      <div className="flex flex-wrap gap-4">
+                        <label className="flex items-center gap-2 text-sm text-slate-600">
+                          <input
+                            type="checkbox"
+                            checked={ editor.draft.isDefault }
+                            onChange={ (event) =>
+                              setEditor({
+                                ...editor,
+                                draft: {
+                                  ...editor.draft,
+                                  isDefault: event.target.checked,
+                                },
+                              })
+                            }
+                            className="size-4 rounded border-slate-300 accent-brand-600"
+                          />
+                          Default for new users
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-slate-600">
+                          <input
+                            type="checkbox"
+                            checked={ editor.draft.isActive }
+                            onChange={ (event) =>
+                              setEditor({
+                                ...editor,
+                                draft: {
+                                  ...editor.draft,
+                                  isActive: event.target.checked,
+                                },
+                              })
+                            }
+                            className="size-4 rounded border-slate-300 accent-brand-600"
+                          />
+                          Active
+                        </label>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={ () => setEditor(null) }
+                          disabled={ createProgram.isPending || updateProgram.isPending }
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          disabled={
+                            createProgram.isPending || updateProgram.isPending
+                          }
+                          className="bg-brand-600 text-white hover:bg-brand-700"
+                        >
+                          { editor.programId ? "Save changes" : "Create program" }
+                        </Button>
+                      </div>
+                    </div>
                   </form>
                 </>
-              )}
+              ) }
             </SheetContent>
           </Sheet>
 
@@ -1157,17 +1156,17 @@ export function ReferralProgramsDashboard() {
                   Higher-priority programs take precedence when more than one matches.
                 </p>
               </div>
-              {programsQuery.isFetching && (
+              { programsQuery.isFetching && (
                 <RefreshCw
                   className="size-4 animate-spin text-slate-400"
                   aria-label="Loading programs"
                 />
-              )}
+              ) }
             </div>
-            {programsQuery.isError ? (
+            { programsQuery.isError ? (
               <QueryError
-                error={programsQuery.error}
-                onRetry={programsQuery.refetch}
+                error={ programsQuery.error }
+                onRetry={ programsQuery.refetch }
               />
             ) : (
               <Table>
@@ -1182,16 +1181,16 @@ export function ReferralProgramsDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {programsQuery.isPending ? (
+                  { programsQuery.isPending ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="py-10 text-center">
+                      <TableCell colSpan={ 6 } className="py-10 text-center">
                         Loading programs…
                       </TableCell>
                     </TableRow>
                   ) : programs.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={6}
+                        colSpan={ 6 }
                         className="py-12 text-center text-slate-500"
                       >
                         No referral programs yet. Create one to define referral rewards.
@@ -1199,43 +1198,43 @@ export function ReferralProgramsDashboard() {
                     </TableRow>
                   ) : (
                     programs.map((program) => (
-                      <TableRow key={program.id}>
+                      <TableRow key={ program.id }>
                         <TableCell>
                           <div className="font-medium text-slate-900">
-                            {program.name}
+                            { program.name }
                           </div>
                           <div className="mt-0.5 flex flex-wrap gap-1.5">
-                            {booleanValue(program.is_default) && (
+                            { booleanValue(program.is_default) && (
                               <Badge variant="secondary">Default</Badge>
-                            )}
-                            {displayText(
+                            ) }
+                            { displayText(
                               program,
                               "description",
                               "",
                             ) && (
-                              <span className="text-xs text-slate-500">
-                                {displayText(program, "description", "")}
-                              </span>
-                            )}
+                                <span className="text-xs text-slate-500">
+                                  { displayText(program, "description", "") }
+                                </span>
+                              ) }
                           </div>
                         </TableCell>
-                        <TableCell>{programRewardSummary(program)}</TableCell>
+                        <TableCell>{ programRewardSummary(program) }</TableCell>
                         <TableCell className="capitalize">
-                          {displayText(
+                          { displayText(
                             program,
                             "target_referee_type",
                             "All users",
-                          ) || "All users"}
+                          ) || "All users" }
                         </TableCell>
                         <TableCell className="tabular-nums">
-                          {displayNumber(program, "priority")}
+                          { displayNumber(program, "priority") }
                         </TableCell>
                         <TableCell>
-                          {program.is_active === false ? (
+                          { program.is_active === false ? (
                             <Badge variant="destructive">Inactive</Badge>
                           ) : (
                             <Badge variant="outline">Active</Badge>
-                          )}
+                          ) }
                         </TableCell>
                         <TableCell>
                           <div className="flex justify-end gap-1">
@@ -1243,14 +1242,14 @@ export function ReferralProgramsDashboard() {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              onClick={() =>
+                              onClick={ () =>
                                 setEditor({
                                   programId: program.id,
                                   original: program,
                                   draft: draftFromProgram(program),
                                 })
                               }
-                              aria-label={`Edit ${program.name}`}
+                              aria-label={ `Edit ${program.name}` }
                             >
                               <Pencil aria-hidden="true" />
                               Edit
@@ -1259,8 +1258,8 @@ export function ReferralProgramsDashboard() {
                               type="button"
                               variant="outline"
                               size="sm"
-                              disabled={updateProgram.isPending}
-                              onClick={async () => {
+                              disabled={ updateProgram.isPending }
+                              onClick={ async () => {
                                 try {
                                   await updateProgram.mutateAsync({
                                     programId: program.id,
@@ -1280,20 +1279,20 @@ export function ReferralProgramsDashboard() {
                                       : "Could not update program status.",
                                   );
                                 }
-                              }}
+                              } }
                             >
-                              {program.is_active === false
+                              { program.is_active === false
                                 ? "Activate"
-                                : "Deactivate"}
+                                : "Deactivate" }
                             </Button>
                           </div>
                         </TableCell>
                       </TableRow>
                     ))
-                  )}
+                  ) }
                 </TableBody>
               </Table>
-            )}
+            ) }
           </div>
 
           <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
@@ -1302,10 +1301,10 @@ export function ReferralProgramsDashboard() {
                 Top referrers
               </h3>
             </div>
-            {topReferrersQuery.isError ? (
+            { topReferrersQuery.isError ? (
               <QueryError
-                error={topReferrersQuery.error}
-                onRetry={topReferrersQuery.refetch}
+                error={ topReferrersQuery.error }
+                onRetry={ topReferrersQuery.refetch }
               />
             ) : (
               <Table>
@@ -1318,68 +1317,68 @@ export function ReferralProgramsDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {topReferrersQuery.isPending ? (
+                  { topReferrersQuery.isPending ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="py-8 text-center">
+                      <TableCell colSpan={ 4 } className="py-8 text-center">
                         Loading top referrers…
                       </TableCell>
                     </TableRow>
                   ) : topReferrersQuery.data?.length ? (
                     topReferrersQuery.data.map((referrer) => (
-                      <TableRow key={referrer.user_id}>
+                      <TableRow key={ referrer.user_id }>
                         <TableCell className="font-medium text-slate-900">
-                          {referrer.user_name}
+                          { referrer.user_name }
                         </TableCell>
                         <TableCell>
-                          {displayNumber(referrer, "referral_count")}
+                          { displayNumber(referrer, "referral_count") }
                         </TableCell>
                         <TableCell>
-                          {displayNumber(referrer, "successful_count")}
+                          { displayNumber(referrer, "successful_count") }
                         </TableCell>
                         <TableCell>
-                          {formatTzs(displayNumber(referrer, "total_earned"))}
+                          { formatTzs(displayNumber(referrer, "total_earned")) }
                         </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
                       <TableCell
-                        colSpan={4}
+                        colSpan={ 4 }
                         className="py-8 text-center text-slate-500"
                       >
                         No referral activity to rank yet.
                       </TableCell>
                     </TableRow>
-                  )}
+                  ) }
                 </TableBody>
               </Table>
-            )}
+            ) }
           </section>
         </div>
-      )}
+      ) }
 
-      {section === "users" && (
+      { section === "users" && (
         <div className="space-y-4">
           <section className="flex flex-wrap items-end justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-card">
             <div className="grid w-full gap-3 sm:max-w-2xl sm:grid-cols-[minmax(12rem,1fr)_auto] sm:items-end">
-              <label className={LABEL_CLASS}>
+              <label className={ LABEL_CLASS }>
                 Program for enrollment
                 <select
-                  value={selectedProgramId}
-                  onChange={(event) => setSelectedProgramId(event.target.value)}
-                  className={INPUT_CLASS}
+                  value={ selectedProgramId }
+                  onChange={ (event) => setSelectedProgramId(event.target.value) }
+                  className={ INPUT_CLASS }
                 >
                   <option value="">Select a program</option>
-                  {programs.map((program) => (
-                    <option key={program.id} value={program.id}>
-                      {program.name}
+                  { programs.map((program) => (
+                    <option key={ program.id } value={ program.id }>
+                      { program.name }
                     </option>
-                  ))}
+                  )) }
                 </select>
               </label>
               <Button
                 type="button"
-                onClick={enrollSelectedUsers}
+                onClick={ enrollSelectedUsers }
                 disabled={
                   !selectedProgramId ||
                   selectedCount === 0 ||
@@ -1388,18 +1387,18 @@ export function ReferralProgramsDashboard() {
                 className="bg-brand-600 text-white hover:bg-brand-700"
               >
                 <UserPlus aria-hidden="true" />
-                Enroll {selectedCount ? `${selectedCount} selected` : "selected"}
+                Enroll { selectedCount ? `${selectedCount} selected` : "selected" }
               </Button>
             </div>
             <form
-              onSubmit={unenroll}
+              onSubmit={ unenroll }
               className="grid w-full gap-2 sm:max-w-xl sm:grid-cols-[minmax(10rem,1fr)_auto]"
             >
-              <label className={LABEL_CLASS}>
+              <label className={ LABEL_CLASS }>
                 User ID to unenroll
                 <Input
-                  value={unenrollUserId}
-                  onChange={(event) => setUnenrollUserId(event.target.value)}
+                  value={ unenrollUserId }
+                  onChange={ (event) => setUnenrollUserId(event.target.value) }
                   placeholder="Paste user ID"
                   required
                 />
@@ -1434,11 +1433,11 @@ export function ReferralProgramsDashboard() {
                 </p>
               </div>
               <span className="text-xs text-slate-500">
-                Page {usersPage + 1}
+                Page { usersPage + 1 }
               </span>
             </div>
-            {usersQuery.isError ? (
-              <QueryError error={usersQuery.error} onRetry={usersQuery.refetch} />
+            { usersQuery.isError ? (
+              <QueryError error={ usersQuery.error } onRetry={ usersQuery.refetch } />
             ) : (
               <Table>
                 <TableHeader>
@@ -1447,8 +1446,8 @@ export function ReferralProgramsDashboard() {
                       <input
                         type="checkbox"
                         aria-label="Select all users on this page"
-                        checked={allUsersSelected}
-                        onChange={toggleAllUsers}
+                        checked={ allUsersSelected }
+                        onChange={ toggleAllUsers }
                         className="size-4 rounded border-slate-300 accent-brand-600"
                       />
                     </TableHead>
@@ -1463,41 +1462,41 @@ export function ReferralProgramsDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {usersQuery.isPending ? (
+                  { usersQuery.isPending ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="py-10 text-center">
+                      <TableCell colSpan={ 9 } className="py-10 text-center">
                         Loading users…
                       </TableCell>
                     </TableRow>
                   ) : users.length ? (
                     users.map((user) => (
-                      <TableRow key={user.user_id}>
+                      <TableRow key={ user.user_id }>
                         <TableCell>
                           <input
                             type="checkbox"
-                            aria-label={`Select ${displayText(user, "name", user.user_id)}`}
-                            checked={selectedUsers.has(user.user_id)}
-                            onChange={() => toggleUser(user.user_id)}
+                            aria-label={ `Select ${displayText(user, "name", user.user_id)}` }
+                            checked={ selectedUsers.has(user.user_id) }
+                            onChange={ () => toggleUser(user.user_id) }
                             className="size-4 rounded border-slate-300 accent-brand-600"
                           />
                         </TableCell>
                         <TableCell className="font-medium text-slate-900">
-                          {displayText(user, "name", user.user_id)}
+                          { displayText(user, "name", user.user_id) }
                         </TableCell>
-                        <TableCell>{displayText(user, "phone")}</TableCell>
-                        <TableCell>{displayText(user, "referral_code")}</TableCell>
-                        <TableCell>{displayText(user, "program_name")}</TableCell>
+                        <TableCell>{ displayText(user, "phone") }</TableCell>
+                        <TableCell>{ displayText(user, "referral_code") }</TableCell>
+                        <TableCell>{ displayText(user, "program_name") }</TableCell>
                         <TableCell>
-                          {displayNumber(user, "total_referrals")}{" "}
+                          { displayNumber(user, "total_referrals") }{ " " }
                           <span className="text-xs text-slate-500">
-                            ({displayNumber(user, "successful_referrals")} successful)
+                            ({ displayNumber(user, "successful_referrals") } successful)
                           </span>
                         </TableCell>
                         <TableCell>
-                          {formatTzs(displayNumber(user, "total_earned_tzs"))}
+                          { formatTzs(displayNumber(user, "total_earned_tzs")) }
                         </TableCell>
                         <TableCell>
-                          {formatTzs(displayNumber(user, "pending_rewards_tzs"))}
+                          { formatTzs(displayNumber(user, "pending_rewards_tzs")) }
                         </TableCell>
                         <TableCell>
                           <div className="flex justify-end gap-1">
@@ -1505,7 +1504,7 @@ export function ReferralProgramsDashboard() {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              onClick={() => setDetailUserId(user.user_id)}
+                              onClick={ () => setDetailUserId(user.user_id) }
                             >
                               Details
                             </Button>
@@ -1516,7 +1515,7 @@ export function ReferralProgramsDashboard() {
                               disabled={
                                 !selectedProgramId || enrollUser.isPending
                               }
-                              onClick={() => void enrollSingleUser(user.user_id)}
+                              onClick={ () => void enrollSingleUser(user.user_id) }
                             >
                               Enroll
                             </Button>
@@ -1527,30 +1526,30 @@ export function ReferralProgramsDashboard() {
                   ) : (
                     <TableRow>
                       <TableCell
-                        colSpan={9}
+                        colSpan={ 9 }
                         className="py-10 text-center text-slate-500"
                       >
                         No users with referral codes found.
                       </TableCell>
                     </TableRow>
-                  )}
+                  ) }
                 </TableBody>
               </Table>
-            )}
+            ) }
             <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3">
               <span className="text-xs text-slate-500">
-                {users.length} user{users.length === 1 ? "" : "s"} on this page
+                { users.length } user{ users.length === 1 ? "" : "s" } on this page
               </span>
               <div className="flex gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  disabled={usersPage === 0 || usersQuery.isFetching}
-                  onClick={() => {
+                  disabled={ usersPage === 0 || usersQuery.isFetching }
+                  onClick={ () => {
                     setUsersPage((page) => Math.max(0, page - 1));
                     setSelectedUsers(new Set());
-                  }}
+                  } }
                 >
                   <ChevronLeft aria-hidden="true" />
                   Previous
@@ -1559,11 +1558,11 @@ export function ReferralProgramsDashboard() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  disabled={!userPageHasNext || usersQuery.isFetching}
-                  onClick={() => {
+                  disabled={ !userPageHasNext || usersQuery.isFetching }
+                  onClick={ () => {
                     setUsersPage((page) => page + 1);
                     setSelectedUsers(new Set());
-                  }}
+                  } }
                 >
                   Next
                   <ChevronRight aria-hidden="true" />
@@ -1573,15 +1572,15 @@ export function ReferralProgramsDashboard() {
           </section>
 
           <Sheet
-            open={Boolean(detailUserId)}
-            onOpenChange={(open) => {
+            open={ Boolean(detailUserId) }
+            onOpenChange={ (open) => {
               if (!open) setDetailUserId("");
-            }}
+            } }
           >
             <SheetContent
               side="right"
               className="gap-0 overflow-y-auto p-0 sm:max-w-lg"
-              style={{ width: "min(92vw, 32rem)" }}
+              style={ { width: "min(92vw, 32rem)" } }
             >
               <SheetHeader className="border-b border-slate-200 pr-12">
                 <SheetTitle>Referral details</SheetTitle>
@@ -1590,18 +1589,18 @@ export function ReferralProgramsDashboard() {
                 </SheetDescription>
               </SheetHeader>
               <UserDetailPanel
-                user={userDetailQuery.data}
-                isPending={userDetailQuery.isPending}
-                isError={userDetailQuery.isError}
-                error={userDetailQuery.error}
-                onRetry={userDetailQuery.refetch}
+                user={ userDetailQuery.data }
+                isPending={ userDetailQuery.isPending }
+                isError={ userDetailQuery.isError }
+                error={ userDetailQuery.error }
+                onRetry={ userDetailQuery.refetch }
               />
             </SheetContent>
           </Sheet>
         </div>
-      )}
+      ) }
 
-      {section === "relationships" && (
+      { section === "relationships" && (
         <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
           <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
             <div>
@@ -1615,14 +1614,14 @@ export function ReferralProgramsDashboard() {
             <label className="grid gap-1 text-xs font-medium text-slate-600">
               Status
               <select
-                value={relationshipStatus}
-                onChange={(event) => {
+                value={ relationshipStatus }
+                onChange={ (event) => {
                   setRelationshipStatus(
                     event.target.value as "all" | "completed" | "pending",
                   );
                   setRelationshipsPage(0);
-                }}
-                className={INPUT_CLASS}
+                } }
+                className={ INPUT_CLASS }
               >
                 <option value="all">All relationships</option>
                 <option value="completed">Completed</option>
@@ -1630,10 +1629,10 @@ export function ReferralProgramsDashboard() {
               </select>
             </label>
           </div>
-          {relationshipsQuery.isError ? (
+          { relationshipsQuery.isError ? (
             <QueryError
-              error={relationshipsQuery.error}
-              onRetry={relationshipsQuery.refetch}
+              error={ relationshipsQuery.error }
+              onRetry={ relationshipsQuery.refetch }
             />
           ) : (
             <Table>
@@ -1650,9 +1649,9 @@ export function ReferralProgramsDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {relationshipsQuery.isPending ? (
+                { relationshipsQuery.isPending ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-10 text-center">
+                    <TableCell colSpan={ 8 } className="py-10 text-center">
                       Loading relationships…
                     </TableCell>
                   </TableRow>
@@ -1664,30 +1663,30 @@ export function ReferralProgramsDashboard() {
                       relationship.first_ride_completed,
                     );
                     return (
-                      <TableRow key={relationship.referral_id}>
+                      <TableRow key={ relationship.referral_id }>
                         <TableCell className="font-medium text-slate-900">
-                          {displayText(referrer, "name")}
+                          { displayText(referrer, "name") }
                         </TableCell>
-                        <TableCell>{displayText(referrer, "code")}</TableCell>
-                        <TableCell>{displayText(referee, "name")}</TableCell>
+                        <TableCell>{ displayText(referrer, "code") }</TableCell>
+                        <TableCell>{ displayText(referee, "name") }</TableCell>
                         <TableCell className="capitalize">
-                          {displayText(referee, "type")}
+                          { displayText(referee, "type") }
                         </TableCell>
                         <TableCell>
-                          {displayText(relationship, "referred_at")}
+                          { displayText(relationship, "referred_at") }
                         </TableCell>
                         <TableCell>
-                          <Badge variant={complete ? "outline" : "secondary"}>
-                            {complete ? "Completed" : "Pending"}
+                          <Badge variant={ complete ? "outline" : "secondary" }>
+                            { complete ? "Completed" : "Pending" }
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {booleanValue(relationship.rewards_paid)
+                          { booleanValue(relationship.rewards_paid)
                             ? "Paid"
-                            : "Pending"}
+                            : "Pending" }
                         </TableCell>
                         <TableCell>
-                          {displayText(relationship, "program_name")}
+                          { displayText(relationship, "program_name") }
                         </TableCell>
                       </TableRow>
                     );
@@ -1695,28 +1694,28 @@ export function ReferralProgramsDashboard() {
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={8}
+                      colSpan={ 8 }
                       className="py-10 text-center text-slate-500"
                     >
                       No relationships match this status.
                     </TableCell>
                   </TableRow>
-                )}
+                ) }
               </TableBody>
             </Table>
-          )}
+          ) }
           <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3">
             <span className="text-xs text-slate-500">
-              {relationships.length} relationship
-              {relationships.length === 1 ? "" : "s"} on this page
+              { relationships.length } relationship
+              { relationships.length === 1 ? "" : "s" } on this page
             </span>
             <div className="flex gap-2">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                disabled={relationshipsPage === 0 || relationshipsQuery.isFetching}
-                onClick={() =>
+                disabled={ relationshipsPage === 0 || relationshipsQuery.isFetching }
+                onClick={ () =>
                   setRelationshipsPage((page) => Math.max(0, page - 1))
                 }
               >
@@ -1730,7 +1729,7 @@ export function ReferralProgramsDashboard() {
                 disabled={
                   !relationshipPageHasNext || relationshipsQuery.isFetching
                 }
-                onClick={() => setRelationshipsPage((page) => page + 1)}
+                onClick={ () => setRelationshipsPage((page) => page + 1) }
               >
                 Next
                 <ChevronRight aria-hidden="true" />
@@ -1738,9 +1737,9 @@ export function ReferralProgramsDashboard() {
             </div>
           </div>
         </section>
-      )}
+      ) }
 
-      {section === "payments" && (
+      { section === "payments" && (
         <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
           <div className="border-b border-slate-200 px-4 py-3 sm:px-5">
             <h3 className="text-sm font-semibold text-slate-900">
@@ -1750,10 +1749,10 @@ export function ReferralProgramsDashboard() {
               Mark a payment complete after processing it in your payment system.
             </p>
           </div>
-          {paymentsQuery.isError ? (
+          { paymentsQuery.isError ? (
             <QueryError
-              error={paymentsQuery.error}
-              onRetry={paymentsQuery.refetch}
+              error={ paymentsQuery.error }
+              onRetry={ paymentsQuery.refetch }
             />
           ) : (
             <Table>
@@ -1769,47 +1768,47 @@ export function ReferralProgramsDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paymentsQuery.isPending ? (
+                { paymentsQuery.isPending ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-10 text-center">
+                    <TableCell colSpan={ 7 } className="py-10 text-center">
                       Loading pending payments…
                     </TableCell>
                   </TableRow>
                 ) : paymentsQuery.data?.length ? (
                   paymentsQuery.data.map((payment) => (
-                    <TableRow key={payment.id}>
+                    <TableRow key={ payment.id }>
                       <TableCell className="font-medium text-slate-900">
-                        {displayText(
+                        { displayText(
                           payment,
                           "user_name",
                           displayText(payment, "user_id"),
-                        )}
+                        ) }
                       </TableCell>
                       <TableCell className="capitalize">
-                        {displayText(payment, "user_type")}
+                        { displayText(payment, "user_type") }
                       </TableCell>
                       <TableCell className="font-semibold tabular-nums">
-                        {formatTzs(payment.amount_tzs)}
+                        { formatTzs(payment.amount_tzs) }
                       </TableCell>
                       <TableCell>
-                        {displayText(payment, "trigger_event")}
+                        { displayText(payment, "trigger_event") }
                       </TableCell>
                       <TableCell>
-                        {displayText(payment, "program_name")}
+                        { displayText(payment, "program_name") }
                       </TableCell>
                       <TableCell>
-                        {displayText(payment, "created_at")}
+                        { displayText(payment, "created_at") }
                       </TableCell>
                       <TableCell>
-                        {paymentTargetId === payment.id ? (
+                        { paymentTargetId === payment.id ? (
                           <form
-                            onSubmit={submitPayment}
+                            onSubmit={ submitPayment }
                             className="flex min-w-64 items-center justify-end gap-2"
                           >
                             <Input
                               aria-label="Transaction ID (optional)"
-                              value={transactionId}
-                              onChange={(event) =>
+                              value={ transactionId }
+                              onChange={ (event) =>
                                 setTransactionId(event.target.value)
                               }
                               placeholder="Transaction ID (optional)"
@@ -1818,7 +1817,7 @@ export function ReferralProgramsDashboard() {
                             <Button
                               type="submit"
                               size="sm"
-                              disabled={markPaid.isPending}
+                              disabled={ markPaid.isPending }
                             >
                               <Check aria-hidden="true" />
                               Confirm
@@ -1827,8 +1826,8 @@ export function ReferralProgramsDashboard() {
                               type="button"
                               size="sm"
                               variant="ghost"
-                              onClick={() => setPaymentTargetId("")}
-                              disabled={markPaid.isPending}
+                              onClick={ () => setPaymentTargetId("") }
+                              disabled={ markPaid.isPending }
                             >
                               Cancel
                             </Button>
@@ -1839,30 +1838,30 @@ export function ReferralProgramsDashboard() {
                               type="button"
                               size="sm"
                               variant="outline"
-                              onClick={() => setPaymentTargetId(payment.id)}
+                              onClick={ () => setPaymentTargetId(payment.id) }
                             >
                               Mark paid
                             </Button>
                           </div>
-                        )}
+                        ) }
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={ 7 }
                       className="py-10 text-center text-slate-500"
                     >
                       No pending referral payments.
                     </TableCell>
                   </TableRow>
-                )}
+                ) }
               </TableBody>
             </Table>
-          )}
+          ) }
         </section>
-      )}
+      ) }
     </div>
   );
 }
@@ -1894,8 +1893,8 @@ function UserDetailPanel({
 
   return (
     <div className="space-y-5 px-4 pb-6 pt-5">
-      {isError ? (
-        <QueryError error={error} onRetry={onRetry} />
+      { isError ? (
+        <QueryError error={ error } onRetry={ onRetry } />
       ) : isPending || !user ? (
         <div className="space-y-3" aria-label="Loading user details">
           <div className="h-16 animate-pulse rounded-lg bg-slate-100" />
@@ -1908,37 +1907,37 @@ function UserDetailPanel({
             <div>
               <p className="text-xs text-slate-500">Name</p>
               <p className="mt-1 text-sm font-medium text-slate-900">
-                {displayText(user, "name", user.user_id)}
+                { displayText(user, "name", user.user_id) }
               </p>
             </div>
             <div className="grid gap-3 border-t border-slate-200 pt-3 sm:grid-cols-2">
               <div>
                 <p className="text-xs text-slate-500">Referral code</p>
                 <p className="mt-1 break-all text-sm font-medium text-slate-900">
-                  {displayText(user, "referral_code")}
+                  { displayText(user, "referral_code") }
                 </p>
               </div>
               <div>
                 <p className="text-xs text-slate-500">Phone</p>
                 <p className="mt-1 break-all text-sm font-medium text-slate-900">
-                  {displayText(user, "phone")}
+                  { displayText(user, "phone") }
                 </p>
               </div>
             </div>
           </div>
           <div className="space-y-5">
-            {lists.map((list) => (
-              <div key={list.title}>
+            { lists.map((list) => (
+              <div key={ list.title }>
                 <h4 className="mb-2 text-sm font-semibold text-slate-900">
-                  {list.title}
+                  { list.title }
                 </h4>
-                {list.values.length === 0 ? (
+                { list.values.length === 0 ? (
                   <p className="rounded-lg border border-dashed border-slate-200 px-3 py-4 text-sm text-slate-500">
                     None recorded.
                   </p>
                 ) : (
                   <ul className="space-y-2">
-                    {list.values.map((entry, index) => {
+                    { list.values.map((entry, index) => {
                       const record = recordValue(entry);
                       const heading =
                         displayText(
@@ -1961,9 +1960,9 @@ function UserDetailPanel({
                           }
                           className="rounded-lg bg-slate-50 px-3 py-2 text-sm"
                         >
-                          <p className="font-medium text-slate-800">{heading}</p>
+                          <p className="font-medium text-slate-800">{ heading }</p>
                           <p className="mt-0.5 text-xs text-slate-500">
-                            {displayText(
+                            { displayText(
                               record,
                               "status",
                               displayText(
@@ -1971,25 +1970,25 @@ function UserDetailPanel({
                                 "referred_at",
                                 displayText(record, "created_at"),
                               ),
-                            )}
-                            {record.amount_tzs !== undefined
+                            ) }
+                            { record.amount_tzs !== undefined
                               ? ` · ${formatTzs(
-                                  typeof record.amount_tzs === "number"
-                                    ? record.amount_tzs
-                                    : Number(record.amount_tzs) || 0,
-                                )}`
-                              : ""}
+                                typeof record.amount_tzs === "number"
+                                  ? record.amount_tzs
+                                  : Number(record.amount_tzs) || 0,
+                              )}`
+                              : "" }
                           </p>
                         </li>
                       );
-                    })}
+                    }) }
                   </ul>
-                )}
+                ) }
               </div>
-            ))}
+            )) }
           </div>
         </>
-      )}
+      ) }
     </div>
   );
 }

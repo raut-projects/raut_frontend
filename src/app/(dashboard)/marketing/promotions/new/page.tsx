@@ -69,9 +69,9 @@ export default function NewPromotionPage() {
 
       <PromotionForm
         mode="create"
-        isSubmitting={create.isPending}
-        onSubmit={handleSubmit}
-        onCancel={() => router.push("/marketing/promotions")}
+        isSubmitting={ create.isPending }
+        onSubmit={ handleSubmit }
+        onCancel={ () => router.push("/marketing/promotions") }
       />
     </div>
   );

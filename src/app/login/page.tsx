@@ -160,7 +160,7 @@ function Login() {
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-card sm:p-8">
-          {formError && (
+          { formError && (
             <div
               role="alert"
               className="mb-5 flex items-start gap-2.5 rounded-lg border border-rose-200 bg-rose-50 p-3"
@@ -179,11 +179,11 @@ function Login() {
                   d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
                 />
               </svg>
-              <p className="text-sm font-medium text-rose-700">{formError}</p>
+              <p className="text-sm font-medium text-rose-700">{ formError }</p>
             </div>
-          )}
+          ) }
 
-          {resetSent && (
+          { resetSent && (
             <div
               role="status"
               className="mb-5 flex items-start gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 p-3"
@@ -202,65 +202,65 @@ function Login() {
                   d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <p className="text-sm font-medium text-emerald-800">{resetSent}</p>
+              <p className="text-sm font-medium text-emerald-800">{ resetSent }</p>
             </div>
-          )}
+          ) }
 
           <form
-            onSubmit={handleSubmit}
+            onSubmit={ handleSubmit }
             noValidate
             className="space-y-4"
-            aria-busy={submitting}
+            aria-busy={ submitting }
           >
             <label className="block">
-              <span className={labelClass}>Email address</span>
+              <span className={ labelClass }>Email address</span>
               <input
                 id="login-email"
                 type="email"
                 inputMode="email"
                 autoComplete="email"
-                maxLength={254}
-                value={email}
-                onChange={handleEmailChange}
+                maxLength={ 254 }
+                value={ email }
+                onChange={ handleEmailChange }
                 placeholder="admin@raut.africa"
-                className={inputClass}
-                aria-invalid={Boolean(errors.email)}
+                className={ inputClass }
+                aria-invalid={ Boolean(errors.email) }
                 aria-describedby={
                   errors.email ? "login-email-error" : undefined
                 }
               />
-              {errors.email && (
-                <span id="login-email-error" className={errorClass}>
-                  {errors.email}
+              { errors.email && (
+                <span id="login-email-error" className={ errorClass }>
+                  { errors.email }
                 </span>
-              )}
+              ) }
             </label>
 
             <label className="block">
-              <span className={labelClass}>Password</span>
+              <span className={ labelClass }>Password</span>
               <div className="relative">
                 <input
                   id="login-password"
-                  type={visible ? "text" : "password"}
+                  type={ visible ? "text" : "password" }
                   autoComplete="current-password"
-                  value={password}
-                  onChange={handlePasswordChange}
+                  value={ password }
+                  onChange={ handlePasswordChange }
                   placeholder="Enter your password"
-                  className={`${inputClass} pr-11`}
-                  aria-invalid={Boolean(errors.password)}
+                  className={ `${inputClass} pr-11` }
+                  aria-invalid={ Boolean(errors.password) }
                   aria-describedby={
                     errors.password ? "login-password-error" : undefined
                   }
                 />
                 <button
                   type="button"
-                  onClick={() => setVisible((previous) => !previous)}
+                  onClick={ () => setVisible((previous) => !previous) }
                   className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-400 transition-colors hover:text-slate-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
                   aria-label={
                     visible ? "Hide the password" : "Show the password"
                   }
                 >
-                  {visible ? (
+                  { visible ? (
                     <svg
                       className="h-5 w-5"
                       viewBox="0 0 24 24"
@@ -295,14 +295,14 @@ function Login() {
                         d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                       />
                     </svg>
-                  )}
+                  ) }
                 </button>
               </div>
-              {errors.password && (
-                <span id="login-password-error" className={errorClass}>
-                  {errors.password}
+              { errors.password && (
+                <span id="login-password-error" className={ errorClass }>
+                  { errors.password }
                 </span>
-              )}
+              ) }
             </label>
 
             <div className="flex items-center justify-between gap-3">
@@ -310,8 +310,8 @@ function Login() {
                 <Checkbox
                   id="login-remember"
                   name="remember"
-                  checked={remember}
-                  onCheckedChange={(checked) => setRemember(Boolean(checked))}
+                  checked={ remember }
+                  onCheckedChange={ (checked) => setRemember(Boolean(checked)) }
                 />
                 <label
                   htmlFor="login-remember"
@@ -322,32 +322,32 @@ function Login() {
               </div>
               <button
                 type="button"
-                onClick={handlePasswordReset}
-                disabled={submitting || resettingPassword}
+                onClick={ handlePasswordReset }
+                disabled={ submitting || resettingPassword }
                 className="text-xs font-semibold text-slate-500 transition-colors hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {resettingPassword ? "Sending…" : "Forgot password?"}
+                { resettingPassword ? "Sending…" : "Forgot password?" }
               </button>
             </div>
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={ submitting }
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {submitting && (
+              { submitting && (
                 <span
                   className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
                   aria-hidden="true"
                 />
-              )}
-              {submitting ? "Signing in…" : "Sign in"}
+              ) }
+              { submitting ? "Signing in…" : "Sign in" }
             </button>
           </form>
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-500">
-          Need access? Contact{" "}
+          Need access? Contact{ " " }
           <a
             href="mailto:support@raut.africa"
             className="font-semibold text-brand-600 hover:text-brand-700"

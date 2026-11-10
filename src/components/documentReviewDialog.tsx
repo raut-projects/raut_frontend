@@ -197,7 +197,7 @@ export default function DocumentReviewDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 p-0 backdrop-blur-[2px] sm:p-5"
+      className="fixed inset-0 z-70 flex items-center justify-center bg-slate-950/60 p-0 backdrop-blur-[2px] sm:p-5"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !pending) onClose();
       }}
@@ -243,10 +243,10 @@ export default function DocumentReviewDialog({
         <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1.08fr)_minmax(22rem,0.92fr)] lg:overflow-hidden">
           <section
             aria-label="Document viewer"
-            className="flex min-h-[22rem] flex-col border-b border-slate-200 bg-slate-50 p-4 sm:p-5 lg:min-h-0 lg:border-b-0 lg:border-r"
+            className="flex min-h-88 flex-col border-b border-slate-200 bg-slate-50 p-4 sm:p-5 lg:min-h-0 lg:border-b-0 lg:border-r"
           >
             <div
-              className="flex min-h-[16rem] flex-1 items-center justify-center overflow-auto rounded-lg border border-slate-200 bg-slate-100 p-4 sm:min-h-[22rem]"
+              className="flex min-h-64 flex-1 items-center justify-center overflow-auto rounded-lg border border-slate-200 bg-slate-100 p-4 sm:min-h-88"
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
@@ -263,7 +263,7 @@ export default function DocumentReviewDialog({
                 <iframe
                   src={document.fileUrl}
                   title={`${document.typeLabel} PDF`}
-                  className="h-full min-h-[22rem] w-full self-stretch bg-white"
+                  className="h-full min-h-88 w-full self-stretch bg-white"
                   style={{ transform: imageTransform }}
                 />
               ) : document.fileUrl ? (

@@ -45,13 +45,13 @@ function Settings() {
         </p>
       </div>
 
-      {isError && (
+      { isError && (
         <div className="rounded-xl border border-slate-200 bg-white shadow-card">
-          <QueryError error={error} onRetry={refetch} />
+          <QueryError error={ error } onRetry={ refetch } />
         </div>
-      )}
+      ) }
 
-      {!isError && (
+      { !isError && (
         <>
           <div className="rounded-xl border border-slate-200 bg-white shadow-card">
             <div className="border-b border-slate-200 px-5 py-4">
@@ -62,27 +62,27 @@ function Settings() {
             </div>
 
             <div className="grid gap-4 px-5 py-5 sm:grid-cols-2">
-              {profile.map((field) => (
-                <div key={field.label}>
+              { profile.map((field) => (
+                <div key={ field.label }>
                   <p className="mb-1.5 text-xs font-semibold text-slate-600">
-                    {field.label}
+                    { field.label }
                   </p>
-                  {field.isLink ? (
+                  { field.isLink ? (
                     <a
-                      href={field.value}
+                      href={ field.value }
                       target="_blank"
                       rel="noreferrer"
-                      className={`${valueClass} font-medium text-brand-600 hover:text-brand-700`}
+                      className={ `${valueClass} font-medium text-brand-600 hover:text-brand-700` }
                     >
-                      {field.value}
+                      { field.value }
                     </a>
                   ) : (
-                    <p className={valueClass}>
-                      {isPending ? "—" : field.value}
+                    <p className={ valueClass }>
+                      { isPending ? "—" : field.value }
                     </p>
-                  )}
+                  ) }
                 </div>
-              ))}
+              )) }
             </div>
           </div>
 
@@ -95,20 +95,20 @@ function Settings() {
             </div>
 
             <div className="grid gap-4 px-5 py-5 sm:grid-cols-2">
-              {access.map((field) => (
-                <div key={field.label}>
+              { access.map((field) => (
+                <div key={ field.label }>
                   <p className="mb-1.5 text-xs font-semibold text-slate-600">
-                    {field.label}
+                    { field.label }
                   </p>
-                  <p className={`${valueClass} capitalize`}>
-                    {isPending ? "—" : field.value}
+                  <p className={ `${valueClass} capitalize` }>
+                    { isPending ? "—" : field.value }
                   </p>
                 </div>
-              ))}
+              )) }
             </div>
           </div>
         </>
-      )}
+      ) }
     </div>
   );
 }

@@ -155,10 +155,10 @@ const formatHours = (value) => {
 function InfoField({ label, value, detail = null, badge = null }) {
   return (
     <div className="min-w-0 border-b border-slate-100 py-3 last:border-0">
-      <dt className="text-xs font-medium text-slate-500">{label}</dt>
+      <dt className="text-xs font-medium text-slate-500">{ label }</dt>
       <dd className="mt-1 flex flex-wrap items-center gap-2 text-sm font-medium text-slate-900">
-        <span className="wrap-break-words">{displayValue(value)}</span>
-        {badge && (
+        <span className="wrap-break-words">{ displayValue(value) }</span>
+        { badge && (
           <Badge
             variant="outline"
             className={
@@ -171,16 +171,16 @@ function InfoField({ label, value, detail = null, badge = null }) {
                     : "border-slate-200 bg-slate-50 text-slate-600"
             }
           >
-            {badge === "Verified" || badge === "Valid" ? (
+            { badge === "Verified" || badge === "Valid" ? (
               <CircleCheck aria-hidden="true" />
             ) : (
               <CircleHelp aria-hidden="true" />
-            )}
-            {badge}
+            ) }
+            { badge }
           </Badge>
-        )}
+        ) }
       </dd>
-      {detail && <p className="mt-1 text-xs text-slate-500">{detail}</p>}
+      { detail && <p className="mt-1 text-xs text-slate-500">{ detail }</p> }
     </div>
   );
 }
@@ -193,15 +193,15 @@ function DriverSection({
   id = undefined,
 }) {
   return (
-    <section id={id} className="border-t border-slate-200 pt-5">
+    <section id={ id } className="border-t border-slate-200 pt-5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900">
           <Icon className="h-4 w-4 text-brand-600" aria-hidden="true" />
-          {title}
+          { title }
         </h2>
-        {action}
+        { action }
       </div>
-      {children}
+      { children }
     </section>
   );
 }
@@ -303,7 +303,7 @@ function DriverDetailsPage() {
 
     return (
       <Card className="rounded-xl">
-        <QueryError error={driverError} onRetry={refetchDriver} />
+        <QueryError error={ driverError } onRetry={ refetchDriver } />
       </Card>
     );
   }
@@ -531,26 +531,26 @@ function DriverDetailsPage() {
     value: unknown;
     detail?: string;
   }[] = [
-    {
-      label: "Overall rating",
-      value:
-        driverRating !== null
-          ? `${Number(driverRating).toFixed(1)} / 5`
-          : "Not provided",
-      detail:
-        ratingCount > 0
-          ? `${displayValue(ratingCount)} ratings · ${displayValue(rideCount)} rides`
-          : "Rating count not provided",
-    },
-    ...detailFields.map(([label, keys]) => ({
-      label,
-      value: formatPercent(getMetric(keys)),
-    })),
-    {
-      label: "Average response time",
-      value: responseTime === null ? "Not provided" : formatDuration(responseTime),
-    },
-  ];
+      {
+        label: "Overall rating",
+        value:
+          driverRating !== null
+            ? `${Number(driverRating).toFixed(1)} / 5`
+            : "Not provided",
+        detail:
+          ratingCount > 0
+            ? `${displayValue(ratingCount)} ratings · ${displayValue(rideCount)} rides`
+            : "Rating count not provided",
+      },
+      ...detailFields.map(([label, keys]) => ({
+        label,
+        value: formatPercent(getMetric(keys)),
+      })),
+      {
+        label: "Average response time",
+        value: responseTime === null ? "Not provided" : formatDuration(responseTime),
+      },
+    ];
 
   const earningsFields: [string, unknown][] = [
     [
@@ -562,14 +562,14 @@ function DriverDetailsPage() {
       grossEarnings !== null
         ? formatMoney(grossEarnings)
         : formatMoneyValue(
-            netEarnings !== null && platformFee !== null
-              ? netEarnings + platformFee
-              : getEarningsMetric([
-                  "gross_earnings",
-                  "gross_amount",
-                  "total_gross",
-                ]),
-          ),
+          netEarnings !== null && platformFee !== null
+            ? netEarnings + platformFee
+            : getEarningsMetric([
+              "gross_earnings",
+              "gross_amount",
+              "total_gross",
+            ]),
+        ),
     ],
     [
       "Platform fee",
@@ -624,7 +624,7 @@ function DriverDetailsPage() {
             </Button>
             <div className="min-w-0">
               <h1 className="truncate text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
-                {driver.name}
+                { driver.name }
               </h1>
             </div>
           </div>
@@ -638,29 +638,28 @@ function DriverDetailsPage() {
               }
             >
               <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  driver.isActive ? "bg-emerald-500" : "bg-rose-500"
-                }`}
+                className={ `h-1.5 w-1.5 rounded-full ${driver.isActive ? "bg-emerald-500" : "bg-rose-500"
+                  }` }
                 aria-hidden="true"
               />
-              {driver.isActive ? "Active" : "Inactive"}
+              { driver.isActive ? "Active" : "Inactive" }
             </Badge>
             <Badge variant="outline" className="border-slate-200 text-slate-600">
-              {onlineLabel}
+              { onlineLabel }
             </Badge>
             <Badge variant="outline" className="border-slate-200 text-slate-600">
-              {driver.status}
+              { driver.status }
             </Badge>
           </div>
         </header>
 
         <div className="flex flex-wrap gap-2">
-          {isSuspended ? (
+          { isSuspended ? (
             <Button
               type="button"
               variant="outline"
-              disabled={unsuspendDriver.isPending}
-              onClick={() =>
+              disabled={ unsuspendDriver.isPending }
+              onClick={ () =>
                 (
                   unsuspendDriver.mutate as unknown as (variables: {
                     driverId: string;
@@ -684,15 +683,15 @@ function DriverDetailsPage() {
                   ? undefined
                   : "Only active, verified drivers can be suspended."
               }
-              onClick={() => {
+              onClick={ () => {
                 setSuspendReason("");
                 setSuspendOpen(true);
-              }}
+              } }
             >
               <ShieldAlert aria-hidden="true" />
               Suspend
             </Button>
-          )}
+          ) }
           <Button
             type="button"
             variant="outline"
@@ -702,9 +701,9 @@ function DriverDetailsPage() {
             <Ban aria-hidden="true" />
             Block
           </Button>
-          {email ? (
+          { email ? (
             <Button asChild variant="outline">
-              <a href={`mailto:${encodeURIComponent(email)}`}>
+              <a href={ `mailto:${encodeURIComponent(email)}` }>
                 <MessageSquare aria-hidden="true" />
                 Send Message
               </a>
@@ -719,48 +718,48 @@ function DriverDetailsPage() {
               <MessageSquare aria-hidden="true" />
               Send Message
             </Button>
-          )}
-          <Button type="button" variant="outline" onClick={exportProfile}>
+          ) }
+          <Button type="button" variant="outline" onClick={ exportProfile }>
             <Download aria-hidden="true" />
             Export Data
           </Button>
         </div>
 
-        <DriverSection icon={UserRound} title="Personal Information">
+        <DriverSection icon={ UserRound } title="Personal Information">
           <dl className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
-            <InfoField label="Name" value={driver.name} />
+            <InfoField label="Name" value={ driver.name } />
             <InfoField
               label="Phone"
-              value={phone}
-              badge={verificationLabel(phoneVerified, phoneVerifiedAt)}
+              value={ phone }
+              badge={ verificationLabel(phoneVerified, phoneVerifiedAt) }
             />
             <InfoField
               label="Email"
-              value={email}
-              badge={verificationLabel(emailVerified, emailVerifiedAt)}
+              value={ email }
+              badge={ verificationLabel(emailVerified, emailVerifiedAt) }
             />
-            <InfoField label="National ID" value={nationalId} />
+            <InfoField label="National ID" value={ nationalId } />
             <InfoField
               label="Joined"
-              value={driver.joined}
-              detail={joinedRelative}
+              value={ driver.joined }
+              detail={ joinedRelative }
             />
-            <InfoField label="Referral code" value={referralCode} />
-            <InfoField label="Referred by" value={referredBy} />
+            <InfoField label="Referral code" value={ referralCode } />
+            <InfoField label="Referred by" value={ referredBy } />
           </dl>
         </DriverSection>
 
-        <DriverSection icon={CarFront} title="Vehicle Information">
+        <DriverSection icon={ CarFront } title="Vehicle Information">
           <dl className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
             <InfoField
               label="Make / model"
-              value={firstValue([vehicle, profile], ["make_model", "make_and_model", "model_name", "make", "model"])}
+              value={ firstValue([vehicle, profile], ["make_model", "make_and_model", "model_name", "make", "model"]) }
             />
-            <InfoField label="Year" value={firstValue([vehicle, profile], ["year", "model_year"])} />
-            <InfoField label="Color" value={firstValue([vehicle, profile], ["color", "vehicle_color"])} />
+            <InfoField label="Year" value={ firstValue([vehicle, profile], ["year", "model_year"]) } />
+            <InfoField label="Color" value={ firstValue([vehicle, profile], ["color", "vehicle_color"]) } />
             <InfoField
               label="Plate"
-              value={firstValue([vehicle, profile], ["plate_number", "license_plate", "registration_number", "plate"])}
+              value={ firstValue([vehicle, profile], ["plate_number", "license_plate", "registration_number", "plate"]) }
               badge={
                 firstValue([vehicle, profile], ["plate_verified", "vehicle_verified"]) === true
                   ? "Verified"
@@ -771,7 +770,7 @@ function DriverDetailsPage() {
             />
             <InfoField
               label="Insurance expiry"
-              value={insuranceExpiry ? formatDate(insuranceExpiry) : null}
+              value={ insuranceExpiry ? formatDate(insuranceExpiry) : null }
               badge={
                 insuranceValidity === true
                   ? "Valid"
@@ -783,33 +782,33 @@ function DriverDetailsPage() {
           </dl>
           <div className="mt-4 border-t border-slate-100 pt-4">
             <h3 className="text-xs font-medium text-slate-500">Vehicle photos</h3>
-            {vehiclePhotos.length > 0 || vehiclePhotoDocs.length > 0 ? (
+            { vehiclePhotos.length > 0 || vehiclePhotoDocs.length > 0 ? (
               <div className="mt-2 flex flex-wrap gap-2">
-                {vehiclePhotos.map((photo) => (
+                { vehiclePhotos.map((photo) => (
                   <button
-                    key={photo.label}
+                    key={ photo.label }
                     type="button"
-                    onClick={() =>
+                    onClick={ () =>
                       setLightboxPhoto({ label: photo.label, url: photo.url })
                     }
                     className="group relative h-24 w-32 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
                   >
                     <img
-                      src={photo.url}
+                      src={ photo.url }
                       alt=""
                       loading="lazy"
                       className="h-full w-full object-cover transition-transform group-hover:scale-105"
                     />
                     <span className="absolute inset-x-0 bottom-0 bg-slate-950/70 px-2 py-1 text-xs font-medium text-white">
-                      {photo.label}
+                      { photo.label }
                     </span>
                   </button>
-                ))}
-                {vehiclePhotoDocs.map((photo, index) => (
+                )) }
+                { vehiclePhotoDocs.map((photo, index) => (
                   <button
-                    key={photo.id ?? photo.fileName ?? index}
+                    key={ photo.id ?? photo.fileName ?? index }
                     type="button"
-                    onClick={() =>
+                    onClick={ () =>
                       setLightboxPhoto({
                         label: photo.fileName || "Vehicle photo",
                         url: photo.fileUrl,
@@ -818,121 +817,120 @@ function DriverDetailsPage() {
                     className="group relative h-24 w-32 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
                   >
                     <img
-                      src={photo.fileUrl}
+                      src={ photo.fileUrl }
                       alt=""
                       loading="lazy"
                       className="h-full w-full object-cover transition-transform group-hover:scale-105"
                     />
                     <span className="absolute inset-x-0 bottom-0 truncate bg-slate-950/70 px-2 py-1 text-xs font-medium text-white">
-                      {photo.fileName || "Vehicle photo"}
+                      { photo.fileName || "Vehicle photo" }
                     </span>
                   </button>
-                ))}
+                )) }
               </div>
             ) : (
               <p className="mt-2 text-sm text-slate-500">
                 Vehicle photo details are not provided.
               </p>
-            )}
+            ) }
           </div>
         </DriverSection>
 
         <DriverSection
-          icon={FileText}
+          icon={ FileText }
           title="Documents"
           id="driver-documents"
           action={
             !documentsPending && !documentsIsError ? (
               <span className="text-xs text-slate-500">
-                {items.length} document{items.length === 1 ? "" : "s"}
+                { items.length } document{ items.length === 1 ? "" : "s" }
               </span>
             ) : null
           }
         >
-          {documentsPending && (
+          { documentsPending && (
             <div className="space-y-3">
-              {[0, 1, 2].map((item) => (
+              { [0, 1, 2].map((item) => (
                 <div
-                  key={item}
+                  key={ item }
                   className="h-16 animate-pulse rounded-lg bg-slate-100"
                 />
-              ))}
+              )) }
             </div>
-          )}
-          {documentsIsError && (
-            <QueryError error={documentsError} onRetry={refetchDocuments} />
-          )}
-          {!documentsPending && !documentsIsError && items.length === 0 && (
+          ) }
+          { documentsIsError && (
+            <QueryError error={ documentsError } onRetry={ refetchDocuments } />
+          ) }
+          { !documentsPending && !documentsIsError && items.length === 0 && (
             <p className="rounded-lg border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500">
               This driver has not uploaded any documents.
             </p>
-          )}
-          {!documentsPending && !documentsIsError && items.length > 0 && (
+          ) }
+          { !documentsPending && !documentsIsError && items.length > 0 && (
             <ul className="divide-y divide-slate-100">
-              {items.map((document) => (
+              { items.map((document) => (
                 <li
-                  key={document.id ?? document.fileName}
+                  key={ document.id ?? document.fileName }
                   className="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-1"
                 >
                   <div className="min-w-0">
                     <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-900">
                       <span
-                        className={`h-2 w-2 rounded-full ${
-                          document.isApproved
+                        className={ `h-2 w-2 rounded-full ${document.isApproved
                             ? "bg-emerald-500"
                             : document.isRejected
                               ? "bg-rose-500"
                               : "bg-amber-500"
-                        }`}
+                          }` }
                         aria-hidden="true"
                       />
-                      {document.typeLabel}
-                      <Badge variant="outline">{document.status}</Badge>
+                      { document.typeLabel }
+                      <Badge variant="outline">{ document.status }</Badge>
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
-                      {document.reviewedAt
+                      { document.reviewedAt
                         ? `${document.status} ${document.reviewedAt}`
-                        : `Uploaded ${document.uploadedAt}`}
-                      {document.reviewedBy ? ` · by ${document.reviewedBy}` : ""}
+                        : `Uploaded ${document.uploadedAt}` }
+                      { document.reviewedBy ? ` · by ${document.reviewedBy}` : "" }
                     </p>
-                    {document.expiry !== "No expiry" && (
+                    { document.expiry !== "No expiry" && (
                       <p className="mt-1 text-xs text-slate-500">
-                        Valid until {document.expiry}
+                        Valid until { document.expiry }
                       </p>
-                    )}
-                    {document.rejectionReason && (
+                    ) }
+                    { document.rejectionReason && (
                       <p className="mt-1 text-xs text-rose-700">
-                        {document.rejectionReason}
+                        { document.rejectionReason }
                       </p>
-                    )}
+                    ) }
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
-                      disabled={documentMutationPending}
-                      onClick={() => setReviewTarget(document)}
+                      disabled={ documentMutationPending }
+                      onClick={ () => setReviewTarget(document) }
                     >
                       View Document →
                     </Button>
                   </div>
                 </li>
-              ))}
+              )) }
             </ul>
-          )}
+          ) }
         </DriverSection>
 
-        <DriverSection icon={Star} title="Performance Metrics">
+        <DriverSection icon={ Star } title="Performance Metrics">
           <dl className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
-            {performanceFields.map((field) => (
+            { performanceFields.map((field) => (
               <InfoField
-                key={field.label}
-                label={field.label}
-                value={field.value}
-                detail={field.detail}
+                key={ field.label }
+                label={ field.label }
+                value={ field.value }
+                detail={ field.detail }
               />
-            ))}
+            )) }
           </dl>
           <p className="mt-2 text-xs text-slate-500">
             Detailed acceptance, cancellation, and arrival metrics are only
@@ -941,7 +939,7 @@ function DriverDetailsPage() {
         </DriverSection>
 
         <DriverSection
-          icon={Download}
+          icon={ Download }
           title="Earnings · Last 30 Days"
           action={
             canProcessPayouts ? (
@@ -949,7 +947,7 @@ function DriverDetailsPage() {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={navigateToPendingPayouts}
+                onClick={ navigateToPendingPayouts }
               >
                 Process →
               </Button>
@@ -957,17 +955,17 @@ function DriverDetailsPage() {
           }
         >
           <dl className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
-            {earningsFields.map(([label, value]) => (
+            { earningsFields.map(([label, value]) => (
               <InfoField
-                key={label}
-                label={label}
+                key={ label }
+                label={ label }
                 value={
                   label === "Total rides"
                     ? displayValue(value)
                     : value
                 }
               />
-            ))}
+            )) }
           </dl>
           <p className="mt-2 text-xs text-slate-500">
             Earnings and payout totals for this date range are not provided by
@@ -975,38 +973,38 @@ function DriverDetailsPage() {
           </p>
         </DriverSection>
 
-        <DriverSection icon={Clock3} title="Activity">
+        <DriverSection icon={ Clock3 } title="Activity">
           <dl className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-4">
-            {activityFields.map(([label, value]) => (
-              <InfoField key={label} label={label} value={value} />
-            ))}
+            { activityFields.map(([label, value]) => (
+              <InfoField key={ label } label={ label } value={ value } />
+            )) }
           </dl>
         </DriverSection>
 
-        <DriverSection icon={ShieldAlert} title="Issues & Flags">
-          {activeIssues === null && historicalIssues === null ? (
+        <DriverSection icon={ ShieldAlert } title="Issues & Flags">
+          { activeIssues === null && historicalIssues === null ? (
             <p className="text-sm text-slate-500">
               Issue and dispute history is not provided by the current API.
             </p>
           ) : (
             <div className="space-y-3 text-sm">
               <p className="font-medium text-slate-800">
-                Active: {displayValue(activeIssues)}
+                Active: { displayValue(activeIssues) }
               </p>
               <p className="text-slate-600">
-                Historical: {displayValue(historicalIssues)}
+                Historical: { displayValue(historicalIssues) }
               </p>
             </div>
-          )}
+          ) }
         </DriverSection>
 
-        <DriverSection icon={ArrowUpRight} title="Quick Links">
+        <DriverSection icon={ ArrowUpRight } title="Quick Links">
           <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" onClick={navigateToRides}>
+            <Button type="button" variant="outline" onClick={ navigateToRides }>
               View All Rides
               <ArrowUpRight aria-hidden="true" />
             </Button>
-            <Button type="button" variant="outline" onClick={navigateToPayouts}>
+            <Button type="button" variant="outline" onClick={ navigateToPayouts }>
               View Earnings
               <ArrowUpRight aria-hidden="true" />
             </Button>
@@ -1018,33 +1016,33 @@ function DriverDetailsPage() {
             >
               View Ratings
             </Button>
-            {email && (
+            { email && (
               <Button asChild variant="outline">
-                <a href={`mailto:${encodeURIComponent(email)}`}>
+                <a href={ `mailto:${encodeURIComponent(email)}` }>
                   <Mail aria-hidden="true" />
                   Message Driver
                 </a>
               </Button>
-            )}
-            {phone && (
+            ) }
+            { phone && (
               <Button asChild variant="outline">
-                <a href={`tel:${encodeURIComponent(phone)}`}>
+                <a href={ `tel:${encodeURIComponent(phone)}` }>
                   <Phone aria-hidden="true" />
                   Call Driver
                 </a>
               </Button>
-            )}
+            ) }
           </div>
         </DriverSection>
       </div>
 
-      {reviewTarget && (
+      { reviewTarget && (
         <DocumentReviewDialog
-          key={reviewTarget.id}
+          key={ reviewTarget.id }
           open
-          document={reviewTarget}
-          onClose={closeDocumentReview}
-          onApprove={(documentId, notes) =>
+          document={ reviewTarget }
+          onClose={ closeDocumentReview }
+          onApprove={ (documentId, notes) =>
             (
               approveDocument.mutate as unknown as (
                 variables: { documentId: string; notes: string },
@@ -1055,63 +1053,63 @@ function DriverDetailsPage() {
               { onSuccess: () => setReviewTarget(null) },
             )
           }
-          onReject={(document) => {
+          onReject={ (document) => {
             setReviewTarget(null);
             setRejectTarget(document);
-          }}
-          allowReview={canReviewDocuments}
-          pending={documentMutationPending}
+          } }
+          allowReview={ canReviewDocuments }
+          pending={ documentMutationPending }
         />
-      )}
+      ) }
 
-      {lightboxPhoto && (
+      { lightboxPhoto && (
         <div
           className="fixed inset-0 z-80 flex items-center justify-center bg-slate-950/90 p-4"
           role="presentation"
-          onMouseDown={(event) => {
+          onMouseDown={ (event) => {
             if (event.target === event.currentTarget) setLightboxPhoto(null);
-          }}
+          } }
         >
           <section
             role="dialog"
             aria-modal="true"
-            aria-label={lightboxPhoto.label}
+            aria-label={ lightboxPhoto.label }
             className="relative flex max-h-full max-w-full flex-col items-center gap-3"
           >
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              onClick={() => setLightboxPhoto(null)}
+              onClick={ () => setLightboxPhoto(null) }
               aria-label="Close vehicle photo"
               className="absolute -right-2 -top-2 z-10 rounded-full bg-white text-slate-700 hover:bg-slate-100 sm:right-0 sm:top-0"
             >
               <X aria-hidden="true" />
             </Button>
             <img
-              src={lightboxPhoto.url}
-              alt={lightboxPhoto.label}
+              src={ lightboxPhoto.url }
+              alt={ lightboxPhoto.label }
               className="max-h-[80dvh] max-w-full rounded-lg object-contain"
             />
             <p className="text-sm font-medium text-white">
-              {lightboxPhoto.label}
+              { lightboxPhoto.label }
             </p>
           </section>
         </div>
-      )}
+      ) }
 
       <ReasonDialog
-        open={suspendOpen}
-        onClose={() => setSuspendOpen(false)}
+        open={ suspendOpen }
+        onClose={ () => setSuspendOpen(false) }
         title="Suspend driver"
-        description={`${driver.name} will be taken off the road.`}
+        description={ `${driver.name} will be taken off the road.` }
         confirmLabel="Suspend"
         tone="danger"
         placeholder="Why is the driver suspended?"
-        value={suspendReason}
-        onChange={setSuspendReason}
-        pending={suspendDriver.isPending}
-        onConfirm={async (reason) => {
+        value={ suspendReason }
+        onChange={ setSuspendReason }
+        pending={ suspendDriver.isPending }
+        onConfirm={ async (reason) => {
           await (
             suspendDriver.mutateAsync as unknown as (variables: {
               driverId: string;
@@ -1119,20 +1117,20 @@ function DriverDetailsPage() {
             }) => Promise<unknown>
           )({ driverId: String(driverId), reason });
           setSuspendOpen(false);
-        }}
+        } }
       />
 
       <DocumentRejectionDialog
-        key={rejectTarget?.id ?? "closed"}
-        open={Boolean(rejectTarget)}
-        onClose={() => setRejectTarget(null)}
+        key={ rejectTarget?.id ?? "closed" }
+        open={ Boolean(rejectTarget) }
+        onClose={ () => setRejectTarget(null) }
         description={
           rejectTarget
             ? `${rejectTarget.typeLabel} for ${driver.name} will be rejected.`
             : undefined
         }
-        pending={rejectDocument.isPending}
-        onConfirm={async (reason) => {
+        pending={ rejectDocument.isPending }
+        onConfirm={ async (reason) => {
           await (
             rejectDocument.mutateAsync as unknown as (variables: {
               documentId: string;
@@ -1140,7 +1138,7 @@ function DriverDetailsPage() {
             }) => Promise<unknown>
           )({ documentId: rejectTarget.id, reason });
           setRejectTarget(null);
-        }}
+        } }
       />
     </>
   );

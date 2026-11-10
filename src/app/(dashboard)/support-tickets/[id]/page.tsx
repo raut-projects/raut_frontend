@@ -129,15 +129,15 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
     return (
       <div className="mx-auto max-w-3xl rounded-xl border border-slate-200 bg-white px-6 py-12 text-center shadow-card">
         <p className="text-sm font-semibold text-rose-700">
-          {ticketQuery.error instanceof Error
+          { ticketQuery.error instanceof Error
             ? ticketQuery.error.message
-            : "Ticket details could not be loaded."}
+            : "Ticket details could not be loaded." }
         </p>
         <Button
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => void ticketQuery.refetch()}
+          onClick={ () => void ticketQuery.refetch() }
           className="mt-4"
         >
           Try again
@@ -266,14 +266,14 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
 
         <div className="flex items-center gap-2">
           <span className="font-mono text-sm font-semibold text-slate-700">
-            Ticket {ticket.id}
+            Ticket { ticket.id }
           </span>
           <Button
             type="button"
             variant="outline"
             size="icon-sm"
-            onClick={copyTicketId}
-            aria-label={`Copy ${ticket.id}`}
+            onClick={ copyTicketId }
+            aria-label={ `Copy ${ticket.id}` }
           >
             <Copy className="size-3.5" aria-hidden="true" />
           </Button>
@@ -288,19 +288,19 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                 Support ticket
               </p>
               <h1 className="mt-1 wrap-break-words text-2xl font-bold tracking-tight text-slate-900">
-                {ticket.subject}
+                { ticket.subject }
               </h1>
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <TicketStatusBadge status={ticket.status} />
-                <TicketPriorityBadge priority={ticket.priority} />
+                <TicketStatusBadge status={ ticket.status } />
+                <TicketPriorityBadge priority={ ticket.priority } />
                 <span
-                  className={cn(
+                  className={ cn(
                     "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset",
                     getSlaClass(ticket.status, ticket.priority),
-                  )}
+                  ) }
                 >
                   <Clock3 className="size-3.5" aria-hidden="true" />
-                  SLA: {slaLabel}
+                  SLA: { slaLabel }
                 </span>
               </div>
             </div>
@@ -310,11 +310,11 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={handleAssign}
-                disabled={!isUnassigned || isSaving}
+                onClick={ handleAssign }
+                disabled={ !isUnassigned || isSaving }
               >
                 <UserRound className="size-3.5" aria-hidden="true" />
-                {isUnassigned ? "Assign to Me" : `Assigned to ${ticket.assignee}`}
+                { isUnassigned ? "Assign to Me" : `Assigned to ${ticket.assignee}` }
               </Button>
 
               <DropdownMenu>
@@ -323,7 +323,7 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                     type="button"
                     variant="outline"
                     size="sm"
-                    disabled={isSaving}
+                    disabled={ isSaving }
                   >
                     Reassign
                   </Button>
@@ -332,44 +332,44 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                   align="end"
                   className="w-56 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
                 >
-                  {agentsQuery.isPending && (
+                  { agentsQuery.isPending && (
                     <DropdownMenuItem disabled>
                       Loading support agents…
                     </DropdownMenuItem>
-                  )}
-                  {agentsQuery.isError && (
+                  ) }
+                  { agentsQuery.isError && (
                     <DropdownMenuItem disabled>
                       Could not load support agents
                     </DropdownMenuItem>
-                  )}
-                  {(agentsQuery.data ?? []).map((agent) => (
+                  ) }
+                  { (agentsQuery.data ?? []).map((agent) => (
                     <DropdownMenuItem
-                      key={agent.id}
-                      onSelect={() => handleReassign(agent.id)}
-                      disabled={isSaving}
+                      key={ agent.id }
+                      onSelect={ () => handleReassign(agent.id) }
+                      disabled={ isSaving }
                       className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                     >
                       <span>
-                        {agent.name}
+                        { agent.name }
                         <span className="ml-1 text-slate-400">
-                          · {agent.role}
+                          · { agent.role }
                         </span>
                       </span>
-                      {ticket.assigneeId === agent.id && (
+                      { ticket.assigneeId === agent.id && (
                         <Check
                           className="ml-auto size-3.5"
                           aria-hidden="true"
                         />
-                      )}
+                      ) }
                     </DropdownMenuItem>
-                  ))}
-                  {!agentsQuery.isPending &&
+                  )) }
+                  { !agentsQuery.isPending &&
                     !agentsQuery.isError &&
                     (agentsQuery.data?.length ?? 0) === 0 && (
                       <DropdownMenuItem disabled>
                         No eligible agents
                       </DropdownMenuItem>
-                    )}
+                    ) }
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -384,22 +384,22 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                   align="end"
                   className="w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
                 >
-                  {SUPPORT_TICKET_PRIORITIES.map((priority) => (
+                  { SUPPORT_TICKET_PRIORITIES.map((priority) => (
                     <DropdownMenuItem
-                      key={priority}
-                      onSelect={() => handlePriority(priority)}
-                      disabled={isSaving}
+                      key={ priority }
+                      onSelect={ () => handlePriority(priority) }
+                      disabled={ isSaving }
                       className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                     >
-                      {TICKET_PRIORITY_LABELS[priority]}
-                      {ticket.priority === priority && (
+                      { TICKET_PRIORITY_LABELS[priority] }
+                      { ticket.priority === priority && (
                         <Check
                           className="ml-auto size-3.5"
                           aria-hidden="true"
                         />
-                      )}
+                      ) }
                     </DropdownMenuItem>
-                  ))}
+                  )) }
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -407,18 +407,18 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={handleToggleStatus}
-                disabled={isSaving}
+                onClick={ handleToggleStatus }
+                disabled={ isSaving }
               >
-                {ticket.status === "closed" ? "Reopen" : "Close"}
+                { ticket.status === "closed" ? "Reopen" : "Close" }
               </Button>
 
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={handleEscalate}
-                disabled={ticket.priority === "urgent" || isSaving}
+                onClick={ handleEscalate }
+                disabled={ ticket.priority === "urgent" || isSaving }
               >
                 Escalate
               </Button>
@@ -430,53 +430,53 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
           <div className="min-w-0 space-y-6">
             <section aria-labelledby="ticket-user-heading">
               <div className="flex items-center justify-between gap-3">
-                <h2 id="ticket-user-heading" className={sectionTitleClass}>
-                  <span className={sectionIconClass}>
+                <h2 id="ticket-user-heading" className={ sectionTitleClass }>
+                  <span className={ sectionIconClass }>
                     <UserRound className="size-4" aria-hidden="true" />
                   </span>
                   User Information
                 </h2>
                 <Button asChild variant="outline" size="xs">
-                  <Link href={profileHref}>
+                  <Link href={ profileHref }>
                     View Profile
                     <ArrowUpRight className="size-3.5" aria-hidden="true" />
                   </Link>
                 </Button>
               </div>
 
-              <div className={cn(cardClass, "mt-3")}>
+              <div className={ cn(cardClass, "mt-3") }>
                 <div className="flex items-center gap-3">
                   <span className="flex size-10 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-600">
-                    {requesterInitials}
+                    { requesterInitials }
                   </span>
                   <div>
                     <p className="text-sm font-semibold text-slate-900">
-                      {ticket.requester}
+                      { ticket.requester }
                     </p>
                     <p className="text-xs text-slate-500">
-                      {ticket.requesterType}
+                      { ticket.requesterType }
                     </p>
                   </div>
                 </div>
 
                 <dl className="mt-4 grid gap-4 sm:grid-cols-2">
                   <div className="sm:col-span-2">
-                    <dt className={labelClass}>Phone</dt>
+                    <dt className={ labelClass }>Phone</dt>
                     <dd className="mt-1 flex flex-wrap items-center gap-2">
                       <span className="text-sm text-slate-700">
-                        {detail.user.phone ?? "—"}
+                        { detail.user.phone ?? "—" }
                       </span>
-                      {phoneHref && (
+                      { phoneHref && (
                         <Button asChild variant="outline" size="xs">
-                          <a href={phoneHref}>
+                          <a href={ phoneHref }>
                             <Phone className="size-3" aria-hidden="true" />
                             Call
                           </a>
                         </Button>
-                      )}
-                      {smsHref && (
+                      ) }
+                      { smsHref && (
                         <Button asChild variant="outline" size="xs">
-                          <a href={smsHref}>
+                          <a href={ smsHref }>
                             <MessageSquare
                               className="size-3"
                               aria-hidden="true"
@@ -484,39 +484,39 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                             SMS
                           </a>
                         </Button>
-                      )}
+                      ) }
                     </dd>
                   </div>
                   <div>
-                    <dt className={labelClass}>Account</dt>
-                    <dd className={valueClass}>
-                      {detail.user.accountId ?? "—"}
+                    <dt className={ labelClass }>Account</dt>
+                    <dd className={ valueClass }>
+                      { detail.user.accountId ?? "—" }
                     </dd>
                   </div>
                   <div>
-                    <dt className={labelClass}>Joined</dt>
-                    <dd className={valueClass}>
-                      {detail.user.joinedAt
+                    <dt className={ labelClass }>Joined</dt>
+                    <dd className={ valueClass }>
+                      { detail.user.joinedAt
                         ? formatTicketJoinedDate(detail.user.joinedAt)
-                        : "—"}
+                        : "—" }
                     </dd>
                   </div>
                   <div>
-                    <dt className={labelClass}>Total rides</dt>
-                    <dd className={valueClass}>
-                      {detail.user.totalRides ?? "—"}
+                    <dt className={ labelClass }>Total rides</dt>
+                    <dd className={ valueClass }>
+                      { detail.user.totalRides ?? "—" }
                     </dd>
                   </div>
                   <div>
-                    <dt className={labelClass}>Rating</dt>
+                    <dt className={ labelClass }>Rating</dt>
                     <dd className="mt-1 flex items-center gap-1.5 text-sm text-slate-700">
                       <Star
                         className="size-3.5 fill-amber-400 text-amber-400"
                         aria-hidden="true"
                       />
-                      {detail.user.rating !== undefined
+                      { detail.user.rating !== undefined
                         ? detail.user.rating.toFixed(1)
-                        : "—"}
+                        : "—" }
                     </dd>
                   </div>
                 </dl>
@@ -524,42 +524,42 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
             </section>
 
             <section aria-labelledby="ticket-details-heading">
-              <h2 id="ticket-details-heading" className={sectionTitleClass}>
-                <span className={sectionIconClass}>
+              <h2 id="ticket-details-heading" className={ sectionTitleClass }>
+                <span className={ sectionIconClass }>
                   <FileText className="size-4" aria-hidden="true" />
                 </span>
                 Ticket Details
               </h2>
 
               <dl
-                className={cn(
+                className={ cn(
                   cardClass,
                   "mt-3 grid gap-4 sm:grid-cols-2",
-                )}
+                ) }
               >
                 <div className="sm:col-span-2">
-                  <dt className={labelClass}>Subject</dt>
-                  <dd className={valueClass}>{ticket.subject}</dd>
+                  <dt className={ labelClass }>Subject</dt>
+                  <dd className={ valueClass }>{ ticket.subject }</dd>
                 </div>
                 <div>
-                  <dt className={labelClass}>Category</dt>
-                  <dd className={valueClass}>{ticket.category}</dd>
+                  <dt className={ labelClass }>Category</dt>
+                  <dd className={ valueClass }>{ ticket.category }</dd>
                 </div>
                 <div>
-                  <dt className={labelClass}>Created</dt>
-                  <dd className={valueClass}>
-                    {ticket.createdAt ? formatTicketDateTime(ticket.createdAt) : "—"}
+                  <dt className={ labelClass }>Created</dt>
+                  <dd className={ valueClass }>
+                    { ticket.createdAt ? formatTicketDateTime(ticket.createdAt) : "—" }
                   </dd>
                 </div>
                 <div>
-                  <dt className={labelClass}>Last updated</dt>
-                  <dd className={valueClass}>
-                    {ticket.updatedAt ? formatTicketDateTime(ticket.updatedAt) : "—"}
+                  <dt className={ labelClass }>Last updated</dt>
+                  <dd className={ valueClass }>
+                    { ticket.updatedAt ? formatTicketDateTime(ticket.updatedAt) : "—" }
                   </dd>
                 </div>
                 <div>
-                  <dt className={labelClass}>Assigned to</dt>
-                  <dd className={valueClass}>{ticket.assignee}</dd>
+                  <dt className={ labelClass }>Assigned to</dt>
+                  <dd className={ valueClass }>{ ticket.assignee }</dd>
                 </div>
               </dl>
             </section>
@@ -568,145 +568,145 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
               <div className="flex items-center justify-between gap-3">
                 <h2
                   id="ticket-conversation-heading"
-                  className={sectionTitleClass}
+                  className={ sectionTitleClass }
                 >
-                  <span className={sectionIconClass}>
+                  <span className={ sectionIconClass }>
                     <MessageSquare className="size-4" aria-hidden="true" />
                   </span>
                   Conversation
                 </h2>
                 <span className="text-xs text-slate-400">
-                  {detail.messages.length} message
-                  {detail.messages.length === 1 ? "" : "s"}
+                  { detail.messages.length } message
+                  { detail.messages.length === 1 ? "" : "s" }
                 </span>
               </div>
 
               <div className="mt-3 space-y-3">
-                {detail.messages.length === 0 && (
-                  <p className={cn(cardClass, "text-sm text-slate-500")}>
+                { detail.messages.length === 0 && (
+                  <p className={ cn(cardClass, "text-sm text-slate-500") }>
                     No messages were returned for this ticket.
                   </p>
-                )}
-                {detail.messages.map((message) => {
+                ) }
+                { detail.messages.map((message) => {
                   const isInternal = Boolean(message.internal);
                   const isBot = message.role === "Bot";
 
                   return (
                     <article
-                      key={message.id}
-                      className={cn(
+                      key={ message.id }
+                      className={ cn(
                         "rounded-xl border p-4",
                         isInternal
                           ? "border-amber-200 bg-amber-50/70"
                           : isBot
                             ? "border-slate-200 bg-slate-50"
                             : "border-slate-200 bg-white",
-                      )}
+                      ) }
                     >
                       <div className="flex flex-wrap items-center gap-2">
                         <span
-                          className={cn(
+                          className={ cn(
                             "flex size-8 items-center justify-center rounded-full text-xs font-semibold",
                             isInternal
                               ? "bg-amber-100 text-amber-700"
                               : isBot
                                 ? "bg-slate-200 text-slate-600"
                                 : "bg-brand-50 text-brand-700",
-                          )}
+                          ) }
                         >
-                          {isBot ? (
+                          { isBot ? (
                             <Bot className="size-4" aria-hidden="true" />
                           ) : (
                             getInitials(message.author)
-                          )}
+                          ) }
                         </span>
                         <span className="text-sm font-semibold text-slate-900">
-                          {message.author}
+                          { message.author }
                         </span>
                         <span className="text-xs text-slate-500">
-                          {message.role}
+                          { message.role }
                         </span>
-                        {isInternal && (
+                        { isInternal && (
                           <Badge
                             variant="outline"
                             className="rounded-full border-amber-200 bg-amber-100 px-2 text-[10px] font-semibold uppercase tracking-wide text-amber-700"
                           >
                             Internal note
                           </Badge>
-                        )}
+                        ) }
                         <time
-                          dateTime={message.createdAt}
+                          dateTime={ message.createdAt }
                           className="ml-auto text-xs text-slate-400"
                         >
-                          {formatTicketDateTime(message.createdAt)}
+                          { formatTicketDateTime(message.createdAt) }
                         </time>
                       </div>
 
                       <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-600">
-                        {message.body}
+                        { message.body }
                       </p>
 
-                      {(message.rideId || message.attachments?.length) && (
+                      { (message.rideId || message.attachments?.length) && (
                         <div className="mt-3 flex flex-wrap items-center gap-2">
-                          {message.rideId && (
+                          { message.rideId && (
                             <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-xs font-medium text-slate-500 ring-1 ring-inset ring-slate-200">
                               <ReceiptText
                                 className="size-3"
                                 aria-hidden="true"
                               />
-                              {message.rideId}
+                              { message.rideId }
                             </span>
-                          )}
-                          {message.attachments?.map((attachment) => (
+                          ) }
+                          { message.attachments?.map((attachment) => (
                             <span
-                              key={attachment}
+                              key={ attachment }
                               className="inline-flex max-w-full items-center gap-1 rounded-full bg-white px-2 py-1 text-xs font-medium text-slate-500 ring-1 ring-inset ring-slate-200"
                             >
                               <Paperclip
                                 className="size-3 shrink-0"
                                 aria-hidden="true"
                               />
-                              <span className="truncate">{attachment}</span>
+                              <span className="truncate">{ attachment }</span>
                             </span>
-                          ))}
+                          )) }
                         </div>
-                      )}
+                      ) }
                     </article>
                   );
-                })}
+                }) }
               </div>
             </section>
 
             <section aria-labelledby="ticket-reply-heading">
-              <h2 id="ticket-reply-heading" className={sectionTitleClass}>
-                <span className={sectionIconClass}>
+              <h2 id="ticket-reply-heading" className={ sectionTitleClass }>
+                <span className={ sectionIconClass }>
                   <Send className="size-4" aria-hidden="true" />
                 </span>
                 Your Reply
               </h2>
 
-              <div className={cn(cardClass, "mt-3")}>
+              <div className={ cn(cardClass, "mt-3") }>
                 <label htmlFor="ticket-reply" className="sr-only">
                   Reply to ticket
                 </label>
                 <Textarea
                   id="ticket-reply"
-                  rows={4}
-                  value={reply}
-                  onChange={(event) => setReply(event.target.value)}
+                  rows={ 4 }
+                  value={ reply }
+                  onChange={ (event) => setReply(event.target.value) }
                   placeholder="Write a reply to the requester..."
                   className="min-h-28 bg-white"
-                  disabled={isSaving}
+                  disabled={ isSaving }
                 />
 
                 <div className="mt-3 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                   <label className="flex items-center gap-2 text-sm text-slate-600">
                     <Checkbox
-                      checked={internalNote}
-                      onCheckedChange={(checked) =>
+                      checked={ internalNote }
+                      onCheckedChange={ (checked) =>
                         setInternalNote(Boolean(checked))
                       }
-                      disabled={isSaving}
+                      disabled={ isSaving }
                     />
                     Internal note (not visible to user)
                   </label>
@@ -715,11 +715,11 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                     <Button
                       type="button"
                       size="sm"
-                      onClick={handleSendReply}
-                      disabled={isSaving || !reply.trim()}
+                      onClick={ handleSendReply }
+                      disabled={ isSaving || !reply.trim() }
                     >
                       <Send className="size-3.5" aria-hidden="true" />
-                      {internalNote ? "Add Note" : "Send Reply"}
+                      { internalNote ? "Add Note" : "Send Reply" }
                     </Button>
                   </div>
                 </div>
@@ -733,23 +733,23 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
 
           <aside className="space-y-6">
             <section aria-labelledby="ticket-history-heading">
-              <h2 id="ticket-history-heading" className={sectionTitleClass}>
-                <span className={sectionIconClass}>
+              <h2 id="ticket-history-heading" className={ sectionTitleClass }>
+                <span className={ sectionIconClass }>
                   <History className="size-4" aria-hidden="true" />
                 </span>
                 Ticket History
               </h2>
 
-              <div className={cn(cardClass, "mt-3")}>
-                {detail.history.length === 0 ? (
+              <div className={ cn(cardClass, "mt-3") }>
+                { detail.history.length === 0 ? (
                   <p className="text-sm text-slate-500">
                     No ticket history was provided.
                   </p>
                 ) : (
                   <ol className="space-y-4">
-                    {[...detail.history].reverse().map((entry) => (
+                    { [...detail.history].reverse().map((entry) => (
                       <li
-                        key={entry.id}
+                        key={ entry.id }
                         className="relative border-l border-slate-200 pl-4 last:border-transparent"
                       >
                         <span
@@ -757,18 +757,18 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                           aria-hidden="true"
                         />
                         <p className="text-sm font-medium text-slate-700">
-                          {entry.label}
+                          { entry.label }
                         </p>
                         <time
-                          dateTime={entry.createdAt}
+                          dateTime={ entry.createdAt }
                           className="mt-0.5 block text-xs text-slate-400"
                         >
-                          {formatTicketDateTime(entry.createdAt)}
+                          { formatTicketDateTime(entry.createdAt) }
                         </time>
                       </li>
-                    ))}
+                    )) }
                   </ol>
-                )}
+                ) }
               </div>
             </section>
           </aside>

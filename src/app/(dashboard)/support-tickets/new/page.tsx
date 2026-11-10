@@ -86,15 +86,15 @@ function NewSupportTicketPage() {
       </div>
 
       <form
-        onSubmit={handleSubmit}
+        onSubmit={ handleSubmit }
         className="space-y-5 rounded-xl border border-slate-200 bg-white p-5 shadow-card sm:p-6"
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="space-y-1.5 text-sm font-medium text-slate-700">
             Requester type
             <select
-              value={form.requesterType}
-              onChange={(event) =>
+              value={ form.requesterType }
+              onChange={ (event) =>
                 updateField(
                   "requesterType",
                   event.target.value as SupportTicketRequesterType,
@@ -111,8 +111,8 @@ function NewSupportTicketPage() {
             Requester ID
             <Input
               required
-              value={form.requesterId}
-              onChange={(event) => updateField("requesterId", event.target.value)}
+              value={ form.requesterId }
+              onChange={ (event) => updateField("requesterId", event.target.value) }
               placeholder="Enter the rider or driver account ID"
               className="h-9"
             />
@@ -122,9 +122,9 @@ function NewSupportTicketPage() {
             Subject
             <Input
               required
-              maxLength={200}
-              value={form.subject}
-              onChange={(event) => updateField("subject", event.target.value)}
+              maxLength={ 200 }
+              value={ form.subject }
+              onChange={ (event) => updateField("subject", event.target.value) }
               placeholder="Summarize the support issue"
               className="h-9"
             />
@@ -134,32 +134,32 @@ function NewSupportTicketPage() {
             Category
             <select
               required
-              value={form.category}
-              onChange={(event) => updateField("category", event.target.value)}
+              value={ form.category }
+              onChange={ (event) => updateField("category", event.target.value) }
               className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
             >
-              {SUPPORT_TICKET_CATEGORIES.map((category) => (
-                <option key={category} value={category}>
-                  {category}
+              { SUPPORT_TICKET_CATEGORIES.map((category) => (
+                <option key={ category } value={ category }>
+                  { category }
                 </option>
-              ))}
+              )) }
             </select>
           </label>
 
           <label className="space-y-1.5 text-sm font-medium text-slate-700">
             Priority
             <select
-              value={form.priority}
-              onChange={(event) =>
+              value={ form.priority }
+              onChange={ (event) =>
                 updateField("priority", event.target.value as SupportTicketPriority)
               }
               className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
             >
-              {SUPPORT_TICKET_PRIORITIES.map((priority) => (
-                <option key={priority} value={priority}>
-                  {TICKET_PRIORITY_LABELS[priority]}
+              { SUPPORT_TICKET_PRIORITIES.map((priority) => (
+                <option key={ priority } value={ priority }>
+                  { TICKET_PRIORITY_LABELS[priority] }
                 </option>
-              ))}
+              )) }
             </select>
           </label>
 
@@ -167,10 +167,10 @@ function NewSupportTicketPage() {
             Initial message
             <Textarea
               required
-              rows={5}
-              maxLength={5000}
-              value={form.message}
-              onChange={(event) => updateField("message", event.target.value)}
+              rows={ 5 }
+              maxLength={ 5000 }
+              value={ form.message }
+              onChange={ (event) => updateField("message", event.target.value) }
               placeholder="Describe the request and any relevant context"
               className="min-h-32 bg-white"
             />
@@ -178,12 +178,12 @@ function NewSupportTicketPage() {
         </div>
 
         <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
-          <Button asChild type="button" variant="outline" disabled={isSubmitting}>
+          <Button asChild type="button" variant="outline" disabled={ isSubmitting }>
             <Link href="/support-tickets">Cancel</Link>
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={ isSubmitting }>
             <Send className="size-3.5" aria-hidden="true" />
-            {isSubmitting ? "Creating…" : "Create ticket"}
+            { isSubmitting ? "Creating…" : "Create ticket" }
           </Button>
         </div>
       </form>

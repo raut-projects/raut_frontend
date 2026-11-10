@@ -43,20 +43,20 @@ export default function PlatformConfigPage() {
       <Tabs defaultValue="pricing">
         <div className="overflow-x-auto pb-1">
           <TabsList className="h-auto bg-slate-100 p-1">
-            {TABS.map((tab) => {
+            { TABS.map((tab) => {
               const Icon = tab.icon;
 
               return (
                 <TabsTrigger
-                  key={tab.value}
-                  value={tab.value}
+                  key={ tab.value }
+                  value={ tab.value }
                   className="h-9 gap-2 px-3 text-slate-600 data-[state=active]:text-slate-900"
                 >
                   <Icon className="size-4" aria-hidden="true" />
-                  {tab.label}
+                  { tab.label }
                 </TabsTrigger>
               );
-            })}
+            }) }
           </TabsList>
         </div>
 

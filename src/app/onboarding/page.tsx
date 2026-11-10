@@ -36,7 +36,7 @@ export default function Onboarding() {
 
   return (
     <OnboardingLayout>
-      {renderStep()}
+      { renderStep() }
     </OnboardingLayout>
   );
 }

@@ -102,13 +102,13 @@ function RequestAdmin() {
             Admin access required
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Your account is signed in as {session.roleLabel ?? "User"}. Enter
+            Your account is signed in as { session.roleLabel ?? "User" }. Enter
             the admin secret to open the dashboard.
           </p>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-card sm:p-8">
-          {error && (
+          { error && (
             <div
               role="alert"
               className="mb-5 flex items-start gap-2.5 rounded-lg border border-rose-200 bg-rose-50 p-3"
@@ -127,41 +127,41 @@ function RequestAdmin() {
                   d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
                 />
               </svg>
-              <p className="text-sm font-medium text-rose-700">{error}</p>
+              <p className="text-sm font-medium text-rose-700">{ error }</p>
             </div>
-          )}
+          ) }
 
           <form
-            onSubmit={handleSubmit}
+            onSubmit={ handleSubmit }
             noValidate
             className="space-y-4"
-            aria-busy={submitting}
+            aria-busy={ submitting }
           >
             <label className="block">
-              <span className={labelClass}>Admin secret</span>
+              <span className={ labelClass }>Admin secret</span>
               <div className="relative">
                 <input
                   id="request-admin-secret"
-                  type={visible ? "text" : "password"}
+                  type={ visible ? "text" : "password" }
                   autoComplete="off"
-                  value={secret}
-                  onChange={handleChange}
+                  value={ secret }
+                  onChange={ handleChange }
                   placeholder="Enter the admin secret"
-                  className={`${inputClass} pr-11`}
-                  aria-invalid={Boolean(error)}
+                  className={ `${inputClass} pr-11` }
+                  aria-invalid={ Boolean(error) }
                   aria-describedby={
                     error ? "request-admin-secret-error" : undefined
                   }
                 />
                 <button
                   type="button"
-                  onClick={() => setVisible((previous) => !previous)}
+                  onClick={ () => setVisible((previous) => !previous) }
                   className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-400 transition-colors hover:text-slate-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
                   aria-label={
                     visible ? "Hide the admin secret" : "Show the admin secret"
                   }
                 >
-                  {visible ? (
+                  { visible ? (
                     <svg
                       className="h-5 w-5"
                       viewBox="0 0 24 24"
@@ -196,37 +196,37 @@ function RequestAdmin() {
                         d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                       />
                     </svg>
-                  )}
+                  ) }
                 </button>
               </div>
-              {error && (
-                <span id="request-admin-secret-error" className={errorClass}>
-                  {error}
+              { error && (
+                <span id="request-admin-secret-error" className={ errorClass }>
+                  { error }
                 </span>
-              )}
+              ) }
             </label>
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={ submitting }
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {submitting && (
+              { submitting && (
                 <span
                   className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
                   aria-hidden="true"
                 />
-              )}
-              {submitting ? "Checking…" : "Unlock dashboard"}
+              ) }
+              { submitting ? "Checking…" : "Unlock dashboard" }
             </button>
           </form>
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-500">
-          Signed in with the wrong account?{" "}
+          Signed in with the wrong account?{ " " }
           <button
             type="button"
-            onClick={handleSignOut}
+            onClick={ handleSignOut }
             className="font-semibold text-brand-600 transition-colors hover:text-brand-700"
           >
             Sign out

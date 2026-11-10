@@ -190,15 +190,15 @@ function AdminUsersPage() {
         </div>
         <div className="flex items-center gap-3">
           <RefreshIndicator
-            isFetching={usersQuery.isFetching}
-            updatedAt={usersQuery.dataUpdatedAt}
-            onRefresh={() => void usersQuery.refetch()}
+            isFetching={ usersQuery.isFetching }
+            updatedAt={ usersQuery.dataUpdatedAt }
+            onRefresh={ () => void usersQuery.refetch() }
           />
           <Button
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => openMatrix()}
+            onClick={ () => openMatrix() }
             className="h-9 border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
             <ShieldCheck className="size-4" aria-hidden="true" />
@@ -207,7 +207,7 @@ function AdminUsersPage() {
           <Button
             type="button"
             size="sm"
-            onClick={() => setInviteOpen(true)}
+            onClick={ () => setInviteOpen(true) }
             className="h-9 px-3 text-sm font-semibold"
           >
             <Plus className="size-4" aria-hidden="true" />
@@ -216,7 +216,7 @@ function AdminUsersPage() {
         </div>
       </div>
 
-      <AdminUsersTabs value={status} counts={counts} onChange={changeStatus} />
+      <AdminUsersTabs value={ status } counts={ counts } onChange={ changeStatus } />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative w-full sm:max-w-md">
@@ -226,8 +226,8 @@ function AdminUsersPage() {
           />
           <Input
             type="search"
-            value={search}
-            onChange={onSearchChange}
+            value={ search }
+            onChange={ onSearchChange }
             placeholder="Search by name, email, phone or admin ID."
             aria-label="Search admin users"
             className="h-9 bg-white pl-9"
@@ -238,14 +238,14 @@ function AdminUsersPage() {
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5">
           <p className="text-xs text-slate-500">
-            Showing{" "}
-            <span className="font-semibold text-slate-700">{rangeLabel}</span>{" "}
-            of <span className="font-semibold text-slate-700">{total}</span>{" "}
-            admin{total === 1 ? "" : "s"}
+            Showing{ " " }
+            <span className="font-semibold text-slate-700">{ rangeLabel }</span>{ " " }
+            of <span className="font-semibold text-slate-700">{ total }</span>{ " " }
+            admin{ total === 1 ? "" : "s" }
           </p>
           <p className="text-xs text-slate-400">
-            {counts.active} active &middot; {counts.invited} invited &middot;{" "}
-            {counts.deactivated} deactivated
+            { counts.active } active &middot; { counts.invited } invited &middot;{ " " }
+            { counts.deactivated } deactivated
           </p>
         </div>
 
@@ -263,64 +263,64 @@ function AdminUsersPage() {
           </TableHeader>
 
           <TableBody>
-            {usersQuery.isError && (
+            { usersQuery.isError && (
               <TableRow className="hover:bg-transparent">
                 <TableCell
-                  colSpan={5}
+                  colSpan={ 5 }
                   className="px-4 py-12 text-center whitespace-normal"
                 >
                   <p className="text-sm font-medium text-rose-700">
-                    {usersQuery.error instanceof Error
+                    { usersQuery.error instanceof Error
                       ? usersQuery.error.message
-                      : "Admin users could not be loaded."}
+                      : "Admin users could not be loaded." }
                   </p>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => void usersQuery.refetch()}
+                    onClick={ () => void usersQuery.refetch() }
                     className="mt-3"
                   >
                     Try again
                   </Button>
                 </TableCell>
               </TableRow>
-            )}
+            ) }
 
-            {usersQuery.isPending && (
+            { usersQuery.isPending && (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={5} className="px-4 py-12 text-center">
+                <TableCell colSpan={ 5 } className="px-4 py-12 text-center">
                   <span className="text-sm text-slate-500">
                     Loading admin users.
                   </span>
                 </TableCell>
               </TableRow>
-            )}
+            ) }
 
-            {users.map((user) => {
+            { users.map((user) => {
               const current = isCurrentUser(user);
 
               return (
                 <TableRow
-                  key={user.id}
-                  className={current ? "bg-brand-50/40 hover:bg-brand-50/60" : ""}
+                  key={ user.id }
+                  className={ current ? "bg-brand-50/40 hover:bg-brand-50/60" : "" }
                 >
                   <TableCell className="whitespace-normal">
-        <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                       <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
-                        {initialsFromName(user.name)}
+                        { initialsFromName(user.name) }
                       </span>
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span className="truncate font-medium text-slate-900">
-                            {user.name}
+                            { user.name }
                           </span>
-                          {current && (
+                          { current && (
                             <span className="rounded-full bg-brand-100 px-1.5 py-0.5 text-[0.65rem] font-semibold text-brand-700">
                               You
                             </span>
-                          )}
-                          {user.isOnline && user.status === "active" && (
+                          ) }
+                          { user.isOnline && user.status === "active" && (
                             <span
                               className="inline-flex items-center gap-1 text-[0.65rem] font-medium text-emerald-600"
                               title="Online now"
@@ -328,33 +328,33 @@ function AdminUsersPage() {
                               <span className="size-1.5 rounded-full bg-emerald-500" />
                               Online
                             </span>
-                          )}
+                          ) }
                         </div>
                         <span className="mt-0.5 block truncate text-xs text-slate-500">
-                          {user.email || "No email"}
+                          { user.email || "No email" }
                         </span>
                         <span className="mt-0.5 block text-xs text-slate-400">
-                          {user.id}
-                          {user.phone ? ` \u00b7 ${formatPhone(user.phone)}` : ""}
+                          { user.id }
+                          { user.phone ? ` \u00b7 ${formatPhone(user.phone)}` : "" }
                         </span>
                       </div>
                     </div>
                   </TableCell>
 
                   <TableCell>
-                    <AdminRoleBadge role={user.role} />
+                    <AdminRoleBadge role={ user.role } />
                   </TableCell>
 
                   <TableCell>
-                    <AdminUserStatusBadge status={user.status} />
+                    <AdminUserStatusBadge status={ user.status } />
                   </TableCell>
 
                   <TableCell className="hidden md:table-cell">
                     <span className="block text-slate-600">
-                      {formatLastLogin(user.lastLoginAt, user.isOnline)}
+                      { formatLastLogin(user.lastLoginAt, user.isOnline) }
                     </span>
                     <span className="block text-xs text-slate-400">
-                      {user.twoFactorRequired ? "2FA on" : "2FA off"}
+                      { user.twoFactorRequired ? "2FA on" : "2FA off" }
                     </span>
                   </TableCell>
 
@@ -366,7 +366,7 @@ function AdminUsersPage() {
                           variant="ghost"
                           size="icon"
                           className="text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                          aria-label={`Actions for ${user.name}`}
+                          aria-label={ `Actions for ${user.name}` }
                         >
                           <EllipsisVertical
                             className="h-4 w-4"
@@ -379,23 +379,23 @@ function AdminUsersPage() {
                         className="w-48 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
                       >
                         <DropdownMenuItem
-                          onSelect={() => setEditingUser(user)}
+                          onSelect={ () => setEditingUser(user) }
                           className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                         >
                           <UserRound className="size-3.5" aria-hidden="true" />
                           Edit access
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onSelect={() => openMatrix(user.role)}
+                          onSelect={ () => openMatrix(user.role) }
                           className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                         >
                           <KeyRound className="size-3.5" aria-hidden="true" />
                           View permissions
                         </DropdownMenuItem>
                         <DropdownMenuSeparator className="bg-slate-100" />
-                        {user.status === "deactivated" ? (
+                        { user.status === "deactivated" ? (
                           <DropdownMenuItem
-                            onSelect={() => setReactivateTarget(user)}
+                            onSelect={ () => setReactivateTarget(user) }
                             className="px-2.5 py-1.5 text-xs font-medium text-emerald-700 focus:bg-emerald-50 focus:text-emerald-800"
                           >
                             <ShieldCheck
@@ -406,60 +406,60 @@ function AdminUsersPage() {
                           </DropdownMenuItem>
                         ) : (
                           <DropdownMenuItem
-                            disabled={current}
-                            onSelect={() => {
+                            disabled={ current }
+                            onSelect={ () => {
                               if (!current) setDeactivateTarget(user);
-                            }}
+                            } }
                             className="px-2.5 py-1.5 text-xs font-medium text-rose-600 focus:bg-rose-50 focus:text-rose-700"
                           >
                             <UserX className="size-3.5" aria-hidden="true" />
-                            {user.status === "invited"
+                            { user.status === "invited"
                               ? "Cancel invitation"
-                              : "Deactivate account"}
+                              : "Deactivate account" }
                           </DropdownMenuItem>
-                        )}
+                        ) }
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
               );
-            })}
+            }) }
 
-            {!usersQuery.isError &&
+            { !usersQuery.isError &&
               !usersQuery.isPending &&
               users.length === 0 && (
                 <TableRow className="hover:bg-transparent">
                   <TableCell
-                    colSpan={5}
+                    colSpan={ 5 }
                     className="px-4 py-12 text-center whitespace-normal"
                   >
                     <p className="text-sm font-medium text-slate-700">
-                      No {status} admins found.
+                      No { status } admins found.
                     </p>
                     <p className="mt-1 text-sm text-slate-500">
-                      {search.trim()
+                      { search.trim()
                         ? "Try a different search or invite a new admin."
-                        : "Invite a teammate to give them dashboard access."}
+                        : "Invite a teammate to give them dashboard access." }
                     </p>
                     <div className="mt-3 flex justify-center gap-2">
-                      {search.trim() && (
+                      { search.trim() && (
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => {
+                          onClick={ () => {
                             setSearch("");
                             setPage(1);
-                          }}
+                          } }
                           className="h-auto border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                         >
                           Clear search
                         </Button>
-                      )}
+                      ) }
                       <Button
                         type="button"
                         size="sm"
-                        onClick={() => setInviteOpen(true)}
+                        onClick={ () => setInviteOpen(true) }
                         className="h-auto px-3 py-1.5 text-xs font-semibold"
                       >
                         <Plus className="size-3.5" aria-hidden="true" />
@@ -468,37 +468,37 @@ function AdminUsersPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              )}
+              ) }
           </TableBody>
         </Table>
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3.5 sm:px-5">
           <p className="text-xs text-slate-500">
-            Showing{" "}
-            <span className="font-semibold text-slate-700">{rangeLabel}</span>{" "}
-            of <span className="font-semibold text-slate-700">{total}</span>{" "}
-            admin{total === 1 ? "" : "s"}
-            {totalPages > 1 && (
+            Showing{ " " }
+            <span className="font-semibold text-slate-700">{ rangeLabel }</span>{ " " }
+            of <span className="font-semibold text-slate-700">{ total }</span>{ " " }
+            admin{ total === 1 ? "" : "s" }
+            { totalPages > 1 && (
               <>
-                {" "}
-                &middot; Page{" "}
+                { " " }
+                &middot; Page{ " " }
                 <span className="font-semibold text-slate-700">
-                  {currentPage}
-                </span>{" "}
-                of{" "}
+                  { currentPage }
+                </span>{ " " }
+                of{ " " }
                 <span className="font-semibold text-slate-700">
-                  {totalPages}
+                  { totalPages }
                 </span>
               </>
-            )}
+            ) }
           </p>
           <div className="flex gap-2">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage <= 1}
+              onClick={ () => setPage(Math.max(1, currentPage - 1)) }
+              disabled={ currentPage <= 1 }
               className="h-auto border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:text-slate-400 disabled:opacity-100"
             >
               Previous
@@ -507,8 +507,8 @@ function AdminUsersPage() {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage >= totalPages}
+              onClick={ () => setPage(Math.min(totalPages, currentPage + 1)) }
+              disabled={ currentPage >= totalPages }
               className="h-auto border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:text-slate-400 disabled:opacity-100"
             >
               Next
@@ -518,33 +518,33 @@ function AdminUsersPage() {
       </div>
 
       <InviteAdminDialog
-        open={inviteOpen}
-        onClose={() => setInviteOpen(false)}
-        onViewMatrix={() => openMatrix()}
-        onInvited={() => {
+        open={ inviteOpen }
+        onClose={ () => setInviteOpen(false) }
+        onViewMatrix={ () => openMatrix() }
+        onInvited={ () => {
           setStatus("invited");
           setPage(1);
-        }}
+        } }
       />
 
       <EditAdminDialog
-        key={`${editingUser?.id ?? "none"}-${Boolean(editingUser)}`}
-        open={Boolean(editingUser)}
-        user={editingUser}
-        isSelf={Boolean(editingUser && isCurrentUser(editingUser))}
-        onClose={() => setEditingUser(null)}
+        key={ `${editingUser?.id ?? "none"}-${Boolean(editingUser)}` }
+        open={ Boolean(editingUser) }
+        user={ editingUser }
+        isSelf={ Boolean(editingUser && isCurrentUser(editingUser)) }
+        onClose={ () => setEditingUser(null) }
       />
 
       <PermissionMatrixDialog
-        key={`${matrixOpen}-${matrixRole}`}
-        open={matrixOpen}
-        initialRole={matrixRole}
-        onClose={() => setMatrixOpen(false)}
+        key={ `${matrixOpen}-${matrixRole}` }
+        open={ matrixOpen }
+        initialRole={ matrixRole }
+        onClose={ () => setMatrixOpen(false) }
       />
 
       <ConfirmDialog
-        open={Boolean(deactivateTarget)}
-        onClose={() => setDeactivateTarget(null)}
+        open={ Boolean(deactivateTarget) }
+        onClose={ () => setDeactivateTarget(null) }
         title={
           deactivateTarget
             ? `Deactivate ${deactivateTarget.name}?`
@@ -553,27 +553,27 @@ function AdminUsersPage() {
         description="They will lose dashboard access immediately."
         confirmLabel="Deactivate"
         tone="danger"
-        pending={deactivateMutation.isPending}
-        onConfirm={confirmDeactivate}
+        pending={ deactivateMutation.isPending }
+        onConfirm={ confirmDeactivate }
       >
-        {deactivateTarget && (
+        { deactivateTarget && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
-            <p className="font-semibold">{deactivateTarget.name}</p>
+            <p className="font-semibold">{ deactivateTarget.name }</p>
             <p className="mt-0.5 text-xs text-rose-700">
-              {deactivateTarget.email || formatPhone(deactivateTarget.phone)}{" "}
-              &middot; {deactivateTarget.id}
+              { deactivateTarget.email || formatPhone(deactivateTarget.phone) }{ " " }
+              &middot; { deactivateTarget.id }
             </p>
             <p className="mt-2 text-xs text-rose-700">
               The account and its history are kept. You can reactivate it at any
               time.
             </p>
           </div>
-        )}
+        ) }
       </ConfirmDialog>
 
       <ConfirmDialog
-        open={Boolean(reactivateTarget)}
-        onClose={() => setReactivateTarget(null)}
+        open={ Boolean(reactivateTarget) }
+        onClose={ () => setReactivateTarget(null) }
         title={
           reactivateTarget
             ? `Reactivate ${reactivateTarget.name}?`
@@ -581,17 +581,17 @@ function AdminUsersPage() {
         }
         description="They will be able to sign in again with their existing role."
         confirmLabel="Reactivate"
-        pending={reactivateMutation.isPending}
-        onConfirm={confirmReactivate}
+        pending={ reactivateMutation.isPending }
+        onConfirm={ confirmReactivate }
       >
-        {reactivateTarget && (
+        { reactivateTarget && (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            <p className="font-semibold">{reactivateTarget.name}</p>
+            <p className="font-semibold">{ reactivateTarget.name }</p>
             <p className="mt-0.5 text-xs text-emerald-700">
-              {reactivateTarget.email || formatPhone(reactivateTarget.phone)}
+              { reactivateTarget.email || formatPhone(reactivateTarget.phone) }
             </p>
           </div>
-        )}
+        ) }
       </ConfirmDialog>
     </div>
   );

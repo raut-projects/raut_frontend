@@ -118,14 +118,14 @@ export default function DriverInfoStep() {
 
     return (
       <div>
-        <label className={labelClass}>
-          {label} <span className="text-rose-600">*</span>
+        <label className={ labelClass }>
+          { label } <span className="text-rose-600">*</span>
         </label>
 
-        {url ? (
+        { url ? (
           // Show uploaded photo with replace button
           <div className="relative group rounded-lg overflow-hidden border-2 border-emerald-500">
-            <img src={url} alt={label} className="w-full h-48 object-cover" />
+            <img src={ url } alt={ label } className="w-full h-48 object-cover" />
             <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent flex items-end">
               <div className="w-full p-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -141,12 +141,12 @@ export default function DriverInfoStep() {
                     />
                   </svg>
                   <span className="text-sm font-medium text-white">
-                    {t("uploaded")}
+                    { t("uploaded") }
                   </span>
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleReplacePhoto(field)}
+                  onClick={ () => handleReplacePhoto(field) }
                   className="px-3 py-1.5 bg-white/95 hover:bg-white text-slate-900 rounded-md text-xs font-semibold transition-colors"
                 >
                   Replace
@@ -157,14 +157,13 @@ export default function DriverInfoStep() {
         ) : (
           // Show upload prompt
           <label
-            htmlFor={field}
-            className={`flex items-center justify-center w-full px-4 py-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-              uploadError
+            htmlFor={ field }
+            className={ `flex items-center justify-center w-full px-4 py-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${uploadError
                 ? "border-rose-300 bg-rose-50"
                 : "border-slate-200 bg-slate-50 hover:border-slate-300"
-            }`}
+              }` }
           >
-            {isUploading ? (
+            { isUploading ? (
               <div className="text-center">
                 <div className="animate-spin w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full mx-auto mb-2" />
                 <p className="text-xs text-slate-600">Uploading...</p>
@@ -180,87 +179,87 @@ export default function DriverInfoStep() {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
+                    strokeWidth={ 2 }
                     d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                   />
                 </svg>
-                <p className="text-xs text-slate-600">{label}</p>
+                <p className="text-xs text-slate-600">{ label }</p>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  {t("jpgPngMax")}
+                  { t("jpgPngMax") }
                 </p>
               </div>
-            )}
+            ) }
           </label>
-        )}
+        ) }
 
         <input
           type="file"
           accept="image/*"
-          onChange={(e) => handleFileChange(field, e)}
+          onChange={ (e) => handleFileChange(field, e) }
           className="hidden"
-          id={field}
-          disabled={isUploading}
+          id={ field }
+          disabled={ isUploading }
         />
 
-        {uploadError && <p className={errorClass}>{uploadError}</p>}
+        { uploadError && <p className={ errorClass }>{ uploadError }</p> }
       </div>
     );
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={ handleSubmit(onSubmit) } className="space-y-4">
       <div className="mb-4">
         <h2 className="text-base font-semibold text-slate-900">
-          {t("driverInformation")}
+          { t("driverInformation") }
         </h2>
-        <p className="mt-0.5 text-xs text-slate-500">{t("driverInfoDesc")}</p>
+        <p className="mt-0.5 text-xs text-slate-500">{ t("driverInfoDesc") }</p>
       </div>
 
-      {/* National ID Number */}
+      {/* National ID Number */ }
       <div>
-        <label className={labelClass}>
-          {t("nationalIdNumber")} <span className="text-rose-600">*</span>
+        <label className={ labelClass }>
+          { t("nationalIdNumber") } <span className="text-rose-600">*</span>
         </label>
         <input
           type="text"
-          {...register("nationalIdNumber")}
-          className={`${inputClass} uppercase`}
-          placeholder={t("nationalIdNumber")}
+          { ...register("nationalIdNumber") }
+          className={ `${inputClass} uppercase` }
+          placeholder={ t("nationalIdNumber") }
         />
-        {errors.nationalIdNumber && (
-          <p className={errorClass}>{errors.nationalIdNumber.message}</p>
-        )}
+        { errors.nationalIdNumber && (
+          <p className={ errorClass }>{ errors.nationalIdNumber.message }</p>
+        ) }
       </div>
 
-      {/* License Number */}
+      {/* License Number */ }
       <div>
-        <label className={labelClass}>
-          {t("licenseNumber")} <span className="text-rose-600">*</span>
+        <label className={ labelClass }>
+          { t("licenseNumber") } <span className="text-rose-600">*</span>
         </label>
         <input
           type="text"
-          {...register("licenseNumber")}
-          className={`${inputClass} uppercase`}
-          placeholder={t("licenseNumber")}
+          { ...register("licenseNumber") }
+          className={ `${inputClass} uppercase` }
+          placeholder={ t("licenseNumber") }
         />
-        {errors.licenseNumber && (
-          <p className={errorClass}>{errors.licenseNumber.message}</p>
-        )}
+        { errors.licenseNumber && (
+          <p className={ errorClass }>{ errors.licenseNumber.message }</p>
+        ) }
       </div>
 
-      {/* Profile Photo */}
-      {renderPhotoUpload("profilePhotoUrl", t("profilePhoto"))}
+      {/* Profile Photo */ }
+      { renderPhotoUpload("profilePhotoUrl", t("profilePhoto")) }
 
-      {/* License Photo */}
-      {renderPhotoUpload("licensePhotoUrl", t("licensePhoto"))}
+      {/* License Photo */ }
+      { renderPhotoUpload("licensePhotoUrl", t("licensePhoto")) }
 
-      {/* Submit Button */}
+      {/* Submit Button */ }
       <button
         type="submit"
-        disabled={isSubmitting || Object.values(uploading).some(Boolean)}
+        disabled={ isSubmitting || Object.values(uploading).some(Boolean) }
         className="w-full mt-5 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isSubmitting ? t("saving") : t("continue")}
+        { isSubmitting ? t("saving") : t("continue") }
       </button>
     </form>
   );
