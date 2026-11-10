@@ -126,7 +126,7 @@ export default function DriverInfoStep() {
           // Show uploaded photo with replace button
           <div className="relative group rounded-lg overflow-hidden border-2 border-emerald-500">
             <img src={url} alt={label} className="w-full h-48 object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end">
+            <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent flex items-end">
               <div className="w-full p-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <svg
