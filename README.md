@@ -81,7 +81,7 @@ Dashboard comparison is only available when the previous period falls inside the
 ## Requirements
 
 - Node.js `>=20.9.0` (required by Next.js 16)
-- npm
+- pnpm
 - A running Raut backend API
 - A valid access token when opening the driver onboarding route
 
@@ -97,7 +97,7 @@ Dashboard comparison is only available when the previous period falls inside the
 2. Install dependencies:
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. Create a local environment file:
@@ -127,7 +127,7 @@ Dashboard comparison is only available when the previous period falls inside the
 6. Start the development server:
 
    ```bash
-   npm run dev
+   pnpm run dev
    ```
 
    Next.js prints the local URL, typically `http://localhost:3000`.
@@ -155,14 +155,14 @@ Dashboard comparison is only available when the previous period falls inside the
 
 | Command | Description |
 | --- | --- |
-| `npm run dev` | Start the Next.js development server with hot module reloading |
-| `npm run build` | Build the app for the Next.js production server |
-| `npm run typecheck` | Run TypeScript type checking without emitting files |
-| `npm run lint` | Run ESLint across the repository |
-| `npm run start` | Start the production server |
-| `npm run preview` | Start the production server for verification |
+| `pnpm run dev` | Start the Next.js development server with hot module reloading |
+| `pnpm run build` | Build the app for the Next.js production server |
+| `pnpm run typecheck` | Run TypeScript type checking without emitting files |
+| `pnpm run lint` | Run ESLint across the repository |
+| `pnpm run start` | Start the production server |
+| `pnpm run preview` | Start the production server for verification |
 
-Run `npm run build` before `npm run start` or `npm run preview`.
+Run `pnpm run build` before `pnpm run start` or `pnpm run preview`.
 
 ## Application routes
 
@@ -586,9 +586,9 @@ Accessibility conventions include labeled controls, `aria-label` attributes for 
 Before deploying, run:
 
 ```bash
-npm run lint
-npm run typecheck
-npm run build
+pnpm run lint
+pnpm run typecheck
+pnpm run build
 ```
 
 The production build is written to `.next/`.
@@ -598,7 +598,7 @@ Deploy the app to a host that can run the Next.js production server. The server 
 To run the production build locally:
 
 ```bash
-npm run start
+pnpm run start
 ```
 
 Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Rebuild the app after changing the backend URL or admin roles.
@@ -640,5 +640,5 @@ Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Re
 3. Normalize new response shapes in `src/services/mappers.ts`.
 4. Add or update query keys in `src/lib/queryKeys.ts`.
 5. When changing onboarding, keep the step components, Zod schemas, onboarding store and translations in sync.
-6. Run `npm run lint`, `npm run typecheck` and `npm run build` before opening a pull request.
+6. Run `pnpm run lint`, `pnpm run typecheck` and `pnpm run build` before opening a pull request.
 7. Do not commit `.env`, tokens or other secrets.
