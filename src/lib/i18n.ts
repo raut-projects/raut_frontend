@@ -80,6 +80,8 @@ export const translations = {
     address: 'Address',
     mobileMoneyNumber: 'Mobile Money Number',
     mobileNetwork: 'Mobile Network',
+    referralCode: 'Referral Code',
+    referralCodeOptional: 'Optional — enter a referral code if someone referred you',
 
     // Colors
     white: 'White',
@@ -172,6 +174,8 @@ export const translations = {
     address: 'Anwani',
     mobileMoneyNumber: 'Namba ya Pesa za Simu',
     mobileNetwork: 'Mtandao wa Simu',
+    referralCode: 'Namba ya Rufaa',
+    referralCodeOptional: 'Si lazima — weka namba ya rufaa kama kuna aliyekuelekeza',
 
     // Colors
     white: 'Nyeupe',
