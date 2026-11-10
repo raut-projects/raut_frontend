@@ -296,10 +296,10 @@ function Rides() {
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="block max-w-[5rem] truncate text-slate-900 sm:max-w-none">
+                    <span className="block max-w-20 truncate text-slate-900 sm:max-w-none">
                       {ride.customer}
                     </span>
-                    <span className="block max-w-[5rem] truncate text-xs text-slate-400">
+                    <span className="block max-w-20 truncate text-xs text-slate-400">
                       {ride.customerPhone}
                     </span>
                   </TableCell>
@@ -310,7 +310,7 @@ function Rides() {
                     </span>
                   </TableCell>
                   <TableCell className="hidden xl:table-cell">
-                    <span className="block max-w-[12rem] truncate text-slate-700">
+                    <span className="block max-w-48 truncate text-slate-700">
                       {ride.route}
                     </span>
                   </TableCell>

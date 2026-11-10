@@ -345,15 +345,15 @@ function RoutesPage() {
                   className="cursor-pointer focus-visible:outline-2 focus-visible:outline-brand-600"
                 >
                   <TableCell>
-                    <span className="block max-w-[5rem] truncate font-medium text-slate-900 sm:max-w-[10rem] xl:max-w-[18rem]">
+                    <span className="block max-w-20 truncate font-medium text-slate-900 sm:max-w-40 xl:max-w-[18rem]">
                       {route.route}
                     </span>
-                    <span className="block max-w-[5rem] truncate text-xs text-slate-400 lg:hidden">
+                    <span className="block max-w-20 truncate text-xs text-slate-400 lg:hidden">
                       {route.driver}
                     </span>
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
-                    <span className="block max-w-[8rem] truncate text-slate-900">
+                    <span className="block max-w-32 truncate text-slate-900">
                       {route.driver}
                     </span>
                   </TableCell>

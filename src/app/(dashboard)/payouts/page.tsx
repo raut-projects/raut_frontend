@@ -387,7 +387,7 @@ function Payouts() {
                           .join("")
                           .slice(0, 2)}
                       </span>
-                      <span className="max-w-[5rem] truncate font-medium text-slate-900 sm:max-w-[8rem] lg:max-w-none">
+                      <span className="max-w-20 truncate font-medium text-slate-900 sm:max-w-32 lg:max-w-none">
                         {payout.driverName}
                       </span>
                     </div>

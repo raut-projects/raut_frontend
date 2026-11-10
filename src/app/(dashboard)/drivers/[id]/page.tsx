@@ -157,7 +157,7 @@ function InfoField({ label, value, detail = null, badge = null }) {
     <div className="min-w-0 border-b border-slate-100 py-3 last:border-0">
       <dt className="text-xs font-medium text-slate-500">{label}</dt>
       <dd className="mt-1 flex flex-wrap items-center gap-2 text-sm font-medium text-slate-900">
-        <span className="break-words">{displayValue(value)}</span>
+        <span className="wrap-break-words">{displayValue(value)}</span>
         {badge && (
           <Badge
             variant="outline"
@@ -1066,7 +1066,7 @@ function DriverDetailsPage() {
 
       {lightboxPhoto && (
         <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/90 p-4"
+          className="fixed inset-0 z-80 flex items-center justify-center bg-slate-950/90 p-4"
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setLightboxPhoto(null);
