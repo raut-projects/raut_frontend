@@ -227,7 +227,7 @@ export const MOCK_HEALTH_INCIDENTS: HealthIncident[] = [
     startedAt: "Nov 08, 09:12 EAT",
     duration: "26m",
     summary:
-      "A temporary carrier queue delay affected a portion of outgoing rider notifications.",
+      "A temporary carrier queue delay affected a portion of outgoing customer notifications.",
   },
   {
     id: "inc_20261102_database",

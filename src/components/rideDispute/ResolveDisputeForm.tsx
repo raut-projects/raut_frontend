@@ -18,7 +18,7 @@ const labelClass = "mb-1 block text-xs font-semibold text-slate-600";
 const errorClass = "mt-1 block text-xs font-medium text-rose-600";
 
 const decisionOptions: { value: DisputeDecision; label: string }[] = [
-  { value: "rider", label: "Favor Rider" },
+  { value: "rider", label: "Favor Customer" },
   { value: "driver", label: "Favor Driver" },
   { value: "split", label: "Split Responsibility" },
 ];

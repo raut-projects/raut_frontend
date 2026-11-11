@@ -131,7 +131,7 @@ export default function MarketingPage() {
             </h2>
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            Create and manage rider promotions, discounts and referral rewards.
+            Create and manage customer promotions, discounts and referral rewards.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -204,7 +204,7 @@ export default function MarketingPage() {
             <p className="mt-1 text-sm text-slate-500">
               { search.trim()
                 ? "No promotion matches this search. Try another code or name."
-                : "Create a campaign to start rewarding riders." }
+                : "Create a campaign to start rewarding customers." }
             </p>
           </div>
           <Button asChild className="mt-1 bg-brand-600 text-white hover:bg-brand-700">
@@ -271,7 +271,7 @@ export default function MarketingPage() {
         title="Delete promotion"
         description={
           pendingDelete
-            ? `Delete ${pendingDelete.code}? Riders will no longer be able to redeem it. This cannot be undone.`
+            ?             `Delete ${pendingDelete.code}? Customers will no longer be able to redeem it. This cannot be undone.`
             : ""
         }
         confirmLabel="Delete promotion"

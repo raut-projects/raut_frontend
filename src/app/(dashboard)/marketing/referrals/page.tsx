@@ -971,8 +971,8 @@ export function ReferralProgramsDashboard() {
                           }
                           className={ INPUT_CLASS }
                         >
-                          <option value="all">Riders and drivers</option>
-                          <option value="rider">Riders only</option>
+                          <option value="all">Customers and drivers</option>
+                          <option value="rider">Customers only</option>
                           <option value="driver">Drivers only</option>
                         </select>
                       </label>

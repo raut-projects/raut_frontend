@@ -62,7 +62,7 @@ export default function NewPromotionPage() {
           Create promotion
         </h2>
         <p className="mt-1 text-sm text-slate-500">
-          Set up a discount campaign for riders, then activate it immediately or
+          Set up a discount campaign for customers, then activate it immediately or
           save it as a draft.
         </p>
       </div>

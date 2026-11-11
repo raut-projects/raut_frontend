@@ -81,7 +81,7 @@ function NewSupportTicketPage() {
           Create support ticket
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Record a request on behalf of a rider or driver.
+          Record a request on behalf of a customer or driver.
         </p>
       </div>
 
@@ -102,7 +102,7 @@ function NewSupportTicketPage() {
               }
               className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
             >
-              <option value="Rider">Rider</option>
+              <option value="Rider">Customer</option>
               <option value="Driver">Driver</option>
             </select>
           </label>
@@ -113,7 +113,7 @@ function NewSupportTicketPage() {
               required
               value={ form.requesterId }
               onChange={ (event) => updateField("requesterId", event.target.value) }
-              placeholder="Enter the rider or driver account ID"
+              placeholder="Enter the customer or driver account ID"
               className="h-9"
             />
           </label>

@@ -43,7 +43,7 @@ function audienceLabels(promotion: Promotion) {
   if (promotion.eligiblePhones?.length) {
     labels.push(`Specific list (${promotion.eligiblePhones.length})`);
   }
-  if (!labels.length) labels.push("All riders");
+  if (!labels.length) labels.push("All customers");
   if (promotion.duoOnly) labels.push("DUO only");
   if (promotion.peakHoursOnly) {
     labels.push(

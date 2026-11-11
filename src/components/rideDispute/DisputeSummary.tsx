@@ -9,7 +9,7 @@ import { formatMoneyTZS } from "@/lib/refundCalculator";
 const labelClass = "mb-1 block text-xs font-semibold text-slate-600";
 
 const decisionLabels: Record<string, string> = {
-  rider: "Favor Rider",
+  rider: "Favor Customer",
   driver: "Favor Driver",
   split: "Split Responsibility",
 };

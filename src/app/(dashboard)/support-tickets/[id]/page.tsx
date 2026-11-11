@@ -454,7 +454,7 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                       { ticket.requester }
                     </p>
                     <p className="text-xs text-slate-500">
-                      { ticket.requesterType }
+                      { ticket.requesterType === "Rider" ? "Customer" : ticket.requesterType }
                     </p>
                   </div>
                 </div>

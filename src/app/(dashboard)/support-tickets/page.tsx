@@ -268,7 +268,7 @@ function SupportTicketsPage() {
           Support Tickets
         </h2>
         <p className="mt-1 text-sm text-slate-500">
-          Review and respond to rider and driver support requests.
+          Review and respond to customer and driver support requests.
         </p>
       </div>
 
@@ -485,7 +485,7 @@ function SupportTicketsPage() {
                     { ticket.subject }
                   </Link>
                   <span className="mt-0.5 block text-xs text-slate-500">
-                    { ticket.requester } · { ticket.requesterType } ·{ " " }
+                    { ticket.requester } · { ticket.requesterType === "Rider" ? "Customer" : ticket.requesterType } ·{ " " }
                     { ticket.category }
                   </span>
                   <span className="mt-0.5 block text-xs text-slate-400 md:hidden">

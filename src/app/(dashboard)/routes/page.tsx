@@ -539,7 +539,7 @@ function RoutesPage() {
               Also cancel active rides
             </span>
             <span className="mt-0.5 block text-xs text-slate-500">
-              Riders on this route will have their rides cancelled. Leave
+              Customers on this route will have their rides cancelled. Leave
               unchecked to keep them.
             </span>
           </span>

@@ -58,7 +58,7 @@ const STORAGE_KEY = "raut_ride_disputes_v1";
 const RIDE_DISPUTES_USE_MOCK_DATA =
   process.env.NEXT_PUBLIC_USE_MOCK_RIDE_DISPUTES !== "false";
 
-const PARTIES = ["Rider (Mary S.)", "Driver (John K.)", "Rider (Amina J.)", "Driver (Peter M.)"];
+const PARTIES = ["Customer (Mary S.)", "Driver (John K.)", "Customer (Amina J.)", "Driver (Peter M.)"];
 const COMPLAINT_LABELS: Record<DisputeIssueType, string> = {
   wrong_route: "Driver took wrong route",
   overcharge: "Fare overcharged",
