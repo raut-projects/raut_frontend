@@ -330,13 +330,13 @@ function AdminUsersPage() {
                             </span>
                           ) }
                         </div>
-                        <span className="mt-0.5 block truncate text-xs text-slate-500">
+                        {/* <span className="mt-0.5 block truncate text-xs text-slate-500">
                           { user.email || "No email" }
                         </span>
                         <span className="mt-0.5 block text-xs text-slate-400">
                           { user.id }
                           { user.phone ? ` \u00b7 ${formatPhone(user.phone)}` : "" }
-                        </span>
+                        </span> */}
                       </div>
                     </div>
                   </TableCell>
@@ -353,9 +353,9 @@ function AdminUsersPage() {
                     <span className="block text-slate-600">
                       { formatLastLogin(user.lastLoginAt, user.isOnline) }
                     </span>
-                    <span className="block text-xs text-slate-400">
+                    {/* <span className="block text-xs text-slate-400">
                       { user.twoFactorRequired ? "2FA on" : "2FA off" }
-                    </span>
+                    </span> */}
                   </TableCell>
 
                   <TableCell className="text-right">

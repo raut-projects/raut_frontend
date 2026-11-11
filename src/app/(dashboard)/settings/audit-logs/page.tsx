@@ -449,33 +449,19 @@ function AuditLogsPage() {
                       <span className="block font-medium tabular-nums text-slate-800">
                         {formatAuditDateTime(entry.occurredAt)}
                       </span>
-                      <span className="mt-0.5 block font-mono text-[0.65rem] text-slate-400">
-                        {entry.id}
-                      </span>
                     </TableCell>
                     <TableCell className="whitespace-normal">
                       <span className="block font-medium text-slate-800">
                         {entry.actor}
-                      </span>
-                      <span className="mt-0.5 block text-xs text-slate-500">
-                        {entry.actorRole}
                       </span>
                     </TableCell>
                     <TableCell className="min-w-52 whitespace-normal">
                       <span className="block font-medium text-slate-800">
                         {entry.action}
                       </span>
-                      <span
-                        className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[0.65rem] font-semibold ${categoryStyles[entry.category]}`}
-                      >
-                        {entry.category}
-                      </span>
                     </TableCell>
                     <TableCell className="hidden whitespace-normal md:table-cell">
                       <span className="block text-slate-700">{entry.target}</span>
-                      <span className="mt-0.5 block font-mono text-[0.65rem] text-slate-400">
-                        {entry.targetId}
-                      </span>
                     </TableCell>
                     <TableCell>
                       <span

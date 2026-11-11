@@ -360,9 +360,6 @@ function RoutesPage() {
                     <span className="block max-w-56 truncate text-slate-900">
                       { route.vehicle }
                     </span>
-                    <span className="block text-xs text-slate-400">
-                      { route.plateNumber }
-                    </span>
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
                     <span className="block text-slate-900">
