@@ -24,6 +24,12 @@ export const API_ROUTES = {
     `/admin/users/${encodeURIComponent(userId)}`,
   drivers: "/admin/drivers",
   rides: "/admin/rides",
+  rideDispute: (rideId: string) =>
+    `/admin/rides/${encodeURIComponent(rideId)}/dispute`,
+  rideResolveDispute: (rideId: string) =>
+    `/admin/rides/${encodeURIComponent(rideId)}/resolve-dispute`,
+  rideRefund: (rideId: string) =>
+    `/admin/rides/${encodeURIComponent(rideId)}/refund`,
   routes: "/admin/routes",
   documents: "/admin/documents",
   transactions: "/admin/transactions",

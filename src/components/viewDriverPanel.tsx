@@ -69,7 +69,7 @@ function DocumentPreview({ document }) {
           loaded ? "opacity-100" : "opacity-0"
         }`}
       />
-      <span className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-slate-900/60 to-transparent pb-2 pt-8 opacity-0 transition-opacity group-hover:opacity-100">
+      <span className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bg-linear-to-t from-slate-900/60 to-transparent pb-2 pt-8 opacity-0 transition-opacity group-hover:opacity-100">
         <span className="text-xs font-semibold text-white">Open full size</span>
       </span>
     </>

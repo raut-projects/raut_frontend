@@ -599,6 +599,11 @@ export const mapRide = (ride) => {
     date: formatDate(ride?.created_at),
     requestedAt: formatDateTime(ride?.created_at),
     createdAt: ride?.created_at ?? null,
+    hasDispute: Boolean(
+      ride?.has_dispute ?? ride?.hasDispute ?? ride?.dispute,
+    ),
+    disputeStatus: ride?.dispute_status ?? ride?.disputeStatus ?? null,
+    disputeId: ride?.dispute_id ?? ride?.disputeId ?? null,
   }
 }
 

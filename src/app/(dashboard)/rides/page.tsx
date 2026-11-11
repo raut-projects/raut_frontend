@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { EllipsisVertical } from "lucide-react";
 import {
   QueryError,
@@ -30,6 +31,7 @@ import { useDrivers } from "@/hooks/useDrivers";
 import { useCancelRide } from "@/hooks/useAdminActions";
 import { usePageViewField } from "@/store/pageViewStore";
 import { useClampPage } from "@/hooks/useClampPage";
+import { mockHasDispute } from "@/lib/rideDisputes";
 
 const statusStyles = {
   Pending: "bg-amber-50 text-amber-700 ring-amber-600/20",
@@ -68,6 +70,7 @@ function Rides() {
   const [viewTarget, setViewTarget] = useState(null);
   const [cancelTarget, setCancelTarget] = useState(null);
   const [cancelReason, setCancelReason] = useState("");
+  const [onlyDisputed, setOnlyDisputed] = useState(false);
 
   const params = { status, driverId, from, to, page, limit: PAGE_SIZE };
 
@@ -89,10 +92,15 @@ function Rides() {
   const drivers = driverData?.items ?? [];
 
   const cancelRide = useCancelRide();
+  const router = useRouter();
 
   const rides = data?.items ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const displayedRides = onlyDisputed
+    ? rides.filter((ride) => mockHasDispute(ride.rideId))
+    : rides;
 
   useClampPage(page, totalPages, setPage);
 
@@ -203,6 +211,15 @@ function Rides() {
             aria-label="Rides requested until"
             className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
           />
+          <label className="flex items-center gap-1 cursor-pointer text-xs text-slate-600 hover:text-slate-900">
+            <input
+              type="checkbox"
+              checked={ onlyDisputed }
+              onChange={ (event) => setOnlyDisputed(event.target.checked) }
+              className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+            />
+            Only disputed
+          </label>
         </div>
       </div>
 
@@ -274,7 +291,7 @@ function Rides() {
 
           { !isPending && !isError && (
             <TableBody>
-              { rides.map((ride) => (
+              { displayedRides.map((ride) => (
                 <TableRow
                   key={ ride.id }
                   onClick={ () => setViewTarget(ride) }
@@ -326,6 +343,11 @@ function Rides() {
                         aria-hidden="true"
                       />
                       { ride.status }
+                      { mockHasDispute(ride.rideId) && (
+                        <span className="ml-1 inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-brand-50 text-brand-700 border border-brand-200">
+                          Disputed
+                        </span>
+                      )}
                     </span>
                   </TableCell>
                   <TableCell className="hidden xl:table-cell">
@@ -374,13 +396,26 @@ function Rides() {
                               Cancel ride
                             </DropdownMenuItem>
                           </>
-                        ) }
+                        )}
+                        { ride.statusKey !== "cancelled" && (
+                          <>
+                            <DropdownMenuSeparator className="bg-slate-100" />
+                            <DropdownMenuItem
+                              onSelect={ () => {
+                                router.push(`/rides/${ride.rideId}/dispute`);
+                              } }
+                              className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
+                            >
+                              Resolve dispute
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
               )) }
-              { rides.length === 0 && (
+              { displayedRides.length === 0 && (
                 <TableRow className="hover:bg-transparent">
                   <TableCell
                     colSpan={ 8 }
@@ -396,7 +431,7 @@ function Rides() {
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3.5 sm:px-5">
           <p className="text-xs text-slate-500">
             Showing{ " " }
-            <span className="font-semibold text-slate-700">{ rides.length }</span>{ " " }
+            <span className="font-semibold text-slate-700">{ onlyDisputed ? displayedRides.length : rides.length }</span>{ " " }
             of <span className="font-semibold text-slate-700">{ total }</span>
             { totalPages > 1 && (
               <>
