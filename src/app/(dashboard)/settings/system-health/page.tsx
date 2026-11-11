@@ -333,7 +333,7 @@ function SystemHealthPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 border-t border-slate-200 pt-3 lg:min-w-[27rem] lg:border-t-0 lg:border-l lg:pt-0 lg:pl-5">
+          <div className="grid grid-cols-3 gap-4 border-t border-slate-200 pt-3 lg:min-w-180 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-5">
             <div>
               <p className="text-xs font-medium text-slate-500">Services</p>
               <p className="mt-1 text-base font-semibold tabular-nums text-slate-900">

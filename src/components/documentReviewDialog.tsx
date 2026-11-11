@@ -61,7 +61,6 @@ export default function DocumentReviewDialog({
   onClose,
   onApprove,
   onReject,
-  allowReview = false,
   pending = false,
 }) {
   const headingId = useId();
@@ -133,7 +132,6 @@ export default function DocumentReviewDialog({
   const isPdf =
     String(document.contentType ?? "").toLowerCase() === "application/pdf" ||
     String(document.fileName ?? "").toLowerCase().endsWith(".pdf");
-  const readOnly = document.isApproved || !allowReview;
 
   const downloadDocument = async () => {
     if (!document.fileUrl || downloading) return;
@@ -160,7 +158,7 @@ export default function DocumentReviewDialog({
   };
 
   const approve = () => {
-    if (!quality || !authenticity || pending || readOnly) return;
+    if (!quality || !authenticity || pending) return;
     onApprove(document.id, checklistNotes({ quality, details, matches, authenticity, notes }));
   };
 
@@ -221,7 +219,7 @@ export default function DocumentReviewDialog({
               {document.fileName}
             </p>
           </div>
-          {readOnly && (
+          {document.isApproved && (
             <span className="ml-auto shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
               Approved
             </span>
@@ -231,7 +229,7 @@ export default function DocumentReviewDialog({
             type="button"
             variant="ghost"
             size="icon"
-            className={readOnly ? "" : "ml-auto"}
+            className={document.isApproved ? "" : "ml-auto"}
             onClick={onClose}
             disabled={pending}
             aria-label="Close document review"
@@ -384,7 +382,7 @@ export default function DocumentReviewDialog({
                 )}
               </div>
 
-              <fieldset disabled={readOnly || pending}>
+              <fieldset disabled={pending}>
                 <legend className="mb-2 text-xs font-semibold text-slate-700">
                   Photo quality
                 </legend>
@@ -406,7 +404,7 @@ export default function DocumentReviewDialog({
                 </div>
               </fieldset>
 
-              <fieldset disabled={readOnly || pending}>
+              <fieldset disabled={pending}>
                 <legend className="mb-2 text-xs font-semibold text-slate-700">
                   ID details visible
                 </legend>
@@ -430,7 +428,7 @@ export default function DocumentReviewDialog({
                 </div>
               </fieldset>
 
-              <fieldset disabled={readOnly || pending}>
+              <fieldset disabled={pending}>
                 <legend className="mb-2 text-xs font-semibold text-slate-700">
                   Information matches
                 </legend>
@@ -454,7 +452,7 @@ export default function DocumentReviewDialog({
                 </div>
               </fieldset>
 
-              <fieldset disabled={readOnly || pending}>
+              <fieldset disabled={pending}>
                 <legend className="mb-2 text-xs font-semibold text-slate-700">
                   Authenticity
                 </legend>
@@ -488,7 +486,7 @@ export default function DocumentReviewDialog({
                   onChange={(event) => setNotes(event.target.value)}
                   rows={3}
                   maxLength={1000}
-                  disabled={readOnly || pending}
+                  disabled={pending}
                   placeholder="Add context for this review…"
                   className="w-full resize-y rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:bg-slate-50"
                 />
@@ -499,8 +497,7 @@ export default function DocumentReviewDialog({
             </div>
 
             <footer className="flex shrink-0 flex-wrap items-center gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3 sm:px-5">
-              {!readOnly && (
-                <>
+              <>
                   <Button
                     type="submit"
                     disabled={pending || !quality || !authenticity}
@@ -525,17 +522,12 @@ export default function DocumentReviewDialog({
                     Request More Info
                   </Button>
                 </>
-              )}
               {document.isApproved && (
                 <p className="text-xs text-slate-500">
                   This document has already been approved.
                 </p>
               )}
-              {!document.isApproved && !allowReview && (
-                <p className="text-xs text-slate-500">
-                  Your account does not have permission to review documents.
-                </p>
-              )}
+
             </footer>
           </form>
         </div>

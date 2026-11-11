@@ -10,6 +10,7 @@ import {
   CarFront,
   CircleCheck,
   CircleHelp,
+  CircleX,
   Clock3,
   Download,
   FileText,
@@ -31,8 +32,10 @@ import { Card } from "@/components/ui/card";
 import {
   useApproveDocument,
   useRejectDocument,
+  useRejectDriver,
   useSuspendDriver,
   useUnsuspendDriver,
+  useVerifyDriver,
 } from "@/hooks/useAdminActions";
 import { useDriverDetails } from "@/hooks/useDriverDetails";
 import { useDriverDocuments } from "@/hooks/useDriverDocuments";
@@ -217,17 +220,6 @@ function DriverDetailsPage() {
     .toLowerCase()
     .replace(/[\s-]+/g, "_");
   const canProcessPayouts = ["finance", "finance_manager"].includes(normalizedRole);
-  const canReviewDocuments = [
-    "super_admin",
-    "platform_manager",
-    "operations_agent",
-    "operator",
-  ].includes(
-    String(sessionRole ?? "")
-      .trim()
-      .toLowerCase()
-      .replace(/[\s-]+/g, "_"),
-  );
   const [, setRidesDriverId] = usePageViewField("rides", "driverId");
   const [, setPayoutDriverId] = usePageViewField("payouts", "driverId");
   const [, setPayoutStatus] = usePageViewField("payouts", "status");
@@ -239,6 +231,8 @@ function DriverDetailsPage() {
   const [reviewTarget, setReviewTarget] = useState(null);
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [suspendReason, setSuspendReason] = useState("");
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
   const [lightboxPhoto, setLightboxPhoto] = useState(null);
   const {
     data: driver,
@@ -265,6 +259,8 @@ function DriverDetailsPage() {
   } = useDriverDocuments(driverId);
   const approveDocument = useApproveDocument();
   const rejectDocument = useRejectDocument();
+  const verifyDriver = useVerifyDriver();
+  const rejectDriver = useRejectDriver();
   const suspendDriver = useSuspendDriver();
   const unsuspendDriver = useUnsuspendDriver();
   const closeDocumentReview = useCallback(() => setReviewTarget(null), []);
@@ -309,13 +305,28 @@ function DriverDetailsPage() {
   }
 
   const profile = driver.profile ?? {};
+  const nestedProfile = profile.profile ?? {};
   const personal =
-    profile.personal_information ?? profile.personal ?? profile.account ?? {};
+    profile.personal_information ??
+    profile.personal ??
+    profile.account ??
+    nestedProfile.personal_information ??
+    nestedProfile.personal ??
+    nestedProfile.account ??
+    {};
   const vehicleValue =
-    profile.vehicle ?? profile.vehicle_info ?? profile.vehicle_details ?? {};
+    profile.vehicle ??
+    profile.vehicle_info ??
+    profile.vehicle_details ??
+    nestedProfile.vehicle ??
+    nestedProfile.vehicle_info ??
+    nestedProfile.vehicle_details ??
+    {};
   const vehicle = Array.isArray(vehicleValue)
     ? (vehicleValue[0] ?? {})
-    : vehicleValue;
+    : isRecord(vehicleValue)
+      ? vehicleValue
+      : {};
   const performance = profile.performance ?? profile.metrics ?? {};
   const earnings = profile.earnings ?? profile.earnings_summary ?? {};
   const earningsPeriod =
@@ -401,20 +412,24 @@ function DriverDetailsPage() {
   const vehiclePhotos = photoFields
     .map(([label, keys]) => ({
       label,
-      url: firstValue([vehicle, profile], keys),
+      url: firstValue([vehicle, profile, nestedProfile], keys),
     }))
     .filter((photo) => typeof photo.url === "string" && photo.url.length > 0);
   const vehiclePhotoDocs = items.filter(
     (document) => document.type === "vehicle_photo" && document.fileUrl,
   );
-  const insuranceExpiry = firstValue(
-    [vehicle, profile],
-    ["insurance_expiry", "insurance_expires_at", "insurance_expiry_date"],
-  );
-  const insuranceValidity = firstValue(
-    [vehicle, profile],
-    ["insurance_valid", "is_insurance_valid"],
-  );
+  const insuranceExpiry =
+    driver.vehicleInsuranceExpiry ??
+    firstValue(
+      [vehicle, profile, nestedProfile],
+      ["insurance_expiry", "insurance_expires_at", "insurance_expiry_date"],
+    );
+  const insuranceValidity =
+    driver.vehicleInsuranceValid ??
+    firstValue(
+      [vehicle, profile, nestedProfile],
+      ["insurance_valid", "is_insurance_valid"],
+    );
   const activeIssues = firstValue(
     [profile, activity],
     ["active_issues", "open_issues", "current_issues", "flags"],
@@ -654,6 +669,36 @@ function DriverDetailsPage() {
         </header>
 
         <div className="flex flex-wrap gap-2">
+          { driver.statusKey === "pending" && (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={ verifyDriver.isPending }
+                onClick={ () =>
+                  (
+                    verifyDriver.mutate as unknown as (variables: {
+                      driverId: string;
+                    }) => void
+                  )({ driverId: String(driverId) })
+                }
+              >
+                <CircleCheck aria-hidden="true" />
+                Verify
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={ () => {
+                  setRejectReason("");
+                  setRejectOpen(true);
+                } }
+              >
+                <CircleX aria-hidden="true" />
+                Reject
+              </Button>
+            </>
+          )}
           { isSuspended ? (
             <Button
               type="button"
@@ -753,17 +798,21 @@ function DriverDetailsPage() {
           <dl className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
             <InfoField
               label="Make / model"
-              value={ firstValue([vehicle, profile], ["make_model", "make_and_model", "model_name", "make", "model"]) }
+              value={
+                [driver.vehicleMake, driver.vehicleModel].filter(Boolean).join(" ") ||
+                driver.vehicle ||
+                null
+              }
             />
-            <InfoField label="Year" value={ firstValue([vehicle, profile], ["year", "model_year"]) } />
-            <InfoField label="Color" value={ firstValue([vehicle, profile], ["color", "vehicle_color"]) } />
+            <InfoField label="Year" value={ driver.vehicleYear } />
+            <InfoField label="Color" value={ driver.vehicleColor } />
             <InfoField
               label="Plate"
-              value={ firstValue([vehicle, profile], ["plate_number", "license_plate", "registration_number", "plate"]) }
+              value={ driver.plateNumber }
               badge={
-                firstValue([vehicle, profile], ["plate_verified", "vehicle_verified"]) === true
+                driver.vehiclePlateVerified === true
                   ? "Verified"
-                  : firstValue([vehicle, profile], ["plate_verified", "vehicle_verified"]) === false
+                  : driver.vehiclePlateVerified === false
                     ? "Not verified"
                     : undefined
               }
@@ -1057,7 +1106,6 @@ function DriverDetailsPage() {
             setReviewTarget(null);
             setRejectTarget(document);
           } }
-          allowReview={ canReviewDocuments }
           pending={ documentMutationPending }
         />
       ) }
@@ -1117,6 +1165,28 @@ function DriverDetailsPage() {
             }) => Promise<unknown>
           )({ driverId: String(driverId), reason });
           setSuspendOpen(false);
+        } }
+      />
+
+      <ReasonDialog
+        open={ rejectOpen }
+        onClose={ () => setRejectOpen(false) }
+        title="Reject driver application"
+        description={ `${driver.name} will not be able to take rides.` }
+        confirmLabel="Reject"
+        tone="danger"
+        placeholder="Why is the application rejected?"
+        value={ rejectReason }
+        onChange={ setRejectReason }
+        pending={ rejectDriver.isPending }
+        onConfirm={ async (reason) => {
+          await (
+            rejectDriver.mutateAsync as unknown as (variables: {
+              driverId: string;
+              reason: string;
+            }) => Promise<unknown>
+          )({ driverId: String(driverId), reason });
+          setRejectOpen(false);
         } }
       />
 
