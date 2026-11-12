@@ -3,22 +3,29 @@ logs
 *.log
 npm-debug.log*
 
+# Dependencies
 node_modules
+
+# Next.js
 .next
 out
 next-env.d.ts
-*.tsbuildinfo
-.playwright-cli
+tsconfig.tsbuildinfo
+dist
+
+# Environment
+.env
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
-.env
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-dist
+
+# Tooling
+.playwright-cli
