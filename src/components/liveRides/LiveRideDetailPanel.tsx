@@ -3,16 +3,16 @@
 import type { LiveRide } from "@/lib/liveRides";
 import {
   LIVE_RIDE_STATUS_LABELS,
-  LIVE_RIDE_STATUS_EMOJI,
   formatAgo,
   formatEta,
   formatMoneyTZS,
 } from "@/lib/liveRides";
-import { Phone, MessageCircle, Map as MapIcon } from "lucide-react";
+import { Map as MapIcon, MessageCircle, Phone, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import SidePanel from "@/components/SidePanel";
+import LiveRideStatusIcon from "./LiveRideStatusIcon";
 
 type LiveRideDetailPanelProps = {
   ride?: LiveRide;
@@ -68,7 +68,7 @@ export default function LiveRideDetailPanel({
       open={ open }
       onClose={ onClose }
       title={ `Ride Details: ${ride.displayId}` }
-      description={ `${LIVE_RIDE_STATUS_LABELS[ride.status]} · ${formatAgo(ride.statusChangedAt)}` }
+      description={ `${LIVE_RIDE_STATUS_LABELS[ride.status]} - ${formatAgo(ride.statusChangedAt)}` }
       wide
       footer={
         <div className="flex items-center justify-between gap-2">
@@ -109,7 +109,7 @@ export default function LiveRideDetailPanel({
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-lg">{ LIVE_RIDE_STATUS_EMOJI[ride.status] }</span>
+              <LiveRideStatusIcon status={ride.status} size={20} />
               <span className={ `font-bold ${style.text}` }>
                 { LIVE_RIDE_STATUS_LABELS[ride.status] }
               </span>
@@ -141,9 +141,10 @@ export default function LiveRideDetailPanel({
             </div>
             <div>
               <p className="text-sm font-medium text-slate-900">{ ride.driver.name }</p>
-              <p className="text-xs text-slate-500">{ ride.driver.vehicle } · { ride.driver.plate }</p>
-              <p className="text-xs text-slate-500">
-                { ride.driver.rating } ★ ({ ride.driver.ratingCount } rides)
+              <p className="text-xs text-slate-500">{ ride.driver.vehicle } - { ride.driver.plate }</p>
+              <p className="flex items-center gap-1 text-xs text-slate-500">
+                <Star className="size-3 fill-amber-400 text-amber-400" aria-hidden="true" />
+                { ride.driver.rating } ({ ride.driver.ratingCount } rides)
               </p>
             </div>
             <div className="ml-auto flex flex-col gap-1">
@@ -167,8 +168,9 @@ export default function LiveRideDetailPanel({
             <div>
               <p className="text-sm font-medium text-slate-900">{ customersText }</p>
               { ride.customers.map((b) => (
-                <p key={ b.id } className="text-xs text-slate-500">
-                  { b.rating } ★ ({ b.ratingCount } rides)
+                <p key={ b.id } className="flex items-center gap-1 text-xs text-slate-500">
+                  <Star className="size-3 fill-amber-400 text-amber-400" aria-hidden="true" />
+                  { b.rating } ({ b.ratingCount } rides)
                 </p>
               )) }
             </div>

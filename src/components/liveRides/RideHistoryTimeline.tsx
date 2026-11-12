@@ -24,7 +24,7 @@ export default function RideHistoryTimeline({
     <SidePanel
       open={ open }
       onClose={ onClose }
-      title={ `Ride history — ${rideId}` }
+      title={ `Ride history - ${rideId}` }
       description="Status changes, location samples, and admin events."
     >
       <div className="space-y-3">
@@ -39,7 +39,7 @@ export default function RideHistoryTimeline({
               <div>
                 <p className="text-xs font-medium text-slate-900">{ ev.event }</p>
                 <p className="text-xs text-slate-500">
-                  { new Date(ev.time).toLocaleString() } { ev.detail ? `· ${ev.detail}` : "" }
+                  { new Date(ev.time).toLocaleString() } { ev.detail ? `- ${ev.detail}` : "" }
                 </p>
               </div>
             </div>

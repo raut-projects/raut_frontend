@@ -231,7 +231,7 @@ export default function LiveRidesPage() {
               <span className="text-sm font-semibold text-slate-900">Live</span>
             </div>
             <p className="text-sm text-slate-500">
-              { activeCount } active ride{ activeCount !== 1 ? "s" : "" }{ issueCount ? ` · ${issueCount} issue${issueCount !== 1 ? "s" : ""}` : "" }
+              { activeCount } active ride{ activeCount !== 1 ? "s" : "" }{ issueCount ? ` - ${issueCount} issue${issueCount !== 1 ? "s" : ""}` : "" }
             </p>
           </div>
 
@@ -254,7 +254,7 @@ export default function LiveRidesPage() {
               className="text-xs"
             >
               <RefreshCw className={ `w-3 h-3 ${refreshing ? "animate-spin" : ""}` } />
-              { refreshing ? "Refreshing…" : "Refresh" }
+              { refreshing ? "Refreshing..." : "Refresh" }
             </Button>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -373,7 +373,7 @@ export default function LiveRidesPage() {
                   disabled={ cancelPending || (reason === "other" && !otherReason) }
                   onClick={ () => handleConfirmCancel(full, refund, partialPercent, penalizeDriver) }
                 >
-                  { cancelPending ? "Cancelling…" : "Confirm cancellation" }
+                  { cancelPending ? "Cancelling..." : "Confirm cancellation" }
                 </Button>
               </div>
             }
@@ -386,7 +386,7 @@ export default function LiveRidesPage() {
                     <button
                       key={ r.value }
                       onClick={ () => setReason(r.value as any) }
-                      className={ `w-full text-left rounded-lg border px-3 py-2 text-sm text-left transition-colors ${reason === r.value
+                      className={ `w-full rounded-lg border px-3 py-2 text-sm text-left transition-colors ${reason === r.value
                         ? "border-brand-500 bg-brand-50 text-brand-700"
                         : "border-slate-200 text-slate-700 hover:bg-slate-50"
                         }` }
@@ -399,7 +399,7 @@ export default function LiveRidesPage() {
                       <input
                         value={ otherReason }
                         onChange={ (e) => setOtherReason(e.target.value) }
-                        placeholder="Specify the reason…"
+                        placeholder="Specify the reason..."
                         className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-500"
                       />
                     </div>
@@ -414,7 +414,7 @@ export default function LiveRidesPage() {
                     <button
                       key={ opt }
                       onClick={ () => setRefund(opt) }
-                      className={ `w-full text-left rounded-lg border px-3 py-2 text-sm text-left transition-colors ${refund === opt
+                      className={ `w-full rounded-lg border px-3 py-2 text-sm text-left transition-colors ${refund === opt
                         ? "border-brand-500 bg-brand-50 text-brand-700"
                         : "border-slate-200 text-slate-700 hover:bg-slate-50"
                         }` }

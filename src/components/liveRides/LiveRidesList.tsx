@@ -1,17 +1,18 @@
 "use client";
 
+import { ArrowRight } from "lucide-react";
 import type { LiveRide } from "@/lib/liveRides";
 import { Button } from "../ui/button";
 
 import {
   LIVE_RIDE_STATUS_LABELS,
-  LIVE_RIDE_STATUS_EMOJI,
   LIVE_RIDE_TYPE_LABELS,
   formatAgo,
   formatEta,
   formatMoneyTZS,
 } from "@/lib/liveRides";
 import { Badge } from "@/components/ui/badge";
+import LiveRideStatusIcon from "./LiveRideStatusIcon";
 
 const statusStyles: Record<string, { bg: string; text: string; ring: string }> = {
   accepted: { bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-600/20" },
@@ -107,15 +108,15 @@ export default function LiveRidesList({
                 </div>
 
                 <div className="mb-1">
-                  <p className="text-xs font-medium text-slate-900 truncate">
-                    { ride.driver.name }
-                    <span className="ml-1 text-xs text-slate-400">→</span>
-                    <span className="font-medium">{ customersText }</span>
+                  <p className="flex items-center gap-1 text-xs font-medium text-slate-900 truncate">
+                    <span>{ ride.driver.name }</span>
+                    <ArrowRight className="size-3 shrink-0 text-slate-400" aria-hidden="true" />
+                    <span className="truncate font-medium">{ customersText }</span>
                   </p>
                 </div>
 
                 <div className="flex items-center gap-2 mb-1.5">
-                  <span className={ `text-xs ${style.text}` }>{ LIVE_RIDE_STATUS_EMOJI[ride.status] }</span>
+                  <LiveRideStatusIcon status={ride.status} size={14} />
                   <span className={ `text-xs font-semibold ${style.text}` }>
                     { LIVE_RIDE_STATUS_LABELS[ride.status] }
                   </span>
@@ -123,8 +124,13 @@ export default function LiveRidesList({
                 </div>
 
                 <div className="mb-1.5">
-                  <p className="text-xs text-slate-500 truncate" title={ `${ride.pickup.name} → ${ride.dropoff.name}` }>
-                    { ride.pickup.name } → { ride.dropoff.name }
+                  <p
+                    className="flex items-center gap-1 text-xs text-slate-500 truncate"
+                    title={ `${ride.pickup.name} to ${ride.dropoff.name}` }
+                  >
+                    <span className="truncate">{ ride.pickup.name }</span>
+                    <ArrowRight className="size-3 shrink-0" aria-hidden="true" />
+                    <span className="truncate">{ ride.dropoff.name }</span>
                   </p>
                 </div>
 

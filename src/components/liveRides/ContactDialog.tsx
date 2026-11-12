@@ -29,7 +29,7 @@ export default function ContactDialog({
     <SidePanel
       open={ open }
       onClose={ onClose }
-      title={ `Contact — ${ride.displayId}` }
+      title={ `Contact - ${ride.displayId}` }
       description="Choose how to reach the driver and customer."
     >
       <div className="space-y-4">
@@ -37,7 +37,7 @@ export default function ContactDialog({
           <p className="text-xs font-semibold text-slate-900 uppercase tracking-wider">Driver</p>
           <div className="flex items-center gap-2 text-sm text-slate-700">
             <span className="w-20">{ ride.driver.name }</span>
-            <span className="text-slate-500">{ driverPhone || "—" }</span>
+            <span className="text-slate-500">{ driverPhone || "-" }</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <Button onClick={ callDriver } className="text-[11px] px-2.5 py-1.5">
@@ -54,7 +54,7 @@ export default function ContactDialog({
           { ride.customers.map((c) => (
             <div key={ c.id } className="flex items-center gap-2 text-sm text-slate-700">
               <span className="w-20">{ c.name }</span>
-              <span className="text-slate-500">{ c.phone || "—" }</span>
+              <span className="text-slate-500">{ c.phone || "-" }</span>
             </div>
           )) }
           <div className="grid grid-cols-2 gap-2">

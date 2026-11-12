@@ -95,7 +95,7 @@ export function LiveRidesFilters({
         <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Filters</span>
       </div>
 
-      <div className="flex items-center gap-2 min-w-[200px]">
+      <div className="flex items-center gap-2 min-w-50">
         <label className="flex items-center gap-1.5 text-xs text-slate-600">
           <Search className="w-3 h-3" />
           Status
@@ -113,7 +113,7 @@ export function LiveRidesFilters({
         </select>
       </div>
 
-      <div className="flex items-center gap-2 min-w-[200px]">
+      <div className="flex items-center gap-2 min-w-50">
         <label className="flex items-center gap-1.5 text-xs text-slate-600">
           <Users className="w-3 h-3" />
           Type
@@ -157,7 +157,7 @@ export function LiveRidesFilters({
         query={ customerQuery }
       />
 
-      <div className="flex items-center gap-2 min-w-[150px]">
+      <div className="flex items-center gap-2 min-w-37.5">
         <label className="flex items-center gap-1.5 text-xs text-slate-600">
           <Search className="w-3 h-3" />
           Ride ID

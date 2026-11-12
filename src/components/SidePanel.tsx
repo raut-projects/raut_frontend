@@ -36,7 +36,7 @@ function SidePanel({
       />
 
       <aside
-        className={ `fixed inset-y-0 right-0 z-50 flex ${wide ? "w-[40rem]" : "w-[26rem]"} max-w-full flex-col border-l border-slate-200 bg-white transition-transform duration-200 ${open ? "translate-x-0" : "translate-x-full"
+        className={ `fixed inset-y-0 right-0 z-50 flex ${wide ? "w-160" : "w-140"} max-w-full flex-col border-l border-slate-200 bg-white transition-transform duration-200 ${open ? "translate-x-0" : "translate-x-full"
           }` }
         role="dialog"
         aria-modal="true"

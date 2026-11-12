@@ -113,14 +113,6 @@ export const LIVE_RIDE_STATUS_LABELS: Record<LiveRideStatus, string> = {
   completed: "Completed",
 };
 
-export const LIVE_RIDE_STATUS_EMOJI: Record<LiveRideStatus, string> = {
-  accepted: "🟢",
-  arrived: "🔵",
-  picked_up: "🚗",
-  near_dropoff: "🏁",
-  completed: "✅",
-};
-
 export const LIVE_RIDE_TYPE_LABELS: Record<RideType, string> = {
   private: "Private",
   duo_host: "DUO (Host)",

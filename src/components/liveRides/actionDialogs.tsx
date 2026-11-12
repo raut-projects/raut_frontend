@@ -33,7 +33,7 @@ export function FlagIssueDialog({
             Back
           </Button>
           <Button disabled={ pending || !reason.trim() } onClick={ () => onConfirm(reason, severity) }>
-            { pending ? "Flagging…" : "Flag issue" }
+            { pending ? "Flagging..." : "Flag issue" }
           </Button>
         </div>
       }
@@ -52,7 +52,7 @@ export function FlagIssueDialog({
             value={ reason }
             onChange={ (e) => setReason(e.target.value) }
             rows={ 3 }
-            placeholder="Describe the issue…"
+            placeholder="Describe the issue..."
             className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-500"
           />
         </div>
@@ -107,7 +107,7 @@ export function OverrideFareDialog({
             Back
           </Button>
           <Button disabled={ pending || !reason.trim() } onClick={ () => onConfirm(Number(amount) || 0, reason) }>
-            { pending ? "Updating…" : "Override fare" }
+            { pending ? "Updating..." : "Override fare" }
           </Button>
         </div>
       }
@@ -137,7 +137,7 @@ export function OverrideFareDialog({
             value={ reason }
             onChange={ (e) => setReason(e.target.value) }
             rows={ 3 }
-            placeholder="Why is the fare being adjusted…"
+            placeholder="Why is the fare being adjusted..."
             className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-500"
           />
         </div>
@@ -172,7 +172,7 @@ export function EscalateDialog({
             Back
           </Button>
           <Button disabled={ pending || !note.trim() } onClick={ () => onConfirm(note) }>
-            { pending ? "Escalating…" : "Escalate" }
+            { pending ? "Escalating..." : "Escalate" }
           </Button>
         </div>
       }
@@ -191,7 +191,7 @@ export function EscalateDialog({
             value={ note }
             onChange={ (e) => setNote(e.target.value) }
             rows={ 3 }
-            placeholder="Optional note for the Platform Manager…"
+            placeholder="Optional note for the Platform Manager..."
             className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-500"
           />
         </div>
@@ -226,7 +226,7 @@ export function AddNoteDialog({
             Back
           </Button>
           <Button disabled={ pending || !text.trim() } onClick={ () => onConfirm(text) }>
-            { pending ? "Saving…" : "Add note" }
+            { pending ? "Saving..." : "Add note" }
           </Button>
         </div>
       }
@@ -238,7 +238,7 @@ export function AddNoteDialog({
             value={ text }
             onChange={ (e) => setText(e.target.value) }
             rows={ 4 }
-            placeholder="Internal note…"
+            placeholder="Internal note..."
             className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-500"
           />
         </div>
