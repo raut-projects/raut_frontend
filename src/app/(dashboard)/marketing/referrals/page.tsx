@@ -19,8 +19,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -39,6 +41,7 @@ import {
   useEnrollReferralUser,
   useMarkReferralPaymentPaid,
   usePendingReferralPayments,
+  useReferralProgram,
   useReferralPrograms,
   useReferralRelationships,
   useReferralStats,
@@ -394,8 +397,8 @@ function SectionNav({
           aria-pressed={ value === section.value }
           onClick={ () => onChange(section.value) }
           className={ `shrink-0 border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors ${value === section.value
-              ? "border-brand-600 text-brand-700"
-              : "border-transparent text-slate-500 hover:text-slate-800"
+            ? "border-brand-600 text-brand-700"
+            : "border-transparent text-slate-500 hover:text-slate-800"
             }` }
         >
           { section.label }
@@ -569,6 +572,7 @@ export function ReferralProgramsDashboard() {
   );
   const [unenrollUserId, setUnenrollUserId] = useState("");
   const [detailUserId, setDetailUserId] = useState("");
+  const [detailProgramId, setDetailProgramId] = useState("");
   const [paymentTargetId, setPaymentTargetId] = useState("");
   const [transactionId, setTransactionId] = useState("");
 
@@ -592,6 +596,10 @@ export function ReferralProgramsDashboard() {
     detailUserId,
     section === "users",
   );
+  const programDetailQuery = useReferralProgram(
+    detailProgramId,
+    Boolean(detailProgramId),
+  );
   const createProgram = useCreateReferralProgram();
   const updateProgram = useUpdateReferralProgram();
   const enrollUser = useEnrollReferralUser();
@@ -600,6 +608,9 @@ export function ReferralProgramsDashboard() {
   const markPaid = useMarkReferralPaymentPaid();
 
   const programs = programsQuery.data ?? [];
+  const detailProgram =
+    programDetailQuery.data ??
+    programs.find((program) => program.id === detailProgramId);
   const users = usersQuery.data ?? [];
   const relationships = relationshipsQuery.data ?? [];
   const allUsersSelected =
@@ -1146,6 +1157,34 @@ export function ReferralProgramsDashboard() {
             </SheetContent>
           </Sheet>
 
+          <Sheet
+            open={ Boolean(detailProgramId) }
+            onOpenChange={ (open) => {
+              if (!open) setDetailProgramId("");
+            } }
+          >
+            <SheetContent
+              side="right"
+              className="gap-0 overflow-y-auto p-0 sm:max-w-lg"
+              style={ { width: "min(92vw, 32rem)" } }
+            >
+              <SheetHeader className="border-b border-slate-200 pr-12">
+                <SheetTitle>Program details</SheetTitle>
+                <SheetDescription>
+                  { detailProgram?.name ?? "Loading program details…" }
+                </SheetDescription>
+              </SheetHeader>
+              <ProgramDetailPanel
+                program={ detailProgram }
+                isPending={ programDetailQuery.isPending && !detailProgram }
+                isError={ programDetailQuery.isError }
+                error={ programDetailQuery.error }
+                onRetry={ programDetailQuery.refetch }
+                onClose={ () => setDetailProgramId("") }
+              />
+            </SheetContent>
+          </Sheet>
+
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
             <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-5">
               <div>
@@ -1198,7 +1237,20 @@ export function ReferralProgramsDashboard() {
                     </TableRow>
                   ) : (
                     programs.map((program) => (
-                      <TableRow key={ program.id }>
+                      <TableRow
+                        key={ program.id }
+                        className="cursor-pointer"
+                        tabIndex={ 0 }
+                        aria-label={ `View ${program.name}` }
+                        onClick={ () => setDetailProgramId(program.id) }
+                        onKeyDown={ (event) => {
+                          if (event.target !== event.currentTarget) return;
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setDetailProgramId(program.id);
+                          }
+                        } }
+                      >
                         <TableCell>
                           <div className="font-medium text-slate-900">
                             { program.name }
@@ -1242,13 +1294,14 @@ export function ReferralProgramsDashboard() {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              onClick={ () =>
+                              onClick={ (event) => {
+                                event.stopPropagation();
                                 setEditor({
                                   programId: program.id,
                                   original: program,
                                   draft: draftFromProgram(program),
-                                })
-                              }
+                                });
+                              } }
                               aria-label={ `Edit ${program.name}` }
                             >
                               <Pencil aria-hidden="true" />
@@ -1259,7 +1312,8 @@ export function ReferralProgramsDashboard() {
                               variant="outline"
                               size="sm"
                               disabled={ updateProgram.isPending }
-                              onClick={ async () => {
+                              onClick={ async (event) => {
+                                event.stopPropagation();
                                 try {
                                   await updateProgram.mutateAsync({
                                     programId: program.id,
@@ -1863,6 +1917,205 @@ export function ReferralProgramsDashboard() {
         </section>
       ) }
     </div>
+  );
+}
+
+const REWARD_TYPE_LABELS: Record<RewardType, string> = {
+  fixed: "Fixed amount",
+  percentage: "Percentage",
+  commission: "Commission",
+};
+
+const REWARD_TRIGGER_LABELS: Record<RewardTrigger, string> = {
+  signup: "Signup",
+  first_ride: "First ride",
+  onboarding_complete: "Onboarding complete",
+  document_verified: "Document verified",
+};
+
+function formatProgramDate(value: string) {
+  const trimmed = value.slice(0, 10);
+  if (!trimmed) return "—";
+  const date = new Date(trimmed);
+  return Number.isNaN(date.getTime()) ? trimmed : date.toLocaleDateString();
+}
+
+function DetailField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs text-slate-500">{ label }</p>
+      <p className="mt-1 break-words text-sm font-medium text-slate-900">
+        { value }
+      </p>
+    </div>
+  );
+}
+
+function ProgramRewardCard({
+  title,
+  reward,
+}: {
+  title: string;
+  reward: RewardDraft;
+}) {
+  return (
+    <div className="rounded-lg border border-slate-200 p-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        { title }
+      </p>
+      { reward.enabled ? (
+        <dl className="mt-2 space-y-1.5 text-sm">
+          <div className="flex justify-between gap-2">
+            <dt className="text-slate-500">Type</dt>
+            <dd className="font-medium text-slate-900">
+              { REWARD_TYPE_LABELS[reward.type] }
+            </dd>
+          </div>
+          <div className="flex justify-between gap-2">
+            <dt className="text-slate-500">
+              { reward.type === "fixed" ? "Amount" : "Rate" }
+            </dt>
+            <dd className="font-medium text-slate-900">
+              { reward.type === "fixed"
+                ? formatTzs(Number(reward.amount) || 0)
+                : `${(Number(reward.rate) * 100).toLocaleString()}%` }
+            </dd>
+          </div>
+          { reward.type === "percentage" && reward.maxAmount.trim() && (
+            <div className="flex justify-between gap-2">
+              <dt className="text-slate-500">Maximum amount</dt>
+              <dd className="font-medium text-slate-900">
+                { formatTzs(Number(reward.maxAmount) || 0) }
+              </dd>
+            </div>
+          ) }
+          { reward.type === "commission" && (
+            <div className="flex justify-between gap-2">
+              <dt className="text-slate-500">Duration</dt>
+              <dd className="font-medium text-slate-900">
+                { reward.durationDays } days
+              </dd>
+            </div>
+          ) }
+          <div className="flex justify-between gap-2">
+            <dt className="text-slate-500">Trigger</dt>
+            <dd className="font-medium text-slate-900">
+              { REWARD_TRIGGER_LABELS[reward.trigger] }
+            </dd>
+          </div>
+        </dl>
+      ) : (
+        <p className="mt-2 text-sm text-slate-500">No reward configured.</p>
+      ) }
+    </div>
+  );
+}
+
+function ProgramDetailPanel({
+  program,
+  isPending,
+  isError,
+  error,
+  onRetry,
+  onClose,
+}: {
+  program: ReferralProgram | undefined;
+  isPending: boolean;
+  isError: boolean;
+  error: Error | null;
+  onRetry: () => void;
+  onClose: () => void;
+}) {
+  const config = recordValue(program?.reward_config);
+  const referrer = rewardFromProgram(config.referrer);
+  const referee = rewardFromProgram(config.referee);
+  const audience = stringValue(program?.target_referee_type);
+  const audienceLabel =
+    audience === "rider"
+      ? "Customers"
+      : audience === "driver"
+        ? "Drivers"
+        : "Customers and drivers";
+
+  return (
+    <>
+      <div className="flex-1 space-y-5 px-4 py-5">
+        { isError ? (
+          <QueryError error={ error } onRetry={ onRetry } />
+        ) : isPending || !program ? (
+          <div className="space-y-3" aria-label="Loading program details">
+            <div className="h-24 animate-pulse rounded-lg bg-slate-100" />
+            <div className="h-32 animate-pulse rounded-lg bg-slate-100" />
+            <div className="h-20 animate-pulse rounded-lg bg-slate-100" />
+          </div>
+        ) : (
+          <>
+            <div className="grid gap-4 rounded-lg bg-slate-50 p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold text-slate-900">
+                  { program.name }
+                </p>
+                { program.is_active === false ? (
+                  <Badge variant="destructive">Inactive</Badge>
+                ) : (
+                  <Badge variant="outline">Active</Badge>
+                ) }
+                { booleanValue(program.is_default) && (
+                  <Badge variant="secondary">Default</Badge>
+                ) }
+              </div>
+              <dl className="grid gap-3 border-t border-slate-200 pt-3 sm:grid-cols-2">
+                <DetailField label="Audience" value={ audienceLabel } />
+                <DetailField
+                  label="Priority"
+                  value={ String(displayNumber(program, "priority")) }
+                />
+                <DetailField
+                  label="Maximum referrals per user"
+                  value={ stringValue(program.max_referrals_per_user, "No limit") }
+                />
+                <DetailField
+                  label="Reward expiry"
+                  value={
+                    program.reward_expiry_days === null ||
+                      program.reward_expiry_days === undefined
+                      ? "No expiry"
+                      : `${stringValue(program.reward_expiry_days)} days`
+                  }
+                />
+                <DetailField
+                  label="Start date"
+                  value={ formatProgramDate(stringValue(program.start_date)) }
+                />
+                <DetailField
+                  label="End date"
+                  value={ formatProgramDate(stringValue(program.end_date)) }
+                />
+              </dl>
+              <div className="border-t border-slate-200 pt-3">
+                <DetailField
+                  label="Description"
+                  value={ displayText(program, "description", "—") }
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-slate-900">Rewards</h4>
+              <ProgramRewardCard title="Referrer reward" reward={ referrer } />
+              <ProgramRewardCard title="Referee reward" reward={ referee } />
+            </div>
+          </>
+        ) }
+      </div>
+      <SheetFooter className="border-t border-slate-200">
+        <SheetClose asChild>
+          <Button type="button" variant="outline" onClick={ onClose }>
+            Back to programs
+          </Button>
+        </SheetClose>
+      </SheetFooter>
+    </>
   );
 }
 
