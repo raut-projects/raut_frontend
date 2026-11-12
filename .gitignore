@@ -28,6 +28,6 @@ dist
 *.sw?
 dist
 
-doc/codebase
+docs/codebase
 
 .playwright-cli
