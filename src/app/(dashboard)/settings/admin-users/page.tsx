@@ -307,8 +307,21 @@ function AdminUsersPage() {
                 >
                   <TableCell className="whitespace-normal">
                     <div className="flex flex-wrap items-center gap-3">
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
-                        { initialsFromName(user.name) }
+                      <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 sm:flex sm:h-10 sm:w-10">
+                        <svg
+                          className="h-5 w-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          aria-hidden="true"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+                          />
+                        </svg>
                       </span>
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5">
@@ -330,13 +343,6 @@ function AdminUsersPage() {
                             </span>
                           ) }
                         </div>
-                        {/* <span className="mt-0.5 block truncate text-xs text-slate-500">
-                          { user.email || "No email" }
-                        </span>
-                        <span className="mt-0.5 block text-xs text-slate-400">
-                          { user.id }
-                          { user.phone ? ` \u00b7 ${formatPhone(user.phone)}` : "" }
-                        </span> */}
                       </div>
                     </div>
                   </TableCell>
