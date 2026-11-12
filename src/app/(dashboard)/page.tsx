@@ -332,7 +332,7 @@ function Dashboard() {
         onRetry={ refetch }
       />
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+      {/* <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="xl:col-span-2">
           <div className="card overflow-hidden">
             <div className="card-header">
@@ -478,7 +478,7 @@ function Dashboard() {
             </ul>
           ) }
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
