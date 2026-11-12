@@ -23,14 +23,6 @@ import type {
   RevenuePoint,
   RidesPoint,
 } from "@/types/index";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
 const statusStyles = {
   Delivered: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
