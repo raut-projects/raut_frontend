@@ -1,4 +1,5 @@
 import { API_ROUTES } from "@/lib/config";
+import { derivePromotionStatus } from "@/lib/marketing";
 import type {
   DiscountType,
   Promotion,
@@ -7,17 +8,7 @@ import type {
   PromotionPayload,
   PromotionStatus,
 } from "@/lib/marketing";
-import {
-  MARKETING_USES_MOCK_DATA,
-  mockCreatePromotion,
-  mockDeletePromotion,
-  mockGetPromotion,
-  mockListPromotions,
-  mockUpdatePromotion,
-} from "@/lib/mockMarketing";
-import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
-
-export const isMarketingMockEnabled = MARKETING_USES_MOCK_DATA;
+import { apiDelete, apiGet, apiPost, apiPut } from "./api";
 
 type RecordValue = Record<string, unknown>;
 
@@ -99,9 +90,8 @@ const normalizeStatus = (
   if (status === "scheduled" || status === "upcoming" || status === "pending") {
     return "scheduled";
   }
-  if (status === "expired" || status === "ended" || status === "inactive") {
-    return "expired";
-  }
+  if (status === "expired" || status === "ended") return "expired";
+  if (status === "inactive" || status === "paused") return "draft";
   if (status === "active" || status === "live" || status === "running") {
     return "active";
   }
@@ -118,12 +108,14 @@ const normalizeStatus = (
 
 export function mapPromotion(value: unknown): Promotion {
   const record = asRecord(value);
-  const eligibility = asRecord(firstValue(record, "eligibility"));
+  const eligibility = asRecord(
+    firstValue(record, "eligibility_criteria", "eligibility"),
+  );
   const startsAt = text(
-    firstValue(record, "starts_at", "startsAt", "start_date", "startDate", "start"),
+    firstValue(record, "start_date", "starts_at", "startsAt", "startDate", "start"),
   );
   const endsAt = text(
-    firstValue(record, "ends_at", "endsAt", "end_date", "endDate", "end"),
+    firstValue(record, "end_date", "ends_at", "endsAt", "endDate", "end"),
   );
   const discountType = normalizeDiscountType(
     firstValue(record, "discount_type", "discountType", "type"),
@@ -138,19 +130,55 @@ export function mapPromotion(value: unknown): Promotion {
       "value",
     ),
   );
+  const maxDiscountAmount = optionalNumber(
+    firstValue(record, "max_discount_amount", "maxDiscountAmount"),
+  );
+  const legacyMaxDiscount = optionalNumber(
+    firstValue(
+      record,
+      "max_discount_tzs",
+      "maxDiscountTzs",
+      "max_discount",
+      "maxDiscount",
+    ),
+  );
+  const legacyMaxRideValue = optionalNumber(
+    firstValue(
+      record,
+      "max_ride_value_tzs",
+      "maxRideValueTzs",
+      "max_ride_value",
+      "maxRideValue",
+    ),
+  );
   const phoneList =
-    firstValue(eligibility, "phones") ??
+    firstValue(eligibility, "phones", "eligible_phones", "eligiblePhones") ??
     firstValue(record, "eligible_phones", "eligiblePhones", "user_list", "userList");
   const eligiblePhones = Array.isArray(phoneList)
     ? phoneList.map((phone) => text(phone)).filter(Boolean)
     : [];
+  const rideTypesValue = firstValue(eligibility, "ride_types", "rideTypes");
+  const rideTypes = Array.isArray(rideTypesValue)
+    ? rideTypesValue.map((type) => text(type).toLowerCase()).filter(Boolean)
+    : [];
 
   const usageCount = number(
-    firstValue(record, "usage_count", "usageCount", "used_count", "usedCount", "redemptions"),
+    firstValue(
+      record,
+      "current_uses",
+      "currentUses",
+      "usage_count",
+      "usageCount",
+      "used_count",
+      "usedCount",
+      "redemptions",
+    ),
   );
   const recordedBudget = number(
     firstValue(
       record,
+      "current_spend_tzs",
+      "currentSpendTzs",
       "budget_used_tzs",
       "budgetUsedTzs",
       "discount_given_tzs",
@@ -165,6 +193,16 @@ export function mapPromotion(value: unknown): Promotion {
       : discountType === "fixed"
         ? usageCount * discountValue
         : 0;
+  const explicitStatus = firstValue(record, "status", "state");
+  const isActiveValue = firstValue(record, "is_active", "isActive");
+  const isActive =
+    isActiveValue === undefined
+      ? normalizeStatus(explicitStatus, startsAt, endsAt) !== "draft"
+      : truthy(isActiveValue);
+  const status =
+    isActiveValue === undefined
+      ? normalizeStatus(explicitStatus, startsAt, endsAt)
+      : derivePromotionStatus({ isActive, startsAt, endsAt });
 
   return {
     id: requiredText(record, "id", "promotion_id", "promotionId", "reference"),
@@ -177,19 +215,31 @@ export function mapPromotion(value: unknown): Promotion {
     description: text(firstValue(record, "description", "details", "summary")),
     discountType,
     discountValue,
-    maxDiscountTzs: optionalNumber(
-      firstValue(record, "max_discount_tzs", "maxDiscountTzs", "max_discount", "maxDiscount"),
-    ),
-    maxRideValueTzs: optionalNumber(
-      firstValue(record, "max_ride_value_tzs", "maxRideValueTzs", "max_ride_value", "maxRideValue"),
-    ),
+    maxDiscountTzs:
+      discountType === "free_ride"
+        ? legacyMaxDiscount
+        : (maxDiscountAmount ?? legacyMaxDiscount),
+    maxRideValueTzs:
+      discountType === "free_ride"
+        ? (maxDiscountAmount ?? legacyMaxRideValue)
+        : legacyMaxRideValue,
     newUsersOnly: truthy(
-      firstValue(eligibility, "new_users", "newUsers") ??
+      firstValue(eligibility, "new_users_only", "new_users", "newUsers") ??
         firstValue(record, "new_users_only", "newUsersOnly", "new_users"),
     ),
     existingUsersOnly: truthy(
-      firstValue(eligibility, "existing_users", "existingUsers") ??
-        firstValue(record, "existing_users_only", "existingUsersOnly", "existing_users"),
+      firstValue(
+        eligibility,
+        "existing_users_only",
+        "existing_users",
+        "existingUsers",
+      ) ??
+        firstValue(
+          record,
+          "existing_users_only",
+          "existingUsersOnly",
+          "existing_users",
+        ),
     ),
     eligiblePhones: eligiblePhones.length ? eligiblePhones : undefined,
     startsAt,
@@ -207,24 +257,51 @@ export function mapPromotion(value: unknown): Promotion {
     budgetUsedTzs,
     usageCount,
     peakHoursOnly: truthy(
-      firstValue(record, "peak_hours_only", "peakHoursOnly", "peak_hours", "peakHours"),
+      firstValue(eligibility, "peak_hours_only", "peakHoursOnly") ??
+        firstValue(
+          record,
+          "peak_hours_only",
+          "peakHoursOnly",
+          "peak_hours",
+          "peakHours",
+        ),
     ),
     peakHoursLabel:
-      text(firstValue(record, "peak_hours_label", "peakHoursLabel", "peak_hours")) ||
-      undefined,
+      text(
+        firstValue(eligibility, "peak_hours_label", "peakHoursLabel") ??
+          firstValue(record, "peak_hours_label", "peakHoursLabel", "peak_hours"),
+      ) || undefined,
     minimumRideTzs: optionalNumber(
-      firstValue(record, "minimum_ride_tzs", "minimumRideTzs", "min_ride_tzs", "minRideTzs"),
+      firstValue(
+        eligibility,
+        "min_ride_amount",
+        "minimum_ride_amount",
+        "min_ride_tzs",
+        "minimum_ride_tzs",
+      ) ??
+        firstValue(
+          record,
+          "minimum_ride_tzs",
+          "minimumRideTzs",
+          "min_ride_tzs",
+          "minRideTzs",
+        ),
     ),
-    duoOnly: truthy(
-      firstValue(record, "duo_only", "duoOnly", "duo", "apply_to_duo"),
-    ),
+    duoOnly:
+      truthy(
+        firstValue(eligibility, "duo_only", "duoOnly") ??
+          firstValue(record, "duo_only", "duoOnly", "duo", "apply_to_duo"),
+      ) || rideTypes.includes("duo"),
     notifySms: truthy(
-      firstValue(record, "notify_sms", "notifySms", "send_sms", "sendSms"),
+      firstValue(eligibility, "notify_sms", "notifySms") ??
+        firstValue(record, "notify_sms", "notifySms", "send_sms", "sendSms"),
     ),
     inAppBanner: truthy(
-      firstValue(record, "in_app_banner", "inAppBanner", "show_banner", "showBanner"),
+      firstValue(eligibility, "in_app_banner", "inAppBanner") ??
+        firstValue(record, "in_app_banner", "inAppBanner", "show_banner", "showBanner"),
     ),
-    status: normalizeStatus(firstValue(record, "status", "state"), startsAt, endsAt),
+    isActive,
+    status,
     createdAt: text(firstValue(record, "created_at", "createdAt")),
     updatedAt: text(firstValue(record, "updated_at", "updatedAt")),
   };
@@ -233,41 +310,37 @@ export function mapPromotion(value: unknown): Promotion {
 export async function listPromotions(
   params: PromotionListParams = {},
 ): Promise<PromotionListResult> {
-  if (MARKETING_USES_MOCK_DATA) return mockListPromotions(params);
-
-  const page = params.page ?? 1;
-  const limit = params.limit ?? 20;
-  const data = await apiGet(API_ROUTES.marketingPromotions, {
-    params: {
-      page,
-      page_size: limit,
-      search: params.search?.trim() || undefined,
-      status:
-        params.status && params.status !== "all" ? params.status : undefined,
-    },
-  });
-  const record = asRecord(data);
+  const page = Math.max(1, params.page ?? 1);
+  const limit = Math.max(1, params.limit ?? 20);
+  const data = await apiGet(API_ROUTES.marketingPromotions);
   const items = listItems(data, "promotions").map(mapPromotion);
-  const pagination = asRecord(
-    record.pagination ?? asRecord(record.meta).pagination,
-  );
-  const total = Number(
-    firstValue(pagination, "total_items", "total_count", "total") ??
-      firstValue(record, "total", "total_count", "total_items") ??
-      items.length,
-  );
+  const search = params.search?.trim().toLowerCase() ?? "";
+  const filtered = items.filter((promotion) => {
+    if (
+      params.status &&
+      params.status !== "all" &&
+      promotion.status !== params.status
+    ) {
+      return false;
+    }
+
+    if (!search) return true;
+
+    return [promotion.code, promotion.name, promotion.description].some(
+      (field) => field.toLowerCase().includes(search),
+    );
+  });
+  const start = (page - 1) * limit;
 
   return {
-    items,
-    total: Number.isFinite(total) ? total : items.length,
+    items: filtered.slice(start, start + limit),
+    total: filtered.length,
     page,
     limit,
   };
 }
 
 export async function getPromotion(promotionId: string): Promise<Promotion> {
-  if (MARKETING_USES_MOCK_DATA) return mockGetPromotion(promotionId);
-
   const data = await apiGet(API_ROUTES.marketingPromotion(promotionId));
   const record = asRecord(data);
 
@@ -275,8 +348,6 @@ export async function getPromotion(promotionId: string): Promise<Promotion> {
 }
 
 export async function createPromotion(payload: PromotionPayload) {
-  if (MARKETING_USES_MOCK_DATA) return mockCreatePromotion(payload);
-
   const data = await apiPost(API_ROUTES.marketingPromotions, payload);
   const record = asRecord(data);
   const created = asRecord(firstValue(record, "promotion") ?? data);
@@ -290,13 +361,17 @@ export async function updatePromotion(
   promotionId: string,
   payload: PromotionPayload,
 ) {
-  if (MARKETING_USES_MOCK_DATA) return mockUpdatePromotion(promotionId, payload);
-
-  return apiPatch(API_ROUTES.marketingPromotion(promotionId), payload);
+  return apiPut(API_ROUTES.marketingPromotion(promotionId), payload);
 }
 
 export async function deletePromotion(promotionId: string) {
-  if (MARKETING_USES_MOCK_DATA) return mockDeletePromotion(promotionId);
-
   return apiDelete(API_ROUTES.marketingPromotion(promotionId));
+}
+
+export async function activatePromotion(promotionId: string) {
+  return apiPost(API_ROUTES.marketingPromotionActivate(promotionId));
+}
+
+export async function deactivatePromotion(promotionId: string) {
+  return apiPost(API_ROUTES.marketingPromotionDeactivate(promotionId));
 }

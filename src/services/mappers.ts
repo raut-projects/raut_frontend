@@ -356,6 +356,23 @@ export const mapDriver = (driver) => {
       ],
     ),
     vehicle: vehicleLabel,
+    vehicleMake: vehicleMake,
+    vehicleModel: vehicleModel,
+    vehicleType: vehicleType,
+    vehicleYear: firstDriverValue([vehicle, driver, profile], ['year', 'model_year']),
+    vehicleColor: firstDriverValue([vehicle, driver, profile], ['color', 'vehicle_color']),
+    vehicleInsuranceExpiry: firstDriverValue(
+      [vehicle, driver, profile],
+      ['insurance_expiry', 'insurance_expires_at', 'insurance_expiry_date'],
+    ),
+    vehicleInsuranceValid: firstDriverValue(
+      [vehicle, driver, profile],
+      ['insurance_valid', 'is_insurance_valid'],
+    ),
+    vehiclePlateVerified: firstDriverValue(
+      [vehicle, driver, profile],
+      ['plate_verified', 'vehicle_verified'],
+    ),
     plateNumber:
       firstDriverValue(
         [vehicle, driver, profile],
@@ -582,6 +599,11 @@ export const mapRide = (ride) => {
     date: formatDate(ride?.created_at),
     requestedAt: formatDateTime(ride?.created_at),
     createdAt: ride?.created_at ?? null,
+    hasDispute: Boolean(
+      ride?.has_dispute ?? ride?.hasDispute ?? ride?.dispute,
+    ),
+    disputeStatus: ride?.dispute_status ?? ride?.disputeStatus ?? null,
+    disputeId: ride?.dispute_id ?? ride?.disputeId ?? null,
   }
 }
 

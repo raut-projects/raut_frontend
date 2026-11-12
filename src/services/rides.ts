@@ -19,6 +19,7 @@ const countRides = async (status?: string) => {
 export async function listRides({
   status = "all",
   driverId = "",
+  hasDispute = "",
   from = "",
   to = "",
   page = 1,
@@ -33,6 +34,7 @@ export async function listRides({
 
   if (status && status !== "all") params.status = String(status).toLowerCase();
   if (driverId) params.driver_id = driverId;
+  if (hasDispute) params.has_dispute = "true";
   if (from) params.start_date = from;
   if (to) params.end_date = to;
 

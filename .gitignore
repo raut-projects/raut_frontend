@@ -8,6 +8,7 @@ node_modules
 out
 next-env.d.ts
 *.tsbuildinfo
+.playwright-cli
 
 # Editor directories and files
 .vscode/*

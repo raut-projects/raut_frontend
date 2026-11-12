@@ -29,6 +29,7 @@ export type Promotion = {
   duoOnly: boolean;
   notifySms: boolean;
   inAppBanner: boolean;
+  isActive: boolean;
   status: PromotionStatus;
   createdAt: string;
   updatedAt: string;
@@ -78,31 +79,32 @@ export type PromotionFormValues = {
   inAppBanner: boolean;
 };
 
+export type PromotionEligibilityCriteria = {
+  new_users_only?: boolean;
+  existing_users_only?: boolean;
+  phones?: string[];
+  min_ride_amount?: number;
+  ride_types?: string[];
+  peak_hours_only?: boolean;
+  peak_hours_label?: string;
+  notify_sms?: boolean;
+  in_app_banner?: boolean;
+};
+
 export type PromotionPayload = {
   code: string;
   name: string;
   description: string;
   discount_type: DiscountType;
   discount_value: number;
-  max_discount_tzs?: number;
-  max_ride_value_tzs?: number;
-  eligibility: {
-    new_users: boolean;
-    existing_users: boolean;
-    phones?: string[];
-  };
-  starts_at: string;
-  ends_at: string;
+  max_discount_amount?: number;
+  start_date: string;
+  end_date: string;
   per_user_limit: number;
   total_uses_limit?: number;
   budget_cap_tzs: number;
-  peak_hours_only: boolean;
-  peak_hours_label?: string;
-  minimum_ride_tzs?: number;
-  duo_only: boolean;
-  notify_sms: boolean;
-  in_app_banner: boolean;
-  status: Exclude<PromotionStatus, "expired">;
+  eligibility_criteria: PromotionEligibilityCriteria;
+  is_active: boolean;
 };
 
 export const PROMOTION_STATUS_LABELS: Record<PromotionStatus, string> = {
@@ -111,6 +113,27 @@ export const PROMOTION_STATUS_LABELS: Record<PromotionStatus, string> = {
   expired: "Expired",
   draft: "Draft",
 };
+
+export function derivePromotionStatus({
+  isActive,
+  startsAt,
+  endsAt,
+}: {
+  isActive: boolean;
+  startsAt: string;
+  endsAt: string;
+}): PromotionStatus {
+  if (!isActive) return "draft";
+
+  const now = Date.now();
+  const start = Date.parse(startsAt);
+  const end = Date.parse(endsAt);
+
+  if (Number.isFinite(end) && end < now) return "expired";
+  if (Number.isFinite(start) && start > now) return "scheduled";
+
+  return "active";
+}
 
 export const PROMOTION_TABS: { value: PromotionTab; label: string }[] = [
   { value: "active", label: "Active" },
@@ -338,7 +361,7 @@ const numberOrUndefined = (value: string) => {
 
 export function toPromotionPayload(
   values: PromotionFormValues,
-  status: PromotionPayload["status"],
+  isActive: boolean,
 ): PromotionPayload {
   const phones =
     values.specificUsers && values.eligiblePhones.length
@@ -354,34 +377,32 @@ export function toPromotionPayload(
       values.discountType === "free_ride"
         ? 0
         : Number(values.discountValue),
-    max_discount_tzs:
+    max_discount_amount:
       values.discountType === "percentage"
         ? numberOrUndefined(values.maxDiscountTzs)
-        : undefined,
-    max_ride_value_tzs:
-      values.discountType === "free_ride"
-        ? numberOrUndefined(values.maxRideValueTzs)
-        : undefined,
-    eligibility: {
-      new_users: values.newUsers,
-      existing_users: values.existingUsers,
-      phones,
-    },
-    starts_at: fromDateTimeLocal(values.startsAt),
-    ends_at: fromDateTimeLocal(values.endsAt),
+        : values.discountType === "free_ride"
+          ? numberOrUndefined(values.maxRideValueTzs)
+          : undefined,
+    start_date: fromDateTimeLocal(values.startsAt),
+    end_date: fromDateTimeLocal(values.endsAt),
     per_user_limit: Number(values.perUserLimit),
     total_uses_limit: numberOrUndefined(values.totalUsesLimit),
     budget_cap_tzs: Number(values.budgetCapTzs),
-    peak_hours_only: values.peakHoursOnly,
-    peak_hours_label: values.peakHoursOnly
-      ? values.peakHoursLabel.trim()
-      : undefined,
-    minimum_ride_tzs: values.minimumRideEnabled
-      ? numberOrUndefined(values.minimumRideTzs)
-      : undefined,
-    duo_only: values.duoOnly,
-    notify_sms: values.notifySms,
-    in_app_banner: values.inAppBanner,
-    status,
+    eligibility_criteria: {
+      new_users_only: values.newUsers,
+      existing_users_only: values.existingUsers,
+      phones,
+      min_ride_amount: values.minimumRideEnabled
+        ? numberOrUndefined(values.minimumRideTzs)
+        : undefined,
+      ride_types: values.duoOnly ? ["duo"] : undefined,
+      peak_hours_only: values.peakHoursOnly,
+      peak_hours_label: values.peakHoursOnly
+        ? values.peakHoursLabel.trim()
+        : undefined,
+      notify_sms: values.notifySms,
+      in_app_banner: values.inAppBanner,
+    },
+    is_active: isActive,
   };
 }

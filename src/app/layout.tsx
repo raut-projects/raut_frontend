@@ -22,9 +22,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={ inter.variable }>
       <body>
-        <Providers>{children}</Providers>
+        <Providers>{ children }</Providers>
       </body>
     </html>
   );

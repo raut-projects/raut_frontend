@@ -30,7 +30,6 @@ import {
   type DiscountType,
   type PromotionFormValues,
   type PromotionPayload,
-  type PromotionStatus,
 } from "@/lib/marketing";
 import { promotionFormSchema } from "@/schemas/marketingSchemas";
 
@@ -158,14 +157,14 @@ function errorText(errors: FieldErrors, key: string) {
 export function PromotionForm({
   mode,
   initialValues,
-  initialStatus,
+  initialIsActive,
   isSubmitting,
   onSubmit,
   onCancel,
 }: {
   mode: "create" | "edit";
   initialValues?: PromotionFormValues;
-  initialStatus?: PromotionStatus;
+  initialIsActive?: boolean;
   isSubmitting: boolean;
   onSubmit: (payload: PromotionPayload) => Promise<void>;
   onCancel: () => void;
@@ -202,21 +201,16 @@ export function PromotionForm({
   const minimumRideEnabled = useWatch({ control, name: "minimumRideEnabled" });
   const startsAt = useWatch({ control, name: "startsAt" });
 
-  const resolveStatus = (
-    values: PromotionFormValues,
-    intent: "draft" | "live",
-  ): PromotionPayload["status"] => {
-    if (intent === "draft") return "draft";
-    if (mode === "edit" && initialStatus === "active") return "active";
+  const resolveIsActive = (intent: "draft" | "live") => {
+    if (intent === "draft") return false;
+    if (mode === "edit") return initialIsActive ?? true;
 
-    const start = new Date(values.startsAt).getTime();
-
-    return Number.isFinite(start) && start > Date.now() ? "scheduled" : "active";
+    return true;
   };
 
   const submitWith = (intent: "draft" | "live") => {
     void handleSubmit(async (values) => {
-      await onSubmit(toPromotionPayload(values, resolveStatus(values, intent)));
+      await onSubmit(toPromotionPayload(values, resolveIsActive(intent)));
     })();
   };
 
@@ -282,7 +276,7 @@ export function PromotionForm({
     >
       <Section
         title="Campaign basics"
-        description="Give riders a code and a clear name they will recognise."
+        description="Give customers a code and a clear name they will recognise."
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
@@ -334,7 +328,7 @@ export function PromotionForm({
           >
             <Input
               id="promo-name"
-              placeholder="Weekend rider bonus"
+              placeholder="Weekend customer bonus"
               className={fieldClass}
               maxLength={100}
               aria-invalid={Boolean(errorText(errors, "name"))}
@@ -353,7 +347,7 @@ export function PromotionForm({
             id="promo-description"
             rows={3}
             maxLength={500}
-            placeholder="20% off rides for new riders during the first two weeks."
+            placeholder="20% off rides for new customers during the first two weeks."
             className="bg-white text-sm"
             aria-invalid={Boolean(errorText(errors, "description"))}
             {...register("description")}
@@ -530,7 +524,7 @@ export function PromotionForm({
         description="Decide who can redeem this promotion."
       >
         <div className="grid gap-2 sm:grid-cols-2">
-          <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm has-[:checked]:border-brand-300 has-[:checked]:bg-brand-50">
+          <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm has-checked:border-brand-300 has-checked:bg-brand-50">
             <input
               type="checkbox"
               className="mt-0.5 h-4 w-4 accent-brand-600"
@@ -539,12 +533,12 @@ export function PromotionForm({
             <span>
               <span className="block font-medium text-slate-800">New users</span>
               <span className="block text-xs text-slate-500">
-                Riders who have not completed a trip yet.
+                Customers who have not completed a trip yet.
               </span>
             </span>
           </label>
 
-          <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm has-[:checked]:border-brand-300 has-[:checked]:bg-brand-50">
+          <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm has-checked:border-brand-300 has-checked:bg-brand-50">
             <input
               type="checkbox"
               className="mt-0.5 h-4 w-4 accent-brand-600"
@@ -555,7 +549,7 @@ export function PromotionForm({
                 Existing users
               </span>
               <span className="block text-xs text-slate-500">
-                Riders who already take trips on Raut.
+                Customers who already take trips on Raut.
               </span>
             </span>
           </label>
@@ -576,7 +570,7 @@ export function PromotionForm({
             />
             <span>
               <span className="block font-medium text-slate-800">
-                A specific list of riders
+                A specific list of customers
               </span>
               <span className="block text-xs text-slate-500">
                 Upload a CSV with one phone number per line.
@@ -796,7 +790,7 @@ export function PromotionForm({
 
           <SwitchRow
             title="DUO rides only"
-            description="Only apply the discount when the rider shares a DUO trip."
+            description="Only apply the discount when the customer shares a DUO trip."
             control={control}
             name="duoOnly"
             disabled={!duoAvailable}
@@ -811,18 +805,18 @@ export function PromotionForm({
 
       <Section
         title="Notifications"
-        description="Choose how riders hear about this promotion."
+        description="Choose how customers hear about this promotion."
       >
         <div className="space-y-4 divide-y divide-slate-100 [&>*+*]:pt-4">
           <SwitchRow
             title="SMS notification"
-            description="Send an SMS to eligible riders when the campaign starts."
+            description="Send an SMS to eligible customers when the campaign starts."
             control={control}
             name="notifySms"
           />
           <SwitchRow
             title="In-app banner"
-            description="Show the promotion on the rider home screen."
+            description="Show the promotion on the customer home screen."
             control={control}
             name="inAppBanner"
           />
