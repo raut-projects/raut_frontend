@@ -26,7 +26,8 @@ dist
 *.njsproj
 *.sln
 *.sw?
-docs/codebase
+dist
 
-# Tooling
+doc/codebase
+
 .playwright-cli
