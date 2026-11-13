@@ -1,161 +1,112 @@
 "use client";
 
+import { useMemo, useState } from "react";
+import { ToggleRight } from "lucide-react";
+
+import { ConfigHistoryPanel } from "@/components/platformConfig/ConfigHistoryPanel";
+import { ConfigSection } from "@/components/platformConfig/ConfigSection";
 import {
   ConfigCard,
   ConfigSkeleton,
   TabActions,
 } from "@/components/platformConfig/ConfigPrimitives";
-import { QueryError } from "@/components/queryStates";
-import { useToast } from "@/components/toastContext";
-import { Switch } from "@/components/ui/switch";
-import { useConfigDraft } from "@/hooks/useConfigDraft";
-import { useFeatureFlags, useUpdateFeatureFlags } from "@/hooks/usePlatformConfig";
-import { toFeatureFlagsDraft } from "@/lib/platformConfig";
-import { featureFlagsSchema } from "@/schemas/platformConfigSchemas";
-import type { FeatureFlags } from "@/types/platformConfig";
+import { useConfigForm } from "@/hooks/useConfigForm";
+import {
+  FEATURE_SECTION,
+  isFeatureConfig,
+  sectionsForRecords,
+} from "@/lib/configRegistry";
+import type { ConfigRecord } from "@/types/platformConfig";
 
-const FEATURES: {
-  key: keyof FeatureFlags;
-  name: string;
-  description: string;
-  badge?: string;
-}[] = [
-  {
-    key: "scheduled_rides",
-    name: "Scheduled rides",
-    description:
-      "Let customers book a ride in advance instead of requesting one immediately.",
-  },
-  {
-    key: "duo",
-    name: "DUO rides",
-    description:
-      "Match customers travelling in the same direction so they can share a ride.",
-    badge: "DUO",
-  },
-  {
-    key: "ratings",
-    name: "Ratings",
-      description:
-        "Collect a rating from customers for the driver after each completed trip.",
-  },
-  {
-    key: "in_app_chat",
-    name: "In-app chat",
-    description:
-      "Allow customers and drivers to message each other while a trip is active.",
-  },
-  {
-    key: "corporate_accounts",
-    name: "Corporate accounts",
-    description:
-      "Enable company accounts with consolidated billing for employees.",
-  },
-];
+export function FeaturesTab({ configs }: { configs: ConfigRecord[] }) {
+  const records = useMemo(() => configs.filter(isFeatureConfig), [configs]);
+  const {
+    draft,
+    errors,
+    dirty,
+    isSaving,
+    handleSave,
+    reset,
+    setDraft,
+    setErrors,
+  } = useConfigForm(records);
+  const [historyKey, setHistoryKey] = useState<string | null>(null);
 
-export function FeaturesTab() {
-  const query = useFeatureFlags();
-  const update = useUpdateFeatureFlags();
-  const { success, error: toastError } = useToast();
+  const historyRecord =
+    records.find((record) => record.key === historyKey) ?? null;
 
-  const { draft, setDraft, dirty, reset, markSaved } = useConfigDraft(
-    query.data,
-    toFeatureFlagsDraft,
-  );
+  const handleChange = (key: string, value: string | boolean) => {
+    setDraft((current) => ({ ...current, [key]: value }));
 
-  const handleSave = async () => {
-    if (!draft) return;
-
-    const parsed = featureFlagsSchema.safeParse(draft);
-
-    if (!parsed.success) {
-      toastError("Check the feature flags before saving.");
-      return;
-    }
-
-    try {
-      await update.mutateAsync(parsed.data);
-      markSaved();
-      success("Feature flags saved.");
-    } catch (saveError) {
-      toastError(
-        saveError?.message ?? "Could not save the feature flags.",
-      );
+    if (errors[key]) {
+      const next = { ...errors };
+      delete next[key];
+      setErrors(next);
     }
   };
 
-  if (query.isPending) {
+  if (!records.length) {
     return (
       <ConfigCard
         title="Feature flags"
-        description="Loading feature settings…"
+        description="No feature flags were returned for this environment."
       >
-        <ConfigSkeleton fields={4} />
+        <div className="flex flex-col items-center gap-2 py-10 text-center">
+          <ToggleRight
+            className="size-6 text-slate-400"
+            strokeWidth={ 1.8 }
+            aria-hidden="true"
+          />
+          <p className="text-sm font-medium text-slate-700">
+            Nothing to configure yet
+          </p>
+          <p className="max-w-sm text-xs text-slate-500">
+            Feature flags will appear here once they are available in the config
+            registry.
+          </p>
+        </div>
       </ConfigCard>
     );
   }
 
-  if (query.isError) {
+  if (!draft) {
     return (
-      <ConfigCard title="Feature flags">
-        <QueryError error={query.error} onRetry={query.refetch} />
+      <ConfigCard title="Feature flags" description="Loading feature settings…">
+        <ConfigSkeleton fields={ 4 } />
       </ConfigCard>
     );
   }
 
-  if (!draft) return null;
+  const sections = sectionsForRecords([FEATURE_SECTION], records);
 
   return (
     <div className="space-y-5">
-      <ConfigCard
-        title="Feature flags"
-        description="Turn platform capabilities on or off. Changes apply to new requests after saving."
-      >
-        <div className="divide-y divide-slate-200">
-          {FEATURES.map((feature) => (
-            <div
-              key={feature.key}
-              className="flex items-start justify-between gap-5 py-4 first:pt-0 last:pb-0"
-            >
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-semibold text-slate-900">
-                    {feature.name}
-                  </p>
-                  {feature.badge && (
-                    <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold tracking-wide text-brand-700">
-                      {feature.badge}
-                    </span>
-                  )}
-                </div>
-                <p className="mt-1 max-w-2xl text-xs text-slate-500">
-                  {feature.description}
-                </p>
-              </div>
-
-              <Switch
-                checked={draft[feature.key]}
-                onCheckedChange={(checked) =>
-                  setDraft((current) => ({
-                    ...current,
-                    [feature.key]: checked,
-                  }))
-                }
-                aria-label={`Toggle ${feature.name}`}
-              />
-            </div>
-          ))}
-        </div>
-      </ConfigCard>
+      { sections.map((section) => (
+        <ConfigSection
+          key={ section.id }
+          section={ section }
+          records={ records }
+          draft={ draft }
+          errors={ errors }
+          onChange={ handleChange }
+          onShowHistory={ setHistoryKey }
+        />
+      )) }
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
         <TabActions
-          dirty={dirty}
-          isSaving={update.isPending}
-          onSave={handleSave}
-          onReset={reset}
+          dirty={ dirty }
+          isSaving={ isSaving }
+          onSave={ () => handleSave("Feature flags saved.") }
+          onReset={ reset }
         />
       </div>
+
+      <ConfigHistoryPanel
+        record={ historyRecord }
+        open={ Boolean(historyKey) }
+        onClose={ () => setHistoryKey(null) }
+      />
     </div>
   );
 }

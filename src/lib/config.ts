@@ -74,14 +74,12 @@ export const API_ROUTES = {
   analyticsRides: "/admin/analytics/rides",
   analyticsPeakHours: "/admin/analytics/peak-hours",
 
-  // Platform Configurations Endpoints
-  configPricing: "/admin/config/pricing",
-  configFeatures: "/admin/config/features",
-  configOperations: "/admin/config/operations",
-  configIntegrations: "/admin/config/integrations",
-  configIntegrationTest: (service: string) =>
-    `/admin/config/integrations/${service}/test`,
-  configHistory: "/admin/config/history",
+  // System configuration endpoints (flat config registry).
+  configs: "/admin/configs",
+  config: (configKey: string) =>
+    `/admin/configs/${encodeURIComponent(configKey)}`,
+  configHistory: (configKey: string) =>
+    `/admin/configs/${encodeURIComponent(configKey)}/history`,
 
   // Support Tickets Endpoints
   supportTickets: "/admin/support/tickets",
