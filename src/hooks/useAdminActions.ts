@@ -159,7 +159,7 @@ export const useApproveDocument = () =>
   useAction({
     mutationFn: ({ documentId, notes }) => approveDocument(documentId, notes),
     successMessage: "Document approved.",
-    invalidate: [queryKeys.documents.all],
+    invalidate: [queryKeys.documents.all, queryKeys.drivers.all],
   });
 
 /**
@@ -174,7 +174,7 @@ export const useRejectDocument = () =>
   useAction({
     mutationFn: ({ documentId, reason }) => rejectDocument(documentId, reason),
     successMessage: "Document rejected.",
-    invalidate: [queryKeys.documents.all],
+    invalidate: [queryKeys.documents.all, queryKeys.drivers.all],
   });
 
 /**

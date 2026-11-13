@@ -65,6 +65,8 @@ export const API_ROUTES = {
   adminUserInvite: "/admin/users/invite",
   adminUser: (userId: string) => `/admin/users/${encodeURIComponent(userId)}`,
   drivers: "/admin/drivers",
+  driverDetail: (driverId: string) =>
+    `/admin/drivers/${encodeURIComponent(driverId)}`,
   rides: "/admin/rides",
 
   // live ride APIs
