@@ -120,10 +120,6 @@ export function FareCalculator({
             { formatMoney(fare.total) }
           </span>
         </div>
-
-        <p className="text-xs text-slate-500">
-          The calculator does not save anything.
-        </p>
       </div>
     </ConfigCard>
   );
