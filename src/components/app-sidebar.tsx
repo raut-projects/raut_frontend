@@ -131,7 +131,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const router = useRouter();
   const session = useSession();
-  const { setOpenMobile } = useSidebar();
+  const { setOpenMobile, state, setOpen, isMobile } = useSidebar();
 
   const currentPath = normalizePath(pathname);
   const settingsActive =
@@ -230,6 +230,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               key={settingsActive ? "settings-open" : "settings-closed"}
               defaultOpen={settingsActive}
               className="group/collapsible"
+              onOpenChange={(open) => {
+                if (open && state === "collapsed" && !isMobile) {
+                  setOpen(true);
+                }
+              }}
             >
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>

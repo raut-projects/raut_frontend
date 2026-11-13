@@ -457,6 +457,107 @@ export const AUDIT_SEVERITY_LABELS: Record<AuditSeverity, string> = {
   critical: "Critical",
 };
 
+const AUDIT_FIELD_ACRONYMS: Record<string, string> = {
+  id: "ID",
+  ip: "IP",
+  url: "URL",
+  sms: "SMS",
+  tzs: "TZS",
+  duo: "DUO",
+};
+
+const splitAuditFieldWords = (field: string) =>
+  String(field ?? "")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+const isAuditCurrencyField = (field: string) => /tzs$/i.test(field);
+
+export function formatAuditFieldName(field: string) {
+  const words = splitAuditFieldWords(field);
+  const isCurrency = words[words.length - 1]?.toLowerCase() === "tzs";
+
+  if (isCurrency) words.pop();
+
+  if (words.length > 1 && /^(is|has)$/i.test(words[0])) words.shift();
+
+  const label = words
+    .map((word) => AUDIT_FIELD_ACRONYMS[word.toLowerCase()] ?? word.toLowerCase())
+    .join(" ");
+  const sentence = label
+    ? label.charAt(0).toUpperCase() + label.slice(1)
+    : "Value";
+
+  return isCurrency ? `${sentence} (TZS)` : sentence;
+}
+
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+
+export function formatAuditValue(field: string, value: unknown): string {
+  if (value === null || value === undefined || value === "") return "—";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return String(value);
+    const formatted = value.toLocaleString("en-US");
+    return isAuditCurrencyField(field) ? `TZS ${formatted}` : formatted;
+  }
+
+  if (typeof value === "string") {
+    return ISO_DATE_PATTERN.test(value) ? formatAuditDateTime(value) : value;
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "—";
+    return value.map((item) => formatAuditValue(field, item)).join(", ");
+  }
+
+  if (typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>);
+    if (entries.length === 0) return "—";
+
+    return entries
+      .map(
+        ([key, nested]) =>
+          `${formatAuditFieldName(key)}: ${formatAuditValue(key, nested)}`,
+      )
+      .join(" · ");
+  }
+
+  return String(value);
+}
+
+export type AuditChangeRow = {
+  key: string;
+  label: string;
+  value: string;
+};
+
+export function buildAuditChangeRows(
+  changes: Record<string, unknown> | undefined,
+): AuditChangeRow[] {
+  if (!changes) return [];
+
+  return Object.entries(changes).map(([key, value]) => ({
+    key,
+    label: formatAuditFieldName(key),
+    value: formatAuditValue(key, value),
+  }));
+}
+
+export function auditValuesDiffer(before: unknown, after: unknown) {
+  if (Object.is(before, after)) return false;
+
+  try {
+    return JSON.stringify(before) !== JSON.stringify(after);
+  } catch {
+    return true;
+  }
+}
+
 export function formatAuditDateTime(value: string) {
   const date = new Date(value);
 
