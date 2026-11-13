@@ -1,3 +1,9 @@
+// Audit log domain model and formatting for the admin audit trail. Defines log
+// entries and categories, formats field/value pairs for display, and builds a
+// CSV export. MOCK_AUDIT_LOGS is illustrative sample data, not a backend
+// contract or real platform activity.
+
+/** Category of platform activity an audit entry belongs to. */
 export type AuditCategory =
   | "User"
   | "Driver"
@@ -6,8 +12,10 @@ export type AuditCategory =
   | "Promotion"
   | "Settings";
 
+/** How serious an audit event is. */
 export type AuditSeverity = "info" | "warning" | "critical";
 
+/** A single audit-trail record. `before`/`after` hold the changed fields. */
 export type AuditLogEntry = {
   id: string;
   occurredAt: string;
@@ -26,6 +34,7 @@ export type AuditLogEntry = {
   after?: Record<string, unknown>;
 };
 
+/** All audit categories, in display order. */
 export const AUDIT_CATEGORIES: AuditCategory[] = [
   "User",
   "Driver",
@@ -35,12 +44,17 @@ export const AUDIT_CATEGORIES: AuditCategory[] = [
   "Settings",
 ];
 
+/** All audit severities, in display order. */
 export const AUDIT_SEVERITIES: AuditSeverity[] = [
   "info",
   "warning",
   "critical",
 ];
 
+/**
+ * Illustrative audit entries for UI development. This is sample data only, not
+ * a backend contract, and does not represent real platform activity.
+ */
 // Illustrative records only. These do not represent real platform activity.
 export const MOCK_AUDIT_LOGS: AuditLogEntry[] = [
   {
@@ -451,12 +465,14 @@ export const MOCK_AUDIT_LOGS: AuditLogEntry[] = [
   },
 ];
 
+/** Severity to display label lookup. */
 export const AUDIT_SEVERITY_LABELS: Record<AuditSeverity, string> = {
   info: "Info",
   warning: "Warning",
   critical: "Critical",
 };
 
+// Field words rendered as uppercase acronyms in labels.
 const AUDIT_FIELD_ACRONYMS: Record<string, string> = {
   id: "ID",
   ip: "IP",
@@ -466,6 +482,7 @@ const AUDIT_FIELD_ACRONYMS: Record<string, string> = {
   duo: "DUO",
 };
 
+// Splits camelCase, snake_case and kebab-case field names into words.
 const splitAuditFieldWords = (field: string) =>
   String(field ?? "")
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
@@ -474,8 +491,16 @@ const splitAuditFieldWords = (field: string) =>
     .split(/\s+/)
     .filter(Boolean);
 
+// True for fields whose name ends in "tzs" (a currency amount).
 const isAuditCurrencyField = (field: string) => /tzs$/i.test(field);
 
+/**
+ * Formats a raw field key as a readable label.
+ *
+ * Splits camelCase/snake_case/kebab-case into words, uppercases known acronyms,
+ * drops a leading "is"/"has" for booleans, and appends "(TZS)" for currency
+ * fields.
+ */
 export function formatAuditFieldName(field: string) {
   const words = splitAuditFieldWords(field);
   const isCurrency = words[words.length - 1]?.toLowerCase() === "tzs";
@@ -494,8 +519,16 @@ export function formatAuditFieldName(field: string) {
   return isCurrency ? `${sentence} (TZS)` : sentence;
 }
 
+// Matches ISO date-time strings (e.g. 2026-11-10T09:42).
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 
+/**
+ * Formats an audit value for display.
+ *
+ * Renders null/empty as "—", booleans as Yes/No, numbers with thousands
+ * separators (prefixed "TZS" for currency fields), ISO dates via
+ * {@link formatAuditDateTime}, and arrays/objects recursively.
+ */
 export function formatAuditValue(field: string, value: unknown): string {
   if (value === null || value === undefined || value === "") return "—";
   if (typeof value === "boolean") return value ? "Yes" : "No";
@@ -530,12 +563,14 @@ export function formatAuditValue(field: string, value: unknown): string {
   return String(value);
 }
 
+/** A formatted before/after change row for the audit detail view. */
 export type AuditChangeRow = {
   key: string;
   label: string;
   value: string;
 };
 
+/** Builds display rows (key, label, value) from a before/after change map. */
 export function buildAuditChangeRows(
   changes: Record<string, unknown> | undefined,
 ): AuditChangeRow[] {
@@ -548,6 +583,7 @@ export function buildAuditChangeRows(
   }));
 }
 
+/** True when two audit values differ, comparing by JSON when needed. */
 export function auditValuesDiffer(before: unknown, after: unknown) {
   if (Object.is(before, after)) return false;
 
@@ -558,6 +594,7 @@ export function auditValuesDiffer(before: unknown, after: unknown) {
   }
 }
 
+/** Formats an ISO timestamp in Africa/Dar_es_Salaam; "Unknown date" when invalid. */
 export function formatAuditDateTime(value: string) {
   const date = new Date(value);
 
@@ -573,6 +610,7 @@ export function formatAuditDateTime(value: string) {
   }).format(date);
 }
 
+/** Returns a YYYY-MM-DD key (Dar es Salaam time) for grouping entries, or "". */
 export function auditDateKey(value: string) {
   const date = new Date(value);
 
@@ -586,6 +624,7 @@ export function auditDateKey(value: string) {
   }).format(date);
 }
 
+// Escapes CSV cells; prefixes formula-triggering characters to prevent injection.
 const csvEscape = (value: unknown) => {
   let text = value === null || value === undefined ? "" : String(value);
 
@@ -595,6 +634,7 @@ const csvEscape = (value: unknown) => {
 
 const csvRow = (...cells: unknown[]) => cells.map(csvEscape).join(",");
 
+/** Builds a CRLF CSV string from audit entries, including serialized before/after. */
 export function buildAuditLogsCsv(entries: AuditLogEntry[]) {
   return [
     csvRow(
@@ -636,6 +676,7 @@ export function buildAuditLogsCsv(entries: AuditLogEntry[]) {
   ].join("\r\n");
 }
 
+/** Triggers a browser download of the audit log CSV with a UTF-8 BOM. */
 export function downloadAuditLogsCsv(entries: AuditLogEntry[]) {
   const blob = new Blob(["\uFEFF", buildAuditLogsCsv(entries)], {
     type: "text/csv;charset=utf-8;",

@@ -1,3 +1,6 @@
+// Illustrative mock admin-user data. NOT a backend contract: used for demo and
+// local development only.
+
 import type {
   AdminUser,
   AdminUserInvitePayload,

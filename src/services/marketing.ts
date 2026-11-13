@@ -1,3 +1,9 @@
+// Marketing promotion service.
+// Reads, creates and changes promotional campaigns. The backend has no strict
+// response model, so `mapPromotion` accepts several field spellings; listing and
+// search are then filtered and paginated on the client. Failures surface as
+// ApiError from `./api`.
+
 import { API_ROUTES } from "@/lib/config";
 import { derivePromotionStatus } from "@/lib/marketing";
 import type {
@@ -66,6 +72,7 @@ const listItems = (data: unknown, ...keys: string[]) => {
   return objectArray(items);
 };
 
+// Unknown discount types default to "fixed", the safest non-percentage option.
 const normalizeDiscountType = (value: unknown): DiscountType => {
   const type = text(value).toLowerCase().replace(/[-\s]/g, "_");
 
@@ -79,6 +86,8 @@ const normalizeDiscountType = (value: unknown): DiscountType => {
   return "fixed";
 };
 
+// An explicit status wins; otherwise the date window decides, so a campaign
+// without a status field still reads as scheduled, active or expired.
 const normalizeStatus = (
   value: unknown,
   startsAt: string,
@@ -106,6 +115,15 @@ const normalizeStatus = (
   return "active";
 };
 
+/**
+ * Maps a raw promotion record into the Promotion view model.
+ * Tolerates snake_case/camelCase aliases and eligibility fields nested under
+ * `eligibility_criteria`/`eligibility` (falling back to the top-level record).
+ * Budget usage falls back to `usageCount * discountValue` for fixed discounts
+ * when the API does not report a spend; status is derived from `is_active` or
+ * the date window when no explicit status is usable.
+ * @throws Error when the record has no id-like field.
+ */
 export function mapPromotion(value: unknown): Promotion {
   const record = asRecord(value);
   const eligibility = asRecord(
@@ -187,6 +205,8 @@ export function mapPromotion(value: unknown): Promotion {
       "spentTzs",
     ),
   );
+  // Prefer a reported spend; otherwise estimate only fixed discounts, where
+  // usage count times value is meaningful. Percentage spend is unknowable here.
   const budgetUsedTzs =
     recordedBudget > 0
       ? recordedBudget
@@ -215,6 +235,8 @@ export function mapPromotion(value: unknown): Promotion {
     description: text(firstValue(record, "description", "details", "summary")),
     discountType,
     discountValue,
+    // For a free ride the cap is the ride value; for other types the discount
+    // amount cap (with the legacy field as fallback) is used.
     maxDiscountTzs:
       discountType === "free_ride"
         ? legacyMaxDiscount
@@ -287,6 +309,8 @@ export function mapPromotion(value: unknown): Promotion {
           "minRideTzs",
         ),
     ),
+    // A duo ride type is enough to mark the promotion duo-only even when the
+    // dedicated flag is absent.
     duoOnly:
       truthy(
         firstValue(eligibility, "duo_only", "duoOnly") ??
@@ -307,6 +331,14 @@ export function mapPromotion(value: unknown): Promotion {
   };
 }
 
+/**
+ * Lists promotions for the marketing table.
+ * GET /marketing/promotions (API_ROUTES.marketingPromotions), then applies the
+ * status/search filters and page slicing locally because the endpoint returns
+ * the full collection.
+ * Returns `{ items, total, page, limit }`. Throws ApiError on request failure,
+ * or a mapping Error when a promotion has no id.
+ */
 export async function listPromotions(
   params: PromotionListParams = {},
 ): Promise<PromotionListResult> {
@@ -340,6 +372,11 @@ export async function listPromotions(
   };
 }
 
+/**
+ * Loads one promotion.
+ * GET /marketing/promotions/:promotionId, accepting `{ promotion }` or the
+ * record itself. Returns the mapped Promotion. Throws ApiError on failure.
+ */
 export async function getPromotion(promotionId: string): Promise<Promotion> {
   const data = await apiGet(API_ROUTES.marketingPromotion(promotionId));
   const record = asRecord(data);
@@ -347,6 +384,12 @@ export async function getPromotion(promotionId: string): Promise<Promotion> {
   return mapPromotion(firstValue(record, "promotion") ?? data);
 }
 
+/**
+ * Creates a promotion.
+ * POST /marketing/promotions with the payload.
+ * Returns the new promotion id as a string (empty when the response omits it).
+ * Throws ApiError on failure.
+ */
 export async function createPromotion(payload: PromotionPayload) {
   const data = await apiPost(API_ROUTES.marketingPromotions, payload);
   const record = asRecord(data);
@@ -357,6 +400,11 @@ export async function createPromotion(payload: PromotionPayload) {
   );
 }
 
+/**
+ * Replaces a promotion.
+ * PUT /marketing/promotions/:promotionId with the payload.
+ * Returns the unwrapped response payload. Throws ApiError on failure.
+ */
 export async function updatePromotion(
   promotionId: string,
   payload: PromotionPayload,
@@ -364,14 +412,29 @@ export async function updatePromotion(
   return apiPut(API_ROUTES.marketingPromotion(promotionId), payload);
 }
 
+/**
+ * Deletes a promotion.
+ * DELETE /marketing/promotions/:promotionId.
+ * Returns the unwrapped response payload. Throws ApiError on failure.
+ */
 export async function deletePromotion(promotionId: string) {
   return apiDelete(API_ROUTES.marketingPromotion(promotionId));
 }
 
+/**
+ * Publishes (activates) a promotion.
+ * POST /marketing/promotions/:promotionId/activate.
+ * Returns the unwrapped response payload. Throws ApiError on failure.
+ */
 export async function activatePromotion(promotionId: string) {
   return apiPost(API_ROUTES.marketingPromotionActivate(promotionId));
 }
 
+/**
+ * Pauses (deactivates) a promotion.
+ * POST /marketing/promotions/:promotionId/deactivate.
+ * Returns the unwrapped response payload. Throws ApiError on failure.
+ */
 export async function deactivatePromotion(promotionId: string) {
   return apiPost(API_ROUTES.marketingPromotionDeactivate(promotionId));
 }

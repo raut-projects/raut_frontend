@@ -1,3 +1,6 @@
+// Ride dispute state transitions and refund-method rules for the admin disputes
+// screens. Defines valid issue types and how a dispute is resolved.
+
 import type { DisputeIssueType, RefundMethod } from "./refundCalculator";
 import { suggestRefund } from "./refundCalculator";
 

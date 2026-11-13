@@ -1,3 +1,7 @@
+// Email validation for forms. Checks length limits, a single @, local-part
+// characters and dotted domain labels, returning a user-facing error string or
+// null when the address is acceptable.
+
 const EMAIL_MAX_LENGTH = 254;
 const LOCAL_PART_MAX_LENGTH = 64;
 const DOMAIN_MAX_LENGTH = 253;
@@ -10,6 +14,15 @@ const LOCAL_PART_PATTERN = /^[A-Za-z0-9._%+'-]+$/;
 const LABEL_PATTERN = /^[A-Za-z0-9-]+$/;
 const TLD_PATTERN = /^[A-Za-z]{2,}$/;
 
+/**
+ * Validates an email address and returns a user-facing error message.
+ *
+ * Enforces the RFC length caps, exactly one @, a well-formed local part (no
+ * leading/trailing/double dots) and a dotted domain whose labels are
+ * alphanumeric with hyphens and a letters-only TLD of 2+ characters.
+ *
+ * @returns The first error found, or null when the address is valid.
+ */
 export function validateEmail(value: string): string | null {
   const email = String(value ?? "").trim();
 

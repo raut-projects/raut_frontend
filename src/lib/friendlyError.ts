@@ -1,3 +1,9 @@
+// Error-to-copy mapping for the UI. Turns arbitrary errors (fetch failures,
+// API error bodies, thrown strings) into short, safe messages, preferring HTTP
+// status, then a known error code, then a friendly match on the raw message,
+// and finally a context-aware fallback.
+
+/** Options controlling the fallback message returned by the mapper. */
 export type FriendlyErrorOptions = {
   fallback?: string;
   context?: string;
@@ -108,6 +114,7 @@ function getErrorStatus(error: unknown): number | null {
 function getErrorCode(error: unknown): string {
   if (error && typeof error === "object") {
     const body = (error as { body?: any }).body;
+    // First non-empty code wins; checked from most to least specific.
     const candidates = [
       body?.error?.code,
       body?.error?.type,
@@ -131,6 +138,16 @@ function fallbackFor(options?: FriendlyErrorOptions): string {
   return DEFAULT_FALLBACK;
 }
 
+/**
+ * Maps an error to a user-facing message.
+ *
+ * Resolution order: HTTP status (401/403/404/408/429/5xx) → known error code
+ * from the response body → the raw message when it looks safe → a friendly
+ * match for technical messages → a context- or caller-supplied fallback.
+ *
+ * @param error   The thrown value (Error, string, or API error object).
+ * @param options Optional fallback text and context ("load" or "save").
+ */
 export function getUserFriendlyErrorMessage(
   error: unknown,
   options?: FriendlyErrorOptions,

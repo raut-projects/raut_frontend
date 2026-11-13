@@ -866,6 +866,11 @@ export const mapNotification = (notification) => ({
       : null,
 });
 
+// Config values arrive as objects, null, strings or primitives. Objects pass
+// through; null/undefined become {}; strings are JSON-parsed when possible (a
+// parsed object wins, a parsed primitive is wrapped as { value }), and any
+// unparseable string or primitive is wrapped as { value } so consumers always
+// see a record.
 const asConfigValue = (value) => {
   if (value && typeof value === "object" && !Array.isArray(value)) return value;
   if (value === null || value === undefined) return {};

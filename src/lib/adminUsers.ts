@@ -1,5 +1,20 @@
+// Admin user domain model and role/permission helpers for the admin settings
+// area. Defines roles, statuses, the feature permission matrix, user shapes and
+// API payloads, plus normalization/formatting utilities and a permission-matrix
+// CSV export. Pure data and helpers only; it does not call the API.
+
+/** Lifecycle state of an admin account. */
 export type AdminUserStatus = "active" | "invited" | "deactivated";
 
+/**
+ * Access level granted for a feature:
+ * - full: complete access
+ * - limited: read or restricted access
+ * - none: no access
+ * - own: only the user's own records
+ * - finance: finance-scoped records
+ * - marketing: marketing-scoped records
+ */
 export type PermissionLevel =
   | "full"
   | "limited"
@@ -8,6 +23,7 @@ export type PermissionLevel =
   | "finance"
   | "marketing";
 
+/** Canonical key for each built-in admin role. */
 export type AdminRoleKey =
   | "super_admin"
   | "platform_manager"
@@ -19,6 +35,7 @@ export type AdminRoleKey =
   | "marketing_agent"
   | "analyst";
 
+/** Presentation metadata for an admin role. */
 export type AdminRole = {
   key: AdminRoleKey;
   label: string;
@@ -26,6 +43,7 @@ export type AdminRole = {
   tone: string;
 };
 
+/** All built-in admin roles, in display order. */
 export const ADMIN_ROLES: AdminRole[] = [
   {
     key: "super_admin",
@@ -83,6 +101,7 @@ export const ADMIN_ROLES: AdminRole[] = [
   },
 ];
 
+/** Role key to display label lookup, derived from {@link ADMIN_ROLES}. */
 export const ADMIN_ROLE_LABELS: Record<AdminRoleKey, string> = ADMIN_ROLES.reduce(
   (labels, role) => {
     labels[role.key] = role.label;
@@ -91,6 +110,7 @@ export const ADMIN_ROLE_LABELS: Record<AdminRoleKey, string> = ADMIN_ROLES.reduc
   {} as Record<AdminRoleKey, string>,
 );
 
+/** Role key to Tailwind badge class lookup, derived from {@link ADMIN_ROLES}. */
 export const ADMIN_ROLE_TONES: Record<AdminRoleKey, string> = ADMIN_ROLES.reduce(
   (tones, role) => {
     tones[role.key] = role.tone;
@@ -99,18 +119,21 @@ export const ADMIN_ROLE_TONES: Record<AdminRoleKey, string> = ADMIN_ROLES.reduce
   {} as Record<AdminRoleKey, string>,
 );
 
+/** Status to display label lookup. */
 export const ADMIN_STATUS_LABELS: Record<AdminUserStatus, string> = {
   active: "Active",
   invited: "Invited",
   deactivated: "Deactivated",
 };
 
+/** Status to Tailwind badge class lookup. */
 export const ADMIN_STATUS_TONES: Record<AdminUserStatus, string> = {
   active: "border-emerald-200 bg-emerald-50 text-emerald-700",
   invited: "border-amber-200 bg-amber-50 text-amber-700",
   deactivated: "border-slate-200 bg-slate-100 text-slate-600",
 };
 
+/** Feature that can be permitted or restricted for an admin. */
 export type PermissionFeature =
   | "dashboard"
   | "live_rides"
@@ -129,12 +152,14 @@ export type PermissionFeature =
   | "audit_logs"
   | "system_health";
 
+/** A permission feature with its display label and grouping. */
 export type PermissionFeatureRow = {
   key: PermissionFeature;
   label: string;
   group: string;
 };
 
+/** All permission features with labels and groups, in display order. */
 export const PERMISSION_FEATURES: PermissionFeatureRow[] = [
   { key: "dashboard", label: "Dashboard", group: "Overview" },
   { key: "live_rides", label: "Live Rides", group: "Operations" },
@@ -154,6 +179,7 @@ export const PERMISSION_FEATURES: PermissionFeatureRow[] = [
   { key: "system_health", label: "System Health", group: "Settings" },
 ];
 
+// Baseline: every role starts at "full"; column() applies per-feature overrides.
 const ALL: Record<AdminRoleKey, PermissionLevel> = {
   super_admin: "full",
   platform_manager: "full",
@@ -166,10 +192,15 @@ const ALL: Record<AdminRoleKey, PermissionLevel> = {
   analyst: "full",
 };
 
+/** Builds a permission column by overriding selected roles on the "full" baseline. */
 const column = (
   values: Partial<Record<AdminRoleKey, PermissionLevel>>,
 ): Record<AdminRoleKey, PermissionLevel> => ({ ...ALL, ...values });
 
+/**
+ * Permission level for every feature and role. Each column starts from the
+ * "full" baseline and downgrades specific roles.
+ */
 export const PERMISSION_MATRIX: Record<
   PermissionFeature,
   Record<AdminRoleKey, PermissionLevel>
@@ -282,6 +313,7 @@ export const PERMISSION_MATRIX: Record<
   }),
 };
 
+/** Permission level to display label lookup. */
 export const PERMISSION_LEVEL_LABELS: Record<PermissionLevel, string> = {
   full: "Full",
   limited: "Limited",
@@ -291,6 +323,7 @@ export const PERMISSION_LEVEL_LABELS: Record<PermissionLevel, string> = {
   marketing: "Marketing scope",
 };
 
+/** Permission level to single-character glyph lookup (Unicode escapes). */
 export const PERMISSION_LEVEL_GLYPHS: Record<PermissionLevel, string> = {
   full: "\u2713",
   limited: "\u25d0",
@@ -300,10 +333,12 @@ export const PERMISSION_LEVEL_GLYPHS: Record<PermissionLevel, string> = {
   marketing: "\u25c8",
 };
 
+/** Per-feature permission overrides applied on top of a role's defaults. */
 export type PermissionOverrides = Partial<
   Record<PermissionFeature, PermissionLevel>
 >;
 
+/** A single admin user account. Timestamps are ISO strings. */
 export type AdminUser = {
   id: string;
   name: string;
@@ -320,16 +355,19 @@ export type AdminUser = {
   createdAt: string;
 };
 
+/** Filter options for the admin user list. */
 export type AdminUserFilters = {
   status?: AdminUserStatus | "all";
   search?: string;
 };
 
+/** Admin user list filters plus pagination. */
 export type AdminUserListParams = AdminUserFilters & {
   page?: number;
   limit?: number;
 };
 
+/** Paginated admin user list response. */
 export type AdminUserListResult = {
   items: AdminUser[];
   total: number;
@@ -337,6 +375,7 @@ export type AdminUserListResult = {
   limit: number;
 };
 
+/** Form values used when inviting or editing an admin user. */
 export type AdminUserFormValues = {
   name: string;
   phone: string;
@@ -346,6 +385,7 @@ export type AdminUserFormValues = {
   sendWelcomeSms: boolean;
 };
 
+/** Request body for inviting a new admin user (snake_case API fields). */
 export type AdminUserInvitePayload = {
   name: string;
   phone: string;
@@ -356,12 +396,14 @@ export type AdminUserInvitePayload = {
   send_welcome_sms: boolean;
 };
 
+/** Request body for updating an admin user's role and permissions. */
 export type AdminUserUpdatePayload = {
   role: AdminRoleKey;
   permissions?: PermissionOverrides;
   two_factor_required: boolean;
 };
 
+/** Default values for the invite form. */
 export const ADMIN_USER_DEFAULT_FORM: AdminUserFormValues = {
   name: "",
   phone: "",
@@ -371,6 +413,7 @@ export const ADMIN_USER_DEFAULT_FORM: AdminUserFormValues = {
   sendWelcomeSms: true,
 };
 
+/** Maps accepted role spellings to canonical admin role keys. */
 const ROLE_ALIASES: Record<string, AdminRoleKey> = {
   super_admin: "super_admin",
   superadmin: "super_admin",
@@ -396,6 +439,12 @@ const ROLE_ALIASES: Record<string, AdminRoleKey> = {
   read_only: "analyst",
 };
 
+/**
+ * Normalizes any role value to a canonical admin role key.
+ *
+ * Trims, lowercases and collapses whitespace to underscores before alias
+ * lookup; unknown values fall back to "analyst" (least privilege).
+ */
 export function normalizeAdminRole(value: unknown): AdminRoleKey {
   const key = String(value ?? "")
     .trim()
@@ -405,6 +454,12 @@ export function normalizeAdminRole(value: unknown): AdminRoleKey {
   return ROLE_ALIASES[key] ?? "analyst";
 }
 
+/**
+ * Normalizes any status value to an admin user status.
+ *
+ * Maps pending/invite variants to "invited" and inactive/disabled/suspended
+ * variants to "deactivated"; anything else is treated as "active".
+ */
 export function normalizeAdminStatus(value: unknown): AdminUserStatus {
   const status = String(value ?? "").trim().toLowerCase();
 
@@ -424,12 +479,14 @@ export function normalizeAdminStatus(value: unknown): AdminUserStatus {
   return "active";
 }
 
+/** Returns the display label for a role value, defaulting to "Analyst". */
 export function roleLabel(role: string) {
   const key = normalizeAdminRole(role);
 
   return ADMIN_ROLE_LABELS[key] ?? "Analyst";
 }
 
+/** Returns the description for a role value, or an empty string. */
 export function roleDescription(role: string) {
   const key = normalizeAdminRole(role);
 
@@ -438,6 +495,7 @@ export function roleDescription(role: string) {
   );
 }
 
+/** Resolves the base permission level for a role on a feature (defaults to "none"). */
 export function resolvePermission(
   role: AdminRoleKey,
   feature: PermissionFeature,
@@ -445,6 +503,7 @@ export function resolvePermission(
   return PERMISSION_MATRIX[feature]?.[role] ?? "none";
 }
 
+/** Resolves every feature's permission for a role, applying overrides when present. */
 export function resolvePermissions(
   role: AdminRoleKey,
   overrides?: PermissionOverrides,
@@ -459,6 +518,7 @@ export function resolvePermissions(
   );
 }
 
+/** Builds 1-2 uppercase initials from a name; returns "?" when empty. */
 export function initialsFromName(name: string) {
   const parts = String(name ?? "")
     .trim()
@@ -472,10 +532,17 @@ export function initialsFromName(name: string) {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
+/** Strips all non-digit characters from a phone value. */
 export function normalizePhone(value: unknown) {
   return String(value ?? "").replace(/\D/g, "");
 }
 
+/**
+ * Formats a Tanzanian phone number as "+255 XXX XXX XXX".
+ *
+ * Accepts values with a 255 country code or a leading 0; numbers that are not
+ * 9 digits after normalization are returned with a leading "+".
+ */
 export function formatPhone(value: unknown) {
   const digits = normalizePhone(value);
 
@@ -492,6 +559,12 @@ export function formatPhone(value: unknown) {
   return `+255 ${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}`;
 }
 
+/**
+ * Formats a last-login timestamp as a relative string.
+ *
+ * Returns "Active now" when online, "Never signed in" for missing or invalid
+ * dates, then minutes/hours/days buckets, and a short UTC date beyond a week.
+ */
 export function formatLastLogin(value: string | null, isOnline = false) {
   if (isOnline) return "Active now";
   if (!value) return "Never signed in";
@@ -524,6 +597,7 @@ export function formatLastLogin(value: string | null, isOnline = false) {
   });
 }
 
+// RFC 4180 CSV cell escaping: quote cells containing commas, quotes or newlines.
 const csvEscape = (value: unknown) => {
   const text = value === null || value === undefined ? "" : String(value);
 
@@ -532,6 +606,7 @@ const csvEscape = (value: unknown) => {
 
 const csvRow = (...cells: unknown[]) => cells.map(csvEscape).join(",");
 
+/** Builds a CSV string of the permission matrix (features as rows, roles as columns). */
 export function buildPermissionMatrixCsv(
   matrix: Record<PermissionFeature, Record<AdminRoleKey, PermissionLevel>> = PERMISSION_MATRIX,
 ) {
@@ -552,6 +627,7 @@ export function buildPermissionMatrixCsv(
   return [header, ...rows].join("\n");
 }
 
+/** Triggers a browser download of the permission matrix as a dated CSV file. */
 export function downloadPermissionMatrixCsv() {
   const content = buildPermissionMatrixCsv();
   const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });

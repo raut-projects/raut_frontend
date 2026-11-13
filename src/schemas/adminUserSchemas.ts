@@ -1,5 +1,10 @@
+/**
+ * Zod schemas for inviting and editing admin users. The role and permission
+ * enums mirror the identifiers accepted by the backend.
+ */
 import { z } from "zod";
 
+/** Backend admin role identifiers accepted by both schemas. */
 const ADMIN_ROLE_VALUES = [
   "super_admin",
   "platform_manager",
@@ -12,6 +17,7 @@ const ADMIN_ROLE_VALUES = [
   "analyst",
 ] as const;
 
+/** Per-module permission levels submitted by the edit form. */
 const PERMISSION_LEVELS = [
   "full",
   "limited",
@@ -21,6 +27,11 @@ const PERMISSION_LEVELS = [
   "marketing",
 ] as const;
 
+/**
+ * Validates the invite form. `phone` expects the 9 digits that follow the
+ * +255 country code; `twoFactorRequired` and `sendWelcomeSms` mirror the
+ * security and notification toggles shown in the UI.
+ */
 export const inviteAdminUserSchema = z.object({
   name: z
     .string()
@@ -41,6 +52,10 @@ export const inviteAdminUserSchema = z.object({
   sendWelcomeSms: z.boolean(),
 });
 
+/**
+ * Validates edits to an existing admin user. `permissions` is optional and
+ * maps module keys to a permission level; omitting it leaves permissions as-is.
+ */
 export const editAdminUserSchema = z.object({
   role: z.enum(ADMIN_ROLE_VALUES),
   twoFactorRequired: z.boolean(),
@@ -49,5 +64,7 @@ export const editAdminUserSchema = z.object({
     .optional(),
 });
 
+/** Form values inferred from `inviteAdminUserSchema`. */
 export type InviteAdminUserValues = z.infer<typeof inviteAdminUserSchema>;
+/** Form values inferred from `editAdminUserSchema`. */
 export type EditAdminUserValues = z.infer<typeof editAdminUserSchema>;

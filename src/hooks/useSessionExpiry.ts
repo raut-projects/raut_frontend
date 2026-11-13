@@ -1,3 +1,15 @@
+/**
+ * Schedules session-expiry checks and signs out when the token expires.
+ *
+ * Sets a timer for the stored access-token expiry; on expiry it calls
+ * `signOut()` and shows a toast. The timer is rescheduled when the session
+ * changes (via `subscribeSession`) and re-checked when the tab becomes
+ * visible or regains focus, so a tab left in the background still signs out
+ * at the right time. The 31-bit timeout cap avoids `setTimeout` overflow for
+ * long-lived tokens.
+ *
+ * Collaborates with tokenStore, auth service and toast.
+ */
 import { useEffect } from "react";
 import { useToast } from "@/components/toastContext";
 import { signOut } from "@/services/auth";
@@ -10,6 +22,13 @@ import {
 const MAX_TIMEOUT_MS = 2 ** 31 - 1;
 const EXPIRED_MESSAGE = "Your session expired. Please sign in again.";
 
+/**
+ * useSessionExpiry hook.
+ */
+/**
+ * useSessionExpiry — schedules expiry checks and signs out when the token
+ * expires. Returns nothing; mount once at the app root.
+ */
 export function useSessionExpiry() {
   const toast = useToast();
 

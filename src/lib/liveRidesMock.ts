@@ -1,3 +1,6 @@
+// Illustrative mock data for live rides. NOT a backend contract: values are
+// fabricated for development/demo and must not be treated as real ride state.
+
 import type { LiveRide, LiveRideStatus, RideType } from "./liveRides";
 import {
   deterministicChoice,

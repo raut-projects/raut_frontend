@@ -1,3 +1,8 @@
+/**
+ * Payout queries for the finance dashboard.
+ * Lists payouts with 30s polling and pending-batch review aggregation.
+ * Collaborates with payouts service and queryKeys.
+ */
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   getPayoutFailureCounts,
@@ -8,6 +13,9 @@ import {
 } from "../services/payouts";
 import { queryKeys } from "../lib/queryKeys";
 
+/**
+ * usePayouts hook.
+ */
 export function usePayouts(params) {
   return useQuery({
     queryKey: queryKeys.payouts.list(params),
@@ -17,6 +25,9 @@ export function usePayouts(params) {
   });
 }
 
+/**
+ * usePendingPayouts hook.
+ */
 export function usePendingPayouts() {
   return useQuery({
     queryKey: queryKeys.payouts.batchReview,
@@ -25,6 +36,9 @@ export function usePendingPayouts() {
   });
 }
 
+/**
+ * usePayoutBatchReview hook.
+ */
 export function usePayoutBatchReview() {
   const pendingQuery = useQuery({
     queryKey: queryKeys.payouts.batchReview,

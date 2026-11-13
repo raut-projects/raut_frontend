@@ -1,5 +1,10 @@
+// Driver-onboarding translations. Provides English and Swahili copy for the
+// onboarding wizard plus helpers to read the language and token from the URL.
+
+/** Supported UI languages. */
 export type Language = 'en' | 'sw';
 
+/** English and Swahili copy keyed by the same set of string keys. */
 export const translations = {
   en: {
     // Header
@@ -187,6 +192,10 @@ export const translations = {
   },
 };
 
+/**
+ * Reads the `lang` query parameter and returns 'sw' only when it is exactly
+ * "sw"; otherwise defaults to 'en'. Returns 'en' during SSR.
+ */
 export function getLanguageFromURL(): Language {
   if (typeof window === 'undefined') return 'en';
   const params = new URLSearchParams(window.location.search);
@@ -194,12 +203,21 @@ export function getLanguageFromURL(): Language {
   return lang === 'sw' ? 'sw' : 'en';
 }
 
+/**
+ * Reads the `token` query parameter from the current URL, or null during SSR.
+ */
 export function getTokenFromURL(): string | null {
   if (typeof window === 'undefined') return null;
   const params = new URLSearchParams(window.location.search);
   return params.get('token');
 }
 
+/**
+ * Returns a translate function for the given language.
+ *
+ * Looks the key up in {@link translations} and falls back to the key itself
+ * when no translation exists.
+ */
 export function useTranslation(lang: Language) {
   return (key: keyof typeof translations.en) => {
     return translations[lang][key] || key;

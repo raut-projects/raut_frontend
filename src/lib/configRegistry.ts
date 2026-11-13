@@ -1,3 +1,9 @@
+// Configuration registry for the platform settings screens. Maps backend config
+// records to typed field specs, drives the draft -> diff -> updates flow, and
+// organizes fields into pricing tabs, feature flags and operations sections.
+// Value keys let a field read/write a named property inside a record's value
+// object, and unit metadata drives display formatting.
+
 import type {
   ConfigRecord,
   ConfigUpdate,
@@ -5,8 +11,10 @@ import type {
   FieldErrors,
 } from "@/types/platformConfig";
 
+/** Input control rendered for a config field. */
 export type ConfigFieldType = "number" | "text" | "switch" | "select";
 
+/** Unit used to format and label a config field's value. */
 export type ConfigFieldUnit =
   | "money"
   | "percent"
@@ -18,6 +26,12 @@ export type ConfigFieldUnit =
   | "km"
   | "count";
 
+/**
+ * Declarative spec for one config field.
+ *
+ * `key` is the config record key; `valueKey` names the property to read/write
+ * inside the record's value object (defaults to "value" or "enabled").
+ */
 export type ConfigFieldSpec = {
   key: string;
   label: string;
@@ -32,6 +46,7 @@ export type ConfigFieldSpec = {
   options?: { label: string; value: string }[];
 };
 
+/** A titled group of config fields. */
 export type ConfigSectionSpec = {
   id: string;
   title: string;
@@ -39,8 +54,10 @@ export type ConfigSectionSpec = {
   fields: ConfigFieldSpec[];
 };
 
+/** Identifier for each pricing tab. */
 export type PricingTabId = "duo" | "private" | "public";
 
+/** A pricing tab with its grouped sections. */
 export type PricingTabSpec = {
   id: PricingTabId;
   label: string;
@@ -48,10 +65,13 @@ export type PricingTabSpec = {
   sections: ConfigSectionSpec[];
 };
 
+/** Editable draft state: config key to its string or boolean value. */
 export type ConfigDraft = Record<string, string | boolean>;
 
+// Identity helper that keeps field-spec literals type-checked.
 const field = (spec: ConfigFieldSpec): ConfigFieldSpec => spec;
 
+// Shorthands for common number field specs.
 const money = (
   key: string,
   label: string,
@@ -82,9 +102,14 @@ const multiplier = (
     ...extra,
   });
 
+// Feature-flag field spec; toggles read and write the "enabled" value key.
 const toggle = (key: string, label: string, hint?: string) =>
   field({ key, label, type: "switch", valueKey: "enabled", hint });
 
+/**
+ * Field specs for known config keys, keyed by config key. Records without an
+ * entry fall back to a spec inferred from their value (see fieldSpecFor).
+ */
 export const CONFIG_FIELDS: Record<string, ConfigFieldSpec> =
   Object.fromEntries(
     [
@@ -331,6 +356,7 @@ export const CONFIG_FIELDS: Record<string, ConfigFieldSpec> =
     ].map((spec) => [spec.key, spec]),
   );
 
+/** Pricing tabs (DUO, private, public) with their grouped field sections. */
 export const PRICING_TABS: PricingTabSpec[] = [
   {
     id: "duo",
@@ -470,6 +496,7 @@ export const PRICING_TABS: PricingTabSpec[] = [
   },
 ];
 
+/** Feature-flags section shared by the config screens. */
 export const FEATURE_SECTION: ConfigSectionSpec = {
   id: "features",
   title: "Feature flags",
@@ -484,6 +511,7 @@ export const FEATURE_SECTION: ConfigSectionSpec = {
   ],
 };
 
+/** Operations sections covering quoting limits and ride rules. */
 export const OPERATIONS_SECTIONS: ConfigSectionSpec[] = [
   {
     id: "operations-quoting",
@@ -511,6 +539,7 @@ export const OPERATIONS_SECTIONS: ConfigSectionSpec[] = [
   },
 ];
 
+// Keys belonging to the public (boda/bajaji) pricing tab.
 const PUBLIC_KEYS = new Set([
   "pricing.base_fare.boda",
   "pricing.base_fare.bajaji",
@@ -519,18 +548,24 @@ const PUBLIC_KEYS = new Set([
   "commission.public_ride",
 ]);
 
+// DUO tab keys, derived from the first pricing tab's sections.
 const DUO_KEYS = new Set([
   ...PRICING_TABS[0].sections.flatMap((section) =>
     section.fields.map((spec) => spec.key),
   ),
 ]);
 
+// Private tab keys, derived from the second pricing tab's sections.
 const PRIVATE_KEYS = new Set([
   ...PRICING_TABS[1].sections.flatMap((section) =>
     section.fields.map((spec) => spec.key),
   ),
 ]);
 
+/**
+ * Returns the pricing tab a config key belongs to, or null when it is not a
+ * pricing key. Explicit key sets are checked first, then prefix heuristics.
+ */
 export function pricingTabForKey(key: string): PricingTabId | null {
   if (PUBLIC_KEYS.has(key)) return "public";
   if (DUO_KEYS.has(key)) return "duo";
@@ -548,15 +583,19 @@ export function pricingTabForKey(key: string): PricingTabId | null {
   return null;
 }
 
+/** True when a record is a feature flag (by type or "feature." key). */
 export const isFeatureConfig = (record: ConfigRecord) =>
   record.type === "feature_flag" || record.key.startsWith("feature.");
 
+/** True when a record is a quoting or ride-rule config. */
 export const isOperationsConfig = (record: ConfigRecord) =>
   record.key.startsWith("quote.") || record.key.startsWith("ride.");
 
+/** True when a record belongs to one of the pricing tabs. */
 export const isPricingConfig = (record: ConfigRecord) =>
   pricingTabForKey(record.key) !== null;
 
+// Fallback spec inferred from the first value's runtime type.
 const inferFieldSpec = (record: ConfigRecord): ConfigFieldSpec => {
   const sample = Object.values(record.value ?? {})[0];
 
@@ -586,6 +625,12 @@ const inferFieldSpec = (record: ConfigRecord): ConfigFieldSpec => {
   };
 };
 
+/**
+ * Turns a config key into a readable label.
+ *
+ * Uses the last dot-segment, drops "_tzs"/"_percent" suffixes and underscores,
+ * and title-cases the result; returns "Setting" when nothing remains.
+ */
 export function humanizeKey(key: string) {
   const name = String(key ?? "")
     .split(".")
@@ -598,9 +643,17 @@ export function humanizeKey(key: string) {
   return name ? name.charAt(0).toUpperCase() + name.slice(1) : "Setting";
 }
 
+/** Returns the registered spec for a record, or an inferred fallback. */
 export const fieldSpecFor = (record: ConfigRecord): ConfigFieldSpec =>
   CONFIG_FIELDS[record.key] ?? inferFieldSpec(record);
 
+/**
+ * Reads a field's value from a config value.
+ *
+ * Returns the value as-is when it is not an object, and undefined for null or
+ * undefined input. For objects, tries the spec's valueKey, then "value", then
+ * the object's own keys.
+ */
 export function readFieldValue(value: ConfigValue, spec: ConfigFieldSpec) {
   if (value === null || value === undefined) return undefined;
   if (typeof value !== "object") return value;
@@ -616,6 +669,13 @@ export function readFieldValue(value: ConfigValue, spec: ConfigFieldSpec) {
   return undefined;
 }
 
+/**
+ * Returns a copy of a config value object with the field set to `next`.
+ *
+ * Chooses the target property from the spec's valueKey, an existing "value"
+ * property, or the sole existing key; defaults to "value". Non-object values
+ * are replaced with a fresh object.
+ */
 export function writeFieldValue(
   value: ConfigValue,
   spec: ConfigFieldSpec,
@@ -642,6 +702,7 @@ export function writeFieldValue(
   return base;
 }
 
+/** Converts a record's value to its draft form: boolean for switches, string otherwise. */
 export function toDraftValue(record: ConfigRecord): string | boolean {
   const spec = fieldSpecFor(record);
   const raw = readFieldValue(record.value, spec);
@@ -651,6 +712,7 @@ export function toDraftValue(record: ConfigRecord): string | boolean {
   return raw === undefined || raw === null ? "" : String(raw);
 }
 
+/** Builds a draft map (config key to editable value) from the given records. */
 export function buildConfigDraft(records: ConfigRecord[]): ConfigDraft {
   return records.reduce<ConfigDraft>((draft, record) => {
     draft[record.key] = toDraftValue(record);
@@ -658,6 +720,12 @@ export function buildConfigDraft(records: ConfigRecord[]): ConfigDraft {
   }, {});
 }
 
+/**
+ * Diffs a draft against the records and returns the changed config updates.
+ *
+ * Unchanged, undefined or non-numeric number values are skipped; values are
+ * coerced to match the field type before being written back.
+ */
 export function draftToUpdates(
   records: ConfigRecord[],
   draft: ConfigDraft,
@@ -693,6 +761,11 @@ export function draftToUpdates(
   return updates;
 }
 
+/**
+ * Validates number fields in a draft, returning errors keyed by config key.
+ *
+ * Checks required, finite, and min/max bounds; non-number fields are ignored.
+ */
 export function validateConfigDraft(
   records: ConfigRecord[],
   draft: ConfigDraft,
@@ -732,10 +805,17 @@ export function validateConfigDraft(
   return errors;
 }
 
+// Shared number formatter: at most two decimal places.
 const numberFormat = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
 
+/**
+ * Formats a config value for display according to its unit.
+ *
+ * Booleans become Enabled/Disabled, empty values become "—", and numbers are
+ * rendered with unit suffixes (TZS, %, ×, min, s, km/m, or a plain count).
+ */
 export function formatConfigValue(
   value: string | number | boolean | null | undefined,
   spec: ConfigFieldSpec,
@@ -771,6 +851,10 @@ export function formatConfigValue(
   }
 }
 
+/**
+ * Filters sections to the fields present in `records` and appends any leftover
+ * keys under an "Other settings" section. Sections with no fields are dropped.
+ */
 export function sectionsForRecords(
   sections: ConfigSectionSpec[],
   records: ConfigRecord[],

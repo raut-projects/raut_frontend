@@ -1,3 +1,8 @@
+// Live rides WebSocket client with polling fallback.
+// Connects to the realtime rides feed, forwards ride events to the caller, and
+// falls back to polling `listLiveRides` while the socket is down. Reconnects
+// automatically and reports connection state so the UI can show a live badge.
+
 import type { LiveRide } from "@/lib/liveRides";
 import { listLiveRides } from "./liveRides";
 
@@ -9,6 +14,14 @@ type LiveRidesSocketOptions = {
   onError?: (message: string) => void;
 };
 
+/**
+ * Realtime client for the live rides feed.
+ * Owns one WebSocket, a reconnect timer and a polling timer. Call `connect()`
+ * after construction and `disconnect()` on unmount; both are idempotent.
+ * Incoming `ride:new`, `ride:status_change`, `ride:position_update` and
+ * `ride:completed` messages are forwarded through `onRides` (the completed
+ * event currently forwards an empty array).
+ */
 export class LiveRidesSocket {
   private url: string;
   private opts: LiveRidesSocketOptions;
@@ -24,6 +37,12 @@ export class LiveRidesSocket {
     this.opts = opts;
   }
 
+  /**
+   * Opens the socket if one is not already open.
+   * Reports `false` immediately, then `true` once the handshake succeeds; on
+   * close or construction failure it schedules a reconnect and starts polling.
+   * Malformed messages are ignored rather than surfaced as errors.
+   */
   connect(): void {
     if (this.ws) return;
     this.opts.onConnectionChange(false);
@@ -62,6 +81,7 @@ export class LiveRidesSocket {
   private handleMessage(msg: WSMessage): void {
     const { type, data } = msg;
     if (type === "ride:new" || type === "ride:status_change") {
+      // Single ride objects are wrapped so consumers always receive an array.
       const rides: LiveRide[] = Array.isArray(data) ? data : [data as LiveRide];
       this.opts.onRides(rides);
     } else if (type === "ride:position_update") {
@@ -77,6 +97,8 @@ export class LiveRidesSocket {
 
   private scheduleReconnect(): void {
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    // The backoff delay below is computed but the timer currently fires after a
+    // fixed 2 seconds; polling covers the gap either way.
     this.reconnectTimer = setTimeout(() => {
       this.reconnectAttempts += 1;
       const delay = Math.min(
@@ -98,6 +120,7 @@ export class LiveRidesSocket {
       } catch {
         // swallow; WS reconnect will handle recovery
       }
+      // Keep polling every 10s only while the socket is still down.
       if (this.polling && !this.connected) {
         this.pollTimer = setTimeout(poll, 10_000);
       }
@@ -113,6 +136,10 @@ export class LiveRidesSocket {
     }
   }
 
+  /**
+   * Closes the socket, cancels reconnect/poll timers and reports the connection
+   * as offline. Safe to call when already disconnected.
+   */
   disconnect(): void {
     this.stopPolling();
     if (this.reconnectTimer) {

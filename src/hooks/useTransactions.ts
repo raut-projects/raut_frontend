@@ -1,3 +1,7 @@
+/**
+ * Transaction list and summary hooks with 30s/60s polling.
+ * Collaborates with transactions service and queryKeys.
+ */
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   getTransactionSummary,
@@ -5,6 +9,9 @@ import {
 } from "../services/transactions";
 import { queryKeys } from "../lib/queryKeys";
 
+/**
+ * useTransactions hook.
+ */
 export function useTransactions(params) {
   return useQuery({
     queryKey: queryKeys.transactions.list(params),
@@ -14,6 +21,9 @@ export function useTransactions(params) {
   });
 }
 
+/**
+ * useTransactionSummary hook.
+ */
 export function useTransactionSummary() {
   return useQuery({
     queryKey: queryKeys.transactions.summary,

@@ -1,10 +1,17 @@
+/**
+ * Validation schemas for the four driver-onboarding steps, mirroring the
+ * Flutter flow, plus the upload helper used by the file fields.
+ */
 import { z } from 'zod';
 
 /**
  * Validation Schemas - Match Flutter onboarding exactly
  */
 
-// Step 1: Personal Information
+/**
+ * Step 1: personal details. Names need at least two characters and the
+ * language preference is the UI locale code.
+ */
 export const personalInfoSchema = z.object({
   firstName: z.string().min(2, 'At least 2 characters'),
   lastName: z.string().min(2, 'At least 2 characters'),
@@ -12,7 +19,10 @@ export const personalInfoSchema = z.object({
   languagePreference: z.enum(['en', 'sw']),
 });
 
-// Step 2: Driver Information
+/**
+ * Step 2: driver identity and licence. The photo URLs are required strings
+ * populated after upload, not remote file contents.
+ */
 export const driverInfoSchema = z.object({
   nationalIdNumber: z.string().min(10, 'At least 10 characters'),
   licenseNumber: z.string().min(8, 'At least 8 characters'),
@@ -20,7 +30,11 @@ export const driverInfoSchema = z.object({
   licensePhotoUrl: z.string().min(1, 'License photo required'),
 });
 
-// Step 3: Vehicle Information
+/**
+ * Step 3: vehicle details. `year` must fall between 2010 and the current
+ * year, and `vehicleId` is present only after the backend creates the vehicle.
+ * Ownership values describe how the driver holds the vehicle.
+ */
 export const vehicleInfoSchema = z.object({
   vehicleType: z.enum(['boda', 'car', 'bajaji']),
   plateNumber: z.string().min(3, 'Plate number required'),
@@ -47,7 +61,10 @@ export const vehicleInfoSchema = z.object({
   vehicleId: z.string().optional(),
 });
 
-// Step 4: Payment Details
+/**
+ * Step 4: payout details. `mobileMoneyNumber` is the full local number and
+ * `mobileNetwork` is one of the supported Tanzanian networks.
+ */
 export const paymentDetailsSchema = z.object({
   accountName: z.string().min(2, 'Account name required'),
   address: z.string().min(5, 'Address required'),
@@ -55,7 +72,11 @@ export const paymentDetailsSchema = z.object({
   mobileNetwork: z.enum(['vodacom', 'airtel', 'halotel', 'mixx']),
 });
 
-// Helper: Validate file size and type
+/**
+ * Checks an upload before sending it to the backend.
+ * Accepts JPG, PNG, and PDF files up to `maxSizeMB` (default 5), returning
+ * `{ valid: false, error }` with a user-facing message otherwise.
+ */
 export const validateFile = (file: File | null, maxSizeMB = 5) => {
   if (!file) return { valid: false, error: 'No file selected' };
 

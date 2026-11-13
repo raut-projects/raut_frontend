@@ -1,3 +1,6 @@
+// Illustrative system-health status data and helpers. NOT a backend contract:
+// synthetic values for the admin health dashboard.
+
 export type HealthStatus = "healthy" | "degraded" | "outage";
 export type JobStatus = "healthy" | "delayed" | "attention";
 export type IncidentStatus = "Investigating" | "Monitoring" | "Resolved";

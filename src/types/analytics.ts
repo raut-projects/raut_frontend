@@ -1,7 +1,22 @@
+/**
+ * Analytics domain types for the admin dashboard: backend snake_case rows and
+ * the normalized camelCase series/stat shapes consumed by charts. Monetary
+ * values are in TZS unless a field name says otherwise.
+ */
+
+/** Time bucket used to group analytics series. */
 export type AnalyticsPeriod = 'day' | 'week' | 'month'
+/** Alias for callers that name the bucket a granularity. */
 export type AnalyticsGranularity = AnalyticsPeriod
+/** Quick date-range selector shown in the analytics toolbar. */
 export type AnalyticsPreset = '7d' | '30d' | '90d' | 'custom'
 
+/**
+ * Fully resolved analytics date range.
+ * `start`/`end` are the Date objects used for calculations, while
+ * `startStr`/`endStr` are their formatted equivalents sent to the backend.
+ * `daysBack` is the lookback length used to size the fetch window.
+ */
 export interface AnalyticsRange {
   preset: AnalyticsPreset
   granularity: AnalyticsGranularity
@@ -12,6 +27,12 @@ export interface AnalyticsRange {
   endStr: string
 }
 
+/**
+ * Previous-period window used for comparison metrics.
+ * `previousStart`/`previousEnd` mirror the main range shifted back by the same
+ * length, and `fetchDays` is the total history window requested so both
+ * periods arrive in one call. `reason` is null when no comparison is shown.
+ */
 export interface AnalyticsComparisonWindow {
   enabled: boolean
   previousStart: Date
@@ -22,6 +43,7 @@ export interface AnalyticsComparisonWindow {
   reason: string | null
 }
 
+/** Comparison deltas for rides and revenue, layered on the window metadata. */
 export interface AnalyticsComparison extends AnalyticsComparisonWindow {
   rides: {
     total: MetricDelta
@@ -37,6 +59,11 @@ export interface AnalyticsComparison extends AnalyticsComparisonWindow {
   }
 }
 
+/**
+ * Change between the current and previous period.
+ * `delta` is `current - previous`; `deltaPct` is the percentage change and is
+ * null when a percentage is undefined (for example, previous value is zero).
+ */
 export interface MetricDelta {
   current: number
   previous: number
@@ -44,6 +71,12 @@ export interface MetricDelta {
   deltaPct: number | null
 }
 
+/**
+ * Aggregate counters from the dashboard overview endpoint.
+ * All fields are optional because endpoints and roles expose different
+ * subsets. Fields ending in `_tzs` are monetary amounts in Tanzanian
+ * shillings; `active_routes_now` / `active_rides_now` are live counts.
+ */
 export interface AnalyticsOverview {
   total_users?: number
   total_drivers?: number
@@ -68,6 +101,12 @@ export interface AnalyticsOverview {
   [key: string]: unknown
 }
 
+/**
+ * Backend row for the rides series. The same value can arrive under multiple
+ * aliases (`total_fare_tzs` or `total_fare`, `completed_rides` or
+ * `completed`); normalization picks whichever is present. Distances are in
+ * metres and monetary values in TZS.
+ */
 export interface AnalyticsRidesRow {
   period_start?: string
   date?: string
@@ -91,6 +130,11 @@ export interface AnalyticsRidesRow {
   [key: string]: unknown
 }
 
+/**
+ * Backend row for the revenue series, again allowing alias pairs
+ * (`total_revenue_tzs` / `total_revenue` / `revenue` / `amount`).
+ * All monetary fields are TZS; `transaction_count` counts payment events.
+ */
 export interface AnalyticsRevenueRow {
   period_start?: string
   date?: string
@@ -110,6 +154,11 @@ export interface AnalyticsRevenueRow {
   [key: string]: unknown
 }
 
+/**
+ * Driver counters from the analytics endpoint. Status fields appear under
+ * both short (`verified`) and suffixed (`verified_drivers`) names, and
+ * `*_this_week` fields are scoped to the current week.
+ */
 export interface AnalyticsDrivers {
   total_drivers?: number
   drivers?: number
@@ -131,6 +180,11 @@ export interface AnalyticsDrivers {
   [key: string]: unknown
 }
 
+/**
+ * Backend row for the peak-hours histogram. `hour_of_day` / `hour` is 0-23;
+ * `period` / `time` may carry a formatted label instead. Monetary fields are
+ * TZS and `*_count` fields are ride counts.
+ */
 export interface AnalyticsPeakHourRow {
   hour_of_day?: number
   hour?: number
@@ -147,6 +201,11 @@ export interface AnalyticsPeakHourRow {
   [key: string]: unknown
 }
 
+/**
+ * Normalized rides chart point.
+ * `period` is the bucket start and `label` its display text. `fare`,
+ * `platformFee` and `avgFare` are TZS; `avgDistance` is in metres.
+ */
 export interface RidesPoint {
   period: string
   label: string
@@ -160,6 +219,7 @@ export interface RidesPoint {
   avgDistance: number
 }
 
+/** Normalized revenue chart point; all monetary fields are TZS. */
 export interface RevenuePoint {
   period: string
   label: string
@@ -170,6 +230,11 @@ export interface RevenuePoint {
   transactions: number
 }
 
+/**
+ * Normalized peak-hour point.
+ * `hour` is 0-23, `label` is the display text, and `avgFare` / `revenue` are
+ * TZS amounts aggregated for that hour.
+ */
 export interface PeakHourPoint {
   hour: number
   label: string
@@ -178,6 +243,7 @@ export interface PeakHourPoint {
   revenue: number
 }
 
+/** Normalized driver counters used by the drivers analytics cards. */
 export interface DriverStats {
   totalDrivers: number
   verified: number
@@ -192,12 +258,20 @@ export interface DriverStats {
   activeRoutes: number
 }
 
+/**
+ * Wrapper distinguishing a multi-bucket series from a single latest value.
+ * `latest` is the most recent point (or null when no data was returned).
+ */
 export interface AnalyticsSeries<T> {
   isSeries: boolean
   points: T[]
   latest: T | null
 }
 
+/**
+ * Display-ready stat card values. `value` and `delta` are preformatted
+ * strings; `up` indicates whether the delta should be styled as positive.
+ */
 export interface DashboardStat {
   label: string
   value: string

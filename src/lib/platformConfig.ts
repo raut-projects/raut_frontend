@@ -1,11 +1,17 @@
+// Fare calculation for the platform config preview. Turns base fare, distance,
+// time and surge inputs into a FareBreakdown. Every numeric input is coerced
+// and clamped so malformed config values cannot yield negative or NaN amounts.
+
 import type { FareBreakdown } from "@/types/platformConfig";
 
+/** Coerces a value to a finite number, falling back to `fallback` (default 0). */
 const toNumber = (value: unknown, fallback = 0) => {
   const amount = Number(value);
 
   return Number.isFinite(amount) ? amount : fallback;
 };
 
+/** Inputs for {@link calculateFare}. Distances are km, time is minutes. */
 type FareInput = {
   baseFare: unknown;
   pricePerKm: unknown;
@@ -16,6 +22,17 @@ type FareInput = {
   isPeak: boolean;
 };
 
+/**
+ * Computes a fare breakdown from configuration-style inputs.
+ *
+ * - `base`, `distance` (km × pricePerKm) and `time` (minutes × pricePerMinute)
+ *   are each clamped to zero or more.
+ * - `surge` is `subtotal × surgePercent/100`, applied only when `isPeak` is
+ *   true, otherwise zero.
+ * - `total` is subtotal plus surge.
+ *
+ * Missing or non-numeric inputs are treated as 0.
+ */
 export const calculateFare = ({
   baseFare,
   pricePerKm,

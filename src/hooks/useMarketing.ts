@@ -1,3 +1,9 @@
+/**
+ * Promotion (marketing) hooks over the marketing service.
+ * Provides list/detail queries with keep-previous pagination and 60s polling,
+ * plus mutations for create/update/delete/activate/deactivate that invalidate
+ * the promotions cache. Collaborates with marketing service and queryKeys.
+ */
 import {
   keepPreviousData,
   useMutation,
@@ -17,6 +23,10 @@ import {
   updatePromotion,
 } from "@/services/marketing";
 
+/**
+ * Lists promotions with keep-previous data and 60s polling.
+ * Query key: marketing.promotions.list(params).
+ */
 export function usePromotions(params: PromotionListParams) {
   return useQuery({
     queryKey: queryKeys.marketing.promotions.list(params),
@@ -26,6 +36,9 @@ export function usePromotions(params: PromotionListParams) {
   });
 }
 
+/**
+ * usePromotion hook.
+ */
 export function usePromotion(promotionId: string) {
   return useQuery({
     queryKey: queryKeys.marketing.promotions.detail(promotionId),
@@ -34,6 +47,9 @@ export function usePromotion(promotionId: string) {
   });
 }
 
+/**
+ * useCreatePromotion hook.
+ */
 export function useCreatePromotion() {
   const queryClient = useQueryClient();
 
@@ -47,6 +63,9 @@ export function useCreatePromotion() {
   });
 }
 
+/**
+ * useUpdatePromotion hook.
+ */
 export function useUpdatePromotion(promotionId: string) {
   const queryClient = useQueryClient();
 
@@ -61,6 +80,9 @@ export function useUpdatePromotion(promotionId: string) {
   });
 }
 
+/**
+ * useDeletePromotion hook.
+ */
 export function useDeletePromotion() {
   const queryClient = useQueryClient();
 
@@ -74,6 +96,9 @@ export function useDeletePromotion() {
   });
 }
 
+/**
+ * useActivatePromotion hook.
+ */
 export function useActivatePromotion() {
   const queryClient = useQueryClient();
 
@@ -87,6 +112,9 @@ export function useActivatePromotion() {
   });
 }
 
+/**
+ * useDeactivatePromotion hook.
+ */
 export function useDeactivatePromotion() {
   const queryClient = useQueryClient();
 
