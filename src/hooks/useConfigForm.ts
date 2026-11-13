@@ -1,3 +1,9 @@
+/**
+ * Coordinates configuration form editing and saving.
+ * Combines the local draft lifecycle from useConfigDraft with validation and
+ * diffing from configRegistry and the bulk update mutation from
+ * usePlatformConfig. Collaborates with the toast context for feedback.
+ */
 import { useToast } from "@/components/toastContext";
 import {
   buildConfigDraft,
@@ -9,6 +15,19 @@ import type { ConfigRecord } from "@/types/platformConfig";
 import { useConfigDraft } from "./useConfigDraft";
 import { useUpdateConfigs } from "./usePlatformConfig";
 
+/**
+ * Builds a validated save pipeline for platform configuration records.
+ *
+ * `handleSave` validates the draft, stops at the first field error, converts
+ * only changed values with `draftToUpdates`, then calls `useUpdateConfigs`.
+ * That mutation reports per-key failures instead of rejecting the whole save:
+ * the first failure is attached to its field and the draft stays dirty for
+ * correction. A clean response calls `markSaved` and emits the caller's success
+ * message. Unexpected errors also leave the draft intact.
+ *
+ * @param records - Current configuration records used for validation and diffing.
+ * @returns The draft API plus `isSaving` and `handleSave`.
+ */
 export function useConfigForm(records: ConfigRecord[]) {
   const form = useConfigDraft(records, buildConfigDraft);
   const update = useUpdateConfigs();
@@ -30,6 +49,7 @@ export function useConfigForm(records: ConfigRecord[]) {
 
     const updates = draftToUpdates(records, form.draft);
 
+    // Nothing changed relative to the records, so there is nothing to persist.
     if (!updates.length) return;
 
     try {

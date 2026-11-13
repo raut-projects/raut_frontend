@@ -1,3 +1,9 @@
+// Admin user directory service.
+// Reads and mutates admin accounts through the shared `./api` helpers, with an
+// optional mock mode (ADMIN_USERS_USE_MOCK_DATA) used by the UI while the backend
+// is unavailable. Responses are read defensively because the endpoint has no
+// fixed response model, and every mutation is re-mapped into AdminUser.
+
 import { API_ROUTES } from "@/lib/config";
 import {
   normalizeAdminRole,
@@ -22,6 +28,10 @@ import {
 } from "@/lib/mockAdminUsers";
 import { apiGet, apiPatch, apiPost, apiPut } from "./api";
 
+/**
+ * Whether the admin user screens should read from the in-memory mock instead of
+ * the backend. Re-exported so callers can render a demo indicator.
+ */
 export const isAdminUsersMockEnabled = ADMIN_USERS_USE_MOCK_DATA;
 
 type RecordValue = Record<string, unknown>;
@@ -83,6 +93,8 @@ const nameFrom = (value: unknown) => {
     .join(" ");
 };
 
+// Permission levels arrive under several spellings; anything unrecognised maps
+// to "none" so an unexpected value never grants more access than intended.
 const normalizePermissionLevel = (value: unknown): PermissionLevel => {
   const level = text(value).toLowerCase().replace(/[-\s]/g, "_");
 
@@ -143,6 +155,8 @@ const mapPermissions = (value: unknown): PermissionOverrides | undefined => {
   ) as PermissionOverrides;
 };
 
+// The user may be nested under `user`/`admin`; merge it over the outer record so
+// the outer id/status fields stay available when the nested copy omits them.
 const mapAdminUser = (value: unknown, index = 0): AdminUser => {
   const record = asRecord(value);
   const user = asRecord(firstValue(record, "user", "admin"));
@@ -203,6 +217,12 @@ const mapAdminUser = (value: unknown, index = 0): AdminUser => {
   };
 };
 
+/**
+ * Lists admin accounts with optional search and status filters.
+ * GET /users with `page`, `page_size`, `search` and `status` query params.
+ * Returns the mapped page plus the total count; falls back to the loaded item
+ * count when the API omits pagination. Throws ApiError on failure.
+ */
 export async function listAdminUsers(
   params: AdminUserListParams = {},
 ): Promise<AdminUserListResult> {
@@ -221,6 +241,8 @@ export async function listAdminUsers(
   });
   const record = asRecord(data);
   const items = listItems(data, "admins", "admin_users").map(mapAdminUser);
+  // The total may be under `pagination`, `meta.pagination`, or directly on the
+  // record; keep trying each location before assuming the page size.
   const pagination = asRecord(
     record.pagination ?? asRecord(record.meta).pagination,
   );
@@ -238,6 +260,11 @@ export async function listAdminUsers(
   };
 }
 
+/**
+ * Loads a single admin account.
+ * GET /users/:userId.
+ * Returns the mapped AdminUser. Throws ApiError when not found or on failure.
+ */
 export async function getAdminUser(userId: string): Promise<AdminUser> {
   if (ADMIN_USERS_USE_MOCK_DATA) return mockGetAdminUser(userId);
 
@@ -248,6 +275,11 @@ export async function getAdminUser(userId: string): Promise<AdminUser> {
   return mapAdminUser(data);
 }
 
+/**
+ * Invites a new admin user.
+ * POST /admin/users/invite (API_ROUTES.adminUserInvite) with the invite payload.
+ * Returns the created AdminUser. Throws ApiError on failure.
+ */
 export async function inviteAdminUser(
   payload: AdminUserInvitePayload,
 ): Promise<AdminUser> {
@@ -258,6 +290,11 @@ export async function inviteAdminUser(
   return mapAdminUser(data);
 }
 
+/**
+ * Updates an admin account (role, status, permissions, profile fields).
+ * PATCH /admin/users/:userId with the partial payload.
+ * Returns the updated AdminUser. Throws ApiError on failure.
+ */
 export async function updateAdminUser(
   userId: string,
   payload: AdminUserUpdatePayload,
@@ -269,6 +306,11 @@ export async function updateAdminUser(
   return mapAdminUser(data);
 }
 
+/**
+ * Deactivates an admin account, optionally recording a reason.
+ * PUT /users/:userId/deactivate with `{ reason }` or an empty body.
+ * Returns the updated AdminUser. Throws ApiError on failure.
+ */
 export async function deactivateAdminUser(
   userId: string,
   reason?: string,
@@ -283,6 +325,11 @@ export async function deactivateAdminUser(
   return mapAdminUser(data);
 }
 
+/**
+ * Reactivates a deactivated admin account.
+ * PUT /users/:userId/reactivate with an empty body.
+ * Returns the updated AdminUser. Throws ApiError on failure.
+ */
 export async function reactivateAdminUser(
   userId: string,
 ): Promise<AdminUser> {

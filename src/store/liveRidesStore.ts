@@ -1,3 +1,8 @@
+/**
+ * Live rides store for the operations dashboard: ride list, per-ride
+ * simulation sessions, mock operator actions, and the tick that advances
+ * positions/statuses. `LIVE_RIDES_USE_MOCK_DATA` sets the initial connection.
+ */
 import { create } from "zustand";
 import type { LiveRide, LiveRideStatus } from "@/lib/liveRides";
 import {
@@ -29,11 +34,21 @@ interface LiveRidesStore {
   lastUpdatedAt: string;
   connection: "connected" | "connecting" | "disconnected" | "mock";
   selectedRideId: string | null;
+  /** Replaces the ride list, dropping duplicate ids. */
   setRides: (rides: LiveRide[]) => void;
+  /** Updates the "last refreshed" timestamp shown in the header. */
   setLastUpdatedAt: (ts: string) => void;
+  /** Sets the transport indicator (socket vs. mock). */
   setConnection: (c: LiveRidesStore["connection"]) => void;
+  /** Selects the ride shown in the detail panel; null clears selection. */
   selectRide: (rideId: string | null) => void;
+  /** Inserts or replaces a ride produced by the mock backend. */
   applyMockRide: (ride: LiveRide) => void;
+  /**
+   * Cancels a ride through the mock backend and replaces it in the list.
+   * `refund` is the refund mode, `partialPercent` the refund share when
+   * partial, and `penalize` whether to apply the cancellation penalty.
+   */
   cancelRide: (
     rideId: string,
     reason: string,
@@ -41,16 +56,25 @@ interface LiveRidesStore {
     partialPercent: number,
     penalize: boolean,
   ) => void;
+  /** Flags a ride with a reason and stores the updated mock record. */
   flagRide: (rideId: string, reason: string) => void;
+  /** Appends an operator note to a ride. */
   addNote: (rideId: string, text: string) => void;
+  /** Escalates a ride with a note and stores the updated mock record. */
   escalate: (rideId: string, note: string) => void;
+  /** Overrides the ride fare with `amount` and records the reason. */
   overrideFare: (rideId: string, amount: number, reason: string) => void;
+  /** Returns the mock event history for a ride, oldest first. */
   getHistory: (
     rideId: string,
   ) => Array<{ time: string; event: string; detail?: string }>;
+  /** Seeds simulation sessions for the current rides; no-op when already running. */
   startSimulation: () => void;
+  /** Stops simulation by discarding all sessions. */
   stopSimulation: () => void;
+  /** Advances positions, statuses, ETA, and mock spawning by one tick. */
   tick: () => void;
+  /** Clears mock storage and resets the store to its empty state. */
   reset: () => void;
 }
 
@@ -76,8 +100,14 @@ const dedupeById = (rides: LiveRide[]): LiveRide[] => {
   });
 };
 
+// ETA values are only recomputed every 30 seconds rather than on every tick.
 let lastEtaTick = Date.now();
 
+/**
+ * Zustand store for live ride monitoring. `sessions` tracks the active
+ * simulation leg and progress per ride; `tick()` mutates it in place and
+ * publishes a new, status-sorted ride list.
+ */
 export const useLiveRidesStore = create<LiveRidesStore>((set, get) => ({
   rides: [],
   sessions: new Map(),
@@ -184,6 +214,8 @@ export const useLiveRidesStore = create<LiveRidesStore>((set, get) => ({
       const target = session.leg === "toPickup" ? ride.pickup : ride.dropoff;
 
       if (ride.status !== "completed") {
+        // Speed is per-hour, so scale it down for the tick and keep a floor so
+        // slow or stopped rides still make visible progress.
         const speedKmPerTick = Math.max(ride.position.speed / 12, 0.6);
         const legLength = distanceKm(ride.position, target);
         const progressStep =
@@ -236,6 +268,7 @@ export const useLiveRidesStore = create<LiveRidesStore>((set, get) => ({
           );
         }
 
+        // Occasionally jump to the next status to keep the demo lively.
         if (Math.random() < 0.08 && statusIdx < STATUS_ORDER.length - 1) {
           updated.status = STATUS_ORDER[statusIdx + 1];
           updated.statusChangedAt = new Date().toISOString();
@@ -245,6 +278,7 @@ export const useLiveRidesStore = create<LiveRidesStore>((set, get) => ({
         }
       }
 
+      // Completed rides linger briefly so the UI can show the transition.
       if (ride.status === "completed" && ride.removedAt) {
         const age = now - new Date(ride.removedAt).getTime();
         if (age < 10_000) nextRides.push(updated);
@@ -256,6 +290,7 @@ export const useLiveRidesStore = create<LiveRidesStore>((set, get) => ({
 
     if (lastEtaTick <= now - 30_000) lastEtaTick = now;
 
+    // Keep the board populated without letting it grow unbounded.
     if (nextRides.length < 30 && Math.random() < 0.15) {
       const fresh = createMockLiveRide();
       if (!nextRides.some((r) => r.id === fresh.id)) {

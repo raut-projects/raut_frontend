@@ -1,3 +1,7 @@
+// Ride listing and summary service.
+// Lists rides with filters and derives summary counts from pagination totals.
+// All calls go through `./api`, so failures reject with ApiError.
+
 import { API_ROUTES } from "../lib/config";
 import { apiGet } from "./api";
 import { mapRide } from "./mappers";

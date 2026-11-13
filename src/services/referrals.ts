@@ -1,3 +1,8 @@
+// Referral program service.
+// Manages referral programs, enrollments, relationships, stats and payouts
+// through the shared `./api` helpers. Responses are validated strictly and
+// surface as ApiError on request failure or TypeError on malformed data.
+
 import { API_ROUTES } from "@/lib/config";
 import type {
   ProcessReferralPayload,

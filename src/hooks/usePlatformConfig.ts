@@ -1,3 +1,8 @@
+/**
+ * Platform configuration and feature-flag hooks.
+ * Reads configs/history with 60s stale time and no window-focus refetch;
+ * mutations invalidate the config cache. Collaborates with platformConfig service.
+ */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { queryKeys } from "../lib/queryKeys";
@@ -19,6 +24,9 @@ const configQueryOptions = {
   refetchOnWindowFocus: false,
 };
 
+/**
+ * useConfigs hook.
+ */
 export function useConfigs(filters: ConfigListFilters = {}) {
   return useQuery({
     queryKey: queryKeys.config.list(filters),
@@ -27,6 +35,9 @@ export function useConfigs(filters: ConfigListFilters = {}) {
   });
 }
 
+/**
+ * useConfig hook.
+ */
 export function useConfig(configKey: string | null, scope: ConfigScope = {}) {
   return useQuery({
     queryKey: queryKeys.config.detail(configKey, scope),
@@ -36,6 +47,9 @@ export function useConfig(configKey: string | null, scope: ConfigScope = {}) {
   });
 }
 
+/**
+ * useConfigHistory hook.
+ */
 export function useConfigHistory(configKey: string | null, limit = 50) {
   return useQuery({
     queryKey: queryKeys.config.history(configKey, limit),
@@ -45,6 +59,9 @@ export function useConfigHistory(configKey: string | null, limit = 50) {
   });
 }
 
+/**
+ * useUpdateConfigs hook.
+ */
 export function useUpdateConfigs() {
   const queryClient = useQueryClient();
 
@@ -63,6 +80,9 @@ const isEnabled = (
 
 // Compatibility wrapper for screens (marketing promotions) that only need to
 // know whether a capability is switched on.
+/**
+ * useFeatureFlags hook.
+ */
 export function useFeatureFlags() {
   return useQuery({
     queryKey: queryKeys.config.list({ config_type: "feature_flag" }),

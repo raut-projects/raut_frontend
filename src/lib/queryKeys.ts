@@ -1,3 +1,6 @@
+// Centralised TanStack Query key factory. Keys are hierarchical (entity -> scope
+// -> params) so invalidation can target whole groups or single entries.
+
 export const queryKeys = {
   customers: {
     all: ["customers"],

@@ -1,3 +1,9 @@
+// HTTP transport for the admin console.
+// Builds URLs, injects bearer tokens, serialises JSON or form bodies, applies a
+// timeout, performs single-flight refresh on expiry or 401, and normalises both
+// success and error envelopes into ApiError. Every service helper goes through
+// `request`, so retry and auth behaviour lives in one place.
+
 import {
   API_BASE_URL,
   API_ROUTES,
@@ -14,6 +20,11 @@ import {
 } from './tokenStore'
 import { resetClientState } from '../store/resetClientState'
 
+/**
+ * Error thrown for transport, configuration and non-2xx API responses.
+ * `status` is the HTTP status (0 for network/timeout/configuration failures) and
+ * `body` is the parsed response payload when one was available.
+ */
 export class ApiError extends Error {
   status: number
   body: any
@@ -25,6 +36,11 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Unwraps the standard `{ data: ... }` response envelope.
+ * Returns `body.data` when the body is a non-array object with a `data` key,
+ * otherwise the body unchanged (including null).
+ */
 export const envelopeData = (body) =>
   body && typeof body === 'object' && 'data' in body ? body.data : body
 
@@ -54,6 +70,7 @@ const collectMessages = (body) => {
     messages.push(detail.field ? `${detail.field}: ${detail.message.trim()}` : detail.message.trim())
   })
 
+  // FastAPI-style validation errors put entries in `detail` as an array.
   if (Array.isArray(body?.detail)) {
     body.detail.forEach((detail) => {
       if (typeof detail?.msg !== 'string' || !detail.msg.trim()) return
@@ -65,9 +82,15 @@ const collectMessages = (body) => {
   return messages
 }
 
+/**
+ * Returns the first human-readable message from a response envelope.
+ * Supports `message`, `error.message`, `detail`, structured `details` and
+ * FastAPI validation arrays. Returns an empty string when none is present.
+ */
 export const envelopeMessage = (body) => collectMessages(body)[0] ?? ''
 
 const buildUrl = (path) => {
+  // Absolute URLs bypass API_BASE_URL so callers can target another host.
   if (/^https?:\/\//i.test(path)) return path
   return `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`
 }
@@ -79,6 +102,7 @@ const readBody = async (response) => {
   try {
     return JSON.parse(text)
   } catch {
+    // Non-JSON responses (proxies, HTML error pages) still need a usable message.
     return { message: text }
   }
 }
@@ -97,8 +121,18 @@ const pickErrorMessage = (body, status) => {
   return 'Something went wrong. Please try again.'
 }
 
+// Shared promise so concurrent 401s start a single refresh instead of one each.
 let refreshInFlight = null
 
+/**
+ * Refreshes the access token using the stored refresh token.
+ * POSTs to API_ROUTES.refresh with the configured refresh-token field, unauthed,
+ * then stores any returned access/refresh token and expiry.
+ * Concurrent callers share one in-flight request; the slot is cleared in
+ * `finally` so a later call can try again.
+ * Returns true when a new access token was stored, false when there is no
+ * refresh token, the response carried no token, or the request failed.
+ */
 export const refreshAccessToken = async () => {
   const refreshToken = getRefreshToken()
   if (!refreshToken) return false
@@ -141,9 +175,37 @@ const ensureFreshToken = async () => {
   if (!isAccessTokenExpired()) return token
 
   const refreshed = await refreshAccessToken()
+  // If refresh fails, keep the old token so the request still runs and the 401
+  // handler can decide whether to sign the user out.
   return refreshed ? getAccessToken() : token
 }
 
+/**
+ * Performs one API request and normalises the outcome.
+ *
+ * Lifecycle:
+ * 1. Rejects early (ApiError, status 0) when the base URL is not configured.
+ * 2. Builds the URL from API_BASE_URL (or uses an absolute path as-is).
+ * 3. Serialises a JSON body, or form-urlencoded when `form` is true.
+ * 4. With `auth`, reads the token store, refreshing first when the stored token
+ *    is expired, and adds `Authorization: Bearer ...` when a token exists.
+ * 5. Attaches an AbortController timer; an abort becomes a timeout ApiError.
+ * 6. Parses JSON, falling back to `{ message: text }` for non-JSON bodies.
+ * 7. On 401 with `allowRefresh`, attempts one single-flight refresh and retries
+ *    once with `allowRefresh: false`; if that fails, clears the session and
+ *    client state before throwing.
+ * 8. Treats `{ success: false }` as an error even on HTTP 200.
+ *
+ * @param path API path (joined to API_BASE_URL) or absolute URL.
+ * @param options.method HTTP method, default GET.
+ * @param options.body Request payload; JSON unless `form` is true.
+ * @param options.auth Whether to attach the bearer token (default false).
+ * @param options.timeout Abort timeout in ms, default REQUEST_TIMEOUT_MS.
+ * @param options.allowRefresh Whether a 401 may trigger a token refresh.
+ * @param options.form Send `body` as application/x-www-form-urlencoded.
+ * @returns The parsed response payload without unwrapping the `data` envelope.
+ * @throws ApiError for configuration, network, timeout and non-2xx responses.
+ */
 export const request = async (
   path: string,
   {
@@ -205,6 +267,8 @@ export const request = async (
   const payload = await readBody(response)
 
   if (!response.ok) {
+    // One retry only: allowRefresh is false on the retried call, so a backend
+    // that keeps returning 401 cannot loop.
     if (auth && response.status === 401 && allowRefresh) {
       const refreshed = await refreshAccessToken()
       if (refreshed) {
@@ -217,6 +281,7 @@ export const request = async (
     throw new ApiError(pickErrorMessage(payload, response.status), response.status, payload)
   }
 
+  // Some endpoints report business failures with HTTP 200 and `success: false`.
   if (payload && payload.success === false) {
     throw new ApiError(pickErrorMessage(payload, response.status), response.status, payload)
   }

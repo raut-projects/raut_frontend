@@ -1,3 +1,8 @@
+// Platform configuration service.
+// Reads and updates runtime config values (including scoped overrides and
+// version history) through the shared `./api` helpers. All requests reject with
+// ApiError on failure.
+
 import { API_ROUTES } from "../lib/config";
 import type {
   ConfigDetail,
