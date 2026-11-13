@@ -25,30 +25,30 @@ export function ConfigCard({
 }) {
   return (
     <section
-      className={cn(
+      className={ cn(
         "overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card",
         className,
-      )}
+      ) }
     >
-      {(title || description || action) && (
+      { (title || description || action) && (
         <header className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
           <div>
-            {title && (
-              <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
-            )}
-            {description && (
-              <p className="mt-0.5 text-xs text-slate-500">{description}</p>
-            )}
+            { title && (
+              <h3 className="text-sm font-semibold text-slate-900">{ title }</h3>
+            ) }
+            { description && (
+              <p className="mt-0.5 text-xs text-slate-500">{ description }</p>
+            ) }
           </div>
-          {action}
+          { action }
         </header>
-      )}
-      <div className="px-5 py-5">{children}</div>
-      {footer && (
+      ) }
+      <div className="px-5 py-5">{ children }</div>
+      { footer && (
         <div className="border-t border-slate-200 bg-slate-50 px-5 py-4">
-          {footer}
+          { footer }
         </div>
-      )}
+      ) }
     </section>
   );
 }
@@ -58,6 +58,7 @@ export function ConfigField({
   hint,
   error,
   htmlFor,
+  action,
   children,
   className,
 }: {
@@ -65,23 +66,27 @@ export function ConfigField({
   hint?: string;
   error?: string;
   htmlFor?: string;
+  action?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
   return (
-    <div className={className}>
-      <Label
-        htmlFor={htmlFor}
-        className="mb-1.5 block text-xs font-semibold text-slate-600"
-      >
-        {label}
-      </Label>
-      {children}
-      {error ? (
-        <p className="mt-1.5 text-xs font-medium text-rose-600">{error}</p>
+    <div className={ className }>
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <Label
+          htmlFor={ htmlFor }
+          className="block text-xs font-semibold text-slate-600"
+        >
+          { label }
+        </Label>
+        { action }
+      </div>
+      { children }
+      { error ? (
+        <p className="mt-1.5 text-xs font-medium text-rose-600">{ error }</p>
       ) : hint ? (
-        <p className="mt-1.5 text-xs text-slate-500">{hint}</p>
-      ) : null}
+        <p className="mt-1.5 text-xs text-slate-500">{ hint }</p>
+      ) : null }
     </div>
   );
 }
@@ -102,36 +107,36 @@ export function TabActions({
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4">
       <p className="text-xs text-slate-500">
-        {isSaving
+        { isSaving
           ? "Saving configuration…"
           : dirty
             ? "You have unsaved changes."
-            : "All changes saved."}
+            : "All changes saved." }
       </p>
       <div className="flex items-center gap-2">
         <Button
           type="button"
           variant="outline"
-          onClick={onReset}
-          disabled={!dirty || isSaving}
+          onClick={ onReset }
+          disabled={ !dirty || isSaving }
           className="h-9 border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
         >
           Discard
         </Button>
         <Button
           type="button"
-          onClick={onSave}
-          disabled={!dirty || isSaving}
+          onClick={ onSave }
+          disabled={ !dirty || isSaving }
           className="h-9 bg-brand-600 px-3.5 text-sm font-semibold text-white hover:bg-brand-700"
         >
-          {isSaving ? (
+          { isSaving ? (
             <>
               <LoaderCircle className="animate-spin" />
               Saving…
             </>
           ) : (
             saveLabel
-          )}
+          ) }
         </Button>
       </div>
     </div>
@@ -141,12 +146,12 @@ export function TabActions({
 export function ConfigSkeleton({ fields = 6 }: { fields?: number }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: fields }, (_, index) => (
-        <div key={index} className="space-y-2">
+      { Array.from({ length: fields }, (_, index) => (
+        <div key={ index } className="space-y-2">
           <Skeleton className="h-3 w-24 bg-slate-200" />
           <Skeleton className="h-10 w-full bg-slate-100" />
         </div>
-      ))}
+      )) }
     </div>
   );
 }

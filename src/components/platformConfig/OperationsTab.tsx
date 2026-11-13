@@ -1,276 +1,112 @@
 "use client";
 
-import { cn } from "cn";
+import { useMemo, useState } from "react";
+import { Settings2 } from "lucide-react";
 
+import { ConfigHistoryPanel } from "@/components/platformConfig/ConfigHistoryPanel";
+import { ConfigSection } from "@/components/platformConfig/ConfigSection";
 import {
   ConfigCard,
-  ConfigField,
   ConfigSkeleton,
   TabActions,
 } from "@/components/platformConfig/ConfigPrimitives";
-import { QueryError } from "@/components/queryStates";
-import { useToast } from "@/components/toastContext";
-import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useConfigDraft } from "@/hooks/useConfigDraft";
+import { useConfigForm } from "@/hooks/useConfigForm";
 import {
-  useOperationsConfig,
-  useUpdateOperationsConfig,
-} from "@/hooks/usePlatformConfig";
-import { AUTO_PAYOUT_OPTIONS, toOperationsDraft } from "@/lib/platformConfig";
-import { operationsSchema, toFieldErrors } from "@/schemas/platformConfigSchemas";
-import type {
-  AutoPayoutSchedule,
-  OperationsConfig,
-} from "@/types/platformConfig";
+  OPERATIONS_SECTIONS,
+  isOperationsConfig,
+  sectionsForRecords,
+} from "@/lib/configRegistry";
+import type { ConfigRecord } from "@/types/platformConfig";
 
-export function OperationsTab() {
-  const query = useOperationsConfig();
-  const update = useUpdateOperationsConfig();
-  const { success, error: toastError } = useToast();
-
+export function OperationsTab({ configs }: { configs: ConfigRecord[] }) {
+  const records = useMemo(() => configs.filter(isOperationsConfig), [configs]);
   const {
     draft,
-    setDraft,
     errors,
-    setErrors,
     dirty,
+    isSaving,
+    handleSave,
     reset,
-    markSaved,
-  } = useConfigDraft(query.data, toOperationsDraft);
+    setDraft,
+    setErrors,
+  } = useConfigForm(records);
+  const [historyKey, setHistoryKey] = useState<string | null>(null);
 
-  const handleSave = async () => {
-    if (!draft) return;
+  const historyRecord =
+    records.find((record) => record.key === historyKey) ?? null;
 
-    const parsed = operationsSchema.safeParse(draft);
+  const handleChange = (key: string, value: string | boolean) => {
+    setDraft((current) => ({ ...current, [key]: value }));
 
-    if (!parsed.success) {
-      const fieldErrors = toFieldErrors(parsed.error);
-      setErrors(fieldErrors);
-      toastError(
-        Object.values(fieldErrors)[0] ?? "Check the highlighted fields.",
-      );
-      return;
-    }
-
-    setErrors({});
-
-    try {
-      await update.mutateAsync(parsed.data as OperationsConfig);
-      markSaved();
-      success("Operations configuration saved.");
-    } catch (saveError) {
-      toastError(
-        saveError?.message ?? "Could not save the operations configuration.",
-      );
+    if (errors[key]) {
+      const next = { ...errors };
+      delete next[key];
+      setErrors(next);
     }
   };
 
-  if (query.isPending) {
+  if (!records.length) {
+    return (
+      <ConfigCard
+        title="Operations"
+        description="No operational configuration was returned for this environment."
+      >
+        <div className="flex flex-col items-center gap-2 py-10 text-center">
+          <Settings2
+            className="size-6 text-slate-400"
+            strokeWidth={ 1.8 }
+            aria-hidden="true"
+          />
+          <p className="text-sm font-medium text-slate-700">
+            Nothing to configure yet
+          </p>
+          <p className="max-w-sm text-xs text-slate-500">
+            Operational limits will appear here once they are available in the
+            config registry.
+          </p>
+        </div>
+      </ConfigCard>
+    );
+  }
+
+  if (!draft) {
     return (
       <ConfigCard title="Operations" description="Loading operations settings…">
-        <ConfigSkeleton fields={6} />
+        <ConfigSkeleton fields={ 6 } />
       </ConfigCard>
     );
   }
 
-  if (query.isError) {
-    return (
-      <ConfigCard title="Operations">
-        <QueryError error={query.error} onRetry={query.refetch} />
-      </ConfigCard>
-    );
-  }
-
-  if (!draft) return null;
+  const sections = sectionsForRecords(OPERATIONS_SECTIONS, records);
 
   return (
     <div className="space-y-5">
-      <ConfigCard
-        title="Payouts"
-        description="Control when driver payouts are released and the smallest amount that can be paid out."
-      >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <ConfigField
-            label="Minimum payout (TZS)"
-            htmlFor="min-payout"
-            hint="1,000 – 50,000"
-            error={errors.min_payout_amount_tzs}
-          >
-            <Input
-              id="min-payout"
-              type="number"
-              min="1000"
-              max="50000"
-              step="500"
-              value={draft.min_payout_amount_tzs}
-              onChange={(event) =>
-                setDraft((current) => ({
-                  ...current,
-                  min_payout_amount_tzs: event.target.value,
-                }))
-              }
-              className="h-10 border-slate-200 bg-white"
-            />
-          </ConfigField>
-
-          <div>
-            <p className="mb-1.5 text-xs font-semibold text-slate-600">
-              Automatic payout schedule
-            </p>
-            <RadioGroup
-              value={draft.auto_payout_schedule}
-              onValueChange={(value) =>
-                setDraft((current) => ({
-                  ...current,
-                  auto_payout_schedule: value as AutoPayoutSchedule,
-                }))
-              }
-              aria-label="Automatic payout schedule"
-            >
-              {AUTO_PAYOUT_OPTIONS.map((option) => (
-                <label
-                  key={option.value}
-                  htmlFor={`payout-${option.value}`}
-                  className={cn(
-                    "flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors",
-                    draft.auto_payout_schedule === option.value
-                      ? "border-brand-300 bg-brand-50"
-                      : "border-slate-200 bg-white hover:bg-slate-50",
-                  )}
-                >
-                  <RadioGroupItem
-                    value={option.value}
-                    id={`payout-${option.value}`}
-                    className="mt-0.5"
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-slate-800">
-                      {option.label}
-                    </p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      {option.description}
-                    </p>
-                  </div>
-                </label>
-              ))}
-            </RadioGroup>
-            {errors.auto_payout_schedule && (
-              <p className="mt-1.5 text-xs font-medium text-rose-600">
-                {errors.auto_payout_schedule}
-              </p>
-            )}
-          </div>
-        </div>
-      </ConfigCard>
-
-      <ConfigCard
-        title="System limits"
-        description="Operational guardrails applied to requests, documents and admin sessions."
-      >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <ConfigField
-            label="Document expiry reminder (days)"
-            htmlFor="document-reminder"
-            hint="7 – 90 days before expiry"
-            error={errors.document_expiry_reminder_days}
-          >
-            <Input
-              id="document-reminder"
-              type="number"
-              min="7"
-              max="90"
-              step="1"
-              value={draft.document_expiry_reminder_days}
-              onChange={(event) =>
-                setDraft((current) => ({
-                  ...current,
-                  document_expiry_reminder_days: event.target.value,
-                }))
-              }
-              className="h-10 border-slate-200 bg-white"
-            />
-          </ConfigField>
-
-          <ConfigField
-            label="Maximum concurrent requests"
-            htmlFor="max-concurrent"
-            hint="1 – 5 ride requests per customer"
-            error={errors.max_concurrent_requests}
-          >
-            <Input
-              id="max-concurrent"
-              type="number"
-              min="1"
-              max="5"
-              step="1"
-              value={draft.max_concurrent_requests}
-              onChange={(event) =>
-                setDraft((current) => ({
-                  ...current,
-                  max_concurrent_requests: event.target.value,
-                }))
-              }
-              className="h-10 border-slate-200 bg-white"
-            />
-          </ConfigField>
-
-          <ConfigField
-            label="Request timeout (seconds)"
-            htmlFor="request-timeout"
-            hint="10 – 120 seconds"
-            error={errors.request_timeout_seconds}
-          >
-            <Input
-              id="request-timeout"
-              type="number"
-              min="10"
-              max="120"
-              step="5"
-              value={draft.request_timeout_seconds}
-              onChange={(event) =>
-                setDraft((current) => ({
-                  ...current,
-                  request_timeout_seconds: event.target.value,
-                }))
-              }
-              className="h-10 border-slate-200 bg-white"
-            />
-          </ConfigField>
-
-          <ConfigField
-            label="Session expiry (minutes)"
-            htmlFor="session-expiry"
-            hint="60 – 10,080 minutes (7 days)"
-            error={errors.session_token_expiry_minutes}
-          >
-            <Input
-              id="session-expiry"
-              type="number"
-              min="60"
-              max="10080"
-              step="60"
-              value={draft.session_token_expiry_minutes}
-              onChange={(event) =>
-                setDraft((current) => ({
-                  ...current,
-                  session_token_expiry_minutes: event.target.value,
-                }))
-              }
-              className="h-10 border-slate-200 bg-white"
-            />
-          </ConfigField>
-        </div>
-      </ConfigCard>
+      { sections.map((section) => (
+        <ConfigSection
+          key={ section.id }
+          section={ section }
+          records={ records }
+          draft={ draft }
+          errors={ errors }
+          onChange={ handleChange }
+          onShowHistory={ setHistoryKey }
+        />
+      )) }
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
         <TabActions
-          dirty={dirty}
-          isSaving={update.isPending}
-          onSave={handleSave}
-          onReset={reset}
+          dirty={ dirty }
+          isSaving={ isSaving }
+          onSave={ () => handleSave("Operations configuration saved.") }
+          onReset={ reset }
         />
       </div>
+
+      <ConfigHistoryPanel
+        record={ historyRecord }
+        open={ Boolean(historyKey) }
+        onClose={ () => setHistoryKey(null) }
+      />
     </div>
   );
 }
