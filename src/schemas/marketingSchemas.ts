@@ -1,11 +1,22 @@
+/**
+ * Zod schema for the marketing promotion form: string-backed numeric inputs
+ * are parsed and cross-field rules applied in `superRefine`. Amounts are TZS.
+ */
 import { z } from "zod";
 
+/** Promo codes are uppercase letters, digits, and hyphens only. */
 const PROMO_CODE_PATTERN = /^[A-Z0-9-]+$/;
+/** Accepts labels such as "Mon-Fri 7-9am, 5-8pm". */
 const PEAK_HOURS_PATTERN =
   /[A-Za-z]{3}(?:\s*-\s*[A-Za-z]{3})?\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)?(?:\s*-\s*\d{1,2}(?::\d{2})?\s*(?:am|pm))?/i;
 
 const numeric = (value: string) => Number(value);
 
+/**
+ * Adds a validation issue for a string-backed numeric field.
+ * Empty values pass when `required` is false; otherwise the value must be a
+ * finite number within `[min, max]` and, when `integer` is set, a whole number.
+ */
 const addNumberIssue = (
   value: string,
   path: string,
@@ -65,6 +76,19 @@ const addNumberIssue = (
   }
 };
 
+/**
+ * Validates a promotion before it is created or updated.
+ *
+ * String fields ending in `Tzs` are numeric inputs in TZS; `perUserLimit` and
+ * `totalUsesLimit` are whole-number strings. `startsAt` / `endsAt` are date
+ * strings and must span at least one hour. Rule enforcement:
+ * - percentage discounts require 1-100 and an optional max-discount cap
+ * - fixed discounts require a positive amount
+ * - free rides require a positive maximum ride value
+ * - at least one audience must be selected; specific users need phones
+ * - total uses cannot be lower than the per-user limit
+ * - peak-hour labels are only required when `peakHoursOnly` is set
+ */
 export const promotionFormSchema = z
   .object({
     code: z
@@ -238,4 +262,5 @@ export const promotionFormSchema = z
     }
   });
 
+/** Form values inferred from `promotionFormSchema`. */
 export type PromotionFormSchema = z.infer<typeof promotionFormSchema>;

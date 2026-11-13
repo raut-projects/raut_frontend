@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * Live rides controller for the real-time operations map.
+ * Normalizes REST bootstrap, websocket streaming and mock simulation into one
+ * store-backed hook. It also derives role permissions, persists filters in the
+ * page-view store and windows the filtered ride list. Collaborates with
+ * liveRidesStore, the liveRides services, useSession and useWindowedList.
+ */
 import { useEffect, useRef, useCallback, useMemo } from "react";
 import { useLiveRidesStore } from "@/store/liveRidesStore";
 import { listLiveRides } from "@/services/liveRides";
@@ -12,7 +19,23 @@ import { normalizeRole } from "@/lib/roles";
 import { isFullControlRole, canEscalateOrNote } from "@/lib/liveRides";
 import { useWindowedList } from "./useWindowedList";
 
+/**
+ * Drives the live-rides screen from the shared liveRides store.
+ *
+ * Transport modes: mock mode refetches on filter changes, seeds the simulator
+ * and advances it every 5 seconds; otherwise, when `LIVE_RIDES_WS_URL` is set,
+ * a websocket streams ride updates after the initial REST snapshot. Filters
+ * persist through `usePageViewField`. Permissions are derived from the
+ * normalized session role: full-control roles can manage, any other known role
+ * is view-only, and escalation/notes are role-gated. The filtered list is
+ * sorted by newest status change and windowed with `useWindowedList`.
+ *
+ * @returns Filters and setters, filtered/visible rides, windowing props,
+ *   permissions, connection state and store actions for ride operations.
+ */
 export function useLiveRides() {
+  // Whole-store subscription exposes the actions; scalar fields are selected
+  // separately below so rendering values stay stable.
   const api = useLiveRidesStore((s) => s);
   const rides = useLiveRidesStore((s) => s.rides);
   const connection = useLiveRidesStore((s) => s.connection);
@@ -46,6 +69,7 @@ export function useLiveRides() {
   );
   const [viewMode, setViewMode] = usePageViewField("live-rides", "viewMode");
 
+  // Initial REST snapshot; mock mode also seeds the simulator from it.
   useEffect(() => {
     const load = async () => {
       const fetched = await listLiveRides({

@@ -1,12 +1,20 @@
+// Live rides domain model and geo/formatting helpers. Defines the ride shapes
+// used by the live map and list, status/type labels, Dar es Salaam map bounds
+// and deterministic helpers that keep seeded mock data stable across renders.
+
+/** Lifecycle status of an active ride ("completed" is terminal). */
 export type LiveRideStatus =
   | "accepted"
   | "arrived"
   | "picked_up"
   | "near_dropoff"
   | "completed";
+/** Ride product type, including the two DUO roles. */
 export type RideType = "private" | "duo_host" | "duo_declared";
+/** How the live rides screen presents rides. */
 export type LiveRideViewMode = "map" | "list" | "both";
 
+/** Driver summary attached to a live ride. */
 export interface LiveRideDriver {
   id: string;
   name: string;
@@ -17,6 +25,7 @@ export interface LiveRideDriver {
   plate: string;
 }
 
+/** Customer summary attached to a live ride. */
 export interface LiveRideCustomer {
   id: string;
   name: string;
@@ -25,6 +34,7 @@ export interface LiveRideCustomer {
   ratingCount: number;
 }
 
+/** Driver position. `heading` is in degrees. */
 export interface LiveRidePosition {
   lat: number;
   lng: number;
@@ -32,12 +42,14 @@ export interface LiveRidePosition {
   speed: number;
 }
 
+/** A named pickup or dropoff point. */
 export interface LiveRideWaypoint {
   name: string;
   lat: number;
   lng: number;
 }
 
+/** Fare breakdown in TZS. `platformPct` is the platform fee percentage. */
 export interface LiveRideFare {
   total: number;
   base: number;
@@ -47,6 +59,7 @@ export interface LiveRideFare {
   platformFee: number;
 }
 
+/** Issue flags detected for a ride. */
 export interface LiveRideIssues {
   longWait: boolean;
   offRoute: boolean;
@@ -54,12 +67,14 @@ export interface LiveRideIssues {
   flagged: boolean;
 }
 
+/** A free-text operational note on a ride. */
 export interface LiveRideNote {
   id: string;
   text: string;
   createdAt: string;
 }
 
+/** A ride as consumed by the live rides UI. Timestamps are ISO strings. */
 export interface LiveRide {
   id: string;
   displayId: string;
@@ -81,6 +96,7 @@ export interface LiveRide {
   removedAt?: string;
 }
 
+/** Loosely-typed ride shape as returned by the API, before normalization. */
 export interface LiveRideRawInput {
   id: string;
   status: string;
@@ -105,6 +121,7 @@ export interface LiveRideRawInput {
   plate?: string | null;
 }
 
+/** Status to display label lookup. */
 export const LIVE_RIDE_STATUS_LABELS: Record<LiveRideStatus, string> = {
   accepted: "Accepted",
   arrived: "Arrived",
@@ -113,12 +130,14 @@ export const LIVE_RIDE_STATUS_LABELS: Record<LiveRideStatus, string> = {
   completed: "Completed",
 };
 
+/** Ride type to display label lookup. */
 export const LIVE_RIDE_TYPE_LABELS: Record<RideType, string> = {
   private: "Private",
   duo_host: "DUO (Host)",
   duo_declared: "DUO (Declared)",
 };
 
+/** Active statuses offered as list filters (excludes completed). */
 export const LIVE_RIDE_FILTER_STATUSES: LiveRideStatus[] = [
   "accepted",
   "arrived",
@@ -126,6 +145,7 @@ export const LIVE_RIDE_FILTER_STATUSES: LiveRideStatus[] = [
   "near_dropoff",
 ];
 
+/** Canonical status progression, used for ordering and progress calculation. */
 export const STATUS_ORDER: LiveRideStatus[] = [
   "accepted",
   "arrived",
@@ -134,19 +154,23 @@ export const STATUS_ORDER: LiveRideStatus[] = [
   "completed",
 ];
 
+/** All ride types offered as filters. */
 export const LIVE_RIDE_FILTER_TYPES: RideType[] = [
   "private",
   "duo_host",
   "duo_declared",
 ];
 
+/** Marker colours for driver, pickup and dropoff. */
 export const DEFAULT_RIDE_COLORS = {
   driver: "#2563eb",
   pickup: "#16a34a",
   dropoff: "#dc2626",
 };
 
+/** Default map centre (Dar es Salaam). */
 export const LIVE_RIDES_DAR_ES_SALAAM_CENTER = { lat: -6.7924, lng: 39.2083 };
+/** Map bounds restricting the live map to Dar es Salaam. */
 export const LIVE_RIDES_DAR_BOUNDS = {
   north: -6.74,
   south: -6.92,
@@ -154,6 +178,7 @@ export const LIVE_RIDES_DAR_BOUNDS = {
   west: 39.1,
 };
 
+/** Sample Dar es Salaam locations used to seed mock rides. */
 export const LIVE_RIDE_LOCATIONS: Array<{
   name: string;
   lat: number;
@@ -171,6 +196,7 @@ export const LIVE_RIDE_LOCATIONS: Array<{
   { name: "Airport", lat: -6.8787, lng: 39.2026 },
 ];
 
+/** Deterministic 32-bit hash of a string, used to seed mock data. */
 export function stableHash(value: string): number {
   let h = 0;
   for (let i = 0; i < value.length; i++) {
@@ -179,10 +205,12 @@ export function stableHash(value: string): number {
   return Math.abs(h);
 }
 
+/** Picks an item from `items` deterministically based on `value`. */
 export function deterministicChoice<T>(value: string, items: T[]): T {
   return items[stableHash(value) % items.length];
 }
 
+/** Returns a deterministic integer in [min, max] derived from `value`. */
 export function deterministicNumber(
   value: string,
   min: number,
@@ -191,6 +219,7 @@ export function deterministicNumber(
   return min + (stableHash(value) % (max - min + 1));
 }
 
+/** Masks a phone number, keeping only the last 4 digits visible. */
 export function maskPhone(phone: string): string {
   const digits = phone.replace(/\D/g, "");
   if (digits.length <= 4) return phone;
@@ -198,6 +227,7 @@ export function maskPhone(phone: string): string {
   return `+255 XXX XXX ${tail}`;
 }
 
+/** Formats an amount as TZS currency (no decimals). */
 export function formatMoneyTZS(value: number): string {
   return new Intl.NumberFormat("en-TZ", {
     style: "currency",
@@ -207,11 +237,13 @@ export function formatMoneyTZS(value: number): string {
   }).format(Math.max(0, Math.round(value)));
 }
 
+/** Formats an ETA in minutes; "Arriving" when 0 or less. */
 export function formatEta(minutes: number): string {
   if (minutes <= 0) return "Arriving";
   return `${Math.round(minutes)} min`;
 }
 
+/** Formats an ISO timestamp as a relative "X ago" string. */
 export function formatAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
   const seconds = Math.max(0, Math.floor(ms / 1000));
@@ -222,6 +254,7 @@ export function formatAgo(iso: string): string {
   return `${hours} h ago`;
 }
 
+/** Great-circle distance in km between two lat/lng points. */
 export function haversineKm(
   lat1: number,
   lng1: number,
@@ -242,6 +275,7 @@ export function haversineKm(
   return R * c;
 }
 
+/** Initial bearing in degrees from point 1 to point 2. */
 export function bearingDegrees(
   lat1: number,
   lng1: number,
@@ -257,6 +291,7 @@ export function bearingDegrees(
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
+/** Linearly interpolates a position toward a waypoint; heading is recomputed. */
 export function interpolatePosition(
   from: LiveRidePosition,
   to: LiveRideWaypoint,
@@ -294,5 +329,6 @@ export function canEscalateOrNote(role: string | null): boolean {
   ].includes(normalized);
 }
 
+/** Whether mock data is used for live rides (disabled only when env is "false"). */
 export const LIVE_RIDES_USE_MOCK_DATA =
   process.env.NEXT_PUBLIC_USE_MOCK_LIVE_RIDES !== "false";

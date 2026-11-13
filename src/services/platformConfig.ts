@@ -1,72 +1,78 @@
+// Platform configuration service.
+// Reads and updates runtime config values (including scoped overrides and
+// version history) through the shared `./api` helpers. All requests reject with
+// ApiError on failure.
+
 import { API_ROUTES } from "../lib/config";
 import type {
-  ConfigHistoryResponse,
-  FeatureFlags,
-  Integration,
-  IntegrationTestResult,
-  OperationsConfig,
-  PricingConfig,
+  ConfigDetail,
+  ConfigHistoryEntry,
+  ConfigListFilters,
+  ConfigRecord,
+  ConfigScope,
+  ConfigUpdate,
+  ConfigValue,
 } from "../types/platformConfig";
-import { apiGet, apiPost, apiPut } from "./api";
-import {
-  mapConfigHistory,
-  mapFeatureFlags,
-  mapIntegration,
-  mapIntegrationTestResult,
-  mapOperationsConfig,
-  mapPricingConfig,
-} from "./mappers";
+import { apiGet, apiPut } from "./api";
+import { mapConfigDetail, mapConfigHistory, mapConfigRecord } from "./mappers";
 
-export async function getPricingConfig(): Promise<PricingConfig> {
-  return mapPricingConfig(await apiGet(API_ROUTES.configPricing));
+export async function listConfigs(
+  filters: ConfigListFilters = {},
+): Promise<ConfigRecord[]> {
+  const data = await apiGet(API_ROUTES.configs, { params: filters });
+  const configs = Array.isArray(data?.configs)
+    ? data.configs
+    : Array.isArray(data?.items)
+      ? data.items
+      : Array.isArray(data)
+        ? data
+        : [];
+
+  return configs.map(mapConfigRecord).filter((config) => Boolean(config.key));
 }
 
-export async function updatePricingConfig(payload: PricingConfig) {
-  await apiPut(API_ROUTES.configPricing, payload);
-}
-
-export async function getFeatureFlags(): Promise<FeatureFlags> {
-  return mapFeatureFlags(await apiGet(API_ROUTES.configFeatures));
-}
-
-export async function updateFeatureFlags(payload: FeatureFlags) {
-  await apiPut(API_ROUTES.configFeatures, payload);
-}
-
-export async function getOperationsConfig(): Promise<OperationsConfig> {
-  return mapOperationsConfig(await apiGet(API_ROUTES.configOperations));
-}
-
-export async function updateOperationsConfig(payload: OperationsConfig) {
-  await apiPut(API_ROUTES.configOperations, payload);
-}
-
-export async function listIntegrations(): Promise<Integration[]> {
-  const data = await apiGet(API_ROUTES.configIntegrations);
-
-  if (!Array.isArray(data)) return [];
-
-  return data.map(mapIntegration);
-}
-
-export async function testIntegration(
-  service: string,
-): Promise<IntegrationTestResult> {
-  return mapIntegrationTestResult(
-    await apiPost(API_ROUTES.configIntegrationTest(service), {}),
+export async function getConfig(
+  configKey: string,
+  scope: ConfigScope = {},
+): Promise<ConfigDetail> {
+  return mapConfigDetail(
+    await apiGet(API_ROUTES.config(configKey), { params: scope }),
   );
 }
 
-export async function listConfigHistory({
-  page = 1,
-  limit = 5,
-}: {
-  page?: number;
-  limit?: number;
-} = {}): Promise<ConfigHistoryResponse> {
+export async function updateConfig(
+  configKey: string,
+  value: ConfigValue,
+): Promise<void> {
+  await apiPut(API_ROUTES.config(configKey), { value });
+}
+
+export type ConfigUpdateFailure = {
+  key: string;
+  error: unknown;
+};
+
+export async function updateConfigs(
+  updates: ConfigUpdate[],
+): Promise<ConfigUpdateFailure[]> {
+  const results = await Promise.allSettled(
+    updates.map((update) => updateConfig(update.key, update.value)),
+  );
+
+  return results.flatMap((result, index) =>
+    result.status === "rejected"
+      ? [{ key: updates[index].key, error: result.reason }]
+      : [],
+  );
+}
+
+export async function getConfigHistory(
+  configKey: string,
+  limit = 50,
+): Promise<ConfigHistoryEntry[]> {
   return mapConfigHistory(
-    await apiGet(API_ROUTES.configHistory, {
-      params: { page, limit },
+    await apiGet(API_ROUTES.configHistory(configKey), {
+      params: { limit },
     }),
   );
 }

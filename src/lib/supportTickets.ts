@@ -1,3 +1,6 @@
+// Support ticket types and helpers for the admin support screens: statuses,
+// priorities, assignment and escalation transitions.
+
 export type SupportTicketStatus = "open" | "in-progress" | "resolved" | "closed";
 
 export type SupportTicketPriority = "urgent" | "high" | "medium" | "low";

@@ -1,3 +1,7 @@
+/**
+ * Ride dispute hooks: detail query with 30s polling and resolve/refund mutations.
+ * Collaborates with rideDisputes service and toast notifications.
+ */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
 import { useToast } from "@/components/toastContext";
@@ -11,6 +15,9 @@ import type {
   ResolveRideDisputeInput,
 } from "@/lib/rideDisputes";
 
+/**
+ * useRideDispute hook.
+ */
 export function useRideDispute(rideId: string) {
   return useQuery({
     queryKey: queryKeys.rides.dispute(rideId),
@@ -20,6 +27,9 @@ export function useRideDispute(rideId: string) {
   });
 }
 
+/**
+ * useResolveRideDispute hook.
+ */
 export function useResolveRideDispute() {
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -42,6 +52,9 @@ export function useResolveRideDispute() {
   });
 }
 
+/**
+ * useIssueRideRefund hook.
+ */
 export function useIssueRideRefund() {
   const queryClient = useQueryClient();
   const toast = useToast();

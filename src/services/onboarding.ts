@@ -66,6 +66,13 @@ interface OnboardingData {
 /**
  * Upload a single document file using existing backend endpoint
  * POST /drivers/documents
+ *
+ * Builds multipart/form-data with the file, the backend `doc_type` and optional
+ * `vehicle_id`/`expires_at`, and authenticates with the bearer token from
+ * `getAuthToken`. This bypasses the JSON helper because the body is a File.
+ *
+ * Returns the created document id.
+ * Throws Error with the server's `detail`/`message` on a non-2xx response.
  */
 async function uploadDocument(
   file: File,
@@ -105,6 +112,14 @@ async function uploadDocument(
 
 /**
  * Submit complete onboarding application
+ *
+ * Runs four sequential steps: POST /drivers/register, POST /drivers/vehicles,
+ * one POST /drivers/documents per selected file (in parallel), then
+ * POST /drivers/onboarding/complete. The auth token comes from `getAuthToken`.
+ *
+ * @returns The `data` payload of the completion response.
+ * @throws Error with the server's `detail`/`message` when any step fails; the
+ * original error is logged before being rethrown.
  */
 export async function submitOnboarding(data: OnboardingData) {
   try {
@@ -231,6 +246,10 @@ export async function submitOnboarding(data: OnboardingData) {
 
 /**
  * Get authentication token from URL params or localStorage
+ *
+ * Checks `?token=` first (passed from the Flutter WebView) and persists it to
+ * localStorage so later requests and reloads keep working; otherwise reads the
+ * previously stored `auth_token`. Returns null when neither is present.
  */
 function getAuthToken(): string | null {
   // First check URL params (passed from Flutter WebView)

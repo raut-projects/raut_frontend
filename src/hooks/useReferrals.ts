@@ -1,3 +1,7 @@
+/**
+ * Referral program hooks: programs, users, relationships, stats and payments.
+ * Mutations invalidate the referrals cache. Collaborates with referrals service.
+ */
 import {
   keepPreviousData,
   useMutation,
@@ -39,6 +43,9 @@ function invalidateReferrals(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: queryKeys.referrals.all });
 }
 
+/**
+ * useReferralPrograms hook.
+ */
 export function useReferralPrograms(
   params: ReferralProgramListParams = {},
   enabled = true,
@@ -51,6 +58,9 @@ export function useReferralPrograms(
   });
 }
 
+/**
+ * useReferralProgram hook.
+ */
 export function useReferralProgram(programId: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.referrals.programs.detail(programId),
@@ -59,6 +69,9 @@ export function useReferralProgram(programId: string, enabled = true) {
   });
 }
 
+/**
+ * useCreateReferralProgram hook.
+ */
 export function useCreateReferralProgram() {
   const queryClient = useQueryClient();
 
@@ -69,6 +82,9 @@ export function useCreateReferralProgram() {
   });
 }
 
+/**
+ * useUpdateReferralProgram hook.
+ */
 export function useUpdateReferralProgram() {
   const queryClient = useQueryClient();
 
@@ -84,6 +100,9 @@ export function useUpdateReferralProgram() {
   });
 }
 
+/**
+ * useEnrollReferralUser hook.
+ */
 export function useEnrollReferralUser() {
   const queryClient = useQueryClient();
 
@@ -99,6 +118,9 @@ export function useEnrollReferralUser() {
   });
 }
 
+/**
+ * useBulkEnrollReferralUsers hook.
+ */
 export function useBulkEnrollReferralUsers() {
   const queryClient = useQueryClient();
 
@@ -114,6 +136,9 @@ export function useBulkEnrollReferralUsers() {
   });
 }
 
+/**
+ * useUnenrollReferralUser hook.
+ */
 export function useUnenrollReferralUser() {
   const queryClient = useQueryClient();
 
@@ -129,6 +154,9 @@ export function useUnenrollReferralUser() {
   });
 }
 
+/**
+ * useReferralUsers hook.
+ */
 export function useReferralUsers(
   params: ReferralUsersParams = {},
   enabled = true,
@@ -141,6 +169,9 @@ export function useReferralUsers(
   });
 }
 
+/**
+ * useReferralUser hook.
+ */
 export function useReferralUser(userId: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.referrals.users.detail(userId),
@@ -149,6 +180,9 @@ export function useReferralUser(userId: string, enabled = true) {
   });
 }
 
+/**
+ * useReferralRelationships hook.
+ */
 export function useReferralRelationships(
   params: ReferralRelationshipsParams = {},
   enabled = true,
@@ -161,6 +195,9 @@ export function useReferralRelationships(
   });
 }
 
+/**
+ * useReferralStats hook.
+ */
 export function useReferralStats(
   params: ReferralStatsParams = {},
   enabled = true,
@@ -172,6 +209,9 @@ export function useReferralStats(
   });
 }
 
+/**
+ * useTopReferrers hook.
+ */
 export function useTopReferrers(limit?: number, enabled = true) {
   return useQuery({
     queryKey: queryKeys.referrals.topReferrers(limit),
@@ -180,6 +220,9 @@ export function useTopReferrers(limit?: number, enabled = true) {
   });
 }
 
+/**
+ * usePendingReferralPayments hook.
+ */
 export function usePendingReferralPayments(enabled = true) {
   return useQuery({
     queryKey: queryKeys.referrals.pendingPayments,
@@ -188,6 +231,9 @@ export function usePendingReferralPayments(enabled = true) {
   });
 }
 
+/**
+ * useMarkReferralPaymentPaid hook.
+ */
 export function useMarkReferralPaymentPaid() {
   const queryClient = useQueryClient();
 
@@ -203,6 +249,9 @@ export function useMarkReferralPaymentPaid() {
   });
 }
 
+/**
+ * useMyReferralCode hook.
+ */
 export function useMyReferralCode(enabled = true) {
   return useQuery({
     queryKey: queryKeys.referrals.myCode,
@@ -211,6 +260,9 @@ export function useMyReferralCode(enabled = true) {
   });
 }
 
+/**
+ * useProcessReferral hook.
+ */
 export function useProcessReferral() {
   const queryClient = useQueryClient();
 

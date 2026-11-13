@@ -1,3 +1,7 @@
+/**
+ * In-memory filter state for each admin list page. `page` is 1-based, empty
+ * strings mean "not set", and select fields use "all" as the neutral value.
+ */
 import { useCallback } from "react";
 import { create } from "zustand";
 import type { AdminUserStatus } from "@/lib/adminUsers";
@@ -85,6 +89,7 @@ type PageViewValues = {
 
 type PageViewStore = {
   views: PageViewValues;
+  /** Immutably updates one field on one page's view. */
   setField: <
     Page extends keyof PageViewValues,
     Field extends keyof PageViewValues[Page],
@@ -93,6 +98,7 @@ type PageViewStore = {
     field: Field,
     value: PageViewValues[Page][Field],
   ) => void;
+  /** Restores every page view to its initial filters. */
   reset: () => void;
 };
 
@@ -180,6 +186,7 @@ function isUpdater<T>(
   return typeof value === "function";
 }
 
+/** Zustand store holding every page's filter drafts. */
 export const usePageViewStore = create<PageViewStore>()((set) => ({
   views: createInitialViews(),
   reset: () => set({ views: createInitialViews() }),
@@ -195,6 +202,11 @@ export const usePageViewStore = create<PageViewStore>()((set) => ({
     })),
 }));
 
+/**
+ * Reads and writes a single page field, mirroring the `useState` tuple.
+ * The setter accepts either a value or a functional updater, which always
+ * receives the latest store value rather than a stale render closure.
+ */
 export function usePageViewField<
   Page extends keyof PageViewValues,
   Field extends keyof PageViewValues[Page],

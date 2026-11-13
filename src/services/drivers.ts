@@ -1,3 +1,8 @@
+// Driver directory service.
+// Provides the full fleet (paged through for client-side filtering) and a
+// filtered page plus fleet-wide summary counts for the drivers table. All data
+// is normalised through `mapDriver`; request failures surface as ApiError.
+
 import { API_ROUTES } from "../lib/config";
 import { apiGet } from "./api";
 import { mapDriver } from "./mappers";
@@ -5,6 +10,15 @@ import { mapDriver } from "./mappers";
 // Keep page requests small while scanning the complete fleet for local filters.
 const FLEET_PAGE_SIZE = 100;
 
+/**
+ * Loads every driver in the fleet.
+ * Pages GET /drivers with a 100-row page, sorted by total rides, until the
+ * reported total is reached (or the backend stops returning rows).
+ * Returns `{ items, total, summary }`, where `summary` counts verified, pending
+ * and incomplete drivers from the loaded rows.
+ * Throws ApiError on request failure, or a plain Error when the page guard
+ * trips. `total` prefers the server-reported count.
+ */
 export async function listAllDrivers() {
   const items = [];
   let page = 1;
@@ -26,6 +40,7 @@ export async function listAllDrivers() {
     if (Number.isFinite(reportedTotal)) totalItems = reportedTotal;
 
     if (pageItems.length === 0) break;
+    // Without a server total, a short page marks the end of the collection.
     if (totalItems === null && pageItems.length < FLEET_PAGE_SIZE) break;
     if (page > 10_000) {
       throw new Error("Could not finish loading the driver list.");
@@ -50,6 +65,14 @@ export async function listAllDrivers() {
   };
 }
 
+/**
+ * Lists one page of drivers plus summary counts for the whole fleet.
+ * Runs two GET /drivers requests in parallel: the requested page (with optional
+ * `search` and `driver_status`) and a 100-row fleet sample used only for the
+ * summary, so the summary is capped at that page size.
+ * Returns `{ items, total, page, limit, summary }`.
+ * Throws ApiError if either request fails.
+ */
 export async function listDrivers({
   search = "",
   status = "all",
