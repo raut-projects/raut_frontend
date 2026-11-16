@@ -112,23 +112,26 @@ export const API_ROUTES = {
   configHistory: (configKey: string) =>
     `/admin/configs/${encodeURIComponent(configKey)}/history`,
 
-  // Support Tickets Endpoints
+  // Support Tickets Endpoints (Support Admin API). All ticket routes live under
+  // the queue collection; mutations carry the ticket `version`.
   supportTickets: "/support/tickets/queue",
   supportAgents: "/support/agents",
   supportTicket: (ticketId: string) =>
-    `/support/tickets/${encodeURIComponent(ticketId)}`,
+    `/support/tickets/queue/${encodeURIComponent(ticketId)}`,
+  supportTicketContext: (ticketId: string) =>
+    `/support/tickets/queue/${encodeURIComponent(ticketId)}/context`,
   supportTicketMessages: (ticketId: string) =>
-    `/support/tickets/${encodeURIComponent(ticketId)}/messages`,
+    `/support/tickets/queue/${encodeURIComponent(ticketId)}/messages`,
   supportTicketAssignment: (ticketId: string) =>
-    `/support/tickets/${encodeURIComponent(ticketId)}/assignment`,
+    `/support/tickets/queue/${encodeURIComponent(ticketId)}/assignment`,
   supportTicketAssignToMe: (ticketId: string) =>
-    `/support/tickets/${encodeURIComponent(ticketId)}/assign-to-me`,
+    `/support/tickets/queue/${encodeURIComponent(ticketId)}/assign-to-me`,
   supportTicketStatus: (ticketId: string) =>
-    `/support/tickets/${encodeURIComponent(ticketId)}/status`,
+    `/support/tickets/queue/${encodeURIComponent(ticketId)}/status`,
   supportTicketPriority: (ticketId: string) =>
-    `/support/tickets/${encodeURIComponent(ticketId)}/priority`,
+    `/support/tickets/queue/${encodeURIComponent(ticketId)}/priority`,
   supportTicketEscalate: (ticketId: string) =>
-    `/support/tickets/${encodeURIComponent(ticketId)}/escalate`,
+    `/support/tickets/queue/${encodeURIComponent(ticketId)}/escalate`,
 
   // Marketing and Referral Endpoints
   marketingPromotions: "/promotions/",

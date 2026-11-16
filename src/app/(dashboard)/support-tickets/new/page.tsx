@@ -16,10 +16,7 @@ import {
   SUPPORT_TICKET_PRIORITIES,
   TICKET_PRIORITY_LABELS,
 } from "@/lib/supportTickets";
-import type {
-  SupportTicketPriority,
-  SupportTicketRequesterType,
-} from "@/lib/supportTickets";
+import type { SupportTicketPriority } from "@/lib/supportTickets";
 import {
   createSupportTicket,
   type CreateSupportTicketInput,
@@ -27,11 +24,10 @@ import {
 
 const initialForm: CreateSupportTicketInput = {
   requesterId: "",
-  requesterType: "Rider",
   subject: "",
   category: SUPPORT_TICKET_CATEGORIES[0] ?? "",
-  priority: "medium",
-  message: "",
+  priority: "normal",
+  description: "",
 };
 
 function NewSupportTicketPage() {
@@ -91,41 +87,12 @@ function NewSupportTicketPage() {
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="space-y-1.5 text-sm font-medium text-slate-700">
-            Requester type
-            <select
-              value={ form.requesterType }
-              onChange={ (event) =>
-                updateField(
-                  "requesterType",
-                  event.target.value as SupportTicketRequesterType,
-                )
-              }
-              className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
-            >
-              <option value="Rider">Customer</option>
-              <option value="Driver">Driver</option>
-            </select>
-          </label>
-
-          <label className="space-y-1.5 text-sm font-medium text-slate-700">
             Requester ID
             <Input
               required
               value={ form.requesterId }
               onChange={ (event) => updateField("requesterId", event.target.value) }
-              placeholder="Enter the customer or driver account ID"
-              className="h-9"
-            />
-          </label>
-
-          <label className="space-y-1.5 text-sm font-medium text-slate-700 sm:col-span-2">
-            Subject
-            <Input
-              required
-              maxLength={ 200 }
-              value={ form.subject }
-              onChange={ (event) => updateField("subject", event.target.value) }
-              placeholder="Summarize the support issue"
+              placeholder="Customer or driver account ID"
               className="h-9"
             />
           </label>
@@ -146,6 +113,19 @@ function NewSupportTicketPage() {
             </select>
           </label>
 
+          <label className="space-y-1.5 text-sm font-medium text-slate-700 sm:col-span-2">
+            Subject
+            <Input
+              required
+              minLength={ 3 }
+              maxLength={ 200 }
+              value={ form.subject }
+              onChange={ (event) => updateField("subject", event.target.value) }
+              placeholder="Summarize the support issue"
+              className="h-9"
+            />
+          </label>
+
           <label className="space-y-1.5 text-sm font-medium text-slate-700">
             Priority
             <select
@@ -164,13 +144,13 @@ function NewSupportTicketPage() {
           </label>
 
           <label className="space-y-1.5 text-sm font-medium text-slate-700 sm:col-span-2">
-            Initial message
+            Description
             <Textarea
               required
               rows={ 5 }
-              maxLength={ 5000 }
-              value={ form.message }
-              onChange={ (event) => updateField("message", event.target.value) }
+              maxLength={ 10000 }
+              value={ form.description }
+              onChange={ (event) => updateField("description", event.target.value) }
               placeholder="Describe the request and any relevant context"
               className="min-h-32 bg-white"
             />
