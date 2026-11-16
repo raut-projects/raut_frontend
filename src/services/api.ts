@@ -46,7 +46,10 @@ type BodyOptions = {
  * unwrapped envelope data (an empty object when the body has no data).
  * Pass `{ auth: false }` for public endpoints. Throws ApiError on failure.
  */
-export const apiGet = async (path: string, { params, auth = true }: QueryOptions = {}) => {
+export const apiGet = async (
+  path: string,
+  { params, auth = true }: QueryOptions = {},
+) => {
   const payload = await request(`${path}${buildQuery(params)}`, { auth });
 
   return envelopeData(payload) ?? {};
@@ -57,7 +60,11 @@ export const apiGet = async (path: string, { params, auth = true }: QueryOptions
  * Body is JSON-encoded by `request`. Returns the unwrapped envelope data, or an
  * empty object when absent. Throws ApiError on failure.
  */
-export const apiPost = async (path: string, body?: unknown, { auth = true }: BodyOptions = {}) => {
+export const apiPost = async (
+  path: string,
+  body?: unknown,
+  { auth = true }: BodyOptions = {},
+) => {
   const payload = await request(path, { method: "POST", body, auth });
 
   return envelopeData(payload) ?? {};
@@ -68,7 +75,11 @@ export const apiPost = async (path: string, body?: unknown, { auth = true }: Bod
  * Returns the unwrapped envelope data, or an empty object when absent.
  * Throws ApiError on failure.
  */
-export const apiPatch = async (path: string, body?: unknown, { auth = true }: BodyOptions = {}) => {
+export const apiPatch = async (
+  path: string,
+  body?: unknown,
+  { auth = true }: BodyOptions = {},
+) => {
   const payload = await request(path, { method: "PATCH", body, auth });
 
   return envelopeData(payload) ?? {};
@@ -79,7 +90,11 @@ export const apiPatch = async (path: string, body?: unknown, { auth = true }: Bo
  * Returns the unwrapped envelope data, or an empty object when absent.
  * Throws ApiError on failure.
  */
-export const apiPut = async (path: string, body?: unknown, { auth = true }: BodyOptions = {}) => {
+export const apiPut = async (
+  path: string,
+  body?: unknown,
+  { auth = true }: BodyOptions = {},
+) => {
   const payload = await request(path, { method: "PUT", body, auth });
 
   return envelopeData(payload) ?? {};
@@ -90,7 +105,10 @@ export const apiPut = async (path: string, body?: unknown, { auth = true }: Body
  * Returns the unwrapped envelope data, or an empty object when absent.
  * Throws ApiError on failure.
  */
-export const apiDelete = async (path: string, { body, auth = true }: BodyOptions = {}) => {
+export const apiDelete = async (
+  path: string,
+  { body, auth = true }: BodyOptions = {},
+) => {
   const payload = await request(path, { method: "DELETE", body, auth });
 
   return envelopeData(payload) ?? {};

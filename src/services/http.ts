@@ -10,15 +10,15 @@ import {
   REFRESH_TOKEN_FIELD,
   REQUEST_TIMEOUT_MS,
   isApiConfigured,
-} from '../lib/config'
+} from "../lib/config";
 import {
   clearSession,
   getAccessToken,
   getRefreshToken,
   isAccessTokenExpired,
   updateTokens,
-} from './tokenStore'
-import { resetClientState } from '../store/resetClientState'
+} from "./tokenStore";
+import { resetClientState } from "../store/resetClientState";
 
 /**
  * Error thrown for transport, configuration and non-2xx API responses.
@@ -26,13 +26,13 @@ import { resetClientState } from '../store/resetClientState'
  * `body` is the parsed response payload when one was available.
  */
 export class ApiError extends Error {
-  status: number
-  body: any
+  status: number;
+  body: any;
   constructor(message: string, status = 0, body: any = null) {
-    super(message)
-    this.name = 'ApiError'
-    this.status = status
-    this.body = body
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.body = body;
   }
 }
 
@@ -42,87 +42,95 @@ export class ApiError extends Error {
  * otherwise the body unchanged (including null).
  */
 export const envelopeData = (body) =>
-  body && typeof body === 'object' && 'data' in body ? body.data : body
+  body && typeof body === "object" && "data" in body ? body.data : body;
 
 const collectMessages = (body) => {
-  const messages = []
+  const messages = [];
 
-  if (typeof body?.message === 'string' && body.message.trim()) {
-    messages.push(body.message.trim())
+  if (typeof body?.message === "string" && body.message.trim()) {
+    messages.push(body.message.trim());
   }
 
-  if (typeof body?.error?.message === 'string' && body.error.message.trim()) {
-    messages.push(body.error.message.trim())
+  if (typeof body?.error?.message === "string" && body.error.message.trim()) {
+    messages.push(body.error.message.trim());
   }
 
-  if (typeof body?.detail === 'string' && body.detail.trim()) {
-    messages.push(body.detail.trim())
+  if (typeof body?.detail === "string" && body.detail.trim()) {
+    messages.push(body.detail.trim());
   }
 
   const details = Array.isArray(body?.error?.details)
     ? body.error.details
     : Array.isArray(body?.details)
       ? body.details
-      : []
+      : [];
 
   details.forEach((detail) => {
-    if (typeof detail?.message !== 'string' || !detail.message.trim()) return
-    messages.push(detail.field ? `${detail.field}: ${detail.message.trim()}` : detail.message.trim())
-  })
+    if (typeof detail?.message !== "string" || !detail.message.trim()) return;
+    messages.push(
+      detail.field
+        ? `${detail.field}: ${detail.message.trim()}`
+        : detail.message.trim(),
+    );
+  });
 
   // FastAPI-style validation errors put entries in `detail` as an array.
   if (Array.isArray(body?.detail)) {
     body.detail.forEach((detail) => {
-      if (typeof detail?.msg !== 'string' || !detail.msg.trim()) return
-      const location = Array.isArray(detail.loc) ? detail.loc.join(' -> ') : ''
-      messages.push(location ? `${location}: ${detail.msg.trim()}` : detail.msg.trim())
-    })
+      if (typeof detail?.msg !== "string" || !detail.msg.trim()) return;
+      const location = Array.isArray(detail.loc) ? detail.loc.join(" -> ") : "";
+      messages.push(
+        location ? `${location}: ${detail.msg.trim()}` : detail.msg.trim(),
+      );
+    });
   }
 
-  return messages
-}
+  return messages;
+};
 
 /**
  * Returns the first human-readable message from a response envelope.
  * Supports `message`, `error.message`, `detail`, structured `details` and
  * FastAPI validation arrays. Returns an empty string when none is present.
  */
-export const envelopeMessage = (body) => collectMessages(body)[0] ?? ''
+export const envelopeMessage = (body) => collectMessages(body)[0] ?? "";
 
 const buildUrl = (path) => {
   // Absolute URLs bypass API_BASE_URL so callers can target another host.
-  if (/^https?:\/\//i.test(path)) return path
-  return `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`
-}
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+};
 
 const readBody = async (response) => {
-  const text = await response.text()
-  if (!text) return null
+  const text = await response.text();
+  if (!text) return null;
 
   try {
-    return JSON.parse(text)
+    return JSON.parse(text);
   } catch {
     // Non-JSON responses (proxies, HTML error pages) still need a usable message.
-    return { message: text }
+    return { message: text };
   }
-}
+};
 
 const pickErrorMessage = (body, status) => {
-  const [message, ...details] = collectMessages(body)
+  const [message, ...details] = collectMessages(body);
 
   if (message) {
-    return details.length ? `${message} (${details.join(', ')})` : message
+    return details.length ? `${message} (${details.join(", ")})` : message;
   }
 
-  if (status === 404) return 'The requested endpoint was not found.'
-  if (status === 422) return 'The request was rejected. Please check the details and try again.'
-  if (status === 429) return 'Too many attempts. Please wait a moment and try again.'
-  if (status >= 500) return 'The server ran into a problem. Please try again.'
-  return 'Something went wrong. Please try again.'
-}
+  if (status === 404) return "The requested endpoint was not found.";
+  if (status === 422)
+    return "The request was rejected. Please check the details and try again.";
+  if (status === 429)
+    return "Too many attempts. Please wait a moment and try again.";
+  if (status >= 500) return "The server ran into a problem. Please try again.";
+  return "Something went wrong. Please try again.";
+};
 
 // Shared promise so concurrent 401s start a single refresh instead of one each.
-let refreshInFlight = null
+let refreshInFlight = null;
 
 /**
  * Refreshes the access token using the stored refresh token.
@@ -134,51 +142,51 @@ let refreshInFlight = null
  * refresh token, the response carried no token, or the request failed.
  */
 export const refreshAccessToken = async () => {
-  const refreshToken = getRefreshToken()
-  if (!refreshToken) return false
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return false;
 
   if (!refreshInFlight) {
     refreshInFlight = (async () => {
       try {
-        const payload: any = await request(API_ROUTES.refresh, {
-          method: 'POST',
+        const payload: any = (await request(API_ROUTES.refresh, {
+          method: "POST",
           body: { [REFRESH_TOKEN_FIELD]: refreshToken },
           auth: false,
-        }) as any
+        })) as any;
 
-        const data = envelopeData(payload) ?? {}
-        const accessToken = data.access_token ?? data.accessToken ?? data.token
+        const data = envelopeData(payload) ?? {};
+        const accessToken = data.access_token ?? data.accessToken ?? data.token;
 
-        if (!accessToken) return false
+        if (!accessToken) return false;
 
         updateTokens({
           accessToken,
           refreshToken: data.refresh_token ?? data.refreshToken ?? undefined,
           expiresIn: data.expires_in ?? data.expiresIn ?? null,
-        })
+        });
 
-        return true
+        return true;
       } catch {
-        return false
+        return false;
       } finally {
-        refreshInFlight = null
+        refreshInFlight = null;
       }
-    })()
+    })();
   }
 
-  return refreshInFlight
-}
+  return refreshInFlight;
+};
 
 const ensureFreshToken = async () => {
-  const token = getAccessToken()
-  if (!token) return null
-  if (!isAccessTokenExpired()) return token
+  const token = getAccessToken();
+  if (!token) return null;
+  if (!isAccessTokenExpired()) return token;
 
-  const refreshed = await refreshAccessToken()
+  const refreshed = await refreshAccessToken();
   // If refresh fails, keep the old token so the request still runs and the 401
   // handler can decide whether to sign the user out.
-  return refreshed ? getAccessToken() : token
-}
+  return refreshed ? getAccessToken() : token;
+};
 
 /**
  * Performs one API request and normalises the outcome.
@@ -209,7 +217,7 @@ const ensureFreshToken = async () => {
 export const request = async (
   path: string,
   {
-    method = 'GET',
+    method = "GET",
     body,
     auth = false,
     timeout = REQUEST_TIMEOUT_MS,
@@ -219,34 +227,37 @@ export const request = async (
 ) => {
   if (!isApiConfigured) {
     throw new ApiError(
-      'Please check your internet connection and try again',
+      "Please check your internet connection and try again",
       0,
       null,
-    )
+    );
   }
 
-  const headers: Record<string, string> = { Accept: 'application/json' }
-  let requestBody: BodyInit | undefined = undefined
+  const headers: Record<string, string> = { Accept: "application/json" };
+  let requestBody: BodyInit | undefined = undefined;
 
   if (body !== undefined) {
     if (form) {
-      headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
-      requestBody = new URLSearchParams(body as Record<string, string>).toString()
+      headers["Content-Type"] =
+        "application/x-www-form-urlencoded;charset=UTF-8";
+      requestBody = new URLSearchParams(
+        body as Record<string, string>,
+      ).toString();
     } else {
-      headers['Content-Type'] = 'application/json'
-      requestBody = JSON.stringify(body)
+      headers["Content-Type"] = "application/json";
+      requestBody = JSON.stringify(body);
     }
   }
 
   if (auth) {
-    const token = await ensureFreshToken()
-    if (token) (headers as any).Authorization = `Bearer ${token}`
+    const token = await ensureFreshToken();
+    if (token) (headers as any).Authorization = `Bearer ${token}`;
   }
 
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeout)
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
 
-  let response
+  let response;
 
   try {
     response = await fetch(buildUrl(path), {
@@ -254,39 +265,62 @@ export const request = async (
       headers,
       body: requestBody,
       signal: controller.signal,
-    })
+    });
   } catch (error) {
-    if (error?.name === 'AbortError') {
-      throw new ApiError('The server took too long to respond. Please try again.', 0, null)
+    if (error?.name === "AbortError") {
+      throw new ApiError(
+        "The server took too long to respond. Please try again.",
+        0,
+        null,
+      );
     }
-    throw new ApiError('Something went wrong. Please check your connection.', 0, null)
+    throw new ApiError(
+      "Something went wrong. Please check your connection.",
+      0,
+      null,
+    );
   } finally {
-    clearTimeout(timer)
+    clearTimeout(timer);
   }
 
-  const payload = await readBody(response)
+  const payload = await readBody(response);
 
   if (!response.ok) {
     // One retry only: allowRefresh is false on the retried call, so a backend
     // that keeps returning 401 cannot loop.
     if (auth && response.status === 401 && allowRefresh) {
-      const refreshed = await refreshAccessToken()
+      const refreshed = await refreshAccessToken();
       if (refreshed) {
-        return request(path, { method, body, auth, timeout, allowRefresh: false, form })
+        return request(path, {
+          method,
+          body,
+          auth,
+          timeout,
+          allowRefresh: false,
+          form,
+        });
       }
-      clearSession()
-      resetClientState()
+      clearSession();
+      resetClientState();
     }
 
-    throw new ApiError(pickErrorMessage(payload, response.status), response.status, payload)
+    throw new ApiError(
+      pickErrorMessage(payload, response.status),
+      response.status,
+      payload,
+    );
   }
 
   // Some endpoints report business failures with HTTP 200 and `success: false`.
   if (payload && payload.success === false) {
-    throw new ApiError(pickErrorMessage(payload, response.status), response.status, payload)
+    throw new ApiError(
+      pickErrorMessage(payload, response.status),
+      response.status,
+      payload,
+    );
   }
 
-  return payload
-}
+  return payload;
+};
 
-export default request
+export default request;
