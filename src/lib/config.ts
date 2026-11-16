@@ -113,7 +113,7 @@ export const API_ROUTES = {
     `/admin/configs/${encodeURIComponent(configKey)}/history`,
 
   // Support Tickets Endpoints
-  supportTickets: "/support/tickets",
+  supportTickets: "/support/tickets/queue",
   supportAgents: "/support/agents",
   supportTicket: (ticketId: string) =>
     `/support/tickets/${encodeURIComponent(ticketId)}`,
