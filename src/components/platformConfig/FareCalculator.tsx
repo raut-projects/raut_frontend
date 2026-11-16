@@ -20,12 +20,15 @@ export type FareVehicle = {
 export function FareCalculator({
   vehicles,
   surgePercent,
+  pricePerMinute = "0",
 }: {
   vehicles: FareVehicle[];
   surgePercent: string;
+  pricePerMinute?: string;
 }) {
   const [vehicleLabel, setVehicleLabel] = useState(vehicles[0]?.label ?? "");
   const [distance, setDistance] = useState("7.3");
+  const [minutes, setMinutes] = useState("12");
   const [isPeak, setIsPeak] = useState(true);
 
   const vehicle =
@@ -34,14 +37,23 @@ export function FareCalculator({
   const fare = calculateFare({
     baseFare: vehicle?.baseFare,
     pricePerKm: vehicle?.pricePerKm,
+    pricePerMinute,
     surgePercent,
     distanceKm: distance,
+    minutes,
     isPeak,
   });
 
+  const hasTimeRate = Number(pricePerMinute) > 0;
   const rows = [
     { label: "Base fare", value: fare.base },
     { label: `Distance (${distance || 0} km)`, value: fare.distance },
+    {
+      label: hasTimeRate
+        ? `Time (${minutes || 0} min)`
+        : "Time (no rate configured)",
+      value: fare.time,
+    },
     { label: "Subtotal", value: fare.subtotal },
     {
       label: isPeak ? `Surge (${surgePercent || 0}%)` : "Surge",
@@ -53,7 +65,7 @@ export function FareCalculator({
     <ConfigCard
       title="Fare calculator"
       description="Preview a fare with the values currently in the form."
-      className="xl:sticky xl:top-4"
+      className="self-start xl:sticky xl:top-20"
     >
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
@@ -82,6 +94,17 @@ export function FareCalculator({
               className="h-9 border-slate-200 bg-white"
             />
           </ConfigField>
+          <ConfigField label="Time (min)" htmlFor="fare-minutes">
+            <Input
+              id="fare-minutes"
+              type="number"
+              min="0"
+              step="1"
+              value={ minutes }
+              onChange={ (event) => setMinutes(event.target.value) }
+              className="h-9 border-slate-200 bg-white"
+            />
+          </ConfigField>
         </div>
 
         <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
@@ -99,11 +122,11 @@ export function FareCalculator({
         </div>
 
         <dl className="space-y-2 text-sm">
-          { rows.map((row, index) => (
+          { rows.map((row) => (
             <div
               key={ row.label }
               className={
-                index === 2
+                row.label === "Subtotal"
                   ? "flex items-center justify-between border-t border-slate-200 pt-2 font-medium text-slate-700"
                   : "flex items-center justify-between text-slate-600"
               }

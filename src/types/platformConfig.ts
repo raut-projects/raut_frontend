@@ -91,3 +91,18 @@ export type FareBreakdown = {
   surge: number;
   total: number;
 };
+
+/**
+ * Simplified DUO fare preview; amounts are in TZS. `gross` is the undiscounted
+ * fare, `hostPays`/`coriderTotal` are the discounted amounts collected, and
+ * `driverEarning` is what remains after the platform fee.
+ */
+export type DuoFareBreakdown = {
+  gross: number;
+  hostPays: number;
+  coriderFare: number;
+  coriderTotal: number;
+  collected: number;
+  platformFee: number;
+  driverEarning: number;
+};
