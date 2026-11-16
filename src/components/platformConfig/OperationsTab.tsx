@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Settings2 } from "lucide-react";
+import { Info, Settings2 } from "lucide-react";
 
 import { ConfigHistoryPanel } from "@/components/platformConfig/ConfigHistoryPanel";
 import { ConfigSection } from "@/components/platformConfig/ConfigSection";
@@ -92,6 +92,30 @@ export function OperationsTab({ configs }: { configs: ConfigRecord[] }) {
           onShowHistory={ setHistoryKey }
         />
       )) }
+
+      <ConfigCard title="Not yet configurable">
+        <div className="flex gap-3">
+          <Info
+            className="mt-0.5 size-4 shrink-0 text-slate-400"
+            strokeWidth={ 1.8 }
+            aria-hidden="true"
+          />
+          <div className="space-y-2">
+            <p className="text-xs text-slate-500">
+              These operational settings are planned but have no key in the
+              config registry yet, so they are read-only for now:
+            </p>
+            <ul className="grid gap-1 text-xs text-slate-600 sm:grid-cols-2">
+              <li>Minimum driver payout</li>
+              <li>Automatic payout schedule</li>
+              <li>Document expiry reminder</li>
+              <li>Max concurrent ride requests</li>
+              <li>Ride request timeout</li>
+              <li>Admin session expiry</li>
+            </ul>
+          </div>
+        </div>
+      </ConfigCard>
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
         <TabActions

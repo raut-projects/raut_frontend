@@ -10,10 +10,16 @@ import {
   ConfigSkeleton,
   TabActions,
 } from "@/components/platformConfig/ConfigPrimitives";
+import { DuoFareCalculator } from "@/components/platformConfig/DuoFareCalculator";
 import {
   FareCalculator,
   type FareVehicle,
 } from "@/components/platformConfig/FareCalculator";
+import {
+  PEAK_HOURS_KEY,
+  PeakHoursDialog,
+} from "@/components/platformConfig/PeakHoursDialog";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useConfigForm } from "@/hooks/useConfigForm";
 import {
@@ -38,8 +44,9 @@ export function PricingTab({ configs }: { configs: ConfigRecord[] }) {
     setErrors,
   } = useConfigForm(records);
 
-  const [activeTab, setActiveTab] = useState<PricingTabId>("duo");
+  const [activeTab, setActiveTab] = useState<PricingTabId>("private");
   const [historyKey, setHistoryKey] = useState<string | null>(null);
+  const [peakHoursOpen, setPeakHoursOpen] = useState(false);
 
   const recordsByTab = useMemo(() => {
     const grouped: Record<PricingTabId, ConfigRecord[]> = {
@@ -58,6 +65,14 @@ export function PricingTab({ configs }: { configs: ConfigRecord[] }) {
 
   const historyRecord =
     records.find((record) => record.key === historyKey) ?? null;
+
+  const peakHoursRecord =
+    records.find((record) => record.key === PEAK_HOURS_KEY) ?? null;
+  const peakHoursRaw = peakHoursRecord?.value?.hours;
+  const peakHoursSummary =
+    typeof peakHoursRaw === "string" && peakHoursRaw.trim()
+      ? peakHoursRaw
+      : "Not set";
 
   const handleChange = (key: string, value: string | boolean) => {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -164,7 +179,64 @@ export function PricingTab({ configs }: { configs: ConfigRecord[] }) {
                       </p>
                     </ConfigCard>
                   ) }
+
+                  { tab.id === "private" && peakHoursRecord && (
+                    <ConfigCard
+                      title="Peak hours"
+                      description="Windows when the peak-hour surge applies."
+                      action={
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={ () => setPeakHoursOpen(true) }
+                          className="h-8 border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                          Edit peak hours
+                        </Button>
+                      }
+                    >
+                      <p className="text-sm text-slate-700">
+                        <span className="font-medium text-slate-500">
+                          Current schedule:
+                        </span>{" "}
+                        <span className="font-semibold">
+                          { peakHoursSummary }
+                        </span>
+                      </p>
+                    </ConfigCard>
+                  ) }
                 </div>
+
+                { tab.id === "duo" && (
+                  <DuoFareCalculator
+                    surgePercent={ surgePercent }
+                    vehicles={ [
+                      vehicle(
+                        "Car",
+                        "pricing.base_fare.car",
+                        "pricing.per_km_rate.car",
+                      ),
+                      vehicle(
+                        "XL",
+                        "pricing.base_fare.xl",
+                        "pricing.per_km_rate.xl",
+                      ),
+                    ] }
+                    hostDiscountPercent={ String(
+                      draft["duo.host_upfront_discount"] ?? "",
+                    ) }
+                    coriderDiscountPercent={ String(
+                      draft["duo.corider_base_discount"] ?? "",
+                    ) }
+                    coriderMaxFareRatio={ String(
+                      draft["duo.corider_max_fare_ratio"] ?? "",
+                    ) }
+                    commissionPercent={ String(
+                      draft["commission.duo_ride"] ?? "",
+                    ) }
+                    maxCoRiders={ String(draft["duo.max_coriders"] ?? "") }
+                  />
+                ) }
 
                 { tab.id === "private" && (
                   <FareCalculator
@@ -221,6 +293,13 @@ export function PricingTab({ configs }: { configs: ConfigRecord[] }) {
         open={ Boolean(historyKey) }
         onClose={ () => setHistoryKey(null) }
       />
+
+      { peakHoursOpen && (
+        <PeakHoursDialog
+          onClose={ () => setPeakHoursOpen(false) }
+          value={ peakHoursRecord?.value }
+        />
+      ) }
     </>
   );
 }

@@ -123,6 +123,8 @@ function SwitchControl({
   onChange: (key: string, value: boolean) => void;
   onShowHistory: (key: string) => void;
 }) {
+  const enabled = Boolean(draft[spec.key]);
+
   return (
     <div className="flex items-start justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-3 sm:col-span-2 lg:col-span-3">
       <div className="min-w-0">
@@ -136,9 +138,18 @@ function SwitchControl({
         { spec.hint && (
           <p className="mt-0.5 text-xs text-slate-500">{ spec.hint }</p>
         ) }
+        <p
+          className={
+            enabled
+              ? "mt-1 text-xs font-semibold text-emerald-600"
+              : "mt-1 text-xs font-semibold text-slate-400"
+          }
+        >
+          Currently: { enabled ? "ENABLED" : "DISABLED" }
+        </p>
       </div>
       <Switch
-        checked={ Boolean(draft[spec.key]) }
+        checked={ enabled }
         onCheckedChange={ (checked) => onChange(spec.key, checked) }
         aria-label={ spec.label }
       />

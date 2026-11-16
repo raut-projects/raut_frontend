@@ -2,6 +2,7 @@
 
 import {
   DollarSign,
+  Plug,
   Settings2,
   SlidersHorizontal,
   ToggleRight,
@@ -12,6 +13,7 @@ import {
   ConfigSkeleton,
 } from "@/components/platformConfig/ConfigPrimitives";
 import { FeaturesTab } from "@/components/platformConfig/FeaturesTab";
+import { IntegrationsTab } from "@/components/platformConfig/IntegrationsTab";
 import { OperationsTab } from "@/components/platformConfig/OperationsTab";
 import { PricingTab } from "@/components/platformConfig/PricingTab";
 import { QueryError } from "@/components/queryStates";
@@ -22,6 +24,7 @@ const TABS = [
   { value: "pricing", label: "Pricing", icon: DollarSign },
   { value: "features", label: "Features", icon: ToggleRight },
   { value: "operations", label: "Operations", icon: Settings2 },
+  { value: "integrations", label: "Integrations", icon: Plug },
 ];
 
 export default function PlatformConfigPage() {
@@ -84,6 +87,9 @@ export default function PlatformConfigPage() {
           </TabsContent>
           <TabsContent value="operations">
             <OperationsTab configs={ query.data ?? [] } />
+          </TabsContent>
+          <TabsContent value="integrations">
+            <IntegrationsTab />
           </TabsContent>
         </Tabs>
       ) }
