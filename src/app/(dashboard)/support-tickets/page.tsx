@@ -478,7 +478,6 @@ function SupportTicketsPage() {
         <Table>
           <TableHeader className="bg-slate-50 [&_tr]:border-slate-200">
             <TableRow className="hover:bg-transparent">
-              <TableHead className="w-24">ID</TableHead>
               <TableHead>Subject</TableHead>
               <TableHead>Priority</TableHead>
               <TableHead>Status</TableHead>
@@ -524,11 +523,6 @@ function SupportTicketsPage() {
             ) }
             { visibleTickets.map((ticket) => (
               <TableRow key={ ticket.id }>
-                <TableCell>
-                  <span className="font-semibold text-slate-900">
-                    { ticket.id }
-                  </span>
-                </TableCell>
                 <TableCell className="max-w-120 whitespace-normal">
                   <Link
                     href={ `/support-tickets/${encodeURIComponent(ticket.id)}` }
@@ -536,10 +530,6 @@ function SupportTicketsPage() {
                   >
                     { ticket.subject }
                   </Link>
-                  <span className="mt-0.5 block text-xs text-slate-500">
-                    { ticket.requesterId || "Unknown requester" } ·{ " " }
-                    { ticket.category }
-                  </span>
                   <span className="mt-0.5 block text-xs text-slate-400 md:hidden">
                     Updated { formatTicketUpdated(ticket.updatedAt) }
                   </span>

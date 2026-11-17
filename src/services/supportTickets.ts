@@ -217,8 +217,8 @@ function mapSupportTicketMessage(value: unknown): SupportTicketMessage {
   return {
     id: requiredText(record, "id", "message_id", "messageId"),
     author:
-      text(firstValue(record, "sender_id", "senderId")) ||
       text(firstValue(record, "author_name", "authorName")) ||
+      // text(firstValue(record, "sender_id", "senderId")) ||
       role,
     role,
     body: requiredText(record, "body", "message", "content", "text"),

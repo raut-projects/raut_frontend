@@ -703,9 +703,9 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                         <span className="text-sm font-semibold text-slate-900">
                           { message.author }
                         </span>
-                        <span className="text-xs text-slate-500">
+                        {/* <span className="text-xs text-slate-500">
                           { message.role }
-                        </span>
+                        </span> */}
                         { isInternal && (
                           <Badge
                             variant="outline"
@@ -918,23 +918,23 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
       { resolutionPanel && (
         <SidePanel
           open
-          onClose={() => setResolutionPanel(false)}
+          onClose={ () => setResolutionPanel(false) }
           title="Resolve ticket"
           description="Add a resolution note of at least 10 characters."
           footer={
             <>
-              <Button type="button" variant="outline" onClick={() => setResolutionPanel(false)} disabled={isSaving}>
+              <Button type="button" variant="outline" onClick={ () => setResolutionPanel(false) } disabled={ isSaving }>
                 Cancel
               </Button>
-              <Button type="button" onClick={confirmResolution} disabled={isSaving || resolutionNote.trim().length < 10}>
-                {isSaving ? "Saving…" : "Resolve ticket"}
+              <Button type="button" onClick={ confirmResolution } disabled={ isSaving || resolutionNote.trim().length < 10 }>
+                { isSaving ? "Saving…" : "Resolve ticket" }
               </Button>
             </>
           }
         >
           <label className="space-y-1.5 text-sm font-medium text-slate-700">
             Resolution note
-            <Textarea rows={4} value={resolutionNote} onChange={(event) => setResolutionNote(event.target.value)} placeholder="Describe how this ticket was resolved" className="min-h-28 bg-white" />
+            <Textarea rows={ 4 } value={ resolutionNote } onChange={ (event) => setResolutionNote(event.target.value) } placeholder="Describe how this ticket was resolved" className="min-h-28 bg-white" />
           </label>
         </SidePanel>
       ) }
@@ -963,5 +963,5 @@ export default function SupportTicketDetailPage() {
     );
   }
 
-  return <SupportTicketDetail ticketId={ticketId} />;
+  return <SupportTicketDetail ticketId={ ticketId } />;
 }
