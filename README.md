@@ -246,11 +246,12 @@ If the page is opened outside the WebView, it falls back to a browser alert. Can
 3. The response returns the session, access token and optional refresh token.
 4. The session and tokens are persisted in `localStorage` and exposed to React through the Zustand auth store.
 5. `RequireAdmin` revalidates the role every five minutes (`ROLE_REVALIDATE_MS`). A missing or stale role is checked against `GET /auth/me`.
-6. Non-admin accounts are redirected to `/request-admin`, where the admin secret is submitted to `POST /admin/promote`.
-7. If the promoted access token still does not grant an admin role, the user is asked to sign in again.
-8. Authenticated requests that return `401` attempt a token refresh through `POST /auth/refresh`. If refresh fails, the session is cleared and the user returns to `/login`.
+6. `RequireAdmin` also loads effective RBAC permissions from `GET /me/permissions` (`RBAC_REVALIDATE_MS`) and stores them in the session.
+7. Non-admin accounts are redirected to `/request-admin`, where the admin secret is submitted to `POST /admin/promote`.
+8. If the promoted access token still does not grant an admin role, the user is asked to sign in again.
+9. Authenticated requests that return `401` attempt a token refresh through `POST /auth/refresh`. If refresh fails, the session is cleared and the user returns to `/login`.
 
-If role revalidation fails because the server cannot be reached, the app keeps the last trusted role instead of signing the administrator out. A `401` still clears the session.
+If role or permission revalidation fails because the server cannot be reached, the app keeps the last trusted role and recent permission snapshot instead of signing the administrator out. A `401` still clears the session.
 
 Access-token expiry is also watched client-side. While an admin session is active, a timer is scheduled for the stored `expiresAt`; when it elapses, the app signs out and shows “Your session expired. Please sign in again.” There is no pre-expiry warning. Background tabs are checked when they regain focus or become visible. Requests still refresh an expired access token before using it, and a successful refresh moves the timer to the new expiry.
 
@@ -261,7 +262,7 @@ The default admin roles are `admin` and `super_admin`. Override them with `NEXT_
 - `platform_manager`, `operator`, `support`, `analyst`, `finance` and `marketing` remain as their own roles.
 - The Admin Users page also understands `operations_agent`, `support_agent`, `finance_manager`, `finance_agent`, `marketing_manager` and `marketing_agent` as distinct roles. These are labels for the permission matrix and do not add admin-gate access unless listed in `NEXT_PUBLIC_ADMIN_ROLES`.
 
-The dashboard currently has a single admin gate: every configured admin role can open every admin page. Fine-grained permissions must be enforced by the backend.
+The dashboard has two gates. `RequireAdmin` still requires a configured admin role, then uses the `GET /me/permissions` response to hide sidebar sections, block unauthorized routes, and hide action controls. Permission codes follow `resource.action` (for example `drivers.verify` and `finance.payouts.approve`). A stale snapshot is trusted for up to `RBAC_STALE_GRACE_MS`; if the endpoint fails and no snapshot exists, the app denies access and shows an Access Denied screen. Ambiguous actions without a direct permission code, such as live-ride escalation and referral mark-paid, remain unchanged.
 
 Tokens are stored in browser `localStorage`, so the session can be restored across reloads. This does not replace server-side authorization; the backend must enforce permissions for every admin endpoint.
 
@@ -276,6 +277,7 @@ export const API_ROUTES = {
   login: '/auth/login',
   refresh: '/auth/refresh',
   me: '/auth/me',
+  myPermissions: '/me/permissions',
   notifications: '/notifications/',
   promote: '/admin/promote',
   users: '/admin/users',
@@ -330,6 +332,7 @@ Raw API records are normalized in `src/services/mappers.ts`. Mappers provide con
 | `POST` | `/auth/login` | Sign in with an email address and password |
 | `POST` | `/auth/refresh` | Refresh an access token |
 | `GET` | `/auth/me` | Fetch the signed-in user and role |
+| `GET` | `/me/permissions` | Fetch effective RBAC permissions and role assignments |
 | `POST` | `/admin/promote` | Promote a signed-in account to admin using a secret |
 | `GET` | `/notifications/` | List notifications |
 | `POST` | `/notifications/{id}/read` | Mark a notification as read |
@@ -614,7 +617,7 @@ Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Re
 
 - Live Rides and Platform Config are placeholder pages. Audit Logs and System Health use illustrative mock data and are not connected to backend audit or telemetry endpoints.
 - There is currently no automated test suite or CI configuration.
-- There is no role-level UI beyond the admin gate; every configured admin role sees every admin page. The Admin Users page is also intentionally not gated by role for now: any signed-in admin can open it.
+- RBAC gating is UI-level only. The backend must still enforce every permission on its endpoints; hiding a control does not prevent a crafted API request.
 - The Admin Users permission matrix and per-admin overrides are informational. They are displayed, printed and exported, but the backend must enforce them before they restrict access.
 - Admin Users mock mode is enabled by default until the backend endpoints are ready. Sample invites, role changes and status changes are held in memory and reset on a full reload; set `NEXT_PUBLIC_USE_MOCK_ADMIN_USERS=false` to use the real API.
 - The dashboard builds some summary cards from the analytics overview response and falls back to list totals when fields or endpoints are unavailable.

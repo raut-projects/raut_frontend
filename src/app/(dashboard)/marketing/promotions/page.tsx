@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Megaphone, Plus, Search } from "lucide-react";
 
+import { Can } from "@/components/Can";
 import { MarketingTabs } from "@/components/marketing/MarketingTabs";
 import { PromotionCard } from "@/components/marketing/PromotionCard";
 import { QueryError, RefreshIndicator } from "@/components/queryStates";
@@ -20,6 +21,7 @@ import {
   usePromotions,
 } from "@/hooks/useMarketing";
 import type { Promotion, PromotionTab } from "@/lib/marketing";
+import { PERMISSIONS } from "@/lib/permissions";
 import { usePageViewField } from "@/store/pageViewStore";
 
 const PAGE_SIZE = 9;
@@ -135,17 +137,19 @@ export default function MarketingPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            size="sm"
-            onClick={ () => void setPage(1) }
-            className="h-9 px-3 text-sm font-semibold"
-          >
-            <Link href="/marketing/promotions/new" className="flex items-center gap-2">
-              <Plus className="size-4" aria-hidden="true" />
-              Create New Promotion
-            </Link>
-          </Button>
+          <Can permission={ PERMISSIONS.MARKETING_PROMOTIONS_MANAGE }>
+            <Button
+              type="button"
+              size="sm"
+              onClick={ () => void setPage(1) }
+              className="h-9 px-3 text-sm font-semibold"
+            >
+              <Link href="/marketing/promotions/new" className="flex items-center gap-2">
+                <Plus className="size-4" aria-hidden="true" />
+                Create New Promotion
+              </Link>
+            </Button>
+          </Can>
           <RefreshIndicator
             isFetching={ query.isFetching }
             updatedAt={ query.dataUpdatedAt }
@@ -207,12 +211,14 @@ export default function MarketingPage() {
                 : "Create a campaign to start rewarding customers." }
             </p>
           </div>
-          <Button asChild className="mt-1 bg-brand-600 text-white hover:bg-brand-700">
-            <Link href="/marketing/promotions/new">
-              <Plus className="size-4" aria-hidden="true" />
-              Create promotion
-            </Link>
-          </Button>
+          <Can permission={ PERMISSIONS.MARKETING_PROMOTIONS_MANAGE }>
+            <Button asChild className="mt-1 bg-brand-600 text-white hover:bg-brand-700">
+              <Link href="/marketing/promotions/new">
+                <Plus className="size-4" aria-hidden="true" />
+                Create promotion
+              </Link>
+            </Button>
+          </Can>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

@@ -3,6 +3,7 @@
  * snake_case payloads are mapped to camelCase, keeping display strings next to
  * machine-readable keys where both are needed.
  */
+import type { RbacAccessSnapshot } from './rbac'
 
 /** Roles recognized by the admin application. */
 export type UserRole = 'user' | 'admin' | 'super_admin'
@@ -53,7 +54,7 @@ export interface Driver {
  * Lightweight authenticated session shown in the admin shell.
  * `initials` feeds the avatar and `roleLabel` is the display name for the
  * backend `role`. `roleVerifiedAt` is an optional timestamp for when the role
- * was last confirmed.
+ * was last confirmed. `access` caches the effective RBAC permissions and roles.
  */
 export interface AuthSession {
   id: string | number | null
@@ -64,6 +65,7 @@ export interface AuthSession {
   initials: string
   signedInAt: string
   roleVerifiedAt?: number
+  access?: RbacAccessSnapshot | null
 }
 
 /**

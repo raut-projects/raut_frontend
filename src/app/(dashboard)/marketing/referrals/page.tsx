@@ -12,9 +12,11 @@ import {
   UserPlus,
 } from "lucide-react";
 
+import { Can } from "@/components/Can";
 import { QueryError, RefreshIndicator } from "@/components/queryStates";
 import { useToast } from "@/components/toastContext";
 import { getUserFriendlyErrorMessage } from "@/lib/friendlyError";
+import { PERMISSIONS } from "@/lib/permissions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -786,16 +788,18 @@ export function ReferralProgramsDashboard() {
             onRefresh={ refreshCurrentSection }
           />
           { section === "programs" && (
-            <Button
-              type="button"
-              onClick={ () =>
-                setEditor({ programId: null, draft: emptyProgramDraft() })
-              }
-              className="h-9 bg-brand-600 px-3 text-sm font-semibold text-white hover:bg-brand-700"
-            >
-              <Plus aria-hidden="true" />
-              Create program
-            </Button>
+            <Can permission={ PERMISSIONS.MARKETING_REFERRALS_MANAGE }>
+              <Button
+                type="button"
+                onClick={ () =>
+                  setEditor({ programId: null, draft: emptyProgramDraft() })
+                }
+                className="h-9 bg-brand-600 px-3 text-sm font-semibold text-white hover:bg-brand-700"
+              >
+                <Plus aria-hidden="true" />
+                Create program
+              </Button>
+            </Can>
           ) }
         </div>
       </div>
@@ -1141,15 +1145,17 @@ export function ReferralProgramsDashboard() {
                         >
                           Cancel
                         </Button>
-                        <Button
-                          type="submit"
-                          disabled={
-                            createProgram.isPending || updateProgram.isPending
-                          }
-                          className="bg-brand-600 text-white hover:bg-brand-700"
-                        >
-                          { editor.programId ? "Save changes" : "Create program" }
-                        </Button>
+                        <Can permission={ PERMISSIONS.MARKETING_REFERRALS_MANAGE }>
+                          <Button
+                            type="submit"
+                            disabled={
+                              createProgram.isPending || updateProgram.isPending
+                            }
+                            className="bg-brand-600 text-white hover:bg-brand-700"
+                          >
+                            { editor.programId ? "Save changes" : "Create program" }
+                          </Button>
+                        </Can>
                       </div>
                     </div>
                   </form>
@@ -1290,57 +1296,59 @@ export function ReferralProgramsDashboard() {
                           ) }
                         </TableCell>
                         <TableCell>
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={ (event) => {
-                                event.stopPropagation();
-                                setEditor({
-                                  programId: program.id,
-                                  original: program,
-                                  draft: draftFromProgram(program),
-                                });
-                              } }
-                              aria-label={ `Edit ${program.name}` }
-                            >
-                              <Pencil aria-hidden="true" />
-                              Edit
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              disabled={ updateProgram.isPending }
-                              onClick={ async (event) => {
-                                event.stopPropagation();
-                                try {
-                                  await updateProgram.mutateAsync({
+                          <Can permission={ PERMISSIONS.MARKETING_REFERRALS_MANAGE }>
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={ (event) => {
+                                  event.stopPropagation();
+                                  setEditor({
                                     programId: program.id,
-                                    payload: {
-                                      is_active: program.is_active === false,
-                                    },
+                                    original: program,
+                                    draft: draftFromProgram(program),
                                   });
-                                  toast.success(
-                                    program.is_active === false
-                                      ? "Program activated."
-                                      : "Program deactivated.",
-                                  );
-                                } catch (error) {
-                                  toast.error(
-                                    error instanceof Error
-                                      ? error.message
-                                      : "Could not update program status.",
-                                  );
-                                }
-                              } }
-                            >
-                              { program.is_active === false
-                                ? "Activate"
-                                : "Deactivate" }
-                            </Button>
-                          </div>
+                                } }
+                                aria-label={ `Edit ${program.name}` }
+                              >
+                                <Pencil aria-hidden="true" />
+                                Edit
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={ updateProgram.isPending }
+                                onClick={ async (event) => {
+                                  event.stopPropagation();
+                                  try {
+                                    await updateProgram.mutateAsync({
+                                      programId: program.id,
+                                      payload: {
+                                        is_active: program.is_active === false,
+                                      },
+                                    });
+                                    toast.success(
+                                      program.is_active === false
+                                        ? "Program activated."
+                                        : "Program deactivated.",
+                                    );
+                                  } catch (error) {
+                                    toast.error(
+                                      error instanceof Error
+                                        ? error.message
+                                        : "Could not update program status.",
+                                    );
+                                  }
+                                } }
+                              >
+                                { program.is_active === false
+                                  ? "Activate"
+                                  : "Deactivate" }
+                              </Button>
+                            </div>
+                          </Can>
                         </TableCell>
                       </TableRow>
                     ))
@@ -1415,61 +1423,65 @@ export function ReferralProgramsDashboard() {
       { section === "users" && (
         <div className="space-y-4">
           <section className="flex flex-wrap items-end justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-card">
-            <div className="grid w-full gap-3 sm:max-w-2xl sm:grid-cols-[minmax(12rem,1fr)_auto] sm:items-end">
-              <label className={ LABEL_CLASS }>
-                Program for enrollment
-                <select
-                  value={ selectedProgramId }
-                  onChange={ (event) => setSelectedProgramId(event.target.value) }
-                  className={ INPUT_CLASS }
+            <Can permission={ PERMISSIONS.MARKETING_REFERRALS_MANAGE }>
+              <div className="grid w-full gap-3 sm:max-w-2xl sm:grid-cols-[minmax(12rem,1fr)_auto] sm:items-end">
+                <label className={ LABEL_CLASS }>
+                  Program for enrollment
+                  <select
+                    value={ selectedProgramId }
+                    onChange={ (event) => setSelectedProgramId(event.target.value) }
+                    className={ INPUT_CLASS }
+                  >
+                    <option value="">Select a program</option>
+                    { programs.map((program) => (
+                      <option key={ program.id } value={ program.id }>
+                        { program.name }
+                      </option>
+                    )) }
+                  </select>
+                </label>
+                <Button
+                  type="button"
+                  onClick={ enrollSelectedUsers }
+                  disabled={
+                    !selectedProgramId ||
+                    selectedCount === 0 ||
+                    bulkEnroll.isPending
+                  }
+                  className="bg-brand-600 text-white hover:bg-brand-700"
                 >
-                  <option value="">Select a program</option>
-                  { programs.map((program) => (
-                    <option key={ program.id } value={ program.id }>
-                      { program.name }
-                    </option>
-                  )) }
-                </select>
-              </label>
-              <Button
-                type="button"
-                onClick={ enrollSelectedUsers }
-                disabled={
-                  !selectedProgramId ||
-                  selectedCount === 0 ||
-                  bulkEnroll.isPending
-                }
-                className="bg-brand-600 text-white hover:bg-brand-700"
+                  <UserPlus aria-hidden="true" />
+                  Enroll { selectedCount ? `${selectedCount} selected` : "selected" }
+                </Button>
+              </div>
+            </Can>
+            <Can permission={ PERMISSIONS.MARKETING_REFERRALS_MANAGE }>
+              <form
+                onSubmit={ unenroll }
+                className="grid w-full gap-2 sm:max-w-xl sm:grid-cols-[minmax(10rem,1fr)_auto]"
               >
-                <UserPlus aria-hidden="true" />
-                Enroll { selectedCount ? `${selectedCount} selected` : "selected" }
-              </Button>
-            </div>
-            <form
-              onSubmit={ unenroll }
-              className="grid w-full gap-2 sm:max-w-xl sm:grid-cols-[minmax(10rem,1fr)_auto]"
-            >
-              <label className={ LABEL_CLASS }>
-                User ID to unenroll
-                <Input
-                  value={ unenrollUserId }
-                  onChange={ (event) => setUnenrollUserId(event.target.value) }
-                  placeholder="Paste user ID"
-                  required
-                />
-              </label>
-              <Button
-                type="submit"
-                variant="outline"
-                disabled={
-                  !selectedProgramId ||
-                  !unenrollUserId.trim() ||
-                  unenrollUser.isPending
-                }
-              >
-                Unenroll user
-              </Button>
-            </form>
+                <label className={ LABEL_CLASS }>
+                  User ID to unenroll
+                  <Input
+                    value={ unenrollUserId }
+                    onChange={ (event) => setUnenrollUserId(event.target.value) }
+                    placeholder="Paste user ID"
+                    required
+                  />
+                </label>
+                <Button
+                  type="submit"
+                  variant="outline"
+                  disabled={
+                    !selectedProgramId ||
+                    !unenrollUserId.trim() ||
+                    unenrollUser.isPending
+                  }
+                >
+                  Unenroll user
+                </Button>
+              </form>
+            </Can>
             <p className="w-full text-xs text-slate-500">
               Select a program above for both enrollment actions. The user list
               and API support pagination; filtering by name is not available on
@@ -1563,17 +1575,19 @@ export function ReferralProgramsDashboard() {
                             >
                               Details
                             </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              disabled={
-                                !selectedProgramId || enrollUser.isPending
-                              }
-                              onClick={ () => void enrollSingleUser(user.user_id) }
-                            >
-                              Enroll
-                            </Button>
+                            <Can permission={ PERMISSIONS.MARKETING_REFERRALS_MANAGE }>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={
+                                  !selectedProgramId || enrollUser.isPending
+                                }
+                                onClick={ () => void enrollSingleUser(user.user_id) }
+                              >
+                                Enroll
+                              </Button>
+                            </Can>
                           </div>
                         </TableCell>
                       </TableRow>

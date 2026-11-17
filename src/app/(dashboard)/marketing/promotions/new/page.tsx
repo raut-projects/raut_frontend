@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
+import { Can } from "@/components/Can";
 import { PromotionForm } from "@/components/marketing/PromotionForm";
 import { useToast } from "@/components/toastContext";
 import { useCreatePromotion } from "@/hooks/useMarketing";
@@ -12,6 +13,7 @@ import {
   derivePromotionStatus,
   type PromotionPayload,
 } from "@/lib/marketing";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export default function NewPromotionPage() {
   const router = useRouter();
@@ -67,12 +69,14 @@ export default function NewPromotionPage() {
         </p>
       </div>
 
-      <PromotionForm
-        mode="create"
-        isSubmitting={ create.isPending }
-        onSubmit={ handleSubmit }
-        onCancel={ () => router.push("/marketing/promotions") }
-      />
+      <Can permission={ PERMISSIONS.MARKETING_PROMOTIONS_MANAGE }>
+        <PromotionForm
+          mode="create"
+          isSubmitting={ create.isPending }
+          onSubmit={ handleSubmit }
+          onCancel={ () => router.push("/marketing/promotions") }
+        />
+      </Can>
     </div>
   );
 }

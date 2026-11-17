@@ -6,6 +6,7 @@ import { Download, Printer, Search, X } from "lucide-react";
 
 import { useToast } from "@/components/toastContext";
 import { Button } from "@/components/ui/button";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Input } from "@/components/ui/input";
 import {
   ADMIN_ROLES,
@@ -16,6 +17,7 @@ import {
   downloadPermissionMatrixCsv,
   type AdminRoleKey,
 } from "@/lib/adminUsers";
+import { PERMISSIONS } from "@/lib/permissions";
 
 import { PermissionMatrixTable } from "./PermissionMatrixTable";
 
@@ -47,6 +49,7 @@ export function PermissionMatrixDialog({
   initialRole = "all",
 }: PermissionMatrixDialogProps) {
   const toast = useToast();
+  const { has } = usePermissions();
   const [roleFilter, setRoleFilter] = useState<AdminRoleKey | "all">(
     initialRole,
   );
@@ -155,7 +158,13 @@ export function PermissionMatrixDialog({
     toast.success("Permission matrix exported.");
   };
 
-  if (!open || typeof document === "undefined") return null;
+  if (
+    !open ||
+    typeof document === "undefined" ||
+    !has(PERMISSIONS.PLATFORM_ROLES_READ)
+  ) {
+    return null;
+  }
 
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">

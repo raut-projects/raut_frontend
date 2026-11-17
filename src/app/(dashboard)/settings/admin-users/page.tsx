@@ -11,6 +11,7 @@ import {
   UserX,
 } from "lucide-react";
 
+import { Can } from "@/components/Can";
 import { EditAdminDialog } from "@/components/adminUsers/EditAdminDialog";
 import { InviteAdminDialog } from "@/components/adminUsers/InviteAdminDialog";
 import { PermissionMatrixDialog } from "@/components/adminUsers/PermissionMatrixDialog";
@@ -55,6 +56,7 @@ import {
   type AdminUser,
   type AdminUserStatus,
 } from "@/lib/adminUsers";
+import { PERMISSIONS } from "@/lib/permissions";
 import { usePageViewField } from "@/store/pageViewStore";
 
 const PAGE_SIZE = 20;
@@ -194,25 +196,29 @@ function AdminUsersPage() {
             updatedAt={ usersQuery.dataUpdatedAt }
             onRefresh={ () => void usersQuery.refetch() }
           />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={ () => openMatrix() }
-            className="h-9 border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            <ShieldCheck className="size-4" aria-hidden="true" />
-            Permissions
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={ () => setInviteOpen(true) }
-            className="h-9 px-3 text-sm font-semibold"
-          >
-            <Plus className="size-4" aria-hidden="true" />
-            Invite admin
-          </Button>
+          <Can permission={ PERMISSIONS.PLATFORM_ROLES_READ }>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={ () => openMatrix() }
+              className="h-9 border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              <ShieldCheck className="size-4" aria-hidden="true" />
+              Permissions
+            </Button>
+          </Can>
+          <Can permission={ PERMISSIONS.PLATFORM_ADMINS_MANAGE }>
+            <Button
+              type="button"
+              size="sm"
+              onClick={ () => setInviteOpen(true) }
+              className="h-9 px-3 text-sm font-semibold"
+            >
+              <Plus className="size-4" aria-hidden="true" />
+              Invite admin
+            </Button>
+          </Can>
         </div>
       </div>
 
@@ -384,46 +390,52 @@ function AdminUsersPage() {
                         align="end"
                         className="w-48 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
                       >
-                        <DropdownMenuItem
-                          onSelect={ () => setEditingUser(user) }
-                          className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
-                        >
-                          <UserRound className="size-3.5" aria-hidden="true" />
-                          Edit access
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={ () => openMatrix(user.role) }
-                          className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
-                        >
-                          <KeyRound className="size-3.5" aria-hidden="true" />
-                          View permissions
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator className="bg-slate-100" />
-                        { user.status === "deactivated" ? (
+                        <Can permission={ PERMISSIONS.PLATFORM_ADMINS_MANAGE }>
                           <DropdownMenuItem
-                            onSelect={ () => setReactivateTarget(user) }
-                            className="px-2.5 py-1.5 text-xs font-medium text-emerald-700 focus:bg-emerald-50 focus:text-emerald-800"
+                            onSelect={ () => setEditingUser(user) }
+                            className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                           >
-                            <ShieldCheck
-                              className="size-3.5"
-                              aria-hidden="true"
-                            />
-                            Reactivate account
+                            <UserRound className="size-3.5" aria-hidden="true" />
+                            Edit access
                           </DropdownMenuItem>
-                        ) : (
+                        </Can>
+                        <Can permission={ PERMISSIONS.PLATFORM_ROLES_READ }>
                           <DropdownMenuItem
-                            disabled={ current }
-                            onSelect={ () => {
-                              if (!current) setDeactivateTarget(user);
-                            } }
-                            className="px-2.5 py-1.5 text-xs font-medium text-rose-600 focus:bg-rose-50 focus:text-rose-700"
+                            onSelect={ () => openMatrix(user.role) }
+                            className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                           >
-                            <UserX className="size-3.5" aria-hidden="true" />
-                            { user.status === "invited"
-                              ? "Cancel invitation"
-                              : "Deactivate account" }
+                            <KeyRound className="size-3.5" aria-hidden="true" />
+                            View permissions
                           </DropdownMenuItem>
-                        ) }
+                        </Can>
+                        <Can permission={ PERMISSIONS.PLATFORM_ADMINS_MANAGE }>
+                          <DropdownMenuSeparator className="bg-slate-100" />
+                          { user.status === "deactivated" ? (
+                            <DropdownMenuItem
+                              onSelect={ () => setReactivateTarget(user) }
+                              className="px-2.5 py-1.5 text-xs font-medium text-emerald-700 focus:bg-emerald-50 focus:text-emerald-800"
+                            >
+                              <ShieldCheck
+                                className="size-3.5"
+                                aria-hidden="true"
+                              />
+                              Reactivate account
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              disabled={ current }
+                              onSelect={ () => {
+                                if (!current) setDeactivateTarget(user);
+                              } }
+                              className="px-2.5 py-1.5 text-xs font-medium text-rose-600 focus:bg-rose-50 focus:text-rose-700"
+                            >
+                              <UserX className="size-3.5" aria-hidden="true" />
+                              { user.status === "invited"
+                                ? "Cancel invitation"
+                                : "Deactivate account" }
+                            </DropdownMenuItem>
+                          ) }
+                        </Can>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -462,15 +474,17 @@ function AdminUsersPage() {
                           Clear search
                         </Button>
                       ) }
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={ () => setInviteOpen(true) }
-                        className="h-auto px-3 py-1.5 text-xs font-semibold"
-                      >
-                        <Plus className="size-3.5" aria-hidden="true" />
-                        Invite admin
-                      </Button>
+                      <Can permission={ PERMISSIONS.PLATFORM_ADMINS_MANAGE }>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={ () => setInviteOpen(true) }
+                          className="h-auto px-3 py-1.5 text-xs font-semibold"
+                        >
+                          <Plus className="size-3.5" aria-hidden="true" />
+                          Invite admin
+                        </Button>
+                      </Can>
                     </div>
                   </TableCell>
                 </TableRow>

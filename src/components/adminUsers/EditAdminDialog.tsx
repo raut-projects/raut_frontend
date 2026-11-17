@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 
+import { Can } from "@/components/Can";
 import SidePanel from "@/components/SidePanel";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -18,6 +19,7 @@ import {
   type PermissionLevel,
   type PermissionOverrides,
 } from "@/lib/adminUsers";
+import { PERMISSIONS } from "@/lib/permissions";
 import { editAdminUserSchema } from "@/schemas/adminUserSchemas";
 
 import { AdminRoleSelect } from "./AdminRoleSelect";
@@ -142,14 +144,16 @@ export function EditAdminDialog({
           >
             Cancel
           </Button>
-          <Button
-            type="submit"
-            form={formId}
-            disabled={updateMutation.isPending || !user}
-            className="h-auto px-4 py-2 text-sm font-semibold"
-          >
-            {updateMutation.isPending ? "Saving." : "Save changes"}
-          </Button>
+          <Can permission={ PERMISSIONS.PLATFORM_ADMINS_MANAGE }>
+            <Button
+              type="submit"
+              form={formId}
+              disabled={updateMutation.isPending || !user}
+              className="h-auto px-4 py-2 text-sm font-semibold"
+            >
+              {updateMutation.isPending ? "Saving." : "Save changes"}
+            </Button>
+          </Can>
         </>
       }
     >
@@ -211,69 +215,71 @@ export function EditAdminDialog({
           />
         </label>
 
-        <div className="rounded-xl border border-slate-200">
-          <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
-            <div>
-              <p className="text-sm font-semibold text-slate-800">
-                Permission overrides
-              </p>
-              <p className="mt-0.5 text-xs text-slate-500">
-                Keep the role defaults, or customise individual features.
-              </p>
+        <Can permission={ PERMISSIONS.PLATFORM_ROLES_MANAGE }>
+          <div className="rounded-xl border border-slate-200">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-800">
+                  Permission overrides
+                </p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Keep the role defaults, or customise individual features.
+                </p>
+              </div>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                {overrideCount} custom
+              </span>
             </div>
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
-              {overrideCount} custom
-            </span>
-          </div>
 
-          <div className="max-h-72 divide-y divide-slate-100 overflow-y-auto">
-            {PERMISSION_FEATURES.map((feature) => {
-              const inherited = resolvePermission(role, feature.key);
-              const value = overrides[feature.key] ?? "default";
+            <div className="max-h-72 divide-y divide-slate-100 overflow-y-auto">
+              {PERMISSION_FEATURES.map((feature) => {
+                const inherited = resolvePermission(role, feature.key);
+                const value = overrides[feature.key] ?? "default";
 
-              return (
-                <div
-                  key={feature.key}
-                  className="flex items-center justify-between gap-3 px-4 py-2"
-                >
-                  <span className="text-xs font-medium text-slate-700">
-                    {feature.label}
-                  </span>
-                  <select
-                    value={value}
-                    onChange={(event) =>
-                      setOverride(
-                        feature.key,
-                        event.target.value as OverrideValue,
-                      )
-                    }
-                    aria-label={`Permission for ${feature.label}`}
-                    className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                return (
+                  <div
+                    key={feature.key}
+                    className="flex items-center justify-between gap-3 px-4 py-2"
                   >
-                    <option value="default">
-                      Role default ({PERMISSION_LEVEL_LABELS[inherited]})
-                    </option>
-                    <option value="full">Full access</option>
-                    <option value="limited">Limited access</option>
-                    <option value="none">No access</option>
-                    {feature.key === "audit_logs" && (
-                      <>
-                        <option value="own">Own only</option>
-                        <option value="finance">Finance scope</option>
-                        <option value="marketing">Marketing scope</option>
-                      </>
-                    )}
-                  </select>
-                </div>
-              );
-            })}
+                    <span className="text-xs font-medium text-slate-700">
+                      {feature.label}
+                    </span>
+                    <select
+                      value={value}
+                      onChange={(event) =>
+                        setOverride(
+                          feature.key,
+                          event.target.value as OverrideValue,
+                        )
+                      }
+                      aria-label={`Permission for ${feature.label}`}
+                      className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                    >
+                      <option value="default">
+                        Role default ({PERMISSION_LEVEL_LABELS[inherited]})
+                      </option>
+                      <option value="full">Full access</option>
+                      <option value="limited">Limited access</option>
+                      <option value="none">No access</option>
+                      {feature.key === "audit_logs" && (
+                        <>
+                          <option value="own">Own only</option>
+                          <option value="finance">Finance scope</option>
+                          <option value="marketing">Marketing scope</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
 
-        <p className="text-xs text-slate-500">
-          Overrides are saved with the admin profile and supersede the role
-          matrix.
-        </p>
+          <p className="text-xs text-slate-500">
+            Overrides are saved with the admin profile and supersede the role
+            matrix.
+          </p>
+        </Can>
       </form>
     </SidePanel>
   );

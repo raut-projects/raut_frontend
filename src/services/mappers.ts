@@ -1140,3 +1140,60 @@ export const mapConfigHistory = (response) => {
 
   return history.map(mapConfigHistoryEntry);
 };
+
+const permissionCodes = (value) => {
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) =>
+        typeof entry === "string"
+          ? entry
+          : firstOf(entry, ["code", "permission", "key"]),
+      )
+      .filter((code) => typeof code === "string" && code.trim())
+      .map((code) => String(code).trim());
+  }
+
+  if (value && typeof value === "object") {
+    return Object.keys(value).filter(
+      (key) => value[key] !== null && value[key] !== undefined,
+    );
+  }
+
+  return [];
+};
+
+const roleAssignments = (value) => {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((role) => ({
+      assignmentId: firstOf(role, ["assignment_id", "assignmentId"]),
+      key: String(firstOf(role, ["key", "name", "role"], "") ?? ""),
+      scope: firstOf(role, ["scope", "scope_type", "scopeType"], "platform"),
+      scopeId: firstOf(role, ["scope_id", "scopeId"]),
+      expiresAt: firstOf(role, ["expires_at", "expiresAt"]),
+    }))
+    .filter((role) => role.key);
+};
+
+export function mapRbacAccess(raw) {
+  const data =
+    raw && typeof raw === "object" && "data" in raw ? raw.data : raw;
+  const source = data && typeof data === "object" ? data : {};
+  const rawPermissions = firstOf(
+    source,
+    ["permissions", "permission_codes", "permissionCodes", "codes"],
+    Array.isArray(data) ? data : [],
+  );
+  const rawRoles = firstOf(source, [
+    "roles",
+    "role_assignments",
+    "roleAssignments",
+  ]);
+
+  return {
+    permissions: Array.from(new Set(permissionCodes(rawPermissions))),
+    roles: roleAssignments(rawRoles),
+    verifiedAt: Date.now(),
+  };
+}
