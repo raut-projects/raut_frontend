@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 
+import { Can } from "@/components/Can";
 import SidePanel from "@/components/SidePanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import {
   type AdminRoleKey,
   type AdminUserFormValues,
 } from "@/lib/adminUsers";
+import { PERMISSIONS } from "@/lib/permissions";
 import { inviteAdminUserSchema } from "@/schemas/adminUserSchemas";
 
 import { AdminRoleSelect } from "./AdminRoleSelect";
@@ -117,14 +119,16 @@ export function InviteAdminDialog({
           >
             Cancel
           </Button>
-          <Button
-            type="submit"
-            form={formId}
-            disabled={inviteMutation.isPending}
-            className="h-auto px-4 py-2 text-sm font-semibold"
-          >
-            {inviteMutation.isPending ? "Sending." : "Send invitation"}
-          </Button>
+          <Can permission={ PERMISSIONS.PLATFORM_ADMINS_MANAGE }>
+            <Button
+              type="submit"
+              form={formId}
+              disabled={inviteMutation.isPending}
+              className="h-auto px-4 py-2 text-sm font-semibold"
+            >
+              {inviteMutation.isPending ? "Sending." : "Send invitation"}
+            </Button>
+          </Can>
         </>
       }
     >
@@ -176,13 +180,15 @@ export function InviteAdminDialog({
         <div className="space-y-2 border-t border-slate-200 pt-4">
           <div className="flex items-center justify-between gap-3">
             <span className={labelClass}>Role</span>
-            <button
-              type="button"
-              onClick={onViewMatrix}
-              className="text-xs font-semibold text-brand-600 hover:text-brand-700"
-            >
-              View permission matrix
-            </button>
+            <Can permission={ PERMISSIONS.PLATFORM_ROLES_READ }>
+              <button
+                type="button"
+                onClick={onViewMatrix}
+                className="text-xs font-semibold text-brand-600 hover:text-brand-700"
+              >
+                View permission matrix
+              </button>
+            </Can>
           </div>
           <AdminRoleSelect
             value={values.role}

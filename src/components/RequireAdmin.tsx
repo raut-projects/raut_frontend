@@ -1,17 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import AccessDenied from "./AccessDenied";
 import GateLoader from "./GateLoader";
 import { useAuthHydrated, useSession } from "../hooks/useSession";
-import { ROLE_REVALIDATE_MS } from "../lib/config";
+import {
+  RBAC_REVALIDATE_MS,
+  RBAC_STALE_GRACE_MS,
+  ROLE_REVALIDATE_MS,
+} from "../lib/config";
+import {
+  firstPermittedRoute,
+  hasPermission,
+  resolveRoutePermission,
+} from "../lib/permissions";
 import { firstRole, formatRole, isAdminRole } from "../lib/roles";
 import { fetchCurrentUser, signOut } from "../services/auth";
+import { fetchMyPermissions } from "../services/rbac";
 import { updateSession } from "../services/tokenStore";
 
 let verification = null;
+let accessVerification = null;
 
-// One request at a time, shared by every mount that needs the role.
 const verifyRole = () => {
   if (!verification) {
     verification = fetchCurrentUser().finally(() => {
@@ -22,18 +33,38 @@ const verifyRole = () => {
   return verification;
 };
 
+const verifyAccess = () => {
+  if (!accessVerification) {
+    accessVerification = fetchMyPermissions().finally(() => {
+      accessVerification = null;
+    });
+  }
+
+  return accessVerification;
+};
+
 const isRoleFresh = (session) =>
   Boolean(session?.roleVerifiedAt) &&
   Date.now() - session.roleVerifiedAt < ROLE_REVALIDATE_MS;
 
-function RequireAdmin({ children }) {
+const isAccessFresh = (session) =>
+  Boolean(session?.access?.verifiedAt) &&
+  Date.now() - session.access.verifiedAt < RBAC_REVALIDATE_MS;
+
+const isAccessRecent = (session) =>
+  Boolean(session?.access?.verifiedAt) &&
+  Date.now() - session.access.verifiedAt < RBAC_STALE_GRACE_MS;
+
+function RequireAdmin({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const session = useSession();
   const hydrated = useAuthHydrated();
   const [check, setCheck] = useState("idle");
+  const [accessCheck, setAccessCheck] = useState("idle");
 
   const roleIsFresh = isRoleFresh(session);
+  const accessFresh = isAccessFresh(session);
 
   useEffect(() => {
     if (!hydrated || !session || roleIsFresh) return undefined;
@@ -57,15 +88,12 @@ function RequireAdmin({ children }) {
       .catch((error) => {
         if (!active) return;
 
-        // The session is gone, so start over from the login page.
         if (error?.status === 401) {
           signOut();
           setCheck("signed-out");
           return;
         }
 
-        // The server could not be reached. Keep the role we already trust rather
-        // than locking a signed in admin out over a dropped connection.
         setCheck("failed");
       });
 
@@ -74,10 +102,59 @@ function RequireAdmin({ children }) {
     };
   }, [hydrated, session, roleIsFresh]);
 
+  useEffect(() => {
+    if (!hydrated || !session || accessFresh) return undefined;
+
+    let active = true;
+
+    verifyAccess()
+      .then((access) => {
+        if (!active) return;
+
+        updateSession({ access });
+        setAccessCheck("ready");
+      })
+      .catch((error) => {
+        if (!active) return;
+
+        if (error?.status === 401) {
+          signOut();
+          setAccessCheck("signed-out");
+          return;
+        }
+
+        setAccessCheck("failed");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [hydrated, session, accessFresh]);
+
   const verified = roleIsFresh || check === "passed" || check === "failed";
-  const needsSignIn = hydrated && (!session || check === "signed-out");
+  const accessReady =
+    accessFresh ||
+    accessCheck === "ready" ||
+    accessCheck === "failed";
+
+  const requiredPermission = resolveRoutePermission(pathname);
+  const permitted =
+    !requiredPermission || hasPermission(session?.access, requiredPermission);
+  const fallback =
+    pathname === "/" && !permitted
+      ? firstPermittedRoute(session?.access)
+      : null;
+
+  const needsSignIn =
+    hydrated && (!session || check === "signed-out" || accessCheck === "signed-out");
   const needsAdmin =
     hydrated && Boolean(session) && verified && !isAdminRole(session.role);
+  const denied =
+    hydrated &&
+    Boolean(session) &&
+    verified &&
+    ((accessCheck === "failed" && !isAccessRecent(session)) ||
+      (!permitted && !fallback));
 
   useEffect(() => {
     if (needsSignIn) {
@@ -87,12 +164,17 @@ function RequireAdmin({ children }) {
 
     if (needsAdmin) {
       router.replace(`/request-admin?from=${encodeURIComponent(pathname)}`);
+      return;
     }
-  }, [needsSignIn, needsAdmin, pathname, router]);
 
-  if (!hydrated || needsSignIn || needsAdmin) return <GateLoader />;
+    if (fallback) {
+      router.replace(fallback);
+    }
+  }, [needsSignIn, needsAdmin, fallback, pathname, router]);
 
-  if (!verified) return <GateLoader />;
+  if (!hydrated || needsSignIn || needsAdmin || !verified) return <GateLoader />;
+  if (!accessReady || fallback) return <GateLoader />;
+  if (denied) return <AccessDenied />;
 
   return children;
 }

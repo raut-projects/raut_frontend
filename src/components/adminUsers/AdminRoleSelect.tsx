@@ -1,4 +1,8 @@
+"use client";
+
+import { usePermissions } from "@/hooks/usePermissions";
 import { ADMIN_ROLES, type AdminRoleKey } from "@/lib/adminUsers";
+import { PERMISSIONS } from "@/lib/permissions";
 
 type AdminRoleSelectProps = {
   value: AdminRoleKey;
@@ -18,6 +22,7 @@ export function AdminRoleSelect({
   id,
   className = inputClass,
 }: AdminRoleSelectProps) {
+  const { has } = usePermissions();
   const selected = ADMIN_ROLES.find((role) => role.key === value);
 
   return (
@@ -26,7 +31,7 @@ export function AdminRoleSelect({
         id={id}
         value={value}
         onChange={(event) => onChange(event.target.value as AdminRoleKey)}
-        disabled={disabled}
+        disabled={ disabled || !has(PERMISSIONS.PLATFORM_ROLES_MANAGE) }
         className={className}
       >
         {ADMIN_ROLES.map((role) => (

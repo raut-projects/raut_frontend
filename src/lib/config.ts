@@ -57,6 +57,7 @@ export const API_ROUTES = {
   login: "/auth/login",
   refresh: "/auth/refresh",
   me: "/auth/me",
+  myPermissions: "/me/permissions",
   resetPassword: "/auth/password/reset",
   passwordUpdate: "/auth/password/update",
   notifications: "/notifications/",
@@ -189,3 +190,7 @@ export const REQUEST_TIMEOUT_MS = 15000;
 // How long a role confirmed by the server stays trusted before the admin gate
 // asks the backend again (GET /auth/me).
 export const ROLE_REVALIDATE_MS = 5 * 60 * 1000;
+
+export const RBAC_REVALIDATE_MS = 5 * 60 * 1000;
+
+export const RBAC_STALE_GRACE_MS = 24 * 60 * 60 * 1000;

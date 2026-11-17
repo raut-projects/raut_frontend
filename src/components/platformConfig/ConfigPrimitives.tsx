@@ -4,9 +4,11 @@ import type { ReactNode } from "react";
 import { LoaderCircle } from "lucide-react";
 import { cn } from "cn";
 
+import { Can } from "@/components/Can";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export function ConfigCard({
   title,
@@ -123,21 +125,23 @@ export function TabActions({
         >
           Discard
         </Button>
-        <Button
-          type="button"
-          onClick={ onSave }
-          disabled={ !dirty || isSaving }
-          className="h-9 bg-brand-600 px-3.5 text-sm font-semibold text-white hover:bg-brand-700"
-        >
-          { isSaving ? (
-            <>
-              <LoaderCircle className="animate-spin" />
-              Saving…
-            </>
-          ) : (
-            saveLabel
-          ) }
-        </Button>
+        <Can permission={ PERMISSIONS.PLATFORM_CONFIG_MANAGE }>
+          <Button
+            type="button"
+            onClick={ onSave }
+            disabled={ !dirty || isSaving }
+            className="h-9 bg-brand-600 px-3.5 text-sm font-semibold text-white hover:bg-brand-700"
+          >
+            { isSaving ? (
+              <>
+                <LoaderCircle className="animate-spin" />
+                Saving…
+              </>
+            ) : (
+              saveLabel
+            ) }
+          </Button>
+        </Can>
       </div>
     </div>
   );

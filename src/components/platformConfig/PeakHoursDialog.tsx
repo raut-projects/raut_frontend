@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 
+import { Can } from "@/components/Can";
 import { Button } from "@/components/ui/button";
 import SidePanel from "@/components/SidePanel";
 import { useToast } from "@/components/toastContext";
@@ -13,6 +14,7 @@ import {
   serializePeakHours,
   type PeakHoursSchedule,
 } from "@/lib/platformConfig";
+import { PERMISSIONS } from "@/lib/permissions";
 import type { ConfigValue } from "@/types/platformConfig";
 
 export const PEAK_HOURS_KEY = "surge.peak_hours";
@@ -96,14 +98,16 @@ export function PeakHoursDialog({
           >
             Cancel
           </Button>
-          <Button
-            type="button"
-            onClick={ handleSave }
-            disabled={ update.isPending }
-            className="h-9 bg-brand-600 px-3.5 text-sm font-semibold text-white hover:bg-brand-700"
-          >
-            { update.isPending ? "Saving…" : "Save peak hours" }
-          </Button>
+          <Can permission={ PERMISSIONS.PLATFORM_CONFIG_MANAGE }>
+            <Button
+              type="button"
+              onClick={ handleSave }
+              disabled={ update.isPending }
+              className="h-9 bg-brand-600 px-3.5 text-sm font-semibold text-white hover:bg-brand-700"
+            >
+              { update.isPending ? "Saving…" : "Save peak hours" }
+            </Button>
+          </Can>
         </>
       }
     >

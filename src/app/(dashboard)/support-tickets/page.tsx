@@ -40,8 +40,10 @@ import {
   useSupportAgents,
   useSupportTickets,
 } from "@/hooks/useSupportTickets";
+import { usePermissions } from "@/hooks/usePermissions";
 import { usePageViewField } from "@/store/pageViewStore";
 import { queryKeys } from "@/lib/queryKeys";
+import { PERMISSIONS } from "@/lib/permissions";
 import {
   downloadSupportTicketsCsv,
   formatTicketUpdated,
@@ -86,6 +88,9 @@ const matchesSearch = (ticket: SupportTicket, search: string) => {
 function SupportTicketsPage() {
   const toast = useToast();
   const queryClient = useQueryClient();
+  const { has } = usePermissions();
+  const canManage = has(PERMISSIONS.SUPPORT_TICKETS_MANAGE);
+  const canResolve = has(PERMISSIONS.SUPPORT_TICKETS_RESOLVE);
   const [isExporting, setIsExporting] = useState(false);
   const [status, setStatus] = usePageViewField("supportTickets", "status");
   const [search, setSearch] = usePageViewField("supportTickets", "search");
@@ -401,12 +406,14 @@ function SupportTicketsPage() {
           </select>
         </div>
 
-        <Button asChild size="sm" className="shrink-0 lg:ml-0">
-          <Link href="/support-tickets/new">
-            <Plus className="size-4" aria-hidden="true" />
-            Create ticket
-          </Link>
-        </Button>
+        { canManage && (
+          <Button asChild size="sm" className="shrink-0 lg:ml-0">
+            <Link href="/support-tickets/new">
+              <Plus className="size-4" aria-hidden="true" />
+              Create ticket
+            </Link>
+          </Button>
+        ) }
       </div>
 
       { urgentCount > 0 && (
@@ -587,7 +594,8 @@ function SupportTicketsPage() {
                         Copy ticket ID
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="bg-slate-100" />
-                      { ticket.status !== "in-progress" &&
+                      { canResolve &&
+                        ticket.status !== "in-progress" &&
                         ticket.status !== "resolved" &&
                         ticket.status !== "closed" && (
                           <DropdownMenuItem
@@ -599,7 +607,7 @@ function SupportTicketsPage() {
                             Mark in progress
                           </DropdownMenuItem>
                         ) }
-                      { ticket.status !== "resolved" && (
+                      { canResolve && ticket.status !== "resolved" && (
                         <DropdownMenuItem
                           onSelect={ () =>
                             updateTicketStatus(ticket, "resolved")
@@ -609,7 +617,7 @@ function SupportTicketsPage() {
                           Resolve
                         </DropdownMenuItem>
                       ) }
-                      { ticket.status !== "closed" && (
+                      { canResolve && ticket.status !== "closed" && (
                         <DropdownMenuItem
                           onSelect={ () =>
                             updateTicketStatus(ticket, "closed")

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { Can } from "@/components/Can";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { PERMISSIONS } from "@/lib/permissions";
 import {
   RANGE_PRESETS,
   addDays,
@@ -136,40 +138,42 @@ export function AnalyticsToolbar({
           </Label>
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={disabled}
-              className="h-auto rounded-lg border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-card hover:bg-slate-50 disabled:opacity-50"
+        <Can permission={PERMISSIONS.ANALYTICS_EXPORT}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={disabled}
+                className="h-auto rounded-lg border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-card hover:bg-slate-50 disabled:opacity-50"
+              >
+                Export
+                <ChevronDown
+                  className="h-3.5 w-3.5"
+                  strokeWidth={2}
+                  aria-hidden="true"
+                />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="w-52 rounded-xl border border-slate-200 bg-white p-0 py-1 shadow-elevated ring-0"
             >
-              Export
-              <ChevronDown
-                className="h-3.5 w-3.5"
-                strokeWidth={2}
-                aria-hidden="true"
-              />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="w-52 rounded-xl border border-slate-200 bg-white p-0 py-1 shadow-elevated ring-0"
-          >
-            <DropdownMenuItem
-              onSelect={onExportCsv}
-              className="rounded-none px-3 py-2 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-600"
-            >
-              Download CSV
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={onExportPdf}
-              className="rounded-none px-3 py-2 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-600"
-            >
-              Print / Save as PDF
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuItem
+                onSelect={onExportCsv}
+                className="rounded-none px-3 py-2 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-600"
+              >
+                Download CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={onExportPdf}
+                className="rounded-none px-3 py-2 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-600"
+              >
+                Print / Save as PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </Can>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
