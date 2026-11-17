@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "cn";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSession } from "@/hooks/useSession";
 import { useSupportAgents, useSupportTicket } from "@/hooks/useSupportTickets";
 import { TicketPriorityBadge, TicketStatusBadge } from "@/components/supportTicketBadges";
 import SidePanel from "@/components/SidePanel";
@@ -42,7 +43,6 @@ import {
   formatTicketSlaSeconds,
   SUPPORT_TICKET_PRIORITIES,
   TICKET_PRIORITY_LABELS,
-  TICKET_STATUS_LABELS,
   ticketAgentName,
   SupportTicketPriority,
   SupportTicketSla,
@@ -63,15 +63,6 @@ const sectionTitleClass =
 const sectionIconClass =
   "flex size-7 items-center justify-center rounded-lg bg-slate-100 text-slate-500";
 const cardClass = "rounded-xl border border-slate-200 bg-white p-4";
-
-const getInitials = (name: string) =>
-  name
-    .split(" ")
-    .filter(Boolean)
-    .map((part) => part.charAt(0))
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
 
 const getSlaClass = (status: string, priority: SupportTicketPriority) => {
   if (status === "resolved" || status === "closed") {
@@ -103,6 +94,7 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
   const ticket = ticketQuery.data?.ticket;
   const detail = ticketQuery.data?.detail;
   const agents = agentsQuery.data ?? [];
+  const session = useSession();
   const toast = useToast();
 
   const [reply, setReply] = useState("");
@@ -188,7 +180,6 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
   }
 
   const requesterName = detail.user.name || ticket.requesterId;
-  const requesterInitials = getInitials(requesterName);
   const requesterType = detail.user.type || ticket.requesterType;
   const profileHref = requesterType === "Driver" ? "/drivers" : "/customers";
   const phone = detail.user.phone || ticket.contactPhone;
@@ -249,16 +240,8 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
   };
 
   const handleToggleStatus = () => {
-    if (ticket.status !== "closed") {
-      setResolutionNote("");
-      setResolutionPanel(true);
-      return;
-    }
-
-    void runAction(
-      updateSupportTicketStatus(ticket.id, "open", ticket.version),
-      `${ticket.id} marked ${TICKET_STATUS_LABELS.open.toLowerCase()}.`,
-    );
+    setResolutionNote("");
+    setResolutionPanel(true);
   };
 
   const confirmResolution = () => {
@@ -464,15 +447,17 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={ handleToggleStatus }
-                disabled={ isSaving }
-              >
-                { ticket.status === "closed" ? "Reopen" : "Close" }
-              </Button>
+              { ticket.status !== "resolved" && ticket.status !== "closed" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={ handleToggleStatus }
+                  disabled={ isSaving }
+                >
+                  Close
+                </Button>
+              ) }
 
               <Button
                 type="button"
@@ -510,8 +495,8 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
 
               <div className={ cn(cardClass, "mt-3") }>
                 <div className="flex items-center gap-3">
-                  <span className="flex size-10 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-600">
-                    { requesterInitials }
+                  <span className="flex size-10 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                    <UserRound className="size-5" aria-hidden="true" />
                   </span>
                   <div>
                     <p className="text-sm font-semibold text-slate-900">
@@ -661,74 +646,108 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
                 </span>
               </div>
 
-              <div className="mt-3 space-y-3">
-                { detail.messages.length === 0 && (
-                  <p className={ cn(cardClass, "text-sm text-slate-500") }>
-                    No messages were returned for this ticket.
-                  </p>
-                ) }
-                { detail.messages.map((message) => {
-                  const isInternal = Boolean(message.internal);
-                  const isBot = message.role === "Bot";
+              { detail.messages.length === 0 ? (
+                <p className={ cn(cardClass, "mt-3 text-sm text-slate-500") }>
+                  No messages were returned for this ticket.
+                </p>
+              ) : (
+                <div className="mt-3 space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                  { detail.messages.map((message) => {
+                    const isRequesterMessage =
+                      message.senderId === ticket.requesterId ||
+                      message.role === "Rider" ||
+                      message.role === "Driver" ||
+                      message.role === "Other";
+                    const isOutgoing =
+                      !isRequesterMessage &&
+                      (message.role === "Agent" ||
+                        Boolean(message.internal) ||
+                        (session?.id != null && message.senderId === session.id));
+                    const isBot =
+                      message.role === "Bot" || message.role === "System";
+                    const authorLabel = isOutgoing
+                      ? message.author === "Agent"
+                        ? (session?.name ?? "Support")
+                        : message.author
+                      : (detail.user.name || message.author);
 
-                  return (
-                    <article
-                      key={ message.id }
-                      className={ cn(
-                        "rounded-xl border p-4",
-                        isInternal
-                          ? "border-amber-200 bg-amber-50/70"
-                          : isBot
-                            ? "border-slate-200 bg-slate-50"
-                            : "border-slate-200 bg-white",
-                      ) }
-                    >
-                      <div className="flex flex-wrap items-center gap-2">
+                    return (
+                      <article
+                        key={ message.id }
+                        aria-label={ `${isOutgoing ? "Sent by" : "Received from"} ${authorLabel}` }
+                        className={ cn(
+                          "flex items-start gap-3",
+                          isOutgoing && "flex-row-reverse",
+                        ) }
+                      >
                         <span
+                          aria-hidden="true"
                           className={ cn(
-                            "flex size-8 items-center justify-center rounded-full text-xs font-semibold",
-                            isInternal
+                            "flex size-9 shrink-0 items-center justify-center rounded-full",
+                            message.internal
                               ? "bg-amber-100 text-amber-700"
-                              : isBot
-                                ? "bg-slate-200 text-slate-600"
-                                : "bg-brand-50 text-brand-700",
+                              : isOutgoing
+                                ? "bg-slate-900 text-white"
+                                : isBot
+                                  ? "bg-slate-200 text-slate-600"
+                                  : "bg-slate-100 text-slate-600",
                           ) }
                         >
                           { isBot ? (
-                            <Bot className="size-4" aria-hidden="true" />
+                            <Bot className="size-4" />
                           ) : (
-                            getInitials(message.author)
+                            <UserRound className="size-4" />
                           ) }
                         </span>
-                        <span className="text-sm font-semibold text-slate-900">
-                          { message.author }
-                        </span>
-                        {/* <span className="text-xs text-slate-500">
-                          { message.role }
-                        </span> */}
-                        { isInternal && (
-                          <Badge
-                            variant="outline"
-                            className="rounded-full border-amber-200 bg-amber-100 px-2 text-[10px] font-semibold uppercase tracking-wide text-amber-700"
-                          >
-                            Internal note
-                          </Badge>
-                        ) }
-                        <time
-                          dateTime={ message.createdAt }
-                          className="ml-auto text-xs text-slate-400"
-                        >
-                          { formatTicketDateTime(message.createdAt) }
-                        </time>
-                      </div>
 
-                      <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-600">
-                        { message.body }
-                      </p>
-                    </article>
-                  );
-                }) }
-              </div>
+                        <div
+                          className={ cn(
+                            "flex min-w-0 max-w-[85%] flex-col gap-1 sm:max-w-[75%]",
+                            isOutgoing && "items-end",
+                          ) }
+                        >
+                          <div className="flex flex-wrap items-center gap-2 px-1">
+                            <span className="text-sm font-semibold text-slate-900">
+                              { authorLabel }
+                            </span>
+                            { message.internal && (
+                              <Badge
+                                variant="outline"
+                                className="rounded-full border-amber-200 bg-amber-100 px-2 text-[10px] font-semibold uppercase tracking-wide text-amber-700"
+                              >
+                                Internal note
+                              </Badge>
+                            ) }
+                            <time
+                              dateTime={ message.createdAt }
+                              className="text-xs text-slate-400"
+                            >
+                              { formatTicketDateTime(message.createdAt) }
+                            </time>
+                          </div>
+
+                          <div
+                            className={ cn(
+                              "rounded-2xl px-4 py-3 text-sm leading-6",
+                              message.internal
+                                ? "rounded-tr-sm border border-amber-200 bg-amber-50 text-amber-900"
+                                : isOutgoing
+                                  ? "rounded-tr-sm bg-brand-600 text-white"
+                                  : isBot
+                                    ? "rounded-tl-sm border border-slate-200 bg-slate-50 text-slate-600"
+                                    : "rounded-tl-sm border border-slate-200 bg-white text-slate-700",
+                            ) }
+                          >
+                            <p className="whitespace-pre-line wrap-break-words">
+                              { message.body }
+                            </p>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  }) }
+                </div>
+              ) }
             </section>
 
             <section aria-labelledby="ticket-reply-heading">
@@ -938,6 +957,7 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
           </label>
         </SidePanel>
       ) }
+
     </div>
   );
 }

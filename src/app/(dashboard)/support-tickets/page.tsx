@@ -619,17 +619,6 @@ function SupportTicketsPage() {
                           Close
                         </DropdownMenuItem>
                       ) }
-                      { (ticket.status === "resolved" ||
-                        ticket.status === "closed") && (
-                          <DropdownMenuItem
-                            onSelect={ () =>
-                              updateTicketStatus(ticket, "open")
-                            }
-                            className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
-                          >
-                            Reopen
-                          </DropdownMenuItem>
-                        ) }
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
