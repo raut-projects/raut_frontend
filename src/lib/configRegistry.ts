@@ -31,6 +31,7 @@ export type ConfigFieldUnit =
  *
  * `key` is the config record key; `valueKey` names the property to read/write
  * inside the record's value object (defaults to "value" or "enabled").
+ * `pattern` optionally constrains text values before saving.
  */
 export type ConfigFieldSpec = {
   key: string;
@@ -43,6 +44,8 @@ export type ConfigFieldSpec = {
   max?: number;
   step?: number;
   placeholder?: string;
+  pattern?: RegExp;
+  patternMessage?: string;
   options?: { label: string; value: string }[];
 };
 
@@ -397,6 +400,27 @@ export const CONFIG_FIELDS: Record<string, ConfigFieldSpec> =
         "Automatic trip submission",
         "Submit completed trips to LATRA CeTS automatically.",
       ),
+      field({
+        key: "latra.cets_base_url",
+        label: "CeTS base URL",
+        type: "text",
+        valueKey: "url",
+        hint: "Change this if CeTS provides a new endpoint URL.",
+        placeholder: "https://cets.example.com/api/v1/ticket-engine",
+        pattern: /^https?:\/\/[^\s]+$/i,
+        patternMessage: "Enter a valid http(s) URL",
+      }),
+      field({
+        key: "latra.jwt_expiry_minutes",
+        label: "JWT expiry",
+        type: "number",
+        valueKey: "minutes",
+        unit: "minutes",
+        min: 1,
+        max: 1440,
+        step: 1,
+        hint: "How long our JWT tokens remain valid.",
+      }),
     ].map((spec) => [spec.key, spec]),
   );
 
@@ -585,15 +609,19 @@ export const OPERATIONS_SECTIONS: ConfigSectionSpec[] = [
 const LATRA_CONFIG_KEYS = new Set([
   "latra.auto_submit_daily_report",
   "latra.auto_submit_trips",
+  "latra.cets_base_url",
+  "latra.jwt_expiry_minutes",
 ]);
 
 export const LATRA_SECTION: ConfigSectionSpec = {
   id: "latra",
   title: "LATRA compliance",
-  description: "Control automatic submissions to LATRA CeTS.",
+  description: "Configure LATRA CeTS submissions and connection settings.",
   fields: [
     CONFIG_FIELDS["latra.auto_submit_daily_report"],
     CONFIG_FIELDS["latra.auto_submit_trips"],
+    CONFIG_FIELDS["latra.cets_base_url"],
+    CONFIG_FIELDS["latra.jwt_expiry_minutes"],
   ],
 };
 
@@ -823,9 +851,10 @@ export function draftToUpdates(
 }
 
 /**
- * Validates number fields in a draft, returning errors keyed by config key.
+ * Validates fields in a draft, returning errors keyed by config key.
  *
- * Checks required, finite, and min/max bounds; non-number fields are ignored.
+ * Number fields are checked for required, finite, and min/max bounds; text
+ * fields with a pattern must match it.
  */
 export function validateConfigDraft(
   records: ConfigRecord[],
@@ -835,11 +864,15 @@ export function validateConfigDraft(
 
   for (const record of records) {
     const spec = fieldSpecFor(record);
-
-    if (spec.type !== "number") continue;
-
     const raw = draft[record.key];
     const text = raw === undefined || raw === null ? "" : String(raw).trim();
+
+    if (spec.pattern && !spec.pattern.test(text)) {
+      errors[record.key] = spec.patternMessage ?? `${spec.label} is invalid`;
+      continue;
+    }
+
+    if (spec.type !== "number") continue;
 
     if (!text) {
       errors[record.key] = `${spec.label} is required`;
