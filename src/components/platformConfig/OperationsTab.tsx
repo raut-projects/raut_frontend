@@ -104,8 +104,6 @@ export function OperationsTab({ configs }: { configs: ConfigRecord[] }) {
         />
       )) }
 
-
-
       { latraSections.map((section) => (
         <ConfigSection
           key={ section.id }
