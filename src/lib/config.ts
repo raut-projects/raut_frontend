@@ -60,6 +60,7 @@ export const API_ROUTES = {
   myPermissions: "/me/permissions",
   rbacPermissions: "/rbac/permissions",
   rbacRoles: "/rbac/roles",
+  rbacRole: (roleKey: string) => `/rbac/roles/${encodeURIComponent(roleKey)}`,
   resetPassword: "/auth/password/reset",
   passwordUpdate: "/auth/password/update",
   notifications: "/notifications/",

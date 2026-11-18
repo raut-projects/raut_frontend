@@ -12,10 +12,10 @@ import {
 } from "../lib/config";
 import {
   firstPermittedRoute,
-  hasPermission,
   resolveRoutePermission,
-} from "../lib/permissions";
-import { firstRole, formatRole, isAdminRole } from "../lib/roles";
+} from "../lib/navigation";
+import { hasPermission } from "../lib/permissions";
+import { firstRole, formatRole } from "../lib/roles";
 import { fetchCurrentUser, signOut } from "../services/auth";
 import { fetchMyPermissions } from "../services/rbac";
 import { updateSession } from "../services/tokenStore";
@@ -147,8 +147,6 @@ function RequireAdmin({ children }: { children: ReactNode }) {
 
   const needsSignIn =
     hydrated && (!session || check === "signed-out" || accessCheck === "signed-out");
-  const needsAdmin =
-    hydrated && Boolean(session) && verified && !isAdminRole(session.role);
   const denied =
     hydrated &&
     Boolean(session) &&
@@ -162,17 +160,12 @@ function RequireAdmin({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (needsAdmin) {
-      router.replace(`/request-admin?from=${encodeURIComponent(pathname)}`);
-      return;
-    }
-
     if (fallback) {
       router.replace(fallback);
     }
-  }, [needsSignIn, needsAdmin, fallback, pathname, router]);
+  }, [needsSignIn, fallback, pathname, router]);
 
-  if (!hydrated || needsSignIn || needsAdmin || !verified) return <GateLoader />;
+  if (!hydrated || needsSignIn || !verified) return <GateLoader />;
   if (!accessReady || fallback) return <GateLoader />;
   if (denied) return <AccessDenied />;
 

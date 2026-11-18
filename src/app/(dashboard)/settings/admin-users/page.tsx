@@ -15,6 +15,7 @@ import { Can } from "@/components/Can";
 import { EditAdminDialog } from "@/components/adminUsers/EditAdminDialog";
 import { InviteAdminDialog } from "@/components/adminUsers/InviteAdminDialog";
 import { PermissionMatrixDialog } from "@/components/adminUsers/PermissionMatrixDialog";
+import { RoleEditorDialog } from "@/components/adminUsers/RoleEditorDialog";
 import {
   AdminRoleBadge,
   AdminUserStatusBadge,
@@ -52,12 +53,12 @@ import {
   formatPhone,
   initialsFromName,
   normalizePhone,
-  type AdminRoleKey,
   type AdminUser,
   type AdminUserStatus,
 } from "@/lib/adminUsers";
 import { PERMISSIONS } from "@/lib/permissions";
 import { usePageViewField } from "@/store/pageViewStore";
+import type { RbacCatalogRole } from "@/types/rbac";
 
 const PAGE_SIZE = 20;
 
@@ -70,7 +71,9 @@ function AdminUsersPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [matrixOpen, setMatrixOpen] = useState(false);
-  const [matrixRole, setMatrixRole] = useState<AdminRoleKey | "all">("all");
+  const [matrixRole, setMatrixRole] = useState<string | "all">("all");
+  const [roleEditorOpen, setRoleEditorOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<RbacCatalogRole | null>(null);
   const [deactivateTarget, setDeactivateTarget] = useState<AdminUser | null>(
     null,
   );
@@ -138,7 +141,7 @@ function AdminUsersPage() {
     (sessionPhone.length === 9 &&
       normalizePhone(user.phone).slice(-9) === sessionPhone);
 
-  const openMatrix = (role: AdminRoleKey | "all" = "all") => {
+  const openMatrix = (role: string | "all" = "all") => {
     setMatrixRole(role);
     setMatrixOpen(true);
   };
@@ -206,6 +209,21 @@ function AdminUsersPage() {
             >
               <ShieldCheck className="size-4" aria-hidden="true" />
               Permissions
+            </Button>
+          </Can>
+          <Can permission={ PERMISSIONS.PLATFORM_ROLES_MANAGE }>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={ () => {
+                setEditingRole(null);
+                setRoleEditorOpen(true);
+              } }
+              className="h-9 border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              <ShieldCheck className="size-4" aria-hidden="true" />
+              New role
             </Button>
           </Can>
           <Can permission={ PERMISSIONS.PLATFORM_ADMINS_MANAGE }>
@@ -560,6 +578,13 @@ function AdminUsersPage() {
         open={ matrixOpen }
         initialRole={ matrixRole }
         onClose={ () => setMatrixOpen(false) }
+      />
+
+      <RoleEditorDialog
+        key={ `${roleEditorOpen}-${editingRole?.key ?? "new"}` }
+        open={ roleEditorOpen }
+        role={ editingRole }
+        onClose={ () => setRoleEditorOpen(false) }
       />
 
       <ConfirmDialog

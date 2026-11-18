@@ -344,7 +344,7 @@ export type AdminUser = {
   name: string;
   email: string;
   phone: string;
-  role: AdminRoleKey;
+  role: string;
   status: AdminUserStatus;
   lastLoginAt: string | null;
   isOnline: boolean;
@@ -380,7 +380,7 @@ export type AdminUserFormValues = {
   name: string;
   phone: string;
   email: string;
-  role: AdminRoleKey;
+  role: string;
   twoFactorRequired: boolean;
   sendWelcomeSms: boolean;
 };
@@ -390,7 +390,7 @@ export type AdminUserInvitePayload = {
   name: string;
   phone: string;
   email: string;
-  role: AdminRoleKey;
+  role: string;
   permissions?: PermissionOverrides;
   two_factor_required: boolean;
   send_welcome_sms: boolean;
@@ -398,7 +398,7 @@ export type AdminUserInvitePayload = {
 
 /** Request body for updating an admin user's role and permissions. */
 export type AdminUserUpdatePayload = {
-  role: AdminRoleKey;
+  role: string;
   permissions?: PermissionOverrides;
   two_factor_required: boolean;
 };
@@ -414,7 +414,7 @@ export const ADMIN_USER_DEFAULT_FORM: AdminUserFormValues = {
 };
 
 /** Maps accepted role spellings to canonical admin role keys. */
-const ROLE_ALIASES: Record<string, AdminRoleKey> = {
+const ROLE_ALIASES: Record<string, string> = {
   super_admin: "super_admin",
   superadmin: "super_admin",
   "super-admin": "super_admin",
@@ -443,15 +443,15 @@ const ROLE_ALIASES: Record<string, AdminRoleKey> = {
  * Normalizes any role value to a canonical admin role key.
  *
  * Trims, lowercases and collapses whitespace to underscores before alias
- * lookup; unknown values fall back to "analyst" (least privilege).
+ * lookup; unknown values are preserved so backend-defined roles survive.
  */
-export function normalizeAdminRole(value: unknown): AdminRoleKey {
+export function normalizeAdminRole(value: unknown): string {
   const key = String(value ?? "")
     .trim()
     .toLowerCase()
     .replace(/\s+/g, "_");
 
-  return ROLE_ALIASES[key] ?? "analyst";
+  return ROLE_ALIASES[key] ?? key;
 }
 
 /**
@@ -479,11 +479,21 @@ export function normalizeAdminStatus(value: unknown): AdminUserStatus {
   return "active";
 }
 
-/** Returns the display label for a role value, defaulting to "Analyst". */
+const formatRoleKey = (key: string) =>
+  key
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+
+/** Returns the display label for a role value, formatting unknown roles. */
 export function roleLabel(role: string) {
   const key = normalizeAdminRole(role);
 
-  return ADMIN_ROLE_LABELS[key] ?? "Analyst";
+  if (!key) return "User";
+
+  return (
+    ADMIN_ROLE_LABELS[key] ??
+    formatRoleKey(key)
+  );
 }
 
 /** Returns the description for a role value, or an empty string. */
@@ -491,21 +501,21 @@ export function roleDescription(role: string) {
   const key = normalizeAdminRole(role);
 
   return (
-    ADMIN_ROLES.find((entry) => entry.key === key)?.description ?? ""
+    ADMIN_ROLES.find((entry) => entry.key === (key as AdminRoleKey))?.description ?? ""
   );
 }
 
 /** Resolves the base permission level for a role on a feature (defaults to "none"). */
 export function resolvePermission(
-  role: AdminRoleKey,
+  role: string,
   feature: PermissionFeature,
 ): PermissionLevel {
-  return PERMISSION_MATRIX[feature]?.[role] ?? "none";
+  return PERMISSION_MATRIX[feature]?.[role as AdminRoleKey] ?? "none";
 }
 
 /** Resolves every feature's permission for a role, applying overrides when present. */
 export function resolvePermissions(
-  role: AdminRoleKey,
+  role: string,
   overrides?: PermissionOverrides,
 ): Record<PermissionFeature, PermissionLevel> {
   return PERMISSION_FEATURES.reduce(

@@ -11,7 +11,6 @@ import TanzaniaPhoneInput from "@/components/TanzaniaPhoneInput";
 import { useInviteAdminUser } from "@/hooks/useAdminUsers";
 import {
   ADMIN_USER_DEFAULT_FORM,
-  type AdminRoleKey,
   type AdminUserFormValues,
 } from "@/lib/adminUsers";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -192,7 +191,7 @@ export function InviteAdminDialog({
           </div>
           <AdminRoleSelect
             value={values.role}
-            onChange={(role: AdminRoleKey) => update("role", role)}
+            onChange={(role) => update("role", role)}
           />
           {errors.role && <span className={errorClass}>{errors.role}</span>}
         </div>
