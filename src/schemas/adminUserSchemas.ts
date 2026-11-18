@@ -1,21 +1,14 @@
 /**
- * Zod schemas for inviting and editing admin users. The role and permission
- * enums mirror the identifiers accepted by the backend.
+ * Zod schemas for inviting and editing admin users. Role keys accept backend
+ * identifiers; permission levels mirror the identifiers accepted by the backend.
  */
 import { z } from "zod";
 
-/** Backend admin role identifiers accepted by both schemas. */
-const ADMIN_ROLE_VALUES = [
-  "super_admin",
-  "platform_manager",
-  "operations_agent",
-  "support_agent",
-  "finance_manager",
-  "finance_agent",
-  "marketing_manager",
-  "marketing_agent",
-  "analyst",
-] as const;
+const ROLE_KEY = z
+  .string()
+  .trim()
+  .min(1, "Choose a role")
+  .regex(/^[a-z0-9][a-z0-9_-]*$/i, "Use letters, numbers, dashes and underscores");
 
 /** Per-module permission levels submitted by the edit form. */
 const PERMISSION_LEVELS = [
@@ -47,7 +40,7 @@ export const inviteAdminUserSchema = z.object({
     .trim()
     .min(1, "Email is required")
     .email("Enter a valid email address"),
-  role: z.enum(ADMIN_ROLE_VALUES),
+  role: ROLE_KEY,
   twoFactorRequired: z.boolean(),
   sendWelcomeSms: z.boolean(),
 });
@@ -57,7 +50,7 @@ export const inviteAdminUserSchema = z.object({
  * maps module keys to a permission level; omitting it leaves permissions as-is.
  */
 export const editAdminUserSchema = z.object({
-  role: z.enum(ADMIN_ROLE_VALUES),
+  role: ROLE_KEY,
   twoFactorRequired: z.boolean(),
   permissions: z
     .record(z.string(), z.enum(PERMISSION_LEVELS))

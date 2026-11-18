@@ -8,17 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useUpdateAdminUser } from "@/hooks/useAdminUsers";
 import {
-  ADMIN_ROLE_LABELS,
   PERMISSION_FEATURES,
   formatPhone,
   PERMISSION_LEVEL_LABELS,
   resolvePermission,
-  type AdminRoleKey,
   type AdminUser,
   type PermissionFeature,
   type PermissionLevel,
   type PermissionOverrides,
 } from "@/lib/adminUsers";
+import { roleDisplayName } from "@/lib/rbacRoles";
 import { PERMISSIONS } from "@/lib/permissions";
 import { editAdminUserSchema } from "@/schemas/adminUserSchemas";
 
@@ -54,7 +53,7 @@ export function EditAdminDialog({
 }: EditAdminDialogProps) {
   const formId = `edit-admin-${useId()}`;
   const updateMutation = useUpdateAdminUser();
-  const [role, setRole] = useState<AdminRoleKey>(user?.role ?? "support_agent");
+  const [role, setRole] = useState<string>(user?.role ?? "support_agent");
   const [twoFactorRequired, setTwoFactorRequired] = useState(
     user?.twoFactorRequired ?? true,
   );
@@ -104,7 +103,7 @@ export function EditAdminDialog({
     }
 
     const payload: {
-      role: AdminRoleKey;
+      role: string;
       two_factor_required: boolean;
       permissions?: PermissionOverrides;
     } = {
@@ -194,7 +193,8 @@ export function EditAdminDialog({
           {(error || roleChanged) && (
             <p className={error ? errorClass : "text-xs text-amber-700"}>
               {error ||
-                `Changing the role to ${ADMIN_ROLE_LABELS[role]} updates this admin's inherited access.`}
+                  `Changing the role to ${roleDisplayName(role)} updates this admin's inherited access.`}
+
             </p>
           )}
         </div>

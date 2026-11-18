@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
-  Car,
+  CarFront,
   ChevronRight,
   CreditCard,
   Gift,
@@ -19,8 +19,6 @@ import {
   Ticket,
   Users,
   Wallet,
-  CarFront,
-  // BadgeAlert,
   type LucideIcon,
 } from "lucide-react";
 
@@ -47,89 +45,29 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { usePermissions } from "@/hooks/usePermissions";
-import { PERMISSIONS } from "@/lib/permissions";
+import {
+  NAV_GROUPS,
+  SETTINGS_ITEMS,
+  type NavIconName,
+  type NavItem,
+} from "@/lib/navigation";
+import { normalizePath } from "@/lib/permissions";
 import { signOut } from "@/services/auth";
 
-type NavItem = {
-  title: string;
-  url: string;
-  icon: LucideIcon;
-  badge?: string;
-  activeOn?: string;
-  exact?: boolean;
-  permission?: string;
+const navIcons: Record<NavIconName, LucideIcon> = {
+  dashboard: LayoutDashboard,
+  liveRides: MapIcon,
+  drivers: CarFront,
+  customers: Users,
+  rides: MapPin,
+  routes: Route,
+  payouts: Wallet,
+  transactions: CreditCard,
+  promotions: Megaphone,
+  referrals: Gift,
+  support: Ticket,
+  analytics: BarChart3,
 };
-
-type NavGroup = {
-  label?: string;
-  items: NavItem[];
-};
-
-const navGroups: NavGroup[] = [
-  {
-    items: [
-      {
-        title: "Dashboard",
-        url: "/",
-        icon: LayoutDashboard,
-        permission: PERMISSIONS.ANALYTICS_READ,
-        // badge: "Home",
-      },
-    ],
-  },
-  {
-    label: "Operations",
-    items: [
-      { title: "Live Rides", url: "/live-rides", icon: MapIcon, permission: PERMISSIONS.RIDES_READ },
-      { title: "Drivers", url: "/drivers", icon: CarFront, permission: PERMISSIONS.DRIVERS_READ },
-      { title: "Customers", url: "/customers", icon: Users, permission: PERMISSIONS.CUSTOMERS_READ },
-      { title: "Rides", url: "/rides", icon: MapPin, permission: PERMISSIONS.RIDES_READ },
-      { title: "Routes", url: "/routes", icon: Route, badge: "DUO", permission: PERMISSIONS.RIDES_ROUTES_READ },
-    ],
-  },
-  {
-    label: "Finance",
-    items: [
-      { title: "Payouts", url: "/payouts", icon: Wallet, permission: PERMISSIONS.FINANCE_PAYOUTS_READ },
-      { title: "Transactions", url: "/transactions", icon: CreditCard, permission: PERMISSIONS.FINANCE_TRANSACTIONS_READ },
-    ],
-  },
-  {
-    label: "Marketing",
-    items: [
-      { title: "Promotions", url: "/marketing/promotions", icon: Megaphone, exact: true, permission: PERMISSIONS.MARKETING_PROMOTIONS_READ },
-      { title: "Referrals", url: "/marketing/referrals", icon: Gift, permission: PERMISSIONS.MARKETING_REFERRALS_READ },
-    ],
-  },
-  {
-    label: "Support",
-    items: [
-      { title: "Support Tickets", url: "/support-tickets", icon: Ticket, permission: PERMISSIONS.SUPPORT_TICKETS_READ },
-      // { title: "Customer Issues", url: "/customer-issues", icon: BadgeAlert },
-    ],
-  },
-  {
-    label: "Insights",
-    items: [
-      {
-        title: "Analytics",
-        url: "/",
-        icon: BarChart3,
-        activeOn: "/analytics",
-        permission: PERMISSIONS.ANALYTICS_READ,
-      },
-    ],
-  },
-];
-
-const settingsItems = [
-  { title: "Platform Config", url: "/settings/platform-config", permission: PERMISSIONS.PLATFORM_CONFIG_READ },
-  { title: "Admin Users", url: "/settings/admin-users", permission: PERMISSIONS.PLATFORM_ADMINS_READ },
-  { title: "Audit Logs", url: "/settings/audit-logs", permission: PERMISSIONS.AUDIT_READ },
-  { title: "System Health", url: "/settings/system-health" },
-];
-
-const normalizePath = (value: string) => value.replace(/\/+$/, "") || "/";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
@@ -137,7 +75,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { has } = usePermissions();
   const { setOpenMobile, state, setOpen, isMobile } = useSidebar();
 
-  const visibleGroups = navGroups
+  const visibleGroups = NAV_GROUPS
     .map((group) => ({
       ...group,
       items: group.items.filter(
@@ -146,7 +84,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }))
     .filter((group) => group.items.length > 0);
 
-  const visibleSettingsItems = settingsItems.filter(
+  const visibleSettingsItems = SETTINGS_ITEMS.filter(
     (item) => !item.permission || has(item.permission),
   );
 
@@ -213,7 +151,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             ) : null}
             <SidebarMenu>
               {group.items.map((item) => {
-                const Icon = item.icon;
+                const Icon = navIcons[item.icon];
                 const active = isItemActive(item);
 
                 return (

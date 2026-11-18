@@ -46,3 +46,10 @@ export type RbacCatalogRole = {
   updatedAt: string | null;
   permissions: RbacRolePermission[];
 };
+
+export type RbacRolePayload = {
+  key: string;
+  name: string;
+  description?: string;
+  permissions: RbacRolePermission[];
+};
