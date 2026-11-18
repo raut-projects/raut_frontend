@@ -3,7 +3,11 @@ import type {
   RbacAccessSnapshot,
   RbacCatalogPermission,
   RbacCatalogRole,
-  RbacRolePayload,
+  RbacRegion,
+  RbacRegionPayload,
+  RbacRoleCreatePayload,
+  RbacRolePermission,
+  RbacRoleUpdatePayload,
 } from "../types/rbac";
 import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
 import { request } from "./http";
@@ -11,6 +15,8 @@ import {
   mapRbacAccess,
   mapRbacCatalogRole,
   mapRbacPermissionCatalog,
+  mapRbacRegion,
+  mapRbacRegionCatalog,
   mapRbacRoleCatalog,
 } from "./mappers";
 
@@ -34,9 +40,16 @@ export async function fetchRbacRoles(): Promise<RbacCatalogRole[]> {
   return mapRbacRoleCatalog(payload);
 }
 
+type RoleMutationFallback = {
+  key?: string;
+  name: string;
+  description?: string;
+  permissions: RbacRolePermission[];
+};
+
 const roleFromMutation = (
   raw: unknown,
-  fallback: RbacRolePayload,
+  fallback: RoleMutationFallback,
 ): RbacCatalogRole => {
   const envelope = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
   const data = "data" in envelope ? envelope.data : envelope;
@@ -47,7 +60,7 @@ const roleFromMutation = (
   if (mapped.key) return mapped;
 
   return mapRbacCatalogRole({
-    key: fallback.key,
+    key: fallback.key ?? "",
     name: fallback.name,
     description: fallback.description ?? "",
     permissions: fallback.permissions,
@@ -56,7 +69,7 @@ const roleFromMutation = (
 };
 
 export async function createRbacRole(
-  payload: RbacRolePayload,
+  payload: RbacRoleCreatePayload,
 ): Promise<RbacCatalogRole> {
   const raw = await apiPost(API_ROUTES.rbacRoles, payload);
 
@@ -64,14 +77,29 @@ export async function createRbacRole(
 }
 
 export async function updateRbacRole(
-  roleKey: string,
-  payload: RbacRolePayload,
+  roleId: string,
+  payload: RbacRoleUpdatePayload,
+  roleKey?: string,
 ): Promise<RbacCatalogRole> {
-  const raw = await apiPatch(API_ROUTES.rbacRole(roleKey), payload);
+  const raw = await apiPatch(API_ROUTES.rbacRole(roleId), payload);
 
-  return roleFromMutation(raw, payload);
+  return roleFromMutation(raw, { ...payload, key: roleKey });
 }
 
-export async function deleteRbacRole(roleKey: string): Promise<void> {
-  await apiDelete(API_ROUTES.rbacRole(roleKey));
+export async function deleteRbacRole(roleId: string): Promise<void> {
+  await apiDelete(API_ROUTES.rbacRole(roleId));
+}
+
+export async function fetchRbacRegions(): Promise<RbacRegion[]> {
+  const payload = await apiGet(API_ROUTES.rbacRegions);
+
+  return mapRbacRegionCatalog(payload);
+}
+
+export async function createRbacRegion(
+  payload: RbacRegionPayload,
+): Promise<RbacRegion> {
+  const raw = await apiPost(API_ROUTES.rbacRegions, payload);
+
+  return mapRbacRegion(raw);
 }

@@ -18,8 +18,10 @@ import {
 import type {
   RbacCatalogPermission,
   RbacCatalogRole,
+  RbacRegion,
   RbacRolePermission,
 } from "../types/rbac";
+import type { StaffAssignment, StaffMember } from "../types/staff";
 
 export const EMPTY = "—";
 
@@ -1111,6 +1113,7 @@ export const mapConfigRecord = (raw) => ({
 export const mapConfigDetail = (raw) => {
   const source = raw?.config ?? raw ?? {};
 
+  
   return {
     key: String(source?.key ?? source?.config_key ?? ""),
     value: asConfigValue(source?.value ?? source?.config_value),
@@ -1326,4 +1329,104 @@ export const mapRbacRoleCatalog = (raw): RbacCatalogRole[] => {
   return items
     .map(mapRbacCatalogRole)
     .filter((role) => role.key.trim());
+};
+
+export const mapRbacRegion = (raw): RbacRegion => {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const code = String(firstOf(source, ["code", "region_code"], "") ?? "");
+  const id = String(firstOf(source, ["id", "region_id"], code) ?? code);
+
+  return {
+    id,
+    code,
+    name: String(firstOf(source, ["name", "label"], code) ?? code),
+    isActive: firstOf(source, ["is_active", "isActive"], true) !== false,
+    createdAt: firstOf(source, ["created_at", "createdAt"]),
+  };
+};
+
+export const mapRbacRegionCatalog = (raw): RbacRegion[] => {
+  const data = raw && typeof raw === "object" && "data" in raw ? raw.data : raw;
+  const items = rbacCollection(data, ["regions", "items", "results", "data"]);
+
+  return items
+    .map(mapRbacRegion)
+    .filter((region) => region.id.trim() || region.code.trim());
+};
+
+const mapStaffAssignment = (raw): StaffAssignment => {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const roleKey = String(
+    firstOf(source, ["role_key", "roleKey", "key"], "") ?? "",
+  );
+  const roleName = String(
+    firstOf(source, ["role_name", "roleName", "name", "role"], roleKey) ??
+      roleKey,
+  );
+  const assignmentId = String(
+    firstOf(source, ["assignment_id", "assignmentId", "id"], "") ?? "",
+  );
+
+  return {
+    assignmentId,
+    roleId: String(
+      firstOf(source, ["role_id", "roleId"], "") ?? "",
+    ),
+    roleKey,
+    roleName,
+    scope: String(
+      firstOf(source, ["scope", "scope_type", "scopeType"], "platform") ??
+        "platform",
+    ),
+    scopeId:
+      firstOf(source, ["scope_id", "scopeId"]) === null
+        ? null
+        : String(firstOf(source, ["scope_id", "scopeId"], "") ?? "") || null,
+    expiresAt:
+      firstOf(source, ["expires_at", "expiresAt"]) === null
+        ? null
+        : String(firstOf(source, ["expires_at", "expiresAt"], "") ?? "") ||
+          null,
+    assignedAt:
+      firstOf(source, ["assigned_at", "assignedAt"]) === null
+        ? null
+        : String(firstOf(source, ["assigned_at", "assignedAt"], "") ?? "") ||
+          null,
+  };
+};
+
+export const mapStaffMember = (raw): StaffMember => {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const nested =
+    source.staff && typeof source.staff === "object" ? source.staff : source;
+  const name = String(
+    firstOf(nested, ["full_name", "fullName", "name"], "") ?? "",
+  );
+  const email = String(firstOf(nested, ["email"], "") ?? "");
+  const phone = String(
+    firstOf(nested, ["phone", "phone_number", "phoneNumber"], "") ?? "",
+  );
+  const isActive = firstOf(nested, ["is_active", "isActive"], true) !== false;
+  const rawStatus = String(firstOf(nested, ["status"], "") ?? "").toLowerCase();
+  const status =
+    rawStatus === "invited" || rawStatus === "pending"
+      ? "invited"
+      : isActive
+        ? "active"
+        : "deactivated";
+  const assignments = Array.isArray(nested.assignments)
+    ? nested.assignments
+        .map(mapStaffAssignment)
+        .filter((assignment) => assignment.assignmentId)
+    : [];
+
+  return {
+    id: String(firstOf(nested, ["id", "user_id", "userId"], "") ?? ""),
+    name: name.trim() || email.trim() || phone.trim() || "Unnamed staff",
+    email,
+    phone,
+    isActive,
+    status,
+    assignments,
+  };
 };
