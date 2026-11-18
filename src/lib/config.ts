@@ -75,8 +75,6 @@ export const API_ROUTES = {
   notifications: "/notifications/",
   promote: "/admin/promote",
   users: "/admin/users",
-  adminUserInvite: "/admin/users/invite",
-  adminUser: (userId: string) => `/admin/users/${encodeURIComponent(userId)}`,
   drivers: "/admin/drivers",
   driverDetail: (driverId: string) =>
     `/admin/drivers/${encodeURIComponent(driverId)}`,

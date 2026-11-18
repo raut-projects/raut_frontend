@@ -212,7 +212,7 @@ export const SETTINGS_ITEMS: NavItem[] = [
     permission: PERMISSIONS.PLATFORM_CONFIG_READ,
   },
   {
-    title: "Admin Users",
+    title: "Staff & Roles",
     url: "/settings/admin-users",
     icon: "customers",
     permission: PERMISSIONS.PLATFORM_ADMINS_READ,
