@@ -47,9 +47,28 @@ export type RbacCatalogRole = {
   permissions: RbacRolePermission[];
 };
 
-export type RbacRolePayload = {
+export type RbacRoleCreatePayload = {
   key: string;
   name: string;
   description?: string;
   permissions: RbacRolePermission[];
+};
+
+export type RbacRoleUpdatePayload = {
+  name: string;
+  description?: string;
+  permissions: RbacRolePermission[];
+};
+
+export type RbacRegion = {
+  id: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+  createdAt: string | null;
+};
+
+export type RbacRegionPayload = {
+  code: string;
+  name: string;
 };

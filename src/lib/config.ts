@@ -60,7 +60,16 @@ export const API_ROUTES = {
   myPermissions: "/me/permissions",
   rbacPermissions: "/rbac/permissions",
   rbacRoles: "/rbac/roles",
-  rbacRole: (roleKey: string) => `/rbac/roles/${encodeURIComponent(roleKey)}`,
+  rbacRole: (roleId: string) => `/rbac/roles/${encodeURIComponent(roleId)}`,
+  rbacRegions: "/rbac/regions",
+  staff: "/staff",
+  staffInvitations: "/staff/invitations",
+  staffRoles: (userId: string) =>
+    `/staff/${encodeURIComponent(userId)}/roles`,
+  staffRole: (userId: string, assignmentId: string) =>
+    `/staff/${encodeURIComponent(userId)}/roles/${encodeURIComponent(assignmentId)}`,
+  staffDeactivate: (userId: string) =>
+    `/staff/${encodeURIComponent(userId)}/deactivate`,
   resetPassword: "/auth/password/reset",
   passwordUpdate: "/auth/password/update",
   notifications: "/notifications/",

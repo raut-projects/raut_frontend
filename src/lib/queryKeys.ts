@@ -72,6 +72,11 @@ export const queryKeys = {
     all: ["rbac"],
     permissions: ["rbac", "permissions"],
     roles: ["rbac", "roles"],
+    regions: ["rbac", "regions"],
+  },
+  staff: {
+    all: ["staff"],
+    list: (params) => ["staff", "list", params],
   },
   supportTickets: {
     all: ["support-tickets"],

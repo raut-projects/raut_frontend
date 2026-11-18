@@ -3,15 +3,21 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { RBAC_REVALIDATE_MS } from "@/lib/config";
 import { queryKeys } from "@/lib/queryKeys";
 import {
+  createRbacRegion,
   createRbacRole,
   deleteRbacRole,
   fetchMyPermissions,
   fetchPermissionCatalog,
+  fetchRbacRegions,
   fetchRbacRoles,
   updateRbacRole,
 } from "@/services/rbac";
 import { updateSession } from "@/services/tokenStore";
-import type { RbacRolePayload } from "@/types/rbac";
+import type {
+  RbacRegionPayload,
+  RbacRoleCreatePayload,
+  RbacRoleUpdatePayload,
+} from "@/types/rbac";
 
 const queryOptions = {
   staleTime: RBAC_REVALIDATE_MS,
@@ -30,7 +36,7 @@ const refreshSessionAccess = async (queryClient: ReturnType<typeof useQueryClien
 
 const invalidateRbac = async (queryClient: ReturnType<typeof useQueryClient>) => {
   await queryClient.invalidateQueries({ queryKey: queryKeys.rbac.all });
-  await queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers.all });
+  await queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
   await refreshSessionAccess(queryClient);
 };
 
@@ -52,11 +58,20 @@ export function useRbacRoles(enabled: boolean) {
   });
 }
 
+export function useRbacRegions(enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.rbac.regions,
+    queryFn: fetchRbacRegions,
+    enabled,
+    ...queryOptions,
+  });
+}
+
 export function useCreateRbacRole() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createRbacRole,
+    mutationFn: (payload: RbacRoleCreatePayload) => createRbacRole(payload),
     onSuccess: async () => {
       await invalidateRbac(queryClient);
     },
@@ -68,12 +83,14 @@ export function useUpdateRbacRole() {
 
   return useMutation({
     mutationFn: ({
+      roleId,
       roleKey,
       payload,
     }: {
-      roleKey: string;
-      payload: RbacRolePayload;
-    }) => updateRbacRole(roleKey, payload),
+      roleId: string;
+      roleKey?: string;
+      payload: RbacRoleUpdatePayload;
+    }) => updateRbacRole(roleId, payload, roleKey),
     onSuccess: async () => {
       await invalidateRbac(queryClient);
     },
@@ -84,9 +101,20 @@ export function useDeleteRbacRole() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: deleteRbacRole,
+    mutationFn: (roleId: string) => deleteRbacRole(roleId),
     onSuccess: async () => {
       await invalidateRbac(queryClient);
+    },
+  });
+}
+
+export function useCreateRbacRegion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: RbacRegionPayload) => createRbacRegion(payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.rbac.regions });
     },
   });
 }

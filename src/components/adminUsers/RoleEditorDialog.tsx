@@ -19,7 +19,8 @@ import { PERMISSIONS } from "@/lib/permissions";
 import type {
   RbacCatalogPermission,
   RbacCatalogRole,
-  RbacRolePayload,
+  RbacRoleCreatePayload,
+  RbacRoleUpdatePayload,
 } from "@/types/rbac";
 
 type RoleEditorDialogProps = {
@@ -120,12 +121,12 @@ export function RoleEditorDialog({
       .replace(/_+/g, "_");
     const trimmedName = name.trim();
 
-    if (!normalizedKey || !trimmedName) {
+    if (!trimmedName || (!role && !normalizedKey)) {
       setError("A role key and display name are required.");
       return;
     }
 
-    if (!/^[a-z0-9][a-z0-9_]*$/.test(normalizedKey)) {
+    if (!role && !/^[a-z0-9][a-z0-9_]*$/.test(normalizedKey)) {
       setError("Role keys can only contain letters, numbers and underscores.");
       return;
     }
@@ -137,22 +138,28 @@ export function RoleEditorDialog({
       ]),
     );
 
-    const payload: RbacRolePayload = {
-      key: normalizedKey,
-      name: trimmedName,
-      description: description.trim(),
-      permissions: selectedCodes.map((code) => ({
-        code,
-        scope: scopes[code] ?? "platform",
-        constraints: existingGrants.get(code)?.constraints ?? {},
-      })),
-    };
+    const permissions = selectedCodes.map((code) => ({
+      code,
+      scope: scopes[code] ?? "platform",
+      constraints: existingGrants.get(code)?.constraints ?? {},
+    }));
 
     setError("");
 
     if (role) {
+      if (!role.id) {
+        setError("This role cannot be updated because it has no id.");
+        return;
+      }
+
+      const payload: RbacRoleUpdatePayload = {
+        name: trimmedName,
+        description: description.trim(),
+        permissions,
+      };
+
       updateMutation.mutate(
-        { roleKey: role.key, payload },
+        { roleId: role.id, roleKey: role.key, payload },
         {
           onSuccess: () => {
             onSaved?.();
@@ -163,6 +170,13 @@ export function RoleEditorDialog({
       return;
     }
 
+    const payload: RbacRoleCreatePayload = {
+      key: normalizedKey,
+      name: trimmedName,
+      description: description.trim(),
+      permissions,
+    };
+
     createMutation.mutate(payload, {
       onSuccess: () => {
         onSaved?.();
@@ -172,9 +186,9 @@ export function RoleEditorDialog({
   };
 
   const handleDelete = () => {
-    if (!role || deleteMutation.isPending) return;
+    if (!role?.id || deleteMutation.isPending) return;
 
-    deleteMutation.mutate(role.key, {
+    deleteMutation.mutate(role.id, {
       onSuccess: () => {
         setConfirmDelete(false);
         onSaved?.();
@@ -192,7 +206,7 @@ export function RoleEditorDialog({
       description="Choose the permission codes this role grants across the dashboard."
       footer={
         <>
-          {role && !role.isSystem ? (
+          {role?.id && !role.isSystem ? (
             <Button
               type="button"
               variant="outline"
@@ -213,12 +227,12 @@ export function RoleEditorDialog({
           >
             Cancel
           </Button>
-          <Button
-            type="submit"
-            form={formId}
-            disabled={pending || !canManage}
-            className="h-auto px-4 py-2 text-sm font-semibold"
-          >
+            <Button
+              type="submit"
+              form={formId}
+              disabled={pending || !canManage || Boolean(role && !role.id)}
+              className="h-auto px-4 py-2 text-sm font-semibold"
+            >
             {pending ? "Saving…" : role ? "Save role" : "Create role"}
           </Button>
         </>
@@ -243,7 +257,7 @@ export function RoleEditorDialog({
               onChange={(event) => setKey(event.target.value)}
               placeholder="regional_support_lead"
               className={`${inputClass} font-mono`}
-              disabled={!canManage || Boolean(role?.isSystem)}
+              disabled={!canManage || Boolean(role)}
             />
           </label>
         </div>
