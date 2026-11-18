@@ -58,6 +58,8 @@ export const API_ROUTES = {
   refresh: "/auth/refresh",
   me: "/auth/me",
   myPermissions: "/me/permissions",
+  rbacPermissions: "/rbac/permissions",
+  rbacRoles: "/rbac/roles",
   resetPassword: "/auth/password/reset",
   passwordUpdate: "/auth/password/update",
   notifications: "/notifications/",

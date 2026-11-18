@@ -68,6 +68,11 @@ export const queryKeys = {
   me: {
     all: ["me"],
   },
+  rbac: {
+    all: ["rbac"],
+    permissions: ["rbac", "permissions"],
+    roles: ["rbac", "roles"],
+  },
   supportTickets: {
     all: ["support-tickets"],
     list: (params) => ["support-tickets", "list", params],
