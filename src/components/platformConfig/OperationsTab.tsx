@@ -12,14 +12,24 @@ import {
 } from "@/components/platformConfig/ConfigPrimitives";
 import { useConfigForm } from "@/hooks/useConfigForm";
 import {
+  LATRA_SECTION,
   OPERATIONS_SECTIONS,
+  isLATRAConfig,
   isOperationsConfig,
   sectionsForRecords,
 } from "@/lib/configRegistry";
 import type { ConfigRecord } from "@/types/platformConfig";
 
 export function OperationsTab({ configs }: { configs: ConfigRecord[] }) {
-  const records = useMemo(() => configs.filter(isOperationsConfig), [configs]);
+  const operationsRecords = useMemo(
+    () => configs.filter(isOperationsConfig),
+    [configs],
+  );
+  const latraRecords = useMemo(() => configs.filter(isLATRAConfig), [configs]);
+  const records = useMemo(
+    () => [...operationsRecords, ...latraRecords],
+    [operationsRecords, latraRecords],
+  );
   const {
     draft,
     errors,
@@ -77,7 +87,8 @@ export function OperationsTab({ configs }: { configs: ConfigRecord[] }) {
     );
   }
 
-  const sections = sectionsForRecords(OPERATIONS_SECTIONS, records);
+  const sections = sectionsForRecords(OPERATIONS_SECTIONS, operationsRecords);
+  const latraSections = sectionsForRecords([LATRA_SECTION], latraRecords);
 
   return (
     <div className="space-y-5">
@@ -93,6 +104,19 @@ export function OperationsTab({ configs }: { configs: ConfigRecord[] }) {
         />
       )) }
 
+
+
+      { latraSections.map((section) => (
+        <ConfigSection
+          key={ section.id }
+          section={ section }
+          records={ latraRecords }
+          draft={ draft }
+          errors={ errors }
+          onChange={ handleChange }
+          onShowHistory={ setHistoryKey }
+        />
+      )) }
       <ConfigCard title="Not yet configurable">
         <div className="flex gap-3">
           <Info
