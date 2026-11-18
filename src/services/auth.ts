@@ -23,6 +23,7 @@ import {
   updateTokens,
 } from "./tokenStore";
 import { resetClientState } from "../store/resetClientState";
+import { fetchMyPermissions } from "./rbac";
 
 /**
  * Strips spaces, parentheses, hyphens and dots from a phone number so the same
@@ -172,6 +173,12 @@ export async function loginWithEmail({
     expiresIn: data.expires_in ?? data.expiresIn ?? null,
     remember,
   });
+
+  try {
+    updateSession({ access: await fetchMyPermissions() });
+  } catch {
+    updateSession({ access: null });
+  }
 
   return session;
 }

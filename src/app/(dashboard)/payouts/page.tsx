@@ -37,6 +37,8 @@ import {
 import { formatMoney } from "@/services/mappers";
 import { usePageViewField } from "@/store/pageViewStore";
 import { useClampPage } from "@/hooks/useClampPage";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const statusStyles = {
   Pending: "bg-amber-50 text-amber-700 ring-amber-600/20",
@@ -163,6 +165,10 @@ function Payouts() {
   const rejectPayout = useRejectPayout();
   const retryPayout = useRetryPayout();
 
+  const { has } = usePermissions();
+  const canApprovePayout = has(PERMISSIONS.FINANCE_PAYOUTS_APPROVE);
+  const canManagePayouts = has(PERMISSIONS.FINANCE_PAYOUTS_MANAGE);
+
   const payouts = data?.items ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -238,13 +244,15 @@ function Payouts() {
                 ? `${total} payout${total === 1 ? "" : "s"} on record`
                 : `${total} ${status} payout${total === 1 ? "" : "s"}` }
           </p>
-          <Link
-            href="/payouts/batch/"
-            className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
-          >
-            <FileCheck2 className="h-4 w-4" aria-hidden="true" />
-            Review pending batch
-          </Link>
+          { canManagePayouts && (
+            <Link
+              href="/payouts/batch/"
+              className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+            >
+              <FileCheck2 className="h-4 w-4" aria-hidden="true" />
+              Review pending batch
+            </Link>
+          ) }
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <select
@@ -466,31 +474,36 @@ function Payouts() {
                             Print / save receipt as PDF
                           </DropdownMenuItem>
                         ) }
-                        { payout.canApprove && (
-                          <>
-                            <DropdownMenuSeparator className="bg-slate-100" />
-                            <DropdownMenuItem
-                              onSelect={ () => {
-                                setApproveNotes("");
-                                setApproveTarget(payout);
-                              } }
-                              className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
-                            >
-                              Approve
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onSelect={ () => {
-                                setRejectReason("");
-                                setRejectTarget(payout);
-                              } }
-                              className="px-2.5 py-1.5 text-xs font-medium"
-                            >
-                              Reject
-                            </DropdownMenuItem>
-                          </>
-                        ) }
-                        { payout.canRetry && (
+                        { payout.canApprove &&
+                          (canApprovePayout || canManagePayouts) && (
+                            <>
+                              <DropdownMenuSeparator className="bg-slate-100" />
+                              { canApprovePayout && (
+                                <DropdownMenuItem
+                                  onSelect={ () => {
+                                    setApproveNotes("");
+                                    setApproveTarget(payout);
+                                  } }
+                                  className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
+                                >
+                                  Approve
+                                </DropdownMenuItem>
+                              ) }
+                              { canManagePayouts && (
+                                <DropdownMenuItem
+                                  variant="destructive"
+                                  onSelect={ () => {
+                                    setRejectReason("");
+                                    setRejectTarget(payout);
+                                  } }
+                                  className="px-2.5 py-1.5 text-xs font-medium"
+                                >
+                                  Reject
+                                </DropdownMenuItem>
+                              ) }
+                            </>
+                          ) }
+                        { payout.canRetry && canManagePayouts && (
                           <>
                             <DropdownMenuSeparator className="bg-slate-100" />
                             <DropdownMenuItem

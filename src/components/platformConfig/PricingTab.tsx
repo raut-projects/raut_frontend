@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { DollarSign } from "lucide-react";
 
+import { Can } from "@/components/Can";
 import { ConfigHistoryPanel } from "@/components/platformConfig/ConfigHistoryPanel";
 import { ConfigSection } from "@/components/platformConfig/ConfigSection";
 import {
@@ -29,6 +30,7 @@ import {
   sectionsForRecords,
   type PricingTabId,
 } from "@/lib/configRegistry";
+import { PERMISSIONS } from "@/lib/permissions";
 import type { ConfigRecord } from "@/types/platformConfig";
 
 export function PricingTab({ configs }: { configs: ConfigRecord[] }) {
@@ -185,14 +187,16 @@ export function PricingTab({ configs }: { configs: ConfigRecord[] }) {
                       title="Peak hours"
                       description="Windows when the peak-hour surge applies."
                       action={
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={ () => setPeakHoursOpen(true) }
-                          className="h-8 border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                        >
-                          Edit peak hours
-                        </Button>
+                        <Can permission={ PERMISSIONS.PLATFORM_CONFIG_MANAGE }>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={ () => setPeakHoursOpen(true) }
+                            className="h-8 border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                          >
+                            Edit peak hours
+                          </Button>
+                        </Can>
                       }
                     >
                       <p className="text-sm text-slate-700">

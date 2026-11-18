@@ -22,6 +22,7 @@ import {
 import { cn } from "cn";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "@/hooks/useSession";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useSupportAgents, useSupportTicket } from "@/hooks/useSupportTickets";
 import { TicketPriorityBadge, TicketStatusBadge } from "@/components/supportTicketBadges";
 import SidePanel from "@/components/SidePanel";
@@ -37,6 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { queryKeys } from "@/lib/queryKeys";
+import { PERMISSIONS } from "@/lib/permissions";
 import {
   formatTicketDateTime,
   formatTicketJoinedDate,
@@ -96,6 +98,11 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
   const agents = agentsQuery.data ?? [];
   const session = useSession();
   const toast = useToast();
+  const { has } = usePermissions();
+  const canAssign = has(PERMISSIONS.SUPPORT_TICKETS_ASSIGN);
+  const canReply = has(PERMISSIONS.SUPPORT_TICKETS_REPLY);
+  const canResolve = has(PERMISSIONS.SUPPORT_TICKETS_RESOLVE);
+  const canManage = has(PERMISSIONS.SUPPORT_TICKETS_MANAGE);
 
   const [reply, setReply] = useState("");
   const [internalNote, setInternalNote] = useState(false);
@@ -350,127 +357,137 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
             </div>
 
             <div className="flex flex-wrap gap-2 xl:justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={ handleAssign }
-                disabled={ !isUnassigned || isSaving }
-              >
-                <UserRound className="size-3.5" aria-hidden="true" />
-                { isUnassigned ? "Assign to Me" : `Assigned to ${assigneeName}` }
-              </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={ isSaving }
-                  >
-                    Reassign
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="w-56 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
-                >
-                  { agentsQuery.isPending && (
-                    <DropdownMenuItem disabled>
-                      Loading support agents…
-                    </DropdownMenuItem>
-                  ) }
-                  { agentsQuery.isError && (
-                    <DropdownMenuItem disabled>
-                      Could not load support agents
-                    </DropdownMenuItem>
-                  ) }
-                  { agents.map((agent) => (
-                    <DropdownMenuItem
-                      key={ agent.id }
-                      onSelect={ () => handleReassign(agent.id) }
-                      disabled={ isSaving }
-                      className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
-                    >
-                      <span>
-                        { agent.name }
-                        <span className="ml-1 text-slate-400">
-                          · { agent.role }
-                        </span>
-                      </span>
-                      { ticket.assigneeId === agent.id && (
-                        <Check
-                          className="ml-auto size-3.5"
-                          aria-hidden="true"
-                        />
-                      ) }
-                    </DropdownMenuItem>
-                  )) }
-                  { !agentsQuery.isPending &&
-                    !agentsQuery.isError &&
-                    agents.length === 0 && (
-                      <DropdownMenuItem disabled>
-                        No eligible agents
-                      </DropdownMenuItem>
-                    ) }
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button type="button" variant="outline" size="sm">
-                    <ShieldAlert className="size-3.5" aria-hidden="true" />
-                    Change Priority
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
-                >
-                  { SUPPORT_TICKET_PRIORITIES.map((priority) => (
-                    <DropdownMenuItem
-                      key={ priority }
-                      onSelect={ () => openPriorityPanel(priority) }
-                      disabled={ isSaving }
-                      className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
-                    >
-                      { TICKET_PRIORITY_LABELS[priority] }
-                      { ticket.priority === priority && (
-                        <Check
-                          className="ml-auto size-3.5"
-                          aria-hidden="true"
-                        />
-                      ) }
-                    </DropdownMenuItem>
-                  )) }
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              { ticket.status !== "resolved" && ticket.status !== "closed" && (
+              { canAssign && (
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={ handleToggleStatus }
+                  onClick={ handleAssign }
+                  disabled={ !isUnassigned || isSaving }
+                >
+                  <UserRound className="size-3.5" aria-hidden="true" />
+                  { isUnassigned ? "Assign to Me" : `Assigned to ${assigneeName}` }
+                </Button>
+              )}
+
+              { canAssign && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={ isSaving }
+                    >
+                      Reassign
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-56 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
+                  >
+                    { agentsQuery.isPending && (
+                      <DropdownMenuItem disabled>
+                        Loading support agents…
+                      </DropdownMenuItem>
+                    ) }
+                    { agentsQuery.isError && (
+                      <DropdownMenuItem disabled>
+                        Could not load support agents
+                      </DropdownMenuItem>
+                    ) }
+                    { agents.map((agent) => (
+                      <DropdownMenuItem
+                        key={ agent.id }
+                        onSelect={ () => handleReassign(agent.id) }
+                        disabled={ isSaving }
+                        className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
+                      >
+                        <span>
+                          { agent.name }
+                          <span className="ml-1 text-slate-400">
+                            · { agent.role }
+                          </span>
+                        </span>
+                        { ticket.assigneeId === agent.id && (
+                          <Check
+                            className="ml-auto size-3.5"
+                            aria-hidden="true"
+                          />
+                        )}
+                      </DropdownMenuItem>
+                    )) }
+                    { !agentsQuery.isPending &&
+                      !agentsQuery.isError &&
+                      agents.length === 0 && (
+                        <DropdownMenuItem disabled>
+                          No eligible agents
+                        </DropdownMenuItem>
+                      ) }
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+
+              { canManage && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button type="button" variant="outline" size="sm">
+                      <ShieldAlert className="size-3.5" aria-hidden="true" />
+                      Change Priority
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
+                  >
+                    { SUPPORT_TICKET_PRIORITIES.map((priority) => (
+                      <DropdownMenuItem
+                        key={ priority }
+                        onSelect={ () => openPriorityPanel(priority) }
+                        disabled={ isSaving }
+                        className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
+                      >
+                        { TICKET_PRIORITY_LABELS[priority] }
+                        { ticket.priority === priority && (
+                          <Check
+                            className="ml-auto size-3.5"
+                            aria-hidden="true"
+                          />
+                        )}
+                      </DropdownMenuItem>
+                    )) }
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+
+              { canResolve &&
+                ticket.status !== "resolved" &&
+                ticket.status !== "closed" && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={ handleToggleStatus }
+                    disabled={ isSaving }
+                  >
+                    Close
+                  </Button>
+                ) }
+
+              { canManage && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={ () => {
+                    setEscalateNote("");
+                    setEscalatePanel(true);
+                  } }
                   disabled={ isSaving }
                 >
-                  Close
+                  Escalate
                 </Button>
-              ) }
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={ () => {
-                  setEscalateNote("");
-                  setEscalatePanel(true);
-                } }
-                disabled={ isSaving }
-              >
-                Escalate
-              </Button>
+              )}
             </div>
           </div>
         </header>
@@ -750,58 +767,60 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
               ) }
             </section>
 
-            <section aria-labelledby="ticket-reply-heading">
-              <h2 id="ticket-reply-heading" className={ sectionTitleClass }>
-                <span className={ sectionIconClass }>
-                  <Send className="size-4" aria-hidden="true" />
-                </span>
-                Your Reply
-              </h2>
+            { canReply && (
+              <section aria-labelledby="ticket-reply-heading">
+                <h2 id="ticket-reply-heading" className={ sectionTitleClass }>
+                  <span className={ sectionIconClass }>
+                    <Send className="size-4" aria-hidden="true" />
+                  </span>
+                  Your Reply
+                </h2>
 
-              <div className={ cn(cardClass, "mt-3") }>
-                <label htmlFor="ticket-reply" className="sr-only">
-                  Reply to ticket
-                </label>
-                <Textarea
-                  id="ticket-reply"
-                  rows={ 4 }
-                  value={ reply }
-                  onChange={ (event) => setReply(event.target.value) }
-                  placeholder="Write a reply to the requester..."
-                  className="min-h-28 bg-white"
-                  disabled={ isSaving }
-                />
-
-                <div className="mt-3 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                  <label className="flex items-center gap-2 text-sm text-slate-600">
-                    <Checkbox
-                      checked={ internalNote }
-                      onCheckedChange={ (checked) =>
-                        setInternalNote(Boolean(checked))
-                      }
-                      disabled={ isSaving }
-                    />
-                    Internal note (not visible to user)
+                <div className={ cn(cardClass, "mt-3") }>
+                  <label htmlFor="ticket-reply" className="sr-only">
+                    Reply to ticket
                   </label>
+                  <Textarea
+                    id="ticket-reply"
+                    rows={ 4 }
+                    value={ reply }
+                    onChange={ (event) => setReply(event.target.value) }
+                    placeholder="Write a reply to the requester..."
+                    className="min-h-28 bg-white"
+                    disabled={ isSaving }
+                  />
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={ handleSendReply }
-                      disabled={ isSaving || !reply.trim() }
-                    >
-                      <Send className="size-3.5" aria-hidden="true" />
-                      { internalNote ? "Add Note" : "Send Reply" }
-                    </Button>
+                  <div className="mt-3 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                    <label className="flex items-center gap-2 text-sm text-slate-600">
+                      <Checkbox
+                        checked={ internalNote }
+                        onCheckedChange={ (checked) =>
+                          setInternalNote(Boolean(checked))
+                        }
+                        disabled={ isSaving }
+                      />
+                      Internal note (not visible to user)
+                    </label>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={ handleSendReply }
+                        disabled={ isSaving || !reply.trim() }
+                      >
+                        <Send className="size-3.5" aria-hidden="true" />
+                        { internalNote ? "Add Note" : "Send Reply" }
+                      </Button>
+                    </div>
                   </div>
-                </div>
 
-                <p className="mt-2 text-xs text-slate-400">
-                  Replies and internal notes are sent to the support service.
-                </p>
-              </div>
-            </section>
+                  <p className="mt-2 text-xs text-slate-400">
+                    Replies and internal notes are sent to the support service.
+                  </p>
+                </div>
+              </section>
+            )}
           </div>
 
           <aside className="space-y-6">

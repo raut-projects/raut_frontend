@@ -4,3 +4,4 @@
 export * from './api'
 export * from './models'
 export * from './analytics'
+export * from './rbac'

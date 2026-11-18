@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
+import { Can } from "@/components/Can";
 import { PromotionForm } from "@/components/marketing/PromotionForm";
 import { QueryError } from "@/components/queryStates";
 import { useToast } from "@/components/toastContext";
@@ -14,6 +15,7 @@ import {
   promotionToFormValues,
   type PromotionPayload,
 } from "@/lib/marketing";
+import { PERMISSIONS } from "@/lib/permissions";
 import { usePageViewStore } from "@/store/pageViewStore";
 
 export default function EditPromotionPage() {
@@ -98,15 +100,17 @@ export default function EditPromotionPage() {
           <QueryError error={ query.error } onRetry={ query.refetch } />
         </div>
       ) : query.data ? (
-        <PromotionForm
-          key={ query.data.id }
-          mode="edit"
-          initialValues={ promotionToFormValues(query.data) }
-          initialIsActive={ query.data.isActive }
-          isSubmitting={ update.isPending }
-          onSubmit={ handleSubmit }
-          onCancel={ () => router.push("/marketing/promotions") }
-        />
+        <Can permission={ PERMISSIONS.MARKETING_PROMOTIONS_MANAGE }>
+          <PromotionForm
+            key={ query.data.id }
+            mode="edit"
+            initialValues={ promotionToFormValues(query.data) }
+            initialIsActive={ query.data.isActive }
+            isSubmitting={ update.isPending }
+            onSubmit={ handleSubmit }
+            onCancel={ () => router.push("/marketing/promotions") }
+          />
+        </Can>
       ) : null }
     </div>
   );

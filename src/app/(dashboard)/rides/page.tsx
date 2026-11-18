@@ -24,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Can } from "@/components/Can";
 import { ReasonDialog } from "@/components/reasonDialog";
 import ViewRidePanel from "@/components/viewRidePanel";
 import { useRideSummary, useRides } from "@/hooks/useRides";
@@ -31,6 +32,7 @@ import { useDrivers } from "@/hooks/useDrivers";
 import { useCancelRide } from "@/hooks/useAdminActions";
 import { usePageViewField } from "@/store/pageViewStore";
 import { useClampPage } from "@/hooks/useClampPage";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const statusStyles = {
   Pending: "bg-amber-50 text-amber-700 ring-amber-600/20",
@@ -376,7 +378,7 @@ function Rides() {
                           View
                         </DropdownMenuItem>
                         { !TERMINAL_STATUSES.includes(ride.statusKey) && (
-                          <>
+                          <Can permission={ PERMISSIONS.RIDES_CANCEL }>
                             <DropdownMenuSeparator className="bg-slate-100" />
                             <DropdownMenuItem
                               variant="destructive"
@@ -388,7 +390,7 @@ function Rides() {
                             >
                               Cancel ride
                             </DropdownMenuItem>
-                          </>
+                          </Can>
                         )}
                         { ride.hasDispute && (
                           <>

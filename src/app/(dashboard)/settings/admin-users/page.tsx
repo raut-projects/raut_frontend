@@ -5,21 +5,20 @@ import {
   EllipsisVertical,
   KeyRound,
   Plus,
-  Search,
   ShieldCheck,
   UserRound,
   UserX,
 } from "lucide-react";
 
-import { EditAdminDialog } from "@/components/adminUsers/EditAdminDialog";
-import { InviteAdminDialog } from "@/components/adminUsers/InviteAdminDialog";
+import { Can } from "@/components/Can";
+import { ManageStaffDialog } from "@/components/adminUsers/ManageStaffDialog";
 import { PermissionMatrixDialog } from "@/components/adminUsers/PermissionMatrixDialog";
+import { RoleEditorDialog } from "@/components/adminUsers/RoleEditorDialog";
 import {
   AdminRoleBadge,
   AdminUserStatusBadge,
 } from "@/components/adminUsers/AdminUserStatusBadge";
-import { AdminUsersTabs } from "@/components/adminUsers/AdminUsersTabs";
-import { ConfirmDialog } from "@/components/reasonDialog";
+import { ReasonDialog } from "@/components/reasonDialog";
 import { RefreshIndicator } from "@/components/queryStates";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +28,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -38,81 +36,60 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useClampPage } from "@/hooks/useClampPage";
-import {
-  useAdminUsers,
-  useDeactivateAdminUser,
-  useReactivateAdminUser,
-} from "@/hooks/useAdminUsers";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useRbacRoles } from "@/hooks/useRbacCatalog";
 import { useSession } from "@/hooks/useSession";
+import { useDeactivateStaff, useStaff } from "@/hooks/useStaff";
 import {
-  formatLastLogin,
   formatPhone,
   initialsFromName,
   normalizePhone,
-  type AdminRoleKey,
-  type AdminUser,
-  type AdminUserStatus,
 } from "@/lib/adminUsers";
+import { PERMISSIONS } from "@/lib/permissions";
 import { usePageViewField } from "@/store/pageViewStore";
+import type { RbacCatalogRole } from "@/types/rbac";
+import type { StaffMember } from "@/types/staff";
 
 const PAGE_SIZE = 20;
 
 function AdminUsersPage() {
   const session = useSession();
-  const [status, setStatus] = usePageViewField("adminUsers", "status");
-  const [search, setSearch] = usePageViewField("adminUsers", "search");
+  const { has } = usePermissions();
+  const canReadRoles = has(PERMISSIONS.PLATFORM_ROLES_READ);
+  const rolesQuery = useRbacRoles(canReadRoles);
+  const roles = useMemo(
+    () => (rolesQuery.data ?? []).filter((role) => role.id),
+    [rolesQuery.data],
+  );
   const [page, setPage] = usePageViewField("adminUsers", "page");
 
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+  const [manageTarget, setManageTarget] = useState<StaffMember | null>(null);
   const [matrixOpen, setMatrixOpen] = useState(false);
-  const [matrixRole, setMatrixRole] = useState<AdminRoleKey | "all">("all");
-  const [deactivateTarget, setDeactivateTarget] = useState<AdminUser | null>(
+  const [matrixRole, setMatrixRole] = useState<string | "all">("all");
+  const [roleEditorOpen, setRoleEditorOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<RbacCatalogRole | null>(null);
+  const [deactivateTarget, setDeactivateTarget] = useState<StaffMember | null>(
     null,
   );
-  const [reactivateTarget, setReactivateTarget] = useState<AdminUser | null>(
-    null,
-  );
+  const [deactivateReason, setDeactivateReason] = useState("");
 
-  const deactivateMutation = useDeactivateAdminUser();
-  const reactivateMutation = useReactivateAdminUser();
+  const deactivateMutation = useDeactivateStaff();
 
-  const debouncedSearch = useDebouncedValue(search, 300);
   const params = useMemo(
     () => ({
       page,
-      limit: PAGE_SIZE,
-      search: debouncedSearch,
-      status,
+      pageSize: PAGE_SIZE,
     }),
-    [debouncedSearch, page, status],
+    [page],
   );
 
-  const usersQuery = useAdminUsers(params);
-  const activeCountQuery = useAdminUsers({
-    status: "active",
-    search: debouncedSearch,
-    page: 1,
-    limit: 1,
-  });
-  const invitedCountQuery = useAdminUsers({
-    status: "invited",
-    search: debouncedSearch,
-    page: 1,
-    limit: 1,
-  });
-  const deactivatedCountQuery = useAdminUsers({
-    status: "deactivated",
-    search: debouncedSearch,
-    page: 1,
-    limit: 1,
-  });
+  const staffQuery = useStaff(params);
 
-  const users = usersQuery.data?.items ?? [];
-  const total = usersQuery.data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const staff = staffQuery.data?.items ?? [];
+  const total = staffQuery.data?.total ?? 0;
+  const totalPages =
+    staffQuery.data?.totalPages ?? Math.max(1, Math.ceil(total / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const rangeStart = total === 0 ? 0 : startIndex + 1;
@@ -120,58 +97,39 @@ function AdminUsersPage() {
   const rangeLabel =
     rangeEnd > rangeStart ? `${rangeStart}-${rangeEnd}` : String(rangeStart);
 
-  const counts: Record<AdminUserStatus, number> = {
-    active: activeCountQuery.data?.total ?? 0,
-    invited: invitedCountQuery.data?.total ?? 0,
-    deactivated: deactivatedCountQuery.data?.total ?? 0,
-  };
-
   useClampPage(page, totalPages, setPage);
 
   const sessionId = session?.id != null ? String(session.id) : "";
   const sessionPhone = normalizePhone(session?.phone).slice(-9);
 
-  const isCurrentUser = (user: AdminUser) =>
-    (Boolean(sessionId) && String(user.id) === sessionId) ||
+  const isCurrentUser = (member: StaffMember) =>
+    (Boolean(sessionId) && String(member.id) === sessionId) ||
     (sessionPhone.length === 9 &&
-      normalizePhone(user.phone).slice(-9) === sessionPhone);
+      normalizePhone(member.phone).slice(-9) === sessionPhone);
 
-  const openMatrix = (role: AdminRoleKey | "all" = "all") => {
+  const openMatrix = (role: string | "all" = "all") => {
     setMatrixRole(role);
     setMatrixOpen(true);
   };
 
-  const changeStatus = (next: AdminUserStatus) => {
-    setStatus(next);
-    setPage(1);
+  const openRoleEditor = (role: RbacCatalogRole | null) => {
+    setEditingRole(role);
+    setRoleEditorOpen(true);
   };
 
-  const onSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearch(event.target.value);
-    setPage(1);
+  const closeDeactivate = () => {
+    setDeactivateTarget(null);
+    setDeactivateReason("");
   };
 
-  const confirmDeactivate = () => {
+  const confirmDeactivate = (reason: string) => {
     if (!deactivateTarget) return;
 
     deactivateMutation.mutate(
-      { userId: deactivateTarget.id },
+      { userId: deactivateTarget.id, reason },
       {
         onSuccess: () => {
-          setDeactivateTarget(null);
-        },
-      },
-    );
-  };
-
-  const confirmReactivate = () => {
-    if (!reactivateTarget) return;
-
-    reactivateMutation.mutate(
-      { userId: reactivateTarget.id },
-      {
-        onSuccess: () => {
-          setReactivateTarget(null);
+          closeDeactivate();
         },
       },
     );
@@ -182,80 +140,120 @@ function AdminUsersPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-            Admin User Management
+            Staff Management
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Invite teammates, assign roles and control what they can access.
+            Manage staff roles, scopes and account status.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <RefreshIndicator
-            isFetching={ usersQuery.isFetching }
-            updatedAt={ usersQuery.dataUpdatedAt }
-            onRefresh={ () => void usersQuery.refetch() }
+            isFetching={staffQuery.isFetching}
+            updatedAt={staffQuery.dataUpdatedAt}
+            onRefresh={() => void staffQuery.refetch()}
           />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={ () => openMatrix() }
-            className="h-9 border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            <ShieldCheck className="size-4" aria-hidden="true" />
-            Permissions
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={ () => setInviteOpen(true) }
-            className="h-9 px-3 text-sm font-semibold"
-          >
-            <Plus className="size-4" aria-hidden="true" />
-            Invite admin
-          </Button>
-        </div>
-      </div>
-
-      <AdminUsersTabs value={ status } counts={ counts } onChange={ changeStatus } />
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative w-full sm:max-w-md">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
-            aria-hidden="true"
-          />
-          <Input
-            type="search"
-            value={ search }
-            onChange={ onSearchChange }
-            placeholder="Search by name, email, phone or admin ID."
-            aria-label="Search admin users"
-            className="h-9 bg-white pl-9"
-          />
+          <Can permission={PERMISSIONS.PLATFORM_ROLES_READ}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => openMatrix()}
+              className="h-9 border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              <ShieldCheck className="size-4" aria-hidden="true" />
+              Permissions
+            </Button>
+          </Can>
+          <Can permission={PERMISSIONS.PLATFORM_ROLES_MANAGE}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9 border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  <ShieldCheck className="size-4" aria-hidden="true" />
+                  Roles
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-64 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
+              >
+                <DropdownMenuItem
+                  onSelect={() => openRoleEditor(null)}
+                  className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
+                >
+                  <Plus className="size-3.5" aria-hidden="true" />
+                  New role
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-slate-100" />
+                {rolesQuery.isPending ? (
+                  <DropdownMenuItem
+                    disabled
+                    className="px-2.5 py-1.5 text-xs text-slate-400"
+                  >
+                    Loading roles…
+                  </DropdownMenuItem>
+                ) : roles.length ? (
+                  roles.map((role) => (
+                    <DropdownMenuItem
+                      key={role.id ?? role.key}
+                      onSelect={() => openRoleEditor(role)}
+                      className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
+                    >
+                      <span className="truncate">{role.name}</span>
+                      <span className="ml-auto font-mono text-[0.65rem] text-slate-400">
+                        {role.key}
+                      </span>
+                    </DropdownMenuItem>
+                  ))
+                ) : (
+                  <DropdownMenuItem
+                    disabled
+                    className="px-2.5 py-1.5 text-xs text-slate-400"
+                  >
+                    No roles yet
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </Can>
+          <Can permission={PERMISSIONS.PLATFORM_ADMINS_MANAGE}>
+            <Button
+              type="button"
+              size="sm"
+              disabled
+              title="Invite staff will be enabled when the backend supports name, email and permissions."
+              className="h-9 px-3 text-sm font-semibold"
+            >
+              <Plus className="size-4" aria-hidden="true" />
+              Invite staff
+            </Button>
+          </Can>
         </div>
       </div>
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5">
           <p className="text-xs text-slate-500">
-            Showing{ " " }
-            <span className="font-semibold text-slate-700">{ rangeLabel }</span>{ " " }
-            of <span className="font-semibold text-slate-700">{ total }</span>{ " " }
-            admin{ total === 1 ? "" : "s" }
+            Showing{" "}
+            <span className="font-semibold text-slate-700">{rangeLabel}</span> of{" "}
+            <span className="font-semibold text-slate-700">{total}</span> staff
           </p>
           <p className="text-xs text-slate-400">
-            { counts.active } active &middot; { counts.invited } invited &middot;{ " " }
-            { counts.deactivated } deactivated
+            Page {currentPage} of {totalPages}
           </p>
         </div>
 
         <Table>
           <TableHeader className="bg-slate-50 [&_tr]:border-slate-200">
             <TableRow className="hover:bg-transparent">
-              <TableHead>Admin</TableHead>
+              <TableHead>Staff</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="hidden md:table-cell">Last login</TableHead>
+              <TableHead className="hidden md:table-cell">Scope</TableHead>
               <TableHead className="w-12 text-right">
                 <span className="sr-only">Actions</span>
               </TableHead>
@@ -263,50 +261,52 @@ function AdminUsersPage() {
           </TableHeader>
 
           <TableBody>
-            { usersQuery.isError && (
+            {staffQuery.isError && (
               <TableRow className="hover:bg-transparent">
                 <TableCell
-                  colSpan={ 5 }
+                  colSpan={5}
                   className="px-4 py-12 text-center whitespace-normal"
                 >
                   <p className="text-sm font-medium text-rose-700">
-                    { usersQuery.error instanceof Error
-                      ? usersQuery.error.message
-                      : "Admin users could not be loaded." }
+                    {staffQuery.error instanceof Error
+                      ? staffQuery.error.message
+                      : "Staff could not be loaded."}
                   </p>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={ () => void usersQuery.refetch() }
+                    onClick={() => void staffQuery.refetch()}
                     className="mt-3"
                   >
                     Try again
                   </Button>
                 </TableCell>
               </TableRow>
-            ) }
+            )}
 
-            { usersQuery.isPending && (
+            {staffQuery.isPending && (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={ 5 } className="px-4 py-12 text-center">
+                <TableCell colSpan={5} className="px-4 py-12 text-center">
                   <span className="text-sm text-slate-500">
-                    Loading admin users.
+                    Loading staff.
                   </span>
                 </TableCell>
               </TableRow>
-            ) }
+            )}
 
-            { users.map((user) => {
-              const current = isCurrentUser(user);
+            {staff.map((member) => {
+              const current = isCurrentUser(member);
+              const primary = member.assignments[0];
+              const roleKey = primary?.roleKey ?? "";
 
               return (
                 <TableRow
-                  key={ user.id }
-                  className={ current ? "bg-brand-50/40 hover:bg-brand-50/60" : "" }
+                  key={member.id}
+                  className={current ? "bg-brand-50/40 hover:bg-brand-50/60" : ""}
                 >
                   <TableCell className="whitespace-normal">
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-3">
                       <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 sm:flex sm:h-10 sm:w-10">
                         <svg
                           className="h-5 w-5"
@@ -326,42 +326,49 @@ function AdminUsersPage() {
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span className="truncate font-medium text-slate-900">
-                            { user.name }
+                            {member.name}
                           </span>
-                          { current && (
+                          {current && (
                             <span className="rounded-full bg-brand-100 px-1.5 py-0.5 text-[0.65rem] font-semibold text-brand-700">
                               You
                             </span>
-                          ) }
-                          { user.isOnline && user.status === "active" && (
-                            <span
-                              className="inline-flex items-center gap-1 text-[0.65rem] font-medium text-emerald-600"
-                              title="Online now"
-                            >
-                              <span className="size-1.5 rounded-full bg-emerald-500" />
-                              Online
-                            </span>
-                          ) }
+                          )}
                         </div>
+                        <span className="mt-0.5 block truncate text-xs text-slate-500">
+                          {member.email || formatPhone(member.phone) || "—"}
+                        </span>
                       </div>
                     </div>
                   </TableCell>
 
                   <TableCell>
-                    <AdminRoleBadge role={ user.role } />
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {roleKey ? (
+                        <AdminRoleBadge role={roleKey} />
+                      ) : (
+                        <span className="text-xs text-slate-400">Unassigned</span>
+                      )}
+                      {member.assignments.length > 1 ? (
+                        <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[0.65rem] font-semibold text-slate-600">
+                          +{member.assignments.length - 1}
+                        </span>
+                      ) : null}
+                    </div>
                   </TableCell>
 
                   <TableCell>
-                    <AdminUserStatusBadge status={ user.status } />
+                    <AdminUserStatusBadge status={member.status} />
                   </TableCell>
 
                   <TableCell className="hidden md:table-cell">
-                    <span className="block text-slate-600">
-                      { formatLastLogin(user.lastLoginAt, user.isOnline) }
+                    <span className="text-sm text-slate-600">
+                      {primary?.scope ?? "—"}
                     </span>
-                    {/* <span className="block text-xs text-slate-400">
-                      { user.twoFactorRequired ? "2FA on" : "2FA off" }
-                    </span> */}
+                    {primary?.scopeId ? (
+                      <span className="block text-xs text-slate-400">
+                        {primary.scopeId}
+                      </span>
+                    ) : null}
                   </TableCell>
 
                   <TableCell className="text-right">
@@ -372,7 +379,7 @@ function AdminUsersPage() {
                           variant="ghost"
                           size="icon"
                           className="text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                          aria-label={ `Actions for ${user.name}` }
+                          aria-label={`Actions for ${member.name}`}
                         >
                           <EllipsisVertical
                             className="h-4 w-4"
@@ -382,129 +389,118 @@ function AdminUsersPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent
                         align="end"
-                        className="w-48 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
+                        className="w-52 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
                       >
-                        <DropdownMenuItem
-                          onSelect={ () => setEditingUser(user) }
-                          className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
-                        >
-                          <UserRound className="size-3.5" aria-hidden="true" />
-                          Edit access
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={ () => openMatrix(user.role) }
-                          className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
-                        >
-                          <KeyRound className="size-3.5" aria-hidden="true" />
-                          View permissions
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator className="bg-slate-100" />
-                        { user.status === "deactivated" ? (
+                        <Can permission={PERMISSIONS.PLATFORM_ADMINS_MANAGE}>
                           <DropdownMenuItem
-                            onSelect={ () => setReactivateTarget(user) }
-                            className="px-2.5 py-1.5 text-xs font-medium text-emerald-700 focus:bg-emerald-50 focus:text-emerald-800"
+                            onSelect={() => setManageTarget(member)}
+                            className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                           >
-                            <ShieldCheck
-                              className="size-3.5"
-                              aria-hidden="true"
-                            />
-                            Reactivate account
+                            <UserRound className="size-3.5" aria-hidden="true" />
+                            Manage access
                           </DropdownMenuItem>
-                        ) : (
+                        </Can>
+                        <Can permission={PERMISSIONS.PLATFORM_ROLES_READ}>
                           <DropdownMenuItem
-                            disabled={ current }
-                            onSelect={ () => {
-                              if (!current) setDeactivateTarget(user);
-                            } }
-                            className="px-2.5 py-1.5 text-xs font-medium text-rose-600 focus:bg-rose-50 focus:text-rose-700"
+                            onSelect={() => openMatrix(roleKey || "all")}
+                            className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                           >
-                            <UserX className="size-3.5" aria-hidden="true" />
-                            { user.status === "invited"
-                              ? "Cancel invitation"
-                              : "Deactivate account" }
+                            <KeyRound className="size-3.5" aria-hidden="true" />
+                            View permissions
                           </DropdownMenuItem>
-                        ) }
+                        </Can>
+                        <Can permission={PERMISSIONS.PLATFORM_ADMINS_MANAGE}>
+                          <DropdownMenuSeparator className="bg-slate-100" />
+                          {member.status === "deactivated" ? (
+                            <DropdownMenuItem
+                              disabled
+                              title="Reactivate is unavailable until the backend endpoint exists."
+                              className="px-2.5 py-1.5 text-xs font-medium text-slate-400"
+                            >
+                              <ShieldCheck
+                                className="size-3.5"
+                                aria-hidden="true"
+                              />
+                              Reactivate account
+                            </DropdownMenuItem>
+                          ) : member.status === "invited" ? (
+                            <DropdownMenuItem
+                              disabled
+                              title="Cancel invitation is unavailable until the backend endpoint exists."
+                              className="px-2.5 py-1.5 text-xs font-medium text-slate-400"
+                            >
+                              <UserX className="size-3.5" aria-hidden="true" />
+                              Cancel invitation
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              disabled={current}
+                              onSelect={() => {
+                                if (!current) {
+                                  setDeactivateReason("");
+                                  setDeactivateTarget(member);
+                                }
+                              }}
+                              className="px-2.5 py-1.5 text-xs font-medium text-rose-600 focus:bg-rose-50 focus:text-rose-700"
+                            >
+                              <UserX className="size-3.5" aria-hidden="true" />
+                              Deactivate account
+                            </DropdownMenuItem>
+                          )}
+                        </Can>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
               );
-            }) }
+            })}
 
-            { !usersQuery.isError &&
-              !usersQuery.isPending &&
-              users.length === 0 && (
+            {!staffQuery.isError &&
+              !staffQuery.isPending &&
+              staff.length === 0 && (
                 <TableRow className="hover:bg-transparent">
                   <TableCell
-                    colSpan={ 5 }
+                    colSpan={5}
                     className="px-4 py-12 text-center whitespace-normal"
                   >
                     <p className="text-sm font-medium text-slate-700">
-                      No { status } admins found.
+                      No staff found.
                     </p>
                     <p className="mt-1 text-sm text-slate-500">
-                      { search.trim()
-                        ? "Try a different search or invite a new admin."
-                        : "Invite a teammate to give them dashboard access." }
+                      Staff invitations will be available when the backend
+                      supports name, email and permissions.
                     </p>
-                    <div className="mt-3 flex justify-center gap-2">
-                      { search.trim() && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={ () => {
-                            setSearch("");
-                            setPage(1);
-                          } }
-                          className="h-auto border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                        >
-                          Clear search
-                        </Button>
-                      ) }
+                    <Can permission={PERMISSIONS.PLATFORM_ADMINS_MANAGE}>
                       <Button
                         type="button"
                         size="sm"
-                        onClick={ () => setInviteOpen(true) }
-                        className="h-auto px-3 py-1.5 text-xs font-semibold"
+                        disabled
+                        title="Invite staff will be enabled when the backend supports name, email and permissions."
+                        className="mt-3 h-auto px-3 py-1.5 text-xs font-semibold"
                       >
                         <Plus className="size-3.5" aria-hidden="true" />
-                        Invite admin
+                        Invite staff
                       </Button>
-                    </div>
+                    </Can>
                   </TableCell>
                 </TableRow>
-              ) }
+              )}
           </TableBody>
         </Table>
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3.5 sm:px-5">
           <p className="text-xs text-slate-500">
-            Showing{ " " }
-            <span className="font-semibold text-slate-700">{ rangeLabel }</span>{ " " }
-            of <span className="font-semibold text-slate-700">{ total }</span>{ " " }
-            admin{ total === 1 ? "" : "s" }
-            { totalPages > 1 && (
-              <>
-                { " " }
-                &middot; Page{ " " }
-                <span className="font-semibold text-slate-700">
-                  { currentPage }
-                </span>{ " " }
-                of{ " " }
-                <span className="font-semibold text-slate-700">
-                  { totalPages }
-                </span>
-              </>
-            ) }
+            Showing{" "}
+            <span className="font-semibold text-slate-700">{rangeLabel}</span> of{" "}
+            <span className="font-semibold text-slate-700">{total}</span> staff
           </p>
           <div className="flex gap-2">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={ () => setPage(Math.max(1, currentPage - 1)) }
-              disabled={ currentPage <= 1 }
+              onClick={() => setPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage <= 1}
               className="h-auto border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:text-slate-400 disabled:opacity-100"
             >
               Previous
@@ -513,8 +509,8 @@ function AdminUsersPage() {
               type="button"
               variant="outline"
               size="sm"
-              onClick={ () => setPage(Math.min(totalPages, currentPage + 1)) }
-              disabled={ currentPage >= totalPages }
+              onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage >= totalPages}
               className="h-auto border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:text-slate-400 disabled:opacity-100"
             >
               Next
@@ -523,82 +519,57 @@ function AdminUsersPage() {
         </div>
       </div>
 
-      <InviteAdminDialog
-        open={ inviteOpen }
-        onClose={ () => setInviteOpen(false) }
-        onViewMatrix={ () => openMatrix() }
-        onInvited={ () => {
-          setStatus("invited");
-          setPage(1);
-        } }
-      />
-
-      <EditAdminDialog
-        key={ `${editingUser?.id ?? "none"}-${Boolean(editingUser)}` }
-        open={ Boolean(editingUser) }
-        user={ editingUser }
-        isSelf={ Boolean(editingUser && isCurrentUser(editingUser)) }
-        onClose={ () => setEditingUser(null) }
+      <ManageStaffDialog
+        key={`${manageTarget?.id ?? "none"}-${Boolean(manageTarget)}`}
+        open={Boolean(manageTarget)}
+        staff={manageTarget}
+        isSelf={Boolean(manageTarget && isCurrentUser(manageTarget))}
+        onClose={() => setManageTarget(null)}
       />
 
       <PermissionMatrixDialog
-        key={ `${matrixOpen}-${matrixRole}` }
-        open={ matrixOpen }
-        initialRole={ matrixRole }
-        onClose={ () => setMatrixOpen(false) }
+        key={`${matrixOpen}-${matrixRole}`}
+        open={matrixOpen}
+        initialRole={matrixRole}
+        onClose={() => setMatrixOpen(false)}
       />
 
-      <ConfirmDialog
-        open={ Boolean(deactivateTarget) }
-        onClose={ () => setDeactivateTarget(null) }
+      <RoleEditorDialog
+        key={`${roleEditorOpen}-${editingRole?.key ?? "new"}`}
+        open={roleEditorOpen}
+        role={editingRole}
+        onClose={() => setRoleEditorOpen(false)}
+      />
+
+      <ReasonDialog
+        open={Boolean(deactivateTarget)}
+        onClose={closeDeactivate}
         title={
           deactivateTarget
             ? `Deactivate ${deactivateTarget.name}?`
-            : "Deactivate admin"
+            : "Deactivate staff"
         }
         description="They will lose dashboard access immediately."
         confirmLabel="Deactivate"
         tone="danger"
-        pending={ deactivateMutation.isPending }
-        onConfirm={ confirmDeactivate }
+        value={deactivateReason}
+        onChange={setDeactivateReason}
+        pending={deactivateMutation.isPending}
+        onConfirm={confirmDeactivate}
       >
-        { deactivateTarget && (
+        {deactivateTarget && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
-            <p className="font-semibold">{ deactivateTarget.name }</p>
+            <p className="font-semibold">{deactivateTarget.name}</p>
             <p className="mt-0.5 text-xs text-rose-700">
-              { deactivateTarget.email || formatPhone(deactivateTarget.phone) }{ " " }
-              &middot; { deactivateTarget.id }
+              {deactivateTarget.email || formatPhone(deactivateTarget.phone)}{" "}
+              &middot; {deactivateTarget.id}
             </p>
             <p className="mt-2 text-xs text-rose-700">
-              The account and its history are kept. You can reactivate it at any
-              time.
+              The account and its history are kept.
             </p>
           </div>
-        ) }
-      </ConfirmDialog>
-
-      <ConfirmDialog
-        open={ Boolean(reactivateTarget) }
-        onClose={ () => setReactivateTarget(null) }
-        title={
-          reactivateTarget
-            ? `Reactivate ${reactivateTarget.name}?`
-            : "Reactivate admin"
-        }
-        description="They will be able to sign in again with their existing role."
-        confirmLabel="Reactivate"
-        pending={ reactivateMutation.isPending }
-        onConfirm={ confirmReactivate }
-      >
-        { reactivateTarget && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            <p className="font-semibold">{ reactivateTarget.name }</p>
-            <p className="mt-0.5 text-xs text-emerald-700">
-              { reactivateTarget.email || formatPhone(reactivateTarget.phone) }
-            </p>
-          </div>
-        ) }
-      </ConfirmDialog>
+        )}
+      </ReasonDialog>
     </div>
   );
 }

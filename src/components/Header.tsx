@@ -26,7 +26,7 @@ const titles = {
   "/support-tickets": "Support Tickets",
   "/settings": "Settings",
   "/settings/platform": "Platform Config",
-  "/settings/admin-users": "Admin Users",
+  "/settings/admin-users": "Staff & Roles",
   "/settings/audit-logs": "Audit Logs",
   "/settings/system-health": "System Health",
 };

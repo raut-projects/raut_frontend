@@ -52,7 +52,7 @@ A separate onboarding route guides drivers through personal, licence, vehicle an
 | Live Rides | Placeholder page; tracking and live-trip data are not implemented yet |
 | Marketing | API-backed promotions list with status tabs (active, scheduled, expired and drafts), search, pagination, activate/deactivate and delete; create/edit campaigns with discount, eligibility, schedule, usage limits, budget cap and DUO/peak-hour rules; referral programs, user enrollment and referral activity |
 | Support Tickets | API-backed ticket list, creation, search and filters, agent assignment, replies and internal notes, status/priority updates, escalation and CSV export |
-| Admin Users | API-backed admin list with Active/Invited/Deactivated tabs, search and pagination, invite and edit side panels, deactivate/reactivate, and a printable/exportable role permission matrix |
+| Staff & Roles | API-backed staff list with pagination, role/scope assignment, revoke and deactivate actions, live RBAC role editing, and a printable/exportable role permission matrix. Invite, reactivate and cancel invitation are disabled until the backend endpoints exist. |
 | Settings subpages | Mock-data audit log review and System Health dashboard; Platform Config placeholder |
 | Driver onboarding | Four-step driver application flow with English/Swahili UI, validation, document uploads and Flutter WebView hand-off |
 | User experience | Responsive sidebar and header, loading skeletons, retryable error states, refresh indicators, toast feedback and print-friendly analytics |
@@ -149,7 +149,6 @@ Dashboard comparison is only available when the previous period falls inside the
 | `NEXT_PUBLIC_API_BASE_URL` | Yes | None | Base URL of the Raut backend API, for example `http://localhost:8000`. Trailing slashes are removed automatically. Inlined at build time, so rebuild after changing it. |
 | `NEXT_PUBLIC_ADMIN_ROLES` | No | `admin,super_admin` | Comma-separated list of roles allowed through the admin gate. Values such as `administrator`, `superadmin`, `super-admin` and `owner` are normalized. Other known roles such as `platform_manager`, `operator`, `support`, `analyst`, `finance` and `marketing` are normalized but do not grant access unless added here. Inlined at build time. |
 | `NEXT_PUBLIC_REFERRAL_BASE_URL` | No | `https://raut.app/signup` | Base URL used to build referral signup links (`{base}?ref=CODE`). Inlined at build time, so rebuild after changing it. |
-| `NEXT_PUBLIC_USE_MOCK_ADMIN_USERS` | No | `true` | Serves the built-in sample admin users while the backend admin-users endpoints are unavailable. Set to `false` to use the real API. Inlined at build time. |
 
 ## Available scripts
 
@@ -188,7 +187,7 @@ Run `pnpm run build` before `pnpm run start` or `pnpm run preview`.
 | `/support-tickets/new` | Admin | Create a support ticket for a rider or driver |
 | `/support-tickets/[id]` | Admin | Ticket detail, agent assignment, replies/internal notes, status/priority updates and escalation |
 | `/settings` | Admin | Signed-in account profile and access details |
-| `/settings/admin-users` | Admin | Admin user list with status tabs, search, invite and edit panels, deactivate/reactivate and a role permission matrix |
+| `/settings/admin-users` | Admin | Staff list with pagination, role/scope assignment, revoke and deactivate actions, live RBAC role editing and a role permission matrix. Invite staff, reactivate and cancel invitation remain disabled until the backend endpoints exist. |
 | `/settings/audit-logs` | Admin | Searchable, filterable mock audit events with detail panel and CSV export |
 | `/settings/platform` | Admin | Platform configuration placeholder (Coming soon) |
 | `/settings/system-health` | Admin | Illustrative system status, uptime and latency trends, background jobs and recent incidents |
@@ -246,11 +245,12 @@ If the page is opened outside the WebView, it falls back to a browser alert. Can
 3. The response returns the session, access token and optional refresh token.
 4. The session and tokens are persisted in `localStorage` and exposed to React through the Zustand auth store.
 5. `RequireAdmin` revalidates the role every five minutes (`ROLE_REVALIDATE_MS`). A missing or stale role is checked against `GET /auth/me`.
-6. Non-admin accounts are redirected to `/request-admin`, where the admin secret is submitted to `POST /admin/promote`.
-7. If the promoted access token still does not grant an admin role, the user is asked to sign in again.
-8. Authenticated requests that return `401` attempt a token refresh through `POST /auth/refresh`. If refresh fails, the session is cleared and the user returns to `/login`.
+6. `RequireAdmin` also loads effective RBAC permissions from `GET /me/permissions` (`RBAC_REVALIDATE_MS`) and stores them in the session.
+7. Non-admin accounts are redirected to `/request-admin`, where the admin secret is submitted to `POST /admin/promote`.
+8. If the promoted access token still does not grant an admin role, the user is asked to sign in again.
+9. Authenticated requests that return `401` attempt a token refresh through `POST /auth/refresh`. If refresh fails, the session is cleared and the user returns to `/login`.
 
-If role revalidation fails because the server cannot be reached, the app keeps the last trusted role instead of signing the administrator out. A `401` still clears the session.
+If role or permission revalidation fails because the server cannot be reached, the app keeps the last trusted role and recent permission snapshot instead of signing the administrator out. A `401` still clears the session.
 
 Access-token expiry is also watched client-side. While an admin session is active, a timer is scheduled for the stored `expiresAt`; when it elapses, the app signs out and shows “Your session expired. Please sign in again.” There is no pre-expiry warning. Background tabs are checked when they regain focus or become visible. Requests still refresh an expired access token before using it, and a successful refresh moves the timer to the new expiry.
 
@@ -259,9 +259,9 @@ The default admin roles are `admin` and `super_admin`. Override them with `NEXT_
 - `administrator` becomes `admin`.
 - `superadmin`, `super-admin` and `owner` become `super_admin`.
 - `platform_manager`, `operator`, `support`, `analyst`, `finance` and `marketing` remain as their own roles.
-- The Admin Users page also understands `operations_agent`, `support_agent`, `finance_manager`, `finance_agent`, `marketing_manager` and `marketing_agent` as distinct roles. These are labels for the permission matrix and do not add admin-gate access unless listed in `NEXT_PUBLIC_ADMIN_ROLES`.
+- The Staff & Roles page uses the live `/rbac/roles` catalog and keeps readable fallback labels for known legacy role keys. None of these role labels add admin-gate access unless the role is listed in `NEXT_PUBLIC_ADMIN_ROLES`.
 
-The dashboard currently has a single admin gate: every configured admin role can open every admin page. Fine-grained permissions must be enforced by the backend.
+The dashboard has two gates. `RequireAdmin` still requires a configured admin role, then uses the `GET /me/permissions` response to hide sidebar sections, block unauthorized routes, and hide action controls. Permission codes follow `resource.action` (for example `drivers.verify` and `finance.payouts.approve`). A stale snapshot is trusted for up to `RBAC_STALE_GRACE_MS`; if the endpoint fails and no snapshot exists, the app denies access and shows an Access Denied screen. Ambiguous actions without a direct permission code, such as live-ride escalation and referral mark-paid, remain unchanged.
 
 Tokens are stored in browser `localStorage`, so the session can be restored across reloads. This does not replace server-side authorization; the backend must enforce permissions for every admin endpoint.
 
@@ -276,11 +276,19 @@ export const API_ROUTES = {
   login: '/auth/login',
   refresh: '/auth/refresh',
   me: '/auth/me',
+  myPermissions: '/me/permissions',
+  rbacPermissions: '/rbac/permissions',
+  rbacRoles: '/rbac/roles',
+  rbacRole: (roleId) => `/rbac/roles/${roleId}`,
+  rbacRegions: '/rbac/regions',
+  staff: '/staff',
+  staffInvitations: '/staff/invitations',
+  staffRoles: (userId) => `/staff/${userId}/roles`,
+  staffRole: (userId, assignmentId) => `/staff/${userId}/roles/${assignmentId}`,
+  staffDeactivate: (userId) => `/staff/${userId}/deactivate`,
   notifications: '/notifications/',
   promote: '/admin/promote',
   users: '/admin/users',
-  adminUserInvite: '/admin/users/invite',
-  adminUser: (userId) => `/admin/users/${userId}`,
   drivers: '/admin/drivers',
   rides: '/admin/rides',
   routes: '/admin/routes',
@@ -296,7 +304,6 @@ export const API_ROUTES = {
   marketingPromotion: (promotionId) => `/promotions/${promotionId}`,
   marketingPromotionActivate: (promotionId) => `/promotions/${promotionId}/activate`,
   marketingPromotionDeactivate: (promotionId) => `/promotions/${promotionId}/deactivate`,
-  users: '/admin/users',
 }
 ```
 
@@ -330,16 +337,23 @@ Raw API records are normalized in `src/services/mappers.ts`. Mappers provide con
 | `POST` | `/auth/login` | Sign in with an email address and password |
 | `POST` | `/auth/refresh` | Refresh an access token |
 | `GET` | `/auth/me` | Fetch the signed-in user and role |
+| `GET` | `/me/permissions` | Fetch effective RBAC permissions and role assignments |
 | `POST` | `/admin/promote` | Promote a signed-in account to admin using a secret |
 | `GET` | `/notifications/` | List notifications |
 | `POST` | `/notifications/{id}/read` | Mark a notification as read |
 | `GET` | `/admin/users` | List users/customers |
-| `GET` | `/admin/users` | List admin users (`status`, `search`, `page`, `page_size`) |
-| `POST` | `/admin/users/invite` | Invite an admin user |
-| `PATCH` | `/admin/users/{id}` | Update an admin user's role, permission overrides and 2FA |
-| `PUT` | `/admin/users/{id}/role` | Change a user's role |
-| `PUT` | `/admin/users/{id}/deactivate` | Deactivate a user |
-| `PUT` | `/admin/users/{id}/reactivate` | Reactivate a user |
+| `GET` | `/rbac/permissions` | List the permission catalog |
+| `GET` | `/rbac/roles` | List roles with permissions and metadata |
+| `POST` | `/rbac/roles` | Create a role (`key`, `name`, `description`, `permissions`) |
+| `PATCH` | `/rbac/roles/{role_id}` | Update a role (`name`, `description`, `permissions`) |
+| `DELETE` | `/rbac/roles/{role_id}` | Delete a role |
+| `GET` | `/rbac/regions` | List regions used for staff role scopes |
+| `POST` | `/rbac/regions` | Create a region (`code`, `name`) |
+| `GET` | `/staff` | List staff with pagination (`page`, `page_size`) |
+| `POST` | `/staff/invitations` | Invite staff; documented but not wired because it lacks name, email and permission fields |
+| `POST` | `/staff/{user_id}/roles` | Assign a role and scope to a staff member |
+| `DELETE` | `/staff/{user_id}/roles/{assignment_id}` | Revoke a staff role assignment |
+| `POST` | `/staff/{user_id}/deactivate` | Deactivate a staff account |
 | `DELETE` | `/admin/users/{id}` | Delete a user/account (customers and drivers) |
 | `GET` | `/admin/drivers` | List drivers |
 | `PUT` | `/admin/drivers/{id}/verify` | Verify a driver |
@@ -419,7 +433,7 @@ Referral API types live in `src/lib/referrals.ts`, endpoint functions in `src/se
 
 Promotion and referral APIs always use the backend; there is no marketing mock mode.
 
-Admin User Management uses the same approach. `src/services/adminUsers.ts` maps list, invite, update and activate/deactivate responses tolerantly, including `user`, `admin`, `page_size` and pagination aliases. Invite sends `name`, `phone`, `email`, `role`, `two_factor_required` and `send_welcome_sms`; updates send `role`, `permissions` and `two_factor_required`. Until the endpoints are available, set `NEXT_PUBLIC_USE_MOCK_ADMIN_USERS` unset or `true` to use the seeded admins in `src/lib/mockAdminUsers.ts`. Mock changes stay in memory for the current session; set the flag to `false` and rebuild to use the real API.
+Staff and RBAC management always use the backend; there is no mock mode. `src/services/staff.ts` maps `/staff`, role assignment, revocation and deactivation responses tolerantly. `src/services/rbac.ts` loads the live permission and role catalogs, creates roles, updates or deletes roles by UUID and loads/creates regions. Role updates send only `name`, `description` and `permissions`; the role key is immutable after creation. The documented invite endpoint only accepts `phone`, `role_id`, `scope_type`, `scope_id` and `assignment_expires_at`, so the invite action is disabled until the backend accepts name, email and permissions. Staff reactivation and invitation cancellation are also disabled because the backend does not document those endpoints.
 
 The unused legacy onboarding helper also references `POST /drivers/register` and `POST /drivers/onboarding/complete`. They are not part of the active UI flow.
 
@@ -533,10 +547,12 @@ raut_frontend/
 | `src/lib/referrals.ts` | Referral API request/response types and JSON-safe reward configuration |
 | `src/lib/marketing.ts` | Promotion types, derived status labels, form defaults, date/currency formatting, promo-code generation, CSV parsing and payload mapping |
 | `src/schemas/marketingSchemas.ts` | Zod validation for promotion campaigns |
-| `src/services/adminUsers.ts` | Admin user list, invite, update and activate/deactivate endpoints with tolerant response mapping and the mock-mode switch |
-| `src/lib/mockAdminUsers.ts` | Seeded admin users, in-memory mock list/CRUD behavior and the mock-data flag |
-| `src/lib/adminUsers.ts` | Admin role catalog, permission matrix, status labels, formatting helpers and matrix CSV export |
-| `src/schemas/adminUserSchemas.ts` | Zod validation for inviting and editing admin users |
+| `src/services/staff.ts` | Staff list, role assignment, revocation and deactivation endpoints with tolerant response mapping |
+| `src/services/rbac.ts` | Live permission/role catalogs, role CRUD by UUID and region endpoints |
+| `src/types/staff.ts` | Staff member, assignment, list and mutation payload types |
+| `src/types/rbac.ts` | RBAC permission, role and region types |
+| `src/lib/adminUsers.ts` | Admin role metadata, status labels, formatting helpers and matrix CSV export |
+| `src/lib/rbacRoles.ts` | Role metadata helpers and fallback role definitions |
 | `src/services/auth.ts` | Email and password sign-in, session creation, role resolution and admin promotion |
 | `src/services/adminActions.ts` | Verify/reject/suspend drivers, cancel rides/routes and manage users |
 | `src/services/dashboard.ts` | Analytics aggregation, comparison windows and dashboard mapping |
@@ -614,9 +630,9 @@ Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Re
 
 - Live Rides and Platform Config are placeholder pages. Audit Logs and System Health use illustrative mock data and are not connected to backend audit or telemetry endpoints.
 - There is currently no automated test suite or CI configuration.
-- There is no role-level UI beyond the admin gate; every configured admin role sees every admin page. The Admin Users page is also intentionally not gated by role for now: any signed-in admin can open it.
-- The Admin Users permission matrix and per-admin overrides are informational. They are displayed, printed and exported, but the backend must enforce them before they restrict access.
-- Admin Users mock mode is enabled by default until the backend endpoints are ready. Sample invites, role changes and status changes are held in memory and reset on a full reload; set `NEXT_PUBLIC_USE_MOCK_ADMIN_USERS=false` to use the real API.
+- RBAC gating is UI-level only. The backend must still enforce every permission on its endpoints; hiding a control does not prevent a crafted API request.
+- The Staff & Roles permission matrix is sourced from the live RBAC catalogs. It is displayed, printed and exported, but the backend must enforce every permission before it restricts access.
+- Staff invitations, reactivation and invitation cancellation are disabled because the documented backend contract does not support the fields or endpoints they require. Role keys are immutable after creation.
 - The dashboard builds some summary cards from the analytics overview response and falls back to list totals when fields or endpoints are unavailable.
 - Driver, document and payout summaries fetch up to 100 records and calculate some totals client-side.
 - Batch payout review loads all pending payouts and checks failed payouts for driver-level history. Phone verification is only considered verified when the API explicitly provides a verification flag or timestamp. Pending payouts refresh every 30 seconds; approved and processing statuses refresh every 10 seconds, and failure history refreshes every five minutes.

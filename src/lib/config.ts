@@ -57,13 +57,24 @@ export const API_ROUTES = {
   login: "/auth/login",
   refresh: "/auth/refresh",
   me: "/auth/me",
+  myPermissions: "/me/permissions",
+  rbacPermissions: "/rbac/permissions",
+  rbacRoles: "/rbac/roles",
+  rbacRole: (roleId: string) => `/rbac/roles/${encodeURIComponent(roleId)}`,
+  rbacRegions: "/rbac/regions",
+  staff: "/staff",
+  staffInvitations: "/staff/invitations",
+  staffRoles: (userId: string) =>
+    `/staff/${encodeURIComponent(userId)}/roles`,
+  staffRole: (userId: string, assignmentId: string) =>
+    `/staff/${encodeURIComponent(userId)}/roles/${encodeURIComponent(assignmentId)}`,
+  staffDeactivate: (userId: string) =>
+    `/staff/${encodeURIComponent(userId)}/deactivate`,
   resetPassword: "/auth/password/reset",
   passwordUpdate: "/auth/password/update",
   notifications: "/notifications/",
   promote: "/admin/promote",
   users: "/admin/users",
-  adminUserInvite: "/admin/users/invite",
-  adminUser: (userId: string) => `/admin/users/${encodeURIComponent(userId)}`,
   drivers: "/admin/drivers",
   driverDetail: (driverId: string) =>
     `/admin/drivers/${encodeURIComponent(driverId)}`,
@@ -189,3 +200,7 @@ export const REQUEST_TIMEOUT_MS = 15000;
 // How long a role confirmed by the server stays trusted before the admin gate
 // asks the backend again (GET /auth/me).
 export const ROLE_REVALIDATE_MS = 5 * 60 * 1000;
+
+export const RBAC_REVALIDATE_MS = 5 * 60 * 1000;
+
+export const RBAC_STALE_GRACE_MS = 24 * 60 * 60 * 1000;
