@@ -5,6 +5,8 @@ import useOnboardingStore from "../store/onboardingStore";
 import TanzaniaPhoneInput from "../components/TanzaniaPhoneInput";
 import { useTranslation } from "../lib/i18n";
 import { apiPut } from "../services/api";
+import { fetchCurrentUser } from "../services/auth";
+import { processReferral } from "../services/referrals";
 
 declare global {
   interface Window {
@@ -36,7 +38,7 @@ const MOBILE_NETWORKS = [
 ];
 
 export default function PaymentDetailsStep() {
-  const { paymentDetails, updatePaymentDetails, language, token } =
+  const { paymentDetails, updatePaymentDetails, language } =
     useOnboardingStore();
 
   const t = useTranslation(language);
@@ -61,17 +63,48 @@ export default function PaymentDetailsStep() {
         mobile_network: data.mobileNetwork,
       });
 
+      // Try to process referral code (optional - don't block onboarding if it fails)
+      let referralError: string | null = null;
+      const params = new URLSearchParams(window.location.search);
+      const normalizedReferralCode = (
+        params.get("referral_code") ?? params.get("ref") ?? ""
+      )
+        .trim()
+        .toUpperCase();
+      if (normalizedReferralCode) {
+        try {
+          const { user } = await fetchCurrentUser();
+          const refereeId = user?.id;
+          if (!refereeId) {
+            throw new Error("Could not identify your account");
+          }
+
+          await processReferral({
+            referral_code: normalizedReferralCode,
+            referee_id: String(refereeId),
+            referee_type: "driver",
+          });
+        } catch (refError) {
+          console.warn("Referral code error:", refError);
+          referralError =
+            refError instanceof Error ? refError.message : "Invalid referral code";
+        }
+      }
+
       updatePaymentDetails(data);
 
       // Notify Flutter app that onboarding is complete
+      const successMessage = referralError
+        ? `Onboarding complete! Note: ${referralError}`
+        : "Onboarding completed successfully";
+
       if (window.FlutterOnboarding?.onComplete) {
         window.FlutterOnboarding.onComplete({
           success: true,
-          message: "Onboarding completed successfully",
+          message: successMessage,
         });
       } else {
-        // If not in WebView, show success message
-        alert("Onboarding completed successfully!");
+        alert(successMessage);
       }
     } catch (error) {
       console.error("Error saving payment details:", error);

@@ -559,7 +559,7 @@ function RewardFields({
   );
 }
 
-export function ReferralProgramsDashboard() {
+function ReferralProgramsDashboard() {
   const toast = useToast();
   const [section, setSection] = useState<ReferralSection>("programs");
   const [period, setPeriod] = useState("month");
