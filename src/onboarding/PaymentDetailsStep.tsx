@@ -1,12 +1,11 @@
 import { useForm, Controller } from "react-hook-form";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { paymentDetailsSchema } from "../schemas/onboardingSchemas";
 import useOnboardingStore from "../store/onboardingStore";
 import TanzaniaPhoneInput from "../components/TanzaniaPhoneInput";
 import { useTranslation } from "../lib/i18n";
-import { apiPut } from "../services/api";
-import { fetchCurrentUser } from "../services/auth";
-import { processReferral } from "../services/referrals";
+import { apiGet, apiPost } from "../services/api";
 
 declare global {
   interface Window {
@@ -40,6 +39,7 @@ const MOBILE_NETWORKS = [
 export default function PaymentDetailsStep() {
   const { paymentDetails, updatePaymentDetails, language } =
     useOnboardingStore();
+  const [referralCode, setReferralCode] = useState("");
 
   const t = useTranslation(language);
 
@@ -55,60 +55,48 @@ export default function PaymentDetailsStep() {
 
   const onSubmit = async (data: typeof paymentDetails) => {
     try {
-      // Update payment details in backend
-      await apiPut("/drivers/payment-details", {
+      // Save payment details in backend
+      await apiPost("/drivers/payment-details", {
         account_name: data.accountName,
         address: data.address,
         mobile_money_number: data.mobileMoneyNumber,
         mobile_network: data.mobileNetwork,
       });
 
-      // Try to process referral code (optional - don't block onboarding if it fails)
-      let referralError: string | null = null;
-      const params = new URLSearchParams(window.location.search);
-      const normalizedReferralCode = (
-        params.get("referral_code") ?? params.get("ref") ?? ""
-      )
-        .trim()
-        .toUpperCase();
+      const normalizedReferralCode = referralCode.trim().toUpperCase();
       if (normalizedReferralCode) {
-        try {
-          const { user } = await fetchCurrentUser();
-          const refereeId = user?.id;
-          if (!refereeId) {
-            throw new Error("Could not identify your account");
-          }
-
-          await processReferral({
-            referral_code: normalizedReferralCode,
-            referee_id: String(refereeId),
-            referee_type: "driver",
-          });
-        } catch (refError) {
-          console.warn("Referral code error:", refError);
-          referralError =
-            refError instanceof Error ? refError.message : "Invalid referral code";
+        const currentUser = await apiGet("/auth/me");
+        const refereeId = currentUser.user?.id ?? currentUser.id;
+        if (!refereeId) {
+          throw new Error("Could not identify your account to apply the referral code.");
         }
+
+        await apiPost("/referrals/process", {
+          referral_code: normalizedReferralCode,
+          referee_id: refereeId,
+          referee_type: "driver",
+        });
       }
 
       updatePaymentDetails(data);
 
       // Notify Flutter app that onboarding is complete
-      const successMessage = referralError
-        ? `Onboarding complete! Note: ${referralError}`
-        : "Onboarding completed successfully";
-
       if (window.FlutterOnboarding?.onComplete) {
         window.FlutterOnboarding.onComplete({
           success: true,
-          message: successMessage,
+          message: "Onboarding completed successfully",
         });
       } else {
-        alert(successMessage);
+        // If not in WebView, show success message
+        alert("Onboarding completed successfully!");
       }
     } catch (error) {
       console.error("Error saving payment details:", error);
-      alert("Failed to save payment details. Please try again.");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to save payment details. Please try again.",
+      );
     }
   };
 
@@ -212,11 +200,27 @@ export default function PaymentDetailsStep() {
         )}
       </div>
 
+      <div>
+        <label htmlFor="referralCode" className={labelClass}>
+          {t("referralCode")}
+        </label>
+        <input
+          id="referralCode"
+          type="text"
+          value={referralCode}
+          onChange={(event) => setReferralCode(event.target.value.toUpperCase())}
+          className={inputClass}
+          placeholder={t("referralCodeOptional")}
+          autoCapitalize="characters"
+          autoComplete="off"
+        />
+      </div>
+
       {/* Submit Button */}
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full mt-5 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full mt-8 mb-6 rounded-lg bg-brand-600 px-4 py-5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isSubmitting ? t("submitting") : t("completeOnboarding")}
       </button>
