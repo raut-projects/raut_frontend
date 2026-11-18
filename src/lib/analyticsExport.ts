@@ -1,3 +1,7 @@
+// CSV export for the analytics dashboard. Flattens the overview, rides, revenue,
+// drivers, peak-hours and optional comparison data into a single report and
+// triggers a browser download.
+
 import { formatRangeLabel } from "./dateRange";
 import type {
   AnalyticsComparison,
@@ -75,6 +79,13 @@ const deltaRows = (
   ),
 ];
 
+/**
+ * Builds the full analytics report as a CSV string.
+ *
+ * Includes a header, platform overview, rides and revenue tables, driver
+ * metrics and peak hours, followed by a previous-period comparison when
+ * `data.comparison` is present.
+ */
 export function buildAnalyticsCsv(data: AnalyticsExportData): string {
   const lines: string[] = [
     row("Raut Analytics Report"),
@@ -188,9 +199,11 @@ export function buildAnalyticsCsv(data: AnalyticsExportData): string {
     );
   }
 
+  // Leading BOM and CRLF line endings so Excel opens the CSV correctly.
   return `\uFEFF${lines.join("\r\n")}`;
 }
 
+/** Triggers a browser download of the analytics CSV, named by the range dates. */
 export function downloadAnalyticsCsv(data: AnalyticsExportData) {
   const content = buildAnalyticsCsv(data);
   const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });

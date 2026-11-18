@@ -1,3 +1,8 @@
+// Payout review service.
+// Provides the paged payout table, fleet-wide summary cards, batched review
+// queues and the per-driver failure counts used to flag risky payouts. All calls
+// use the shared `./api` helpers and reject with ApiError on failure.
+
 import { API_ROUTES } from "../lib/config";
 import { apiGet, apiPut } from "./api";
 import { mapPayout } from "./mappers";
@@ -20,6 +25,9 @@ const asPayoutList = (payload) => {
 const sumAmounts = (payouts) =>
   payouts.reduce((total, payout) => total + payout.amount, 0);
 
+// Pages through one status until the reported total is reached. A short page
+// ends the scan when the server omits pagination; a 10,000-page guard stops a
+// backend that never reports a total.
 async function listAllPayoutsByStatus(status) {
   const payouts = [];
   let page = 1;
@@ -59,6 +67,8 @@ async function listAllPayoutsByStatus(status) {
   return payouts.map(mapPayout);
 }
 
+// Falls back to driver/date/amount identity when the backend omits the id, so a
+// payout returned by two status queries is still collapsed to one row.
 const uniquePayouts = (payouts) => {
   const unique = new Map();
 
@@ -73,6 +83,13 @@ const uniquePayouts = (payouts) => {
   return [...unique.values()];
 };
 
+/**
+ * Loads every payout currently awaiting review.
+ * Queries GET /payouts for both "pending" and "requested", merges them without
+ * duplicates, keeps rows that are approvable, and sorts newest request first.
+ * Returns Payout[]. Throws ApiError on request failure or a plain Error when the
+ * page guard trips.
+ */
 export async function listPendingPayoutBatch() {
   const [pending, requested] = await Promise.all([
     listAllPayoutsByStatus("pending"),
@@ -97,6 +114,12 @@ export async function listPendingPayoutBatch() {
   );
 }
 
+/**
+ * Loads payouts currently being processed.
+ * Queries GET /payouts for "processing" and "approved", merges them, keeps only
+ * those statuses and removes duplicates.
+ * Returns Payout[]. Throws ApiError or a plain Error on the page guard.
+ */
 export async function listPayoutBatchProcessing() {
   const [processing, approved] = await Promise.all([
     listAllPayoutsByStatus("processing"),
@@ -110,6 +133,13 @@ export async function listPayoutBatchProcessing() {
   );
 }
 
+/**
+ * Counts previous payout failures per driver.
+ * Queries GET /payouts for "failed", "error" and "reversed", then tallies the
+ * rows by driver id (rows without a driver id are skipped).
+ * Returns a `{ [driverId]: count }` record.
+ * Throws ApiError or a plain Error on the page guard.
+ */
 export async function getPayoutFailureCounts() {
   const [failed, errors, reversed] = await Promise.all([
     listAllPayoutsByStatus("failed"),
@@ -132,6 +162,14 @@ export async function getPayoutFailureCounts() {
   return Object.fromEntries(failuresByDriver);
 }
 
+/**
+ * Decorates a payout with review warnings for the approval drawer.
+ * Takes the larger of the payout's own failure count and the counted failures
+ * for its driver, then builds human-readable issues for unverified/unknown
+ * phone status, a missing driver id, a non-positive amount and prior failures.
+ * @returns A shallow copy of the payout with `previousFailureCount` and
+ * `issues: string[]`.
+ */
 export function withPayoutReviewIssues(payout, failuresByDriver) {
   const previousFailureCount = Math.max(
     payout.previousFailureCount,
@@ -160,6 +198,14 @@ export function withPayoutReviewIssues(payout, failuresByDriver) {
   };
 }
 
+/**
+ * Lists a filtered page of payouts and computes the summary cards.
+ * Runs two GET /payouts requests in parallel: the requested page (with status,
+ * method, driver and date filters) and a 100-row overview used for counts and
+ * amounts. Summary totals therefore cover at most the overview page size.
+ * Returns `{ items, total, page, limit, summary }`.
+ * Throws ApiError if either request fails.
+ */
 export async function listPayouts({
   status = "all",
   method = "all",
@@ -219,11 +265,26 @@ export async function listPayouts({
   };
 }
 
+/**
+ * Approves a payout, optionally attaching notes.
+ * PUT /payouts/:payoutId/approve with `{ notes }` or an empty body.
+ * Returns the unwrapped response payload. Throws ApiError on failure.
+ */
 export const approvePayout = (payoutId, notes) =>
   apiPut(`${API_ROUTES.payouts}/${payoutId}/approve`, notes ? { notes } : {});
 
+/**
+ * Rejects a payout with a reason.
+ * PUT /payouts/:payoutId/reject with `{ reason }`.
+ * Returns the unwrapped response payload. Throws ApiError on failure.
+ */
 export const rejectPayout = (payoutId, reason) =>
   apiPut(`${API_ROUTES.payouts}/${payoutId}/reject`, { reason });
 
+/**
+ * Retries a failed payout.
+ * PUT /payouts/:payoutId/retry with an empty body.
+ * Returns the unwrapped response payload. Throws ApiError on failure.
+ */
 export const retryPayout = (payoutId) =>
   apiPut(`${API_ROUTES.payouts}/${payoutId}/retry`, {});

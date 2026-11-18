@@ -1,3 +1,8 @@
+// Dashboard aggregation service.
+// Fetches the overview, analytics, fleet and recent-ride endpoints in parallel,
+// tolerates partial failures, and shapes the results into the DTOs the dashboard
+// consumes. Formatting lives here so the page stays presentational.
+
 import { API_ROUTES } from '../lib/config'
 import { addDays, computeDelta, diffDays, getComparisonWindow } from '../lib/dateRange'
 import { apiGet } from './api'
@@ -214,6 +219,22 @@ const toSeries = <T>(rows: any[], mapper: (row: any) => T): AnalyticsSeries<T> =
   }
 }
 
+/**
+ * Loads and shapes the complete dashboard payload.
+ * Issues eight GETs in parallel (users count, driver fleet page, analytics
+ * overview/rides/revenue/drivers/peak-hours, recent rides) and uses
+ * `Promise.allSettled`, so a failing endpoint degrades that section instead of
+ * failing the whole dashboard.
+ *
+ * @param range Selected analytics window; its granularity drives the period
+ * params and its dates filter the bucketed rows locally.
+ * @param compare When true and the window supports it, also fetches enough
+ * history to build deltas against the previous equivalent period.
+ * @returns Stats cards, overview, current/previous series, comparison deltas,
+ * driver and peak-hour analytics, recent rides and top drivers.
+ * Throws only if the shaping code itself fails; individual ApiErrors from
+ * `apiGet` are swallowed into null sections.
+ */
 export async function getDashboard(range: AnalyticsRange, compare = false) {
   const comparisonWindow = getComparisonWindow(range)
   const comparisonActive = compare && comparisonWindow.enabled
@@ -238,6 +259,8 @@ export async function getDashboard(range: AnalyticsRange, compare = false) {
     apiGet(API_ROUTES.rides, { params: { page: 1, page_size: 5, sort_by: 'created_at', sort_order: 'desc' } }),
   ])
 
+  // Each result is read independently: a rejected request becomes null and the
+  // affected section falls back to zeros or fleet-derived values below.
   const [customersRes, fleetRes, overviewRes, rideStatsRes, revenueRes, driversAnalyticsRes, peakHoursRes, recentRes] = results
 
   const customers = customersRes.status === 'fulfilled' ? customersRes.value : null

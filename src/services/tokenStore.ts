@@ -1,3 +1,9 @@
+// Token and session storage for the admin console.
+// Persists the session, access/refresh tokens and expiry in localStorage (when
+// "remember me" is set) or sessionStorage (per-tab), with a session marker that
+// wins over a stale persistent session. All storage access is guarded so private
+// mode degrades to in-memory only; cachedSession mirrors storage for sync reads.
+
 import type { AuthSession } from "../types/models";
 
 const SESSION_KEY = "raut_admin_session";
