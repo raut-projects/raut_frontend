@@ -26,6 +26,7 @@ import { usePayoutBatchReview } from "@/hooks/usePayouts";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PERMISSIONS } from "@/lib/permissions";
 import { formatMoney } from "@/services/mappers";
+import { Can } from "@/components/Can";
 
 const HIGH_VALUE_LIMIT = 50_000;
 
@@ -322,21 +323,23 @@ function PayoutBatchReview() {
               onRefresh={ refetch }
             />
             { canManagePayouts && (
-              <Button
-                type="button"
-                onClick={ openApprovalConfirmation }
-                disabled={
-                  selectedEligibleCount === 0 ||
-                  selectedEligibleCount !== selectedIds.size ||
-                  approveBatch.isPending ||
-                  isCheckingBatch
-                }
-                className="bg-brand-600 text-white hover:bg-brand-700"
-              >
-                { approveBatch.isPending
-                  ? `Processing ${completedCount} of ${batchActivity.length}`
-                  : "Approve batch" }
-              </Button>
+              <Can permission={ PERMISSIONS.FINANCE_PAYOUTS_APPROVE }>
+                <Button
+                  type="button"
+                  onClick={ openApprovalConfirmation }
+                  disabled={
+                    selectedEligibleCount === 0 ||
+                    selectedEligibleCount !== selectedIds.size ||
+                    approveBatch.isPending ||
+                    isCheckingBatch
+                  }
+                  className="bg-brand-600 text-white hover:bg-brand-700"
+                >
+                  { approveBatch.isPending
+                    ? `Processing ${completedCount} of ${batchActivity.length}`
+                    : "Approve batch" }
+                </Button>
+              </Can>
             ) }
           </div>
         </div>
@@ -578,20 +581,22 @@ function PayoutBatchReview() {
         </div>
       ) }
 
-      <ConfirmDialog
-        open={ confirmOpen }
-        onClose={ () => setConfirmOpen(false) }
-        title="Approve selected payouts"
-        description={ `${selectedEligibleCount} payouts totaling ${formatMoney(selectedAmount)} will be approved.` }
-        confirmLabel="Approve batch"
-        onConfirm={ processBatch }
-        pending={ approveBatch.isPending || isCheckingBatch }
-      >
-        <p className="text-sm text-slate-600">
-          Each payout is approved separately. If one fails, the remaining
-          approvals will continue and the failed item will be listed for review.
-        </p>
-      </ConfirmDialog>
+      <Can permission={PERMISSIONS.FINANCE_PAYOUTS_APPROVE}>
+        <ConfirmDialog
+          open={ confirmOpen }
+          onClose={ () => setConfirmOpen(false) }
+          title="Approve selected payouts"
+          description={ `${selectedEligibleCount} payouts totaling ${formatMoney(selectedAmount)} will be approved.` }
+          confirmLabel="Approve batch"
+          onConfirm={ processBatch }
+          pending={ approveBatch.isPending || isCheckingBatch }
+        >
+          <p className="text-sm text-slate-600">
+            Each payout is approved separately. If one fails, the remaining
+            approvals will continue and the failed item will be listed for review.
+          </p>
+        </ConfirmDialog>
+      </Can>
 
       <SidePanel
         open={ twoFactorNoticeOpen }
