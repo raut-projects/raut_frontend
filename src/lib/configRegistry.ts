@@ -387,6 +387,16 @@ export const CONFIG_FIELDS: Record<string, ConfigFieldSpec> =
         "Surge pricing",
         "Apply demand-based surge multipliers.",
       ),
+      toggle(
+        "latra.auto_submit_daily_report",
+        "Automatic daily report",
+        "Submit daily reports to LATRA CeTS automatically (runs at 00:05 EAT).",
+      ),
+      toggle(
+        "latra.auto_submit_trips",
+        "Automatic trip submission",
+        "Submit completed trips to LATRA CeTS automatically.",
+      ),
     ].map((spec) => [spec.key, spec]),
   );
 
@@ -571,6 +581,24 @@ export const OPERATIONS_SECTIONS: ConfigSectionSpec[] = [
     ],
   },
 ];
+
+const LATRA_CONFIG_KEYS = new Set([
+  "latra.auto_submit_daily_report",
+  "latra.auto_submit_trips",
+]);
+
+export const LATRA_SECTION: ConfigSectionSpec = {
+  id: "latra",
+  title: "LATRA compliance",
+  description: "Control automatic submissions to LATRA CeTS.",
+  fields: [
+    CONFIG_FIELDS["latra.auto_submit_daily_report"],
+    CONFIG_FIELDS["latra.auto_submit_trips"],
+  ],
+};
+
+export const isLATRAConfig = (record: ConfigRecord) =>
+  LATRA_CONFIG_KEYS.has(record.key);
 
 // Keys belonging to the public (boda/bajaji) pricing tab.
 const PUBLIC_KEYS = new Set([
