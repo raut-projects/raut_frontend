@@ -14,7 +14,7 @@ export default function ResolveDisputePage() {
   const rideId = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
 
-  const { data: dispute, isPending } = useRideDispute(rideId);
+  const { data: dispute, isPending, isError, error } = useRideDispute(rideId);
   const resolve = useResolveRideDispute();
 
   const handleResolve = async (input: ResolveRideDisputeInput) => {
@@ -22,7 +22,7 @@ export default function ResolveDisputePage() {
     router.push("/rides");
   };
 
-  if (isPending || !dispute) {
+  if (isPending) {
     return (
       <div className="mx-auto max-w-3xl space-y-5 py-10">
         <Link
@@ -34,6 +34,26 @@ export default function ResolveDisputePage() {
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
           Loading dispute…
         </h1>
+      </div>
+    );
+  }
+
+  if (isError || !dispute) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-5 py-10">
+        <Link
+          href="/rides"
+          className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900"
+        >
+          <ArrowLeft className="size-4" /> Back to rides
+        </Link>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          Dispute unavailable
+        </h1>
+        <p className="text-sm text-slate-500">
+          {(error as Error | null)?.message ??
+            "No dispute was found for this ride."}
+        </p>
       </div>
     );
   }

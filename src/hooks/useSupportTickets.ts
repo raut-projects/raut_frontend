@@ -7,8 +7,8 @@ import {
   getSupportTicketDetail,
   listSupportAgents,
   listSupportTickets,
+  SupportTicketListParams,
 } from "@/services/supportTickets";
-import type { SupportTicketListParams } from "@/services/supportTickets";
 import { queryKeys } from "@/lib/queryKeys";
 
 /**

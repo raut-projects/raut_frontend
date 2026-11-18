@@ -1,13 +1,25 @@
+// Support ticket service for the backend Support Admin API.
+//
+// All ticket routes live under `/support/tickets/queue`. Every mutation sends
+// the ticket `version` for optimistic concurrency, and priority changes and
+// escalations require a reason/note. Ticket responses carry requester and
+// assignee UUIDs only; the detail screen resolves requester context through
+// the ticket context endpoint and assignee names through the agent directory.
+
 import { API_ROUTES } from "@/lib/config";
+import {
+  deriveTicketHistory,
+  TICKET_STATUS_VALUES,
+} from "@/lib/supportTickets";
 import type {
   SupportAgent,
   SupportTicket,
   SupportTicketDetail,
   SupportTicketFilters,
-  SupportTicketHistoryEntry,
   SupportTicketMessage,
   SupportTicketPriority,
   SupportTicketRequesterType,
+  SupportTicketSla,
   SupportTicketStatus,
   SupportTicketUser,
 } from "@/lib/supportTickets";
@@ -29,16 +41,17 @@ export type SupportTicketListResult = {
 
 export type CreateSupportTicketInput = {
   requesterId: string;
-  requesterType: SupportTicketRequesterType;
   subject: string;
   category: string;
   priority: SupportTicketPriority;
-  message: string;
+  description: string;
+  rideId?: string;
 };
 
 export type SupportTicketMessageInput = {
-  body: string;
-  internal: boolean;
+  message: string;
+  version: number;
+  internal?: boolean;
 };
 
 const asRecord = (value: unknown): RecordValue =>
@@ -79,23 +92,24 @@ const listItems = (data: unknown, ...keys: string[]) => {
 };
 
 const normalizeStatus = (value: unknown): SupportTicketStatus => {
-  const status = text(value).toLowerCase().replace(/_/g, "-");
+  const status = text(value).toLowerCase().replace(/-/g, "_");
   if (status === "open" || status === "new" || status === "pending") {
     return "open";
   }
-  if (status === "in-progress" || status === "in progress") return "in-progress";
+  if (status === "in_progress" || status === "in progress")
+    return "in-progress";
   if (status === "resolved") return "resolved";
   if (status === "closed") return "closed";
-  throw new Error(`Unsupported support ticket status: ${status || "missing"}.`);
+  return "open";
 };
 
 const normalizePriority = (value: unknown): SupportTicketPriority => {
   const priority = text(value).toLowerCase();
   if (priority === "urgent" || priority === "critical") return "urgent";
   if (priority === "high") return "high";
-  if (priority === "medium" || priority === "normal") return "medium";
+  if (priority === "normal" || priority === "medium") return "normal";
   if (priority === "low") return "low";
-  throw new Error(`Unsupported support ticket priority: ${priority || "missing"}.`);
+  return "normal";
 };
 
 const normalizeRequesterType = (value: unknown): SupportTicketRequesterType => {
@@ -122,93 +136,66 @@ const nameFrom = (value: unknown) => {
     .join(" ");
 };
 
-export function mapSupportTicket(value: unknown): SupportTicket {
+function mapSla(value: unknown): SupportTicketSla | undefined {
   const record = asRecord(value);
-  const requesterValue = firstValue(record, "requester", "user", "customer");
-  const requester = asRecord(requesterValue);
-  const assignee = firstValue(record, "assignee", "assigned_to", "agent");
-  const assigneeRecord = asRecord(assignee);
-  const requesterName =
-    nameFrom(firstValue(record, "requester_name", "requesterName")) ||
-    nameFrom(requesterValue) ||
-    text(firstValue(record, "customer_name", "user_name", "userName"));
-  const assigneeName =
-    nameFrom(assignee) ||
-    text(firstValue(record, "assignee_name", "assigned_to_name"));
-  const assigneeId =
-    text(
-      firstValue(assigneeRecord, "id", "agent_id", "user_id") ??
-        firstValue(
-          record,
-          "assignee_id",
-          "assigneeId",
-          "assigned_to_id",
-          "assignedToId",
-        ),
-    ) || undefined;
-  const priority = normalizePriority(record.priority);
+  const state = text(firstValue(record, "state", "status"));
 
-  if (!requesterName) {
-    throw new Error("The support ticket response is missing requester name.");
-  }
+  if (!state) return undefined;
+
+  const elapsed = Number(
+    firstValue(record, "elapsed_percent", "elapsedPercent"),
+  );
+  const remaining = Number(
+    firstValue(record, "remaining_seconds", "remainingSeconds"),
+  );
 
   return {
-    id: requiredText(record, "id", "ticket_id", "reference"),
-    subject: requiredText(record, "subject", "title"),
-    requester: requesterName,
-    requesterType: normalizeRequesterType(
-      firstValue(
-        record,
-        "requester_type",
-        "requesterType",
-        "user_type",
-        "userType",
-      ) ??
-        firstValue(requester, "type", "role"),
-    ),
-    category:
-      text(firstValue(record, "category", "issue_type")) ||
-      nameFrom(firstValue(record, "category")) ||
-      "Other",
-    priority,
-    status: normalizeStatus(record.status),
-    assignee: assigneeName || (assigneeId ? "Assigned" : "Unassigned"),
-    assigneeId,
-    createdAt: text(firstValue(record, "created_at", "createdAt")),
-    updatedAt: text(firstValue(record, "updated_at", "updatedAt")),
+    state,
+    color: text(firstValue(record, "color")) || undefined,
+    elapsedPercent: Number.isFinite(elapsed) ? elapsed : undefined,
+    targetAt: text(firstValue(record, "target_at", "targetAt")) || undefined,
+    completedAt:
+      text(firstValue(record, "completed_at", "completedAt")) || null,
+    remainingSeconds: Number.isFinite(remaining) ? remaining : undefined,
   };
 }
 
-const mapTicketUser = (
-  value: unknown,
-  requester: string,
-): SupportTicketUser => {
+export function mapSupportTicket(value: unknown): SupportTicket {
   const record = asRecord(value);
-  const ratingValue = firstValue(record, "rating", "average_rating");
-  const ridesValue = firstValue(record, "total_rides", "rides_count");
-  const rating = Number(ratingValue);
-  const totalRides = Number(ridesValue);
+  const assigneeId =
+    text(firstValue(record, "assigned_to", "assignedTo", "assignee_id")) ||
+    undefined;
+  const slaSource = firstValue(record, "resolution_sla", "resolutionSla");
 
   return {
-    name: nameFrom(record) || requester,
-    accountId:
-      text(firstValue(record, "account_id", "accountId", "id")) || undefined,
-    phone:
-      text(firstValue(record, "phone", "phone_number", "phoneNumber")) ||
+    id: requiredText(record, "id", "ticket_id", "ticketId"),
+    subject: requiredText(record, "subject", "title"),
+    description: text(firstValue(record, "description")) || undefined,
+    requesterId: text(firstValue(record, "requester_id", "requesterId")),
+    category: text(firstValue(record, "category")) || "Other issue",
+    priority: normalizePriority(record.priority),
+    status: normalizeStatus(record.status),
+    assigneeId,
+    version: Number(firstValue(record, "version")) || 0,
+    rideId: text(firstValue(record, "ride_id", "rideId")) || undefined,
+    incidentType:
+      text(firstValue(record, "incident_type", "incidentType")) || undefined,
+    contactPhone:
+      text(firstValue(record, "contact_phone", "contactPhone")) || undefined,
+    createdAt: text(firstValue(record, "created_at", "createdAt")),
+    updatedAt: text(firstValue(record, "updated_at", "updatedAt")),
+    firstResponseAt:
+      text(firstValue(record, "first_response_at", "firstResponseAt")) ||
       undefined,
-    joinedAt:
-      text(firstValue(record, "joined_at", "joinedAt", "created_at")) ||
-      undefined,
-    totalRides:
-      Number.isFinite(totalRides) && ridesValue !== undefined
-        ? totalRides
-        : undefined,
-    rating:
-      Number.isFinite(rating) && ratingValue !== undefined
-        ? rating
-        : undefined,
+    resolvedAt:
+      text(firstValue(record, "resolved_at", "resolvedAt")) || undefined,
+    closedAt: text(firstValue(record, "closed_at", "closedAt")) || undefined,
+    escalatedAt:
+      text(firstValue(record, "escalated_at", "escalatedAt")) || undefined,
+    responseSla: mapSla(firstValue(record, "response_sla", "responseSla")),
+    resolutionSla: mapSla(slaSource),
   };
-};
+}
 
 const mapMessageRole = (value: unknown): SupportTicketMessage["role"] => {
   const role = text(value).toLowerCase();
@@ -223,63 +210,106 @@ const mapMessageRole = (value: unknown): SupportTicketMessage["role"] => {
 
 function mapSupportTicketMessage(value: unknown): SupportTicketMessage {
   const record = asRecord(value);
-  const authorValue = firstValue(record, "author", "sender", "user");
-  const author = nameFrom(authorValue) || text(record.author_name) || "Unknown";
-  const attachments = Array.isArray(record.attachments)
-    ? record.attachments
-        .map((attachment) =>
-          typeof attachment === "string"
-            ? attachment
-            : text(firstValue(asRecord(attachment), "name", "filename", "url")),
-        )
-        .filter(Boolean)
-    : [];
+  const role = mapMessageRole(
+    firstValue(record, "sender_role", "senderRole", "role", "author_type"),
+  );
 
   return {
     id: requiredText(record, "id", "message_id", "messageId"),
-    author,
-    role: mapMessageRole(
-      firstValue(record, "role", "author_type", "sender_type", "senderType"),
-    ),
+    author:
+      text(firstValue(record, "author_name", "authorName")) ||
+      // text(firstValue(record, "sender_id", "senderId")) ||
+      role,
+    role,
     body: requiredText(record, "body", "message", "content", "text"),
-    createdAt: text(
-      firstValue(record, "created_at", "createdAt", "sent_at"),
-    ),
-    internal: truthy(firstValue(record, "is_internal", "internal")) || undefined,
-    rideId: text(firstValue(record, "ride_id", "rideId")) || undefined,
-    attachments: attachments.length ? attachments : undefined,
+    createdAt: text(firstValue(record, "created_at", "createdAt", "sent_at")),
+    internal: truthy(firstValue(record, "is_internal", "isInternal")),
+    senderId: text(firstValue(record, "sender_id", "senderId")) || undefined,
   };
 }
 
-function mapHistory(value: unknown): SupportTicketHistoryEntry[] {
-  return objectArray(value).flatMap((record, index) => {
-    const label = text(
-      firstValue(record, "label", "description", "action", "event"),
-    );
-    if (!label) return [];
+/**
+ * Maps the ticket context response. The Support Admin API does not publish a
+ * schema for this endpoint, so the mapper accepts the plausible container keys
+ * and falls back to the raw payload.
+ */
+function mapTicketUser(value: unknown): SupportTicketUser {
+  const record = asRecord(value);
+  const nested =
+    firstValue(record, "requester", "user", "customer", "driver") ?? record;
+  const user = asRecord(nested);
 
-    const createdAt = text(firstValue(record, "created_at", "createdAt"));
-    return [
-      {
-        id:
-          text(firstValue(record, "id", "event_id")) ||
-          `${createdAt || "history"}-${index}`,
-        label,
-        createdAt,
-        actor:
-          nameFrom(firstValue(record, "actor", "user")) ||
-          text(firstValue(record, "actor_name")) ||
-          "System",
-      },
-    ];
-  });
+  const ratingValue = firstValue(user, "rating", "average_rating");
+  const ridesValue = firstValue(user, "total_rides", "rides_count");
+  const rating = Number(ratingValue);
+  const totalRides = Number(ridesValue);
+
+  const typeValue = firstValue(
+    user,
+    "user_type",
+    "requester_type",
+    "type",
+    "role",
+  );
+
+  return {
+    name:
+      nameFrom(user) ||
+      text(firstValue(record, "requester_name", "requesterName")) ||
+      undefined,
+    accountId:
+      text(firstValue(user, "account_id", "accountId", "id")) || undefined,
+    phone:
+      text(firstValue(user, "phone", "phone_number", "phoneNumber")) ||
+      undefined,
+    joinedAt:
+      text(firstValue(user, "joined_at", "joinedAt", "created_at")) ||
+      undefined,
+    totalRides:
+      Number.isFinite(totalRides) && ridesValue !== undefined
+        ? totalRides
+        : undefined,
+    rating:
+      Number.isFinite(rating) && ratingValue !== undefined ? rating : undefined,
+    type: typeValue ? normalizeRequesterType(typeValue) : undefined,
+  };
 }
 
-const ticketDetailRecord = (value: unknown) => {
+function mapAgent(value: unknown): SupportAgent | null {
   const record = asRecord(value);
-  const ticket = firstValue(record, "ticket");
-  return ticket === undefined ? record : asRecord(ticket);
-};
+  const id = text(
+    firstValue(record, "id", "agent_id", "agentId", "user_id", "userId"),
+  );
+
+  if (!id) return null;
+
+  const name =
+    nameFrom(record) || text(firstValue(record, "email", "username")) || id;
+  const roleValue = firstValue(
+    record,
+    "role",
+    "role_name",
+    "roles",
+    "permission",
+  );
+  const role = Array.isArray(roleValue)
+    ? roleValue
+        .map((item) =>
+          typeof item === "string"
+            ? item
+            : nameFrom(item) || text(firstValue(asRecord(item), "key")),
+        )
+        .filter(Boolean)
+        .join(", ")
+    : text(roleValue) || "Support";
+
+  return {
+    id,
+    name,
+    role,
+    regionId: text(firstValue(record, "region_id", "regionId")) || undefined,
+  };
+}
 
 export async function listSupportTickets(
   params: SupportTicketListParams = {},
@@ -290,10 +320,10 @@ export async function listSupportTickets(
     params: {
       page,
       page_size: limit,
-      search: params.search?.trim() || undefined,
-      status: params.status && params.status !== "all"
-        ? params.status.replace("-", "_")
-        : undefined,
+      status:
+        params.status && params.status !== "all"
+          ? TICKET_STATUS_VALUES[params.status]
+          : undefined,
       priority:
         params.priority && params.priority !== "all"
           ? params.priority
@@ -302,12 +332,17 @@ export async function listSupportTickets(
         params.category && params.category !== "all"
           ? params.category
           : undefined,
-      assignee:
-        params.assignee && params.assignee !== "all"
+      assigned_to:
+        params.assignee &&
+        params.assignee !== "all" &&
+        params.assignee !== "unassigned"
           ? params.assignee
           : undefined,
+      requester_id: params.requesterId || undefined,
+      include_unassigned: params.includeUnassigned ? true : undefined,
     },
   });
+
   const record = asRecord(data);
   const items = listItems(data, "tickets").map(mapSupportTicket);
   const pagination = asRecord(
@@ -330,118 +365,90 @@ export async function listSupportTickets(
 export async function listSupportAgents(): Promise<SupportAgent[]> {
   const data = await apiGet(API_ROUTES.supportAgents);
 
-  return listItems(data, "agents", "eligible_agents").map((record) => {
-    const name =
-      nameFrom(record) ||
-      text(firstValue(record, "email", "username"));
-    if (!name) {
-      throw new Error("The support agent response is missing a name.");
-    }
+  return listItems(data, "agents", "eligible_agents")
+    .map(mapAgent)
+    .filter((agent): agent is SupportAgent => Boolean(agent));
+}
 
-    const roleValue = firstValue(record, "role", "role_name", "roles");
-    const role = Array.isArray(roleValue)
-      ? roleValue
-          .map((item) =>
-            typeof item === "string"
-              ? item
-              : nameFrom(item) || text(firstValue(asRecord(item), "key")),
-          )
-          .filter(Boolean)
-          .join(", ")
-      : text(roleValue);
-    if (!role) {
-      throw new Error(`The support agent ${name} is missing a role.`);
-    }
+export async function getSupportTicketContext(
+  ticketId: string,
+): Promise<SupportTicketUser> {
+  const data = await apiGet(API_ROUTES.supportTicketContext(ticketId));
 
-    return {
-      id: requiredText(record, "id", "agent_id", "agentId", "user_id", "userId"),
-      name,
-      role,
-    };
-  });
+  return mapTicketUser(data);
 }
 
 export async function getSupportTicket(ticketId: string) {
   const data = await apiGet(API_ROUTES.supportTicket(ticketId));
   const record = asRecord(data);
-  const ticketRecord = ticketDetailRecord(data);
-  const ticket = mapSupportTicket(ticketRecord);
-  const userRecord =
-    firstValue(record, "user", "requester") ??
-    firstValue(ticketRecord, "user", "requester");
-  const slaValue =
-    firstValue(ticketRecord, "sla_minutes", "slaMinutes") ??
-    firstValue(record, "sla_minutes", "slaMinutes");
-  const slaMinutes = Number(slaValue);
+  const ticketRecord = firstValue(record, "ticket") ?? data;
 
-  return {
-    ticket,
-    detail: {
-      ticketId: ticket.id,
-      user: mapTicketUser(userRecord, ticket.requester),
-      rideId:
-        text(
-          firstValue(record, "ride_id", "rideId") ??
-            firstValue(ticketRecord, "ride_id", "rideId"),
-        ) || undefined,
-      slaMinutes:
-        Number.isFinite(slaMinutes) && slaValue !== undefined
-          ? slaMinutes
-          : undefined,
-      messages: [],
-      history: mapHistory(
-        firstValue(record, "history", "activity", "events") ??
-          firstValue(ticketRecord, "history", "activity", "events"),
-      ),
-    } satisfies SupportTicketDetail,
-  };
+  return mapSupportTicket(ticketRecord);
 }
 
-export async function listSupportTicketMessages(ticketId: string) {
-  const data = await apiGet(API_ROUTES.supportTicketMessages(ticketId));
-  const record = asRecord(data);
-  const messages = listItems(data, "messages");
-  const notes = objectArray(firstValue(record, "internal_notes", "notes")).map(
-    (note) => ({ ...note, is_internal: true }),
-  );
-  return [...messages, ...notes]
-    .map(mapSupportTicketMessage)
-    .sort((first, second) => first.createdAt.localeCompare(second.createdAt));
+export async function listSupportTicketMessages(
+  ticketId: string,
+  params: { page?: number; limit?: number } = {},
+) {
+  const data = await apiGet(API_ROUTES.supportTicketMessages(ticketId), {
+    params: {
+      page: params.page ?? 1,
+      page_size: params.limit ?? 50,
+    },
+  });
+
+  return listItems(data, "messages").map(mapSupportTicketMessage);
 }
 
 export async function getSupportTicketDetail(ticketId: string) {
-  const [ticketData, messages] = await Promise.all([
+  const [ticket, context] = await Promise.all([
     getSupportTicket(ticketId),
-    listSupportTicketMessages(ticketId),
+    getSupportTicketContext(ticketId).catch(() => ({}) as SupportTicketUser),
   ]);
-  const embeddedMessages = ticketData.detail.messages;
 
-  return {
-    ...ticketData,
-    detail: {
-      ...ticketData.detail,
-      messages: messages.length ? messages : embeddedMessages,
+  let messages: SupportTicketMessage[] = [];
+
+  try {
+    messages = await listSupportTicketMessages(ticketId);
+  } catch {
+    messages = [];
+  }
+
+  const detail: SupportTicketDetail = {
+    ticketId: ticket.id,
+    user: {
+      ...context,
+      name: context.name || ticket.requesterId,
+      type: context.type || ticket.requesterType,
     },
+    rideId: ticket.rideId,
+    sla: ticket.resolutionSla ?? ticket.responseSla,
+    messages,
+    history: deriveTicketHistory(ticket),
   };
+
+  return { ticket, detail };
 }
 
 export async function createSupportTicket(input: CreateSupportTicketInput) {
   const data = await apiPost(API_ROUTES.supportTickets, {
     requester_id: input.requesterId.trim(),
-    requester_type: input.requesterType.toLowerCase(),
-    subject: input.subject.trim(),
     category: input.category,
     priority: input.priority,
-    message: input.message.trim(),
+    subject: input.subject.trim(),
+    description: input.description.trim(),
+    ride_id: input.rideId?.trim() || undefined,
   });
   const record = asRecord(data);
   const created = asRecord(firstValue(record, "ticket") ?? data);
   const ticketId =
     text(firstValue(created, "id", "ticket_id", "ticketId", "reference")) ||
     (typeof data === "string" || typeof data === "number" ? String(data) : "");
+
   if (!ticketId) {
     throw new Error("The create-ticket response did not include a ticket ID.");
   }
+
   return ticketId;
 }
 
@@ -450,40 +457,60 @@ export async function addSupportTicketMessage(
   input: SupportTicketMessageInput,
 ) {
   return apiPost(API_ROUTES.supportTicketMessages(ticketId), {
-    body: input.body.trim(),
-    is_internal: input.internal,
+    message: input.message.trim(),
+    version: input.version,
+    is_internal: Boolean(input.internal),
   });
 }
 
 export async function assignSupportTicket(
   ticketId: string,
   agentId: string,
+  version: number,
 ) {
   return apiPatch(API_ROUTES.supportTicketAssignment(ticketId), {
-    assignee_id: agentId,
+    assigned_to: agentId,
+    version,
   });
 }
 
-export async function claimSupportTicket(ticketId: string) {
-  return apiPost(API_ROUTES.supportTicketAssignToMe(ticketId));
+export async function claimSupportTicket(ticketId: string, version: number) {
+  return apiPost(API_ROUTES.supportTicketAssignToMe(ticketId), { version });
 }
 
 export async function updateSupportTicketStatus(
   ticketId: string,
   status: SupportTicketStatus,
+  version: number,
+  note?: string,
 ) {
   return apiPatch(API_ROUTES.supportTicketStatus(ticketId), {
-    status: status.replace("-", "_"),
+    status: TICKET_STATUS_VALUES[status],
+    version,
+    note: note?.trim() || undefined,
   });
 }
 
 export async function updateSupportTicketPriority(
   ticketId: string,
   priority: SupportTicketPriority,
+  version: number,
+  reason: string,
 ) {
-  return apiPatch(API_ROUTES.supportTicketPriority(ticketId), { priority });
+  return apiPatch(API_ROUTES.supportTicketPriority(ticketId), {
+    priority,
+    version,
+    reason: reason.trim(),
+  });
 }
 
-export async function escalateSupportTicket(ticketId: string) {
-  return apiPost(API_ROUTES.supportTicketEscalate(ticketId));
+export async function escalateSupportTicket(
+  ticketId: string,
+  version: number,
+  note: string,
+) {
+  return apiPost(API_ROUTES.supportTicketEscalate(ticketId), {
+    version,
+    note: note.trim(),
+  });
 }

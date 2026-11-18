@@ -1,6 +1,5 @@
 import Link from "next/link";
 import SidePanel from "./SidePanel";
-import { mockHasDispute } from "@/lib/rideDisputes";
 
 const labelClass = "mb-1.5 block text-xs font-semibold text-slate-600";
 const valueClass =
@@ -156,7 +155,7 @@ function ViewRidePanel({ open, onClose, ride }) {
           </div>
         </section>
 
-        { mockHasDispute(ride.rideId) && (
+        { ride.hasDispute && (
           <section className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-900">Dispute</h3>
