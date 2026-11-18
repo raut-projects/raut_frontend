@@ -278,15 +278,6 @@ function SupportTicketsPage() {
         </p>
       ) }
 
-      <div className="flex justify-end">
-        <Button asChild size="sm">
-          <Link href="/support-tickets/new">
-            <Plus className="size-4" aria-hidden="true" />
-            Create ticket
-          </Link>
-        </Button>
-      </div>
-
       <div
         className="flex gap-1 overflow-x-auto border-b border-slate-200"
         aria-label="Filter tickets by status"
@@ -372,6 +363,13 @@ function SupportTicketsPage() {
             )) }
           </select>
         </div>
+
+        <Button asChild size="sm" className="shrink-0 lg:ml-0">
+          <Link href="/support-tickets/new">
+            <Plus className="size-4" aria-hidden="true" />
+            Create ticket
+          </Link>
+        </Button>
       </div>
 
       { urgentCount > 0 && (

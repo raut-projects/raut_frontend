@@ -14,6 +14,7 @@ import {
 
 import { QueryError, RefreshIndicator } from "@/components/queryStates";
 import { useToast } from "@/components/toastContext";
+import { getUserFriendlyErrorMessage } from "@/lib/friendlyError";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -892,10 +893,10 @@ export function ReferralProgramsDashboard() {
                         className="size-4 shrink-0"
                         aria-hidden="true"
                       />
-                      Referral statistics could not be loaded
-                      { statsQuery.error?.message
-                        ? `: ${statsQuery.error.message}`
-                        : "." }
+                      { getUserFriendlyErrorMessage(statsQuery.error, {
+                        context: "load",
+                        fallback: "Referral statistics could not be loaded.",
+                      }) }
                     </span>
                     <Button
                       type="button"
@@ -1944,7 +1945,7 @@ function DetailField({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <p className="text-xs text-slate-500">{ label }</p>
-      <p className="mt-1 break-words text-sm font-medium text-slate-900">
+      <p className="mt-1 wrap-break-words text-sm font-medium text-slate-900">
         { value }
       </p>
     </div>

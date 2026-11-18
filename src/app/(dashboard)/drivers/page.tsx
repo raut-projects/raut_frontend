@@ -201,6 +201,48 @@ function Drivers() {
     const createdAt = new Date(pendingSince).getTime();
     return Number.isFinite(createdAt) && dataUpdatedAt - createdAt > DAY_MS;
   }).length;
+
+  const now = dataUpdatedAt || 0;
+  const isExpiredDate = (value) => {
+    if (!value || !now) return false;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return false;
+    return date.getTime() < now;
+  };
+  const expiredInsuranceCount = allDrivers.filter((driver) => {
+    const d = driver as any;
+    if (d.vehicleInsuranceValid === false) return true;
+    return isExpiredDate(
+      d.vehicleInsuranceExpiry ??
+        d.insuranceExpiry ??
+        d.insurance_expiry ??
+        d.insuranceExpiresAt ??
+        d.insurance_expires_at ??
+        d.insuranceExpiryDate,
+    );
+  }).length;
+  const expiredLicenceCount = allDrivers.filter((driver) => {
+    const d = driver as any;
+    if (
+      d.licenseValid === false ||
+      d.licenceValid === false ||
+      d.drivingLicenseValid === false ||
+      d.driverLicenseValid === false
+    ) {
+      return true;
+    }
+    return isExpiredDate(
+      d.licenseExpiry ??
+        d.licenceExpiry ??
+        d.drivingLicenseExpiry ??
+        d.driverLicenseExpiry ??
+        d.license_expires_at ??
+        d.licence_expires_at ??
+        d.driving_license_expiry ??
+        d.licenseExpiryDate ??
+        d.licenceExpiryDate,
+    );
+  }).length;
   const driverStats = data
     ? {
         total: data.summary?.total ?? allDrivers.length,
@@ -388,22 +430,44 @@ function Drivers() {
         ]}
       />
 
-      <div className="flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-amber-900">
-          <span className="font-semibold">{pendingOver24Hours}</span>{" "}
-          pending driver{pendingOver24Hours === 1 ? " has" : "s have"} been
-          waiting for more than 24 hours.
-        </p>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => onStatusChange("pending")}
-          className="w-fit border-amber-300 bg-white text-amber-900 hover:bg-amber-100"
-        >
-          Review All
-        </Button>
-      </div>
+      {pendingOver24Hours > 0 && (
+        <div className="flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-amber-900">
+            <span className="font-semibold">{pendingOver24Hours}</span>{" "}
+            pending driver{pendingOver24Hours === 1 ? " has" : "s have"} been
+            waiting for more than 24 hours.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onStatusChange("pending")}
+            className="w-fit border-amber-300 bg-white text-amber-900 hover:bg-amber-100"
+          >
+            Review All
+          </Button>
+        </div>
+      )}
+
+      {expiredInsuranceCount > 0 && (
+        <div className="flex flex-col gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-rose-900">
+            <span className="font-semibold">{expiredInsuranceCount}</span>{" "}
+            driver{expiredInsuranceCount === 1 ? " has" : "s have"} expired
+            insurance.
+          </p>
+        </div>
+      )}
+
+      {expiredLicenceCount > 0 && (
+        <div className="flex flex-col gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-rose-900">
+            <span className="font-semibold">{expiredLicenceCount}</span>{" "}
+            driver{expiredLicenceCount === 1 ? " has" : "s have"} an expired
+            driving licence.
+          </p>
+        </div>
+      )}
 
       <div
         className="flex overflow-x-auto border-b border-slate-200"

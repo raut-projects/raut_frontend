@@ -23,21 +23,13 @@ import type {
   RevenuePoint,
   RidesPoint,
 } from "@/types/index";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
-const statusStyles = {
-  Delivered: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
-  "In transit": "bg-brand-50 text-brand-700 ring-brand-600/20",
-  Pending: "bg-amber-50 text-amber-700 ring-amber-600/20",
-  Cancelled: "bg-rose-50 text-rose-700 ring-rose-600/20",
-};
+// const statusStyles = {
+//   Delivered: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+//   "In transit": "bg-brand-50 text-brand-700 ring-brand-600/20",
+//   Pending: "bg-amber-50 text-amber-700 ring-amber-600/20",
+//   Cancelled: "bg-rose-50 text-rose-700 ring-rose-600/20",
+// };
 
 const EMPTY_DRIVERS: DriverStats = {
   totalDrivers: 0,
@@ -332,7 +324,7 @@ function Dashboard() {
         onRetry={ refetch }
       />
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+      {/* <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="xl:col-span-2">
           <div className="card overflow-hidden">
             <div className="card-header">
@@ -478,7 +470,7 @@ function Dashboard() {
             </ul>
           ) }
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

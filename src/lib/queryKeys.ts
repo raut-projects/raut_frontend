@@ -19,6 +19,12 @@ export const queryKeys = {
     summary: ["rides", "summary"],
     dispute: (rideId: string) => ["rides", "dispute", rideId],
   },
+  liveRides: {
+    all: ["liveRides"],
+    list: (params) => ["liveRides", "list", params],
+    detail: (rideId: string) => ["liveRides", "detail", rideId],
+    history: (rideId: string) => ["liveRides", "history", rideId],
+  },
   routes: {
     all: ["routes"],
     list: (params) => ["routes", "list", params],

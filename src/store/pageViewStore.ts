@@ -72,6 +72,15 @@ type PageViewValues = {
     search: string;
     page: number;
   };
+  "live-rides": {
+    status: string;
+    type: string;
+    driverQuery: string;
+    customerQuery: string;
+    rideId: string;
+    issuesOnly: boolean;
+    viewMode: string;
+  };
 };
 
 type PageViewStore = {
@@ -152,6 +161,15 @@ function createInitialViews(): PageViewValues {
       status: "active",
       search: "",
       page: 1,
+    },
+    "live-rides": {
+      status: "all",
+      type: "all",
+      driverQuery: "",
+      customerQuery: "",
+      rideId: "",
+      issuesOnly: false,
+      viewMode: "both",
     },
   };
 }
