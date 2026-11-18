@@ -5,7 +5,7 @@ import ComingSoon from "@/components/ComingSoon";
 export default function PlatformConfigPage() {
   return (
     <ComingSoon
-      icon={SlidersHorizontal}
+      icon={ SlidersHorizontal }
       title="Platform Config"
       description="Configure platform-wide settings, fees, and service rules."
     />

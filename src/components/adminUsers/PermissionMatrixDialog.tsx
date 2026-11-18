@@ -4,34 +4,51 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Download, Printer, Search, X } from "lucide-react";
 
+import { QueryError, TableSkeleton } from "@/components/queryStates";
 import { useToast } from "@/components/toastContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
-  ADMIN_ROLES,
-  PERMISSION_FEATURES,
-  PERMISSION_LEVEL_GLYPHS,
-  PERMISSION_LEVEL_LABELS,
-  PERMISSION_MATRIX,
-  downloadPermissionMatrixCsv,
-  type AdminRoleKey,
-} from "@/lib/adminUsers";
+  usePermissionCatalog,
+  useRbacRoles,
+} from "@/hooks/useRbacCatalog";
+import { PERMISSIONS } from "@/lib/permissions";
+import {
+  buildRbacGrantLookup,
+  downloadRbacMatrixCsv,
+  formatRbacScope,
+  mergeRbacPermissionCatalog,
+} from "@/lib/rbacCatalog";
+import type {
+  RbacCatalogPermission,
+  RbacCatalogRole,
+} from "@/types/rbac";
 
 import { PermissionMatrixTable } from "./PermissionMatrixTable";
 
 type PermissionMatrixDialogProps = {
   open: boolean;
   onClose: () => void;
-  initialRole?: AdminRoleKey | "all";
+  initialRole?: string | "all";
 };
 
+const EMPTY_PERMISSIONS: RbacCatalogPermission[] = [];
+const EMPTY_ROLES: RbacCatalogRole[] = [];
+
 const legend = [
-  { level: "full" as const, label: "Full" },
-  { level: "limited" as const, label: "Limited" },
-  { level: "none" as const, label: "None" },
-  { level: "own" as const, label: "Own only" },
-  { level: "finance" as const, label: "Finance scope" },
-  { level: "marketing" as const, label: "Marketing scope" },
+  {
+    label: "Granted",
+    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  },
+  {
+    label: "Scoped",
+    className: "border-sky-200 bg-sky-50 text-sky-700",
+  },
+  {
+    label: "Not granted",
+    className: "border-slate-200 bg-slate-50 text-slate-400",
+  },
 ];
 
 const escapeHtml = (value: string) =>
@@ -47,10 +64,13 @@ export function PermissionMatrixDialog({
   initialRole = "all",
 }: PermissionMatrixDialogProps) {
   const toast = useToast();
-  const [roleFilter, setRoleFilter] = useState<AdminRoleKey | "all">(
-    initialRole,
-  );
+  const { has } = usePermissions();
+  const canReadRoles = has(PERMISSIONS.PLATFORM_ROLES_READ);
+  const [roleFilter, setRoleFilter] = useState<string | "all">(initialRole);
   const [search, setSearch] = useState("");
+
+  const permissionsQuery = usePermissionCatalog(open && canReadRoles);
+  const rolesQuery = useRbacRoles(open && canReadRoles);
 
   useEffect(() => {
     if (!open) return;
@@ -70,22 +90,42 @@ export function PermissionMatrixDialog({
     };
   }, [onClose, open]);
 
-  const features = useMemo(() => {
+  const roles = rolesQuery.data ?? EMPTY_ROLES;
+  const permissions = permissionsQuery.data ?? EMPTY_PERMISSIONS;
+  const isLoading = permissionsQuery.isPending || rolesQuery.isPending;
+  const isError = permissionsQuery.isError || rolesQuery.isError;
+
+  const allPermissions = useMemo(
+    () => mergeRbacPermissionCatalog(permissions, roles),
+    [permissions, roles],
+  );
+  const grantsByRole = useMemo(() => buildRbacGrantLookup(roles), [roles]);
+
+  const filteredPermissions = useMemo(() => {
     const needle = search.trim().toLowerCase();
 
-    if (!needle) return PERMISSION_FEATURES;
+    if (!needle) return allPermissions;
 
-    return PERMISSION_FEATURES.filter(
-      (feature) =>
-        feature.label.toLowerCase().includes(needle) ||
-        feature.group.toLowerCase().includes(needle),
+    return allPermissions.filter(
+      (permission) =>
+        permission.name.toLowerCase().includes(needle) ||
+        permission.code.toLowerCase().includes(needle) ||
+        permission.description.toLowerCase().includes(needle) ||
+        permission.module.toLowerCase().includes(needle),
     );
-  }, [search]);
+  }, [allPermissions, search]);
 
-  const roles =
+  const selectedRoles =
     roleFilter === "all"
-      ? ADMIN_ROLES
-      : ADMIN_ROLES.filter((role) => role.key === roleFilter);
+      ? roles
+      : roles.filter((role) => role.key === roleFilter);
+  const visibleRoles = selectedRoles.length ? selectedRoles : roles;
+  const effectiveRoleFilter = selectedRoles.length ? roleFilter : "all";
+
+  const retry = () => {
+    void permissionsQuery.refetch();
+    void rolesQuery.refetch();
+  };
 
   const printMatrix = () => {
     const printWindow = window.open("", "_blank", "width=1100,height=800");
@@ -95,20 +135,30 @@ export function PermissionMatrixDialog({
       return;
     }
 
-    const header = roles
-      .map((role) => `<th>${escapeHtml(role.label)}</th>`)
+    const header = visibleRoles
+      .map(
+        (role) =>
+          `<th>${escapeHtml(role.name || role.key)}<span>${escapeHtml(role.key)}</span></th>`,
+      )
       .join("");
-    const rows = features
-      .map((feature) => {
-        const cells = roles
+    const rows = filteredPermissions
+      .map((permission) => {
+        const cells = visibleRoles
           .map((role) => {
-            const level = PERMISSION_MATRIX[feature.key][role.key];
+            const grant = grantsByRole.get(role.key)?.get(permission.code);
+            const scope = grant ? formatRbacScope(grant.scope) : "";
+            const label = grant ? `Granted · ${scope}` : "Not granted";
+            const cellClass = !grant
+              ? "none"
+              : grant.scope === "platform"
+                ? "granted"
+                : "scoped";
 
-            return `<td class="level-${level}">${PERMISSION_LEVEL_GLYPHS[level]} ${PERMISSION_LEVEL_LABELS[level]}</td>`;
+            return `<td class="${cellClass}">${escapeHtml(label)}</td>`;
           })
           .join("");
 
-        return `<tr><th class="feature">${escapeHtml(feature.label)}<span>${escapeHtml(feature.group)}</span></th>${cells}</tr>`;
+        return `<tr><th class="feature">${escapeHtml(permission.name || permission.code)}<span>${escapeHtml(permission.code)} · ${escapeHtml(formatRbacScope(permission.module))}</span></th>${cells}</tr>`;
       })
       .join("");
 
@@ -116,7 +166,7 @@ export function PermissionMatrixDialog({
 <html>
 <head>
 <meta charset="utf-8" />
-<title>Raut permission matrix</title>
+<title>Raut role permissions</title>
 <style>
   * { box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #0f172a; margin: 28px; }
@@ -125,21 +175,19 @@ export function PermissionMatrixDialog({
   table { width: 100%; border-collapse: collapse; }
   th, td { border: 1px solid #e2e8f0; padding: 6px 8px; font-size: 10px; text-align: center; }
   thead th { background: #f8fafc; font-size: 9px; text-transform: uppercase; letter-spacing: .03em; }
+  thead th span { display: block; font-weight: 400; color: #94a3b8; font-size: 8px; }
   th.feature { text-align: left; font-size: 11px; }
   th.feature span { display: block; font-weight: 400; color: #94a3b8; font-size: 9px; }
-  .level-full { background: #ecfdf5; color: #047857; }
-  .level-limited { background: #fffbeb; color: #b45309; }
-  .level-none { background: #f8fafc; color: #94a3b8; }
-  .level-own { background: #f0f9ff; color: #0369a1; }
-  .level-finance { background: #f0fdfa; color: #0f766e; }
-  .level-marketing { background: #f5f3ff; color: #6d28d9; }
+  .granted { background: #ecfdf5; color: #047857; }
+  .scoped { background: #f0f9ff; color: #0369a1; }
+  .none { background: #f8fafc; color: #94a3b8; }
 </style>
 </head>
 <body>
-  <h1>Admin role permission matrix</h1>
-  <p>Generated ${escapeHtml(new Date().toLocaleString())} \u00b7 ${features.length} features \u00b7 ${roles.length} roles</p>
+  <h1>Admin role permissions</h1>
+  <p>Generated ${escapeHtml(new Date().toLocaleString())} \u00b7 ${filteredPermissions.length} permissions \u00b7 ${visibleRoles.length} roles</p>
   <table>
-    <thead><tr><th class="feature">Feature</th>${header}</tr></thead>
+    <thead><tr><th class="feature">Permission</th>${header}</tr></thead>
     <tbody>${rows}</tbody>
   </table>
 </body>
@@ -151,11 +199,13 @@ export function PermissionMatrixDialog({
   };
 
   const exportMatrix = () => {
-    downloadPermissionMatrixCsv();
-    toast.success("Permission matrix exported.");
+    downloadRbacMatrixCsv(allPermissions, roles);
+    toast.success("Role permissions exported.");
   };
 
-  if (!open || typeof document === "undefined") return null;
+  if (!open || typeof document === "undefined" || !canReadRoles) {
+    return null;
+  }
 
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
@@ -180,8 +230,7 @@ export function PermissionMatrixDialog({
               Role permission matrix
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              What each admin role can access. Super Admin always has full
-              access.
+              Granted permissions and scopes configured for each admin role.
             </p>
           </div>
           <Button
@@ -206,38 +255,38 @@ export function PermissionMatrixDialog({
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Filter features"
-              aria-label="Filter permission features"
+              placeholder="Filter permissions"
+              aria-label="Filter permission catalog"
+              disabled={isLoading || isError}
               className="h-9 bg-white pl-9"
             />
           </div>
 
           <select
-            value={roleFilter}
-            onChange={(event) =>
-              setRoleFilter(event.target.value as AdminRoleKey | "all")
-            }
+            value={effectiveRoleFilter}
+            onChange={(event) => setRoleFilter(event.target.value)}
             aria-label="Filter matrix by role"
-            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+            disabled={isLoading || isError}
+            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:text-slate-400"
           >
             <option value="all">All roles</option>
-            {ADMIN_ROLES.map((role) => (
+            {roles.map((role) => (
               <option key={role.key} value={role.key}>
-                {role.label}
+                {role.name || role.key}
               </option>
             ))}
           </select>
 
           <div className="flex flex-wrap items-center gap-3 sm:ml-auto">
             {legend.map((item) => (
-              <span
-                key={item.level}
-                className="inline-flex items-center gap-1.5 text-xs text-slate-500"
-              >
-                <span aria-hidden="true">
-                  {PERMISSION_LEVEL_GLYPHS[item.level]}
+              <span key={item.label} className="inline-flex items-center gap-1.5">
+                <span
+                  aria-hidden="true"
+                  className={`inline-flex h-4 w-4 items-center justify-center rounded border text-[0.6rem] ${item.className}`}
+                >
+                  {item.label === "Not granted" ? "\u2014" : "\u2713"}
                 </span>
-                {item.label}
+                <span className="text-xs text-slate-500">{item.label}</span>
               </span>
             ))}
             <div className="flex gap-2 sm:ml-2">
@@ -246,6 +295,7 @@ export function PermissionMatrixDialog({
                 variant="outline"
                 size="sm"
                 onClick={printMatrix}
+                disabled={isLoading || isError}
                 className="h-auto border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
               >
                 <Printer className="size-3.5" aria-hidden="true" />
@@ -256,6 +306,7 @@ export function PermissionMatrixDialog({
                 variant="outline"
                 size="sm"
                 onClick={exportMatrix}
+                disabled={isLoading || isError}
                 className="h-auto border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
               >
                 <Download className="size-3.5" aria-hidden="true" />
@@ -266,15 +317,33 @@ export function PermissionMatrixDialog({
         </div>
 
         <div className="min-h-0 flex-1 overflow-auto">
-          <PermissionMatrixTable
-            features={features}
-            roleFilter={roleFilter}
-            roles={roles.map((role) => role.key)}
-          />
-          {features.length === 0 && (
-            <p className="px-6 py-12 text-center text-sm text-slate-500">
-              No features match that filter.
-            </p>
+          {isLoading ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <TableSkeleton
+                  rows={10}
+                  cols={Math.max(3, visibleRoles.length + 1)}
+                  mobileCols={2}
+                  lgCols={Math.max(3, visibleRoles.length + 1)}
+                />
+              </table>
+            </div>
+          ) : isError ? (
+            <QueryError error={permissionsQuery.error ?? rolesQuery.error} onRetry={retry} />
+          ) : (
+            <>
+              <PermissionMatrixTable
+                permissions={filteredPermissions}
+                roles={visibleRoles}
+                grantsByRole={grantsByRole}
+                roleFilter={effectiveRoleFilter}
+              />
+              {filteredPermissions.length === 0 && (
+                <p className="px-6 py-12 text-center text-sm text-slate-500">
+                  No permissions match that filter.
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>

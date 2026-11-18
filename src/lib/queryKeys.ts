@@ -1,3 +1,6 @@
+// Centralised TanStack Query key factory. Keys are hierarchical (entity -> scope
+// -> params) so invalidation can target whole groups or single entries.
+
 export const queryKeys = {
   customers: {
     all: ["customers"],
@@ -17,6 +20,13 @@ export const queryKeys = {
     all: ["rides"],
     list: (params) => ["rides", "list", params],
     summary: ["rides", "summary"],
+    dispute: (rideId: string) => ["rides", "dispute", rideId],
+  },
+  liveRides: {
+    all: ["liveRides"],
+    list: (params) => ["liveRides", "list", params],
+    detail: (rideId: string) => ["liveRides", "detail", rideId],
+    history: (rideId: string) => ["liveRides", "history", rideId],
   },
   routes: {
     all: ["routes"],
@@ -51,25 +61,28 @@ export const queryKeys = {
   },
   config: {
     all: ["config"],
-    pricing: ["config", "pricing"],
-    features: ["config", "features"],
-    operations: ["config", "operations"],
-    integrations: ["config", "integrations"],
-    history: (params) => ["config", "history", params],
+    list: (filters) => ["config", "list", filters ?? {}],
+    detail: (configKey, scope) => ["config", "detail", configKey, scope ?? {}],
+    history: (configKey, limit) => ["config", "history", configKey, limit],
   },
   me: {
     all: ["me"],
+  },
+  rbac: {
+    all: ["rbac"],
+    permissions: ["rbac", "permissions"],
+    roles: ["rbac", "roles"],
+    regions: ["rbac", "regions"],
+  },
+  staff: {
+    all: ["staff"],
+    list: (params) => ["staff", "list", params],
   },
   supportTickets: {
     all: ["support-tickets"],
     list: (params) => ["support-tickets", "list", params],
     detail: (ticketId) => ["support-tickets", "detail", ticketId],
     agents: ["support-tickets", "agents"],
-  },
-  adminUsers: {
-    all: ["admin-users"],
-    list: (params) => ["admin-users", "list", params],
-    detail: (userId) => ["admin-users", "detail", userId],
   },
   marketing: {
     all: ["marketing"],

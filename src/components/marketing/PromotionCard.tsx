@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, Pencil, Trash2, Users } from "lucide-react";
+import { CalendarDays, Pencil, Power, Trash2, Users } from "lucide-react";
 
+import { Can } from "@/components/Can";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -13,6 +14,7 @@ import {
   promotionBudgetTone,
   type Promotion,
 } from "@/lib/marketing";
+import { PERMISSIONS } from "@/lib/permissions";
 
 import { PromotionStatusBadge } from "./PromotionStatusBadge";
 
@@ -43,7 +45,7 @@ function audienceLabels(promotion: Promotion) {
   if (promotion.eligiblePhones?.length) {
     labels.push(`Specific list (${promotion.eligiblePhones.length})`);
   }
-  if (!labels.length) labels.push("All riders");
+  if (!labels.length) labels.push("All customers");
   if (promotion.duoOnly) labels.push("DUO only");
   if (promotion.peakHoursOnly) {
     labels.push(
@@ -59,11 +61,15 @@ function audienceLabels(promotion: Promotion) {
 export function PromotionCard({
   promotion,
   onDelete,
+  onToggleStatus,
   deleting = false,
+  toggling = false,
 }: {
   promotion: Promotion;
   onDelete: (promotion: Promotion) => void;
+  onToggleStatus: (promotion: Promotion) => void;
   deleting?: boolean;
+  toggling?: boolean;
 }) {
   const budgetPercent = promotionBudgetPercent(promotion);
   const usageLimit =
@@ -162,30 +168,47 @@ export function PromotionCard({
         ))}
       </div>
 
-      <div className="mt-5 flex items-center justify-between gap-2 border-t border-slate-100 pt-4">
-        <Button
-          asChild
-          variant="outline"
-          size="sm"
-          className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-        >
-          <Link href={`/marketing/promotions/${encodeURIComponent(promotion.id)}/edit`}>
-            <Pencil className="size-3.5" aria-hidden="true" />
-            Edit
-          </Link>
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => onDelete(promotion)}
-          disabled={deleting}
-          className="text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-        >
-          <Trash2 className="size-3.5" aria-hidden="true" />
-          Delete
-        </Button>
-      </div>
+      <Can permission={PERMISSIONS.MARKETING_PROMOTIONS_MANAGE}>
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-4">
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+          >
+            <Link href={`/marketing/promotions/${encodeURIComponent(promotion.id)}/edit`}>
+              <Pencil className="size-3.5" aria-hidden="true" />
+              Edit
+            </Link>
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onToggleStatus(promotion)}
+            disabled={toggling}
+            className={
+              promotion.isActive
+                ? "text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+                : "text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+            }
+          >
+            <Power className="size-3.5" aria-hidden="true" />
+            {promotion.isActive ? "Deactivate" : "Activate"}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onDelete(promotion)}
+            disabled={deleting}
+            className="text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+          >
+            <Trash2 className="size-3.5" aria-hidden="true" />
+            Delete
+          </Button>
+        </div>
+      </Can>
     </article>
   );
 }

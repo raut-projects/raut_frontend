@@ -1,87 +1,105 @@
 import {
-  ADMIN_ROLES,
-  PERMISSION_LEVEL_GLYPHS,
-  PERMISSION_LEVEL_LABELS,
-  PERMISSION_MATRIX,
-  type AdminRoleKey,
-  type PermissionFeatureRow,
-  type PermissionLevel,
-} from "@/lib/adminUsers";
+  formatRbacScope,
+  type RbacGrantLookup,
+} from "@/lib/rbacCatalog";
+import type { RbacCatalogPermission, RbacCatalogRole } from "@/types/rbac";
 
-const CELL_STYLES: Record<PermissionLevel, string> = {
-  full: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  limited: "border-amber-200 bg-amber-50 text-amber-700",
+const CELL_STYLES = {
+  granted: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  scoped: "border-sky-200 bg-sky-50 text-sky-700",
   none: "border-slate-200 bg-slate-50 text-slate-400",
-  own: "border-sky-200 bg-sky-50 text-sky-700",
-  finance: "border-teal-200 bg-teal-50 text-teal-700",
-  marketing: "border-violet-200 bg-violet-50 text-violet-700",
 };
 
 type PermissionMatrixTableProps = {
-  roles?: AdminRoleKey[];
-  features: PermissionFeatureRow[];
-  roleFilter?: AdminRoleKey | "all";
+  permissions: RbacCatalogPermission[];
+  roles: RbacCatalogRole[];
+  grantsByRole: RbacGrantLookup;
+  roleFilter?: string | "all";
 };
 
 export function PermissionMatrixTable({
+  permissions,
   roles,
-  features,
+  grantsByRole,
   roleFilter = "all",
 }: PermissionMatrixTableProps) {
   const visibleRoles =
     roleFilter === "all"
-      ? (roles ?? ADMIN_ROLES.map((role) => role.key))
-      : [roleFilter];
+      ? roles
+      : roles.filter((role) => role.key === roleFilter);
+  const minWidth = `${Math.max(52, 13 + visibleRoles.length * 9)}rem`;
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[52rem] border-collapse text-left">
+      <table
+        className="w-full border-collapse text-left"
+        style={{ minWidth }}
+      >
         <thead>
           <tr>
             <th className="sticky left-0 z-10 min-w-[13rem] border-b border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-semibold text-slate-600">
-              Feature
+              Permission
             </th>
-            {visibleRoles.map((roleKey) => {
-              const role = ADMIN_ROLES.find((entry) => entry.key === roleKey);
-
-              return (
-                <th
-                  key={roleKey}
-                  scope="col"
-                  className="border-b border-slate-200 bg-slate-50 px-2 py-2.5 text-center text-[0.7rem] font-semibold whitespace-nowrap text-slate-600"
-                >
-                  {role?.label ?? roleKey}
-                </th>
-              );
-            })}
+            {visibleRoles.map((role) => (
+              <th
+                key={role.key}
+                scope="col"
+                className="border-b border-slate-200 bg-slate-50 px-2 py-2.5 text-center text-[0.7rem] font-semibold whitespace-nowrap text-slate-600"
+              >
+                <span className="block">{role.name || role.key}</span>
+                <span className="mt-0.5 block text-[0.6rem] font-normal text-slate-400">
+                  {role.key}
+                </span>
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {features.map((feature) => (
-            <tr key={feature.key} className="border-b border-slate-100">
+          {permissions.map((permission) => (
+            <tr
+              key={permission.code}
+              className="border-b border-slate-100"
+            >
               <th
                 scope="row"
+                title={permission.description || permission.code}
                 className="sticky left-0 z-10 border-r border-slate-100 bg-white px-3 py-2 text-left"
               >
                 <span className="block text-xs font-medium text-slate-700">
-                  {feature.label}
+                  {permission.name || permission.code}
                 </span>
-                <span className="block text-[0.65rem] text-slate-400">
-                  {feature.group}
+                <span className="mt-0.5 block text-[0.65rem] text-slate-400">
+                  {permission.code} · {formatRbacScope(permission.module)}
                 </span>
               </th>
-              {visibleRoles.map((roleKey) => {
-                const level = PERMISSION_MATRIX[feature.key][roleKey];
+              {visibleRoles.map((role) => {
+                const grant = grantsByRole.get(role.key)?.get(permission.code);
+                const scope = grant ? formatRbacScope(grant.scope) : "";
+                const label = grant ? `Granted · ${scope}` : "Not granted";
+                const cellStyle = !grant
+                  ? CELL_STYLES.none
+                  : grant.scope === "platform"
+                    ? CELL_STYLES.granted
+                    : CELL_STYLES.scoped;
+                const hasConstraints = Boolean(
+                  grant && Object.keys(grant.constraints ?? {}).length,
+                );
+                const tooltip = grant
+                  ? hasConstraints
+                    ? `${label}\n${JSON.stringify(grant.constraints, null, 2)}`
+                    : `${label}\nNo constraints`
+                  : label;
 
                 return (
-                  <td key={roleKey} className="px-2 py-2 text-center">
+                  <td key={role.key} className="px-2 py-2 text-center">
                     <span
-                      className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[0.7rem] font-medium whitespace-nowrap ${CELL_STYLES[level]}`}
+                      title={tooltip}
+                      className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[0.7rem] font-medium whitespace-nowrap ${cellStyle}`}
                     >
                       <span aria-hidden="true">
-                        {PERMISSION_LEVEL_GLYPHS[level]}
+                        {grant ? "\u2713" : "\u2014"}
                       </span>
-                      {PERMISSION_LEVEL_LABELS[level]}
+                      {label}
                     </span>
                   </td>
                 );

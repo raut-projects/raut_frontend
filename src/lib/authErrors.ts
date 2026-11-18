@@ -1,10 +1,17 @@
+// User-facing copy for authentication failures. Maps HTTP status codes and raw
+// error text from the sign-in and password-reset requests into short, safe
+// messages; backend detail (field paths, endpoints, status codes) is never
+// surfaced to the user.
+
 const GENERIC_ERROR = "We couldn't sign you in. Please try again.";
 
+/** Extracts a numeric HTTP status from an error object, or null if absent. */
 const statusFrom = (error: unknown): number | null => {
   const status = (error as { status?: unknown })?.status;
   return typeof status === "number" ? status : null;
 };
 
+/** Extracts a message string from an Error, a string, or nothing. */
 const rawMessageFrom = (error: unknown): string => {
   if (error instanceof Error) return error.message;
   return typeof error === "string" ? error : "";
@@ -13,6 +20,13 @@ const rawMessageFrom = (error: unknown): string => {
 // Turns any failure from the sign-in request into plain, user-friendly copy.
 // Backend messages can contain field paths, status codes or endpoint names, so
 // they are never shown directly.
+/**
+ * Maps a sign-in failure to a user-facing message.
+ *
+ * Handles network failures (status 0), timeouts, invalid credentials
+ * (400/401/403/422), missing endpoint (404), rate limiting (429) and server
+ * errors (5xx); anything else falls back to a generic message.
+ */
 export function getLoginErrorMessage(error: unknown): string {
   const status = statusFrom(error);
   const rawMessage = rawMessageFrom(error);
@@ -49,6 +63,13 @@ export function getLoginErrorMessage(error: unknown): string {
 }
 
 // Turns any failure from the reset request into plain, user-friendly copy.
+/**
+ * Maps a password-reset failure to a user-facing message.
+ *
+ * Handles network failures (status 0), timeouts, rate limiting (429), rejected
+ * addresses (400/422) and server errors (5xx); anything else falls back to a
+ * generic message.
+ */
 export function getPasswordResetErrorMessage(error: unknown): string {
   const status = statusFrom(error);
   const rawMessage = rawMessageFrom(error);

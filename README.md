@@ -50,10 +50,10 @@ A separate onboarding route guides drivers through personal, licence, vehicle an
 | Notifications | Unread count in the header, notification panel, mark one/all as read, dismiss notifications |
 | Settings | Read-only profile and access details for the signed-in administrator |
 | Live Rides | Placeholder page; tracking and live-trip data are not implemented yet |
-| Marketing | API-backed promotions list with status tabs (active, scheduled, expired and drafts), search, pagination and delete; create/edit campaigns with discount, eligibility, schedule, usage limits, budget cap and DUO/peak-hour rules; referral programs, user enrollment and referral activity |
+| Marketing | API-backed promotions list with status tabs (active, scheduled, expired and drafts), search, pagination, activate/deactivate and delete; create/edit campaigns with discount, eligibility, schedule, usage limits, budget cap and DUO/peak-hour rules; referral programs, user enrollment and referral activity |
 | Support Tickets | API-backed ticket list, creation, search and filters, agent assignment, replies and internal notes, status/priority updates, escalation and CSV export |
-| Admin Users | API-backed admin list with Active/Invited/Deactivated tabs, search and pagination, invite and edit side panels, deactivate/reactivate, and a printable/exportable role permission matrix |
-| Settings subpages | Placeholder pages for Audit Logs, Platform Config and System Health |
+| Staff & Roles | API-backed staff list with pagination, role/scope assignment, revoke and deactivate actions, live RBAC role editing, and a printable/exportable role permission matrix. Invite, reactivate and cancel invitation are disabled until the backend endpoints exist. |
+| Settings subpages | Mock-data audit log review and System Health dashboard; Platform Config placeholder |
 | Driver onboarding | Four-step driver application flow with English/Swahili UI, validation, document uploads and Flutter WebView hand-off |
 | User experience | Responsive sidebar and header, loading skeletons, retryable error states, refresh indicators, toast feedback and print-friendly analytics |
 
@@ -81,7 +81,7 @@ Dashboard comparison is only available when the previous period falls inside the
 ## Requirements
 
 - Node.js `>=20.9.0` (required by Next.js 16)
-- npm
+- pnpm
 - A running Raut backend API
 - A valid access token when opening the driver onboarding route
 
@@ -97,7 +97,7 @@ Dashboard comparison is only available when the previous period falls inside the
 2. Install dependencies:
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. Create a local environment file:
@@ -127,7 +127,7 @@ Dashboard comparison is only available when the previous period falls inside the
 6. Start the development server:
 
    ```bash
-   npm run dev
+   pnpm run dev
    ```
 
    Next.js prints the local URL, typically `http://localhost:3000`.
@@ -149,21 +149,19 @@ Dashboard comparison is only available when the previous period falls inside the
 | `NEXT_PUBLIC_API_BASE_URL` | Yes | None | Base URL of the Raut backend API, for example `http://localhost:8000`. Trailing slashes are removed automatically. Inlined at build time, so rebuild after changing it. |
 | `NEXT_PUBLIC_ADMIN_ROLES` | No | `admin,super_admin` | Comma-separated list of roles allowed through the admin gate. Values such as `administrator`, `superadmin`, `super-admin` and `owner` are normalized. Other known roles such as `platform_manager`, `operator`, `support`, `analyst`, `finance` and `marketing` are normalized but do not grant access unless added here. Inlined at build time. |
 | `NEXT_PUBLIC_REFERRAL_BASE_URL` | No | `https://raut.app/signup` | Base URL used to build referral signup links (`{base}?ref=CODE`). Inlined at build time, so rebuild after changing it. |
-| `NEXT_PUBLIC_USE_MOCK_MARKETING` | No | `true` | Serves built-in sample promotions while the promotions API is unavailable. Referral APIs always use the backend. Set to `false` to disable promotion samples. Inlined at build time. |
-| `NEXT_PUBLIC_USE_MOCK_ADMIN_USERS` | No | `true` | Serves the built-in sample admin users while the backend admin-users endpoints are unavailable. Set to `false` to use the real API. Inlined at build time. |
 
 ## Available scripts
 
 | Command | Description |
 | --- | --- |
-| `npm run dev` | Start the Next.js development server with hot module reloading |
-| `npm run build` | Build the app for the Next.js production server |
-| `npm run typecheck` | Run TypeScript type checking without emitting files |
-| `npm run lint` | Run ESLint across the repository |
-| `npm run start` | Start the production server |
-| `npm run preview` | Start the production server for verification |
+| `pnpm run dev` | Start the Next.js development server with hot module reloading |
+| `pnpm run build` | Build the app for the Next.js production server |
+| `pnpm run typecheck` | Run TypeScript type checking without emitting files |
+| `pnpm run lint` | Run ESLint across the repository |
+| `pnpm run start` | Start the production server |
+| `pnpm run preview` | Start the production server for verification |
 
-Run `npm run build` before `npm run start` or `npm run preview`.
+Run `pnpm run build` before `pnpm run start` or `pnpm run preview`.
 
 ## Application routes
 
@@ -181,7 +179,7 @@ Run `npm run build` before `npm run start` or `npm run preview`.
 | `/payouts/batch` | Admin | Pending payout batch review and approval |
 | `/transactions` | Admin | Transaction history |
 | `/live-rides` | Admin | Live rides placeholder (Coming soon) |
-| `/marketing` | Admin | API-backed promotion campaigns grouped by status tab, with search, pagination and delete |
+| `/marketing/promotions` | Admin | API-backed promotion campaigns grouped by status tab, with search, pagination, activate/deactivate and delete |
 | `/marketing/promotions/new` | Admin | Create a promotion campaign and activate it or save it as a draft |
 | `/marketing/promotions/[id]/edit` | Admin | Edit an existing campaign and save changes or a draft |
 | `/marketing/referrals` | Admin | Referral-code stats, status tabs, search, user-type/date filters, pagination, Create Referral dialog, shareable Referral Created dialog, row actions and bulk selection actions |
@@ -189,10 +187,10 @@ Run `npm run build` before `npm run start` or `npm run preview`.
 | `/support-tickets/new` | Admin | Create a support ticket for a rider or driver |
 | `/support-tickets/[id]` | Admin | Ticket detail, agent assignment, replies/internal notes, status/priority updates and escalation |
 | `/settings` | Admin | Signed-in account profile and access details |
-| `/settings/admin-users` | Admin | Admin user list with status tabs, search, invite and edit panels, deactivate/reactivate and a role permission matrix |
-| `/settings/audit-logs` | Admin | Audit logs placeholder (Coming soon) |
+| `/settings/admin-users` | Admin | Staff list with pagination, role/scope assignment, revoke and deactivate actions, live RBAC role editing and a role permission matrix. Invite staff, reactivate and cancel invitation remain disabled until the backend endpoints exist. |
+| `/settings/audit-logs` | Admin | Searchable, filterable mock audit events with detail panel and CSV export |
 | `/settings/platform` | Admin | Platform configuration placeholder (Coming soon) |
-| `/settings/system-health` | Admin | System health placeholder (Coming soon) |
+| `/settings/system-health` | Admin | Illustrative system status, uptime and latency trends, background jobs and recent incidents |
 | `*` | Public | Render the not-found page |
 
 `RequireAuth` protects the admin-access request page. `RequireAdmin` protects the dashboard route group and revalidates the signed-in user's role against `GET /auth/me` before opening admin pages.
@@ -247,11 +245,12 @@ If the page is opened outside the WebView, it falls back to a browser alert. Can
 3. The response returns the session, access token and optional refresh token.
 4. The session and tokens are persisted in `localStorage` and exposed to React through the Zustand auth store.
 5. `RequireAdmin` revalidates the role every five minutes (`ROLE_REVALIDATE_MS`). A missing or stale role is checked against `GET /auth/me`.
-6. Non-admin accounts are redirected to `/request-admin`, where the admin secret is submitted to `POST /admin/promote`.
-7. If the promoted access token still does not grant an admin role, the user is asked to sign in again.
-8. Authenticated requests that return `401` attempt a token refresh through `POST /auth/refresh`. If refresh fails, the session is cleared and the user returns to `/login`.
+6. `RequireAdmin` also loads effective RBAC permissions from `GET /me/permissions` (`RBAC_REVALIDATE_MS`) and stores them in the session.
+7. Non-admin accounts are redirected to `/request-admin`, where the admin secret is submitted to `POST /admin/promote`.
+8. If the promoted access token still does not grant an admin role, the user is asked to sign in again.
+9. Authenticated requests that return `401` attempt a token refresh through `POST /auth/refresh`. If refresh fails, the session is cleared and the user returns to `/login`.
 
-If role revalidation fails because the server cannot be reached, the app keeps the last trusted role instead of signing the administrator out. A `401` still clears the session.
+If role or permission revalidation fails because the server cannot be reached, the app keeps the last trusted role and recent permission snapshot instead of signing the administrator out. A `401` still clears the session.
 
 Access-token expiry is also watched client-side. While an admin session is active, a timer is scheduled for the stored `expiresAt`; when it elapses, the app signs out and shows “Your session expired. Please sign in again.” There is no pre-expiry warning. Background tabs are checked when they regain focus or become visible. Requests still refresh an expired access token before using it, and a successful refresh moves the timer to the new expiry.
 
@@ -260,9 +259,9 @@ The default admin roles are `admin` and `super_admin`. Override them with `NEXT_
 - `administrator` becomes `admin`.
 - `superadmin`, `super-admin` and `owner` become `super_admin`.
 - `platform_manager`, `operator`, `support`, `analyst`, `finance` and `marketing` remain as their own roles.
-- The Admin Users page also understands `operations_agent`, `support_agent`, `finance_manager`, `finance_agent`, `marketing_manager` and `marketing_agent` as distinct roles. These are labels for the permission matrix and do not add admin-gate access unless listed in `NEXT_PUBLIC_ADMIN_ROLES`.
+- The Staff & Roles page uses the live `/rbac/roles` catalog and keeps readable fallback labels for known legacy role keys. None of these role labels add admin-gate access unless the role is listed in `NEXT_PUBLIC_ADMIN_ROLES`.
 
-The dashboard currently has a single admin gate: every configured admin role can open every admin page. Fine-grained permissions must be enforced by the backend.
+The dashboard has two gates. `RequireAdmin` still requires a configured admin role, then uses the `GET /me/permissions` response to hide sidebar sections, block unauthorized routes, and hide action controls. Permission codes follow `resource.action` (for example `drivers.verify` and `finance.payouts.approve`). A stale snapshot is trusted for up to `RBAC_STALE_GRACE_MS`; if the endpoint fails and no snapshot exists, the app denies access and shows an Access Denied screen. Ambiguous actions without a direct permission code, such as live-ride escalation and referral mark-paid, remain unchanged.
 
 Tokens are stored in browser `localStorage`, so the session can be restored across reloads. This does not replace server-side authorization; the backend must enforce permissions for every admin endpoint.
 
@@ -277,11 +276,19 @@ export const API_ROUTES = {
   login: '/auth/login',
   refresh: '/auth/refresh',
   me: '/auth/me',
+  myPermissions: '/me/permissions',
+  rbacPermissions: '/rbac/permissions',
+  rbacRoles: '/rbac/roles',
+  rbacRole: (roleId) => `/rbac/roles/${roleId}`,
+  rbacRegions: '/rbac/regions',
+  staff: '/staff',
+  staffInvitations: '/staff/invitations',
+  staffRoles: (userId) => `/staff/${userId}/roles`,
+  staffRole: (userId, assignmentId) => `/staff/${userId}/roles/${assignmentId}`,
+  staffDeactivate: (userId) => `/staff/${userId}/deactivate`,
   notifications: '/notifications/',
   promote: '/admin/promote',
   users: '/admin/users',
-  adminUserInvite: '/admin/users/invite',
-  adminUser: (userId) => `/admin/users/${userId}`,
   drivers: '/admin/drivers',
   rides: '/admin/rides',
   routes: '/admin/routes',
@@ -293,12 +300,14 @@ export const API_ROUTES = {
   analyticsDrivers: '/admin/analytics/drivers',
   analyticsRides: '/admin/analytics/rides',
   analyticsPeakHours: '/admin/analytics/peak-hours',
-  marketingPromotions: '/admin/marketing/promotions',
-  users: '/admin/users',
+  marketingPromotions: '/promotions/',
+  marketingPromotion: (promotionId) => `/promotions/${promotionId}`,
+  marketingPromotionActivate: (promotionId) => `/promotions/${promotionId}/activate`,
+  marketingPromotionDeactivate: (promotionId) => `/promotions/${promotionId}/deactivate`,
 }
 ```
 
-The promotion detail route is built with `API_ROUTES.marketingPromotion(id)`.
+The promotion detail route is built with `API_ROUTES.marketingPromotion(id)`; activate and deactivate use `API_ROUTES.marketingPromotionActivate(id)` and `API_ROUTES.marketingPromotionDeactivate(id)`.
 
 Onboarding endpoints are currently called directly from `src/services/uploads.ts` and the onboarding step components rather than being added to `API_ROUTES`.
 
@@ -328,16 +337,23 @@ Raw API records are normalized in `src/services/mappers.ts`. Mappers provide con
 | `POST` | `/auth/login` | Sign in with an email address and password |
 | `POST` | `/auth/refresh` | Refresh an access token |
 | `GET` | `/auth/me` | Fetch the signed-in user and role |
+| `GET` | `/me/permissions` | Fetch effective RBAC permissions and role assignments |
 | `POST` | `/admin/promote` | Promote a signed-in account to admin using a secret |
 | `GET` | `/notifications/` | List notifications |
 | `POST` | `/notifications/{id}/read` | Mark a notification as read |
 | `GET` | `/admin/users` | List users/customers |
-| `GET` | `/admin/users` | List admin users (`status`, `search`, `page`, `page_size`) |
-| `POST` | `/admin/users/invite` | Invite an admin user |
-| `PATCH` | `/admin/users/{id}` | Update an admin user's role, permission overrides and 2FA |
-| `PUT` | `/admin/users/{id}/role` | Change a user's role |
-| `PUT` | `/admin/users/{id}/deactivate` | Deactivate a user |
-| `PUT` | `/admin/users/{id}/reactivate` | Reactivate a user |
+| `GET` | `/rbac/permissions` | List the permission catalog |
+| `GET` | `/rbac/roles` | List roles with permissions and metadata |
+| `POST` | `/rbac/roles` | Create a role (`key`, `name`, `description`, `permissions`) |
+| `PATCH` | `/rbac/roles/{role_id}` | Update a role (`name`, `description`, `permissions`) |
+| `DELETE` | `/rbac/roles/{role_id}` | Delete a role |
+| `GET` | `/rbac/regions` | List regions used for staff role scopes |
+| `POST` | `/rbac/regions` | Create a region (`code`, `name`) |
+| `GET` | `/staff` | List staff with pagination (`page`, `page_size`) |
+| `POST` | `/staff/invitations` | Invite staff; documented but not wired because it lacks name, email and permission fields |
+| `POST` | `/staff/{user_id}/roles` | Assign a role and scope to a staff member |
+| `DELETE` | `/staff/{user_id}/roles/{assignment_id}` | Revoke a staff role assignment |
+| `POST` | `/staff/{user_id}/deactivate` | Deactivate a staff account |
 | `DELETE` | `/admin/users/{id}` | Delete a user/account (customers and drivers) |
 | `GET` | `/admin/drivers` | List drivers |
 | `PUT` | `/admin/drivers/{id}/verify` | Verify a driver |
@@ -356,22 +372,26 @@ Raw API records are normalized in `src/services/mappers.ts`. Mappers provide con
 | `PUT` | `/admin/payouts/{id}/approve` | Approve a payout |
 | `PUT` | `/admin/payouts/{id}/reject` | Reject a payout |
 | `PUT` | `/admin/payouts/{id}/retry` | Retry a payout |
-| `POST` | `/admin/support/tickets` | Create a support ticket |
-| `GET` | `/admin/support/tickets` | List and filter support tickets |
-| `GET` | `/admin/support/agents` | List eligible ticket assignees and roles |
-| `GET` | `/admin/support/tickets/{ticket_id}` | Get ticket details |
-| `GET` | `/admin/support/tickets/{ticket_id}/messages` | List ticket messages and internal notes |
-| `POST` | `/admin/support/tickets/{ticket_id}/messages` | Reply or add an internal note |
-| `PATCH` | `/admin/support/tickets/{ticket_id}/assignment` | Assign or reassign a ticket |
-| `POST` | `/admin/support/tickets/{ticket_id}/assign-to-me` | Claim an unassigned ticket |
-| `PATCH` | `/admin/support/tickets/{ticket_id}/status` | Update ticket status |
-| `PATCH` | `/admin/support/tickets/{ticket_id}/priority` | Change ticket priority |
-| `POST` | `/admin/support/tickets/{ticket_id}/escalate` | Escalate a ticket |
-| `GET` | `/admin/marketing/promotions` | List promotion campaigns (`status`, `search`, `page`, `page_size`) |
-| `POST` | `/admin/marketing/promotions` | Create a promotion campaign |
-| `GET` | `/admin/marketing/promotions/{id}` | Get a promotion campaign |
-| `PATCH` | `/admin/marketing/promotions/{id}` | Update a promotion campaign |
-| `DELETE` | `/admin/marketing/promotions/{id}` | Delete a promotion campaign |
+| `POST` | `/support/tickets/queue` | Create a support ticket |
+| `GET` | `/support/tickets/queue` | List and filter support tickets |
+| `GET` | `/support/agents` | List eligible ticket assignees and roles |
+| `GET` | `/support/tickets/queue/{ticket_id}` | Get ticket details |
+| `GET` | `/support/tickets/queue/{ticket_id}/context` | Get requester context for a ticket |
+| `GET` | `/support/tickets/queue/{ticket_id}/messages` | List ticket messages and internal notes |
+| `POST` | `/support/tickets/queue/{ticket_id}/messages` | Reply or add an internal note |
+| `PATCH` | `/support/tickets/queue/{ticket_id}/assignment` | Assign or reassign a ticket |
+| `POST` | `/support/tickets/queue/{ticket_id}/assign-to-me` | Claim an unassigned ticket |
+| `PATCH` | `/support/tickets/queue/{ticket_id}/status` | Update ticket status |
+| `PATCH` | `/support/tickets/queue/{ticket_id}/priority` | Change ticket priority |
+| `POST` | `/support/tickets/queue/{ticket_id}/escalate` | Escalate a ticket |
+| `GET` | `/promotions/` | List promotion campaigns (optional `status`); the UI fetches all and filters/searches/paginates client-side |
+| `POST` | `/promotions/` | Create a promotion campaign |
+| `GET` | `/promotions/{promotion_id}` | Get a promotion campaign |
+| `PUT` | `/promotions/{promotion_id}` | Update a promotion campaign |
+| `DELETE` | `/promotions/{promotion_id}` | Delete a promotion campaign |
+| `POST` | `/promotions/{promotion_id}/activate` | Activate a promotion campaign |
+| `POST` | `/promotions/{promotion_id}/deactivate` | Deactivate a promotion campaign |
+| `POST` | `/promotions/validate/` | Validate a promo code for a user and ride amount |
 | `POST` | `/referrals/programs` | Create a referral program |
 | `GET` | `/referrals/programs` | List referral programs (`active_only`) |
 | `GET` | `/referrals/programs/{program_id}` | Get a referral program |
@@ -403,15 +423,17 @@ Analytics endpoints receive a `period` of `day`, `week` or `month`, plus `days_b
 
 Support ticket creation sends `requester_id`, `requester_type`, `subject`, `category`, `priority` and `message`. Replies and internal notes send `body` and `is_internal`; assignments send `assignee_id`.
 
-Promotion create/update sends `code`, `name`, `description`, `discount_type`, `discount_value`, optional caps (`max_discount_tzs`, `max_ride_value_tzs`, `minimum_ride_tzs`), `eligibility` (`new_users`, `existing_users`, `phones`), `starts_at`, `ends_at`, `per_user_limit`, `total_uses_limit`, `budget_cap_tzs`, `peak_hours_only`, `peak_hours_label`, `duo_only`, notification flags and `status` (`draft`, `active` or `scheduled`). Referral codes are exposed through the documented referral-user endpoints; the contract does not define admin endpoints to create, edit, delete, or send individual codes.
+Promotion create/update sends `code`, `name`, `description`, `discount_type` (`percentage`, `fixed` or `free_ride`), `discount_value`, optional `max_discount_amount`, `start_date`, `end_date`, `per_user_limit`, optional `total_uses_limit`, `budget_cap_tzs`, `eligibility_criteria` and `is_active`. The percentage discount cap and the free-ride maximum value both use `max_discount_amount`. `eligibility_criteria` is a free-form object: the UI sends the documented `new_users_only`, `existing_users_only`, `phones`, `min_ride_amount` and `ride_types` keys, plus the custom `peak_hours_only`, `peak_hours_label`, `notify_sms` and `in_app_banner` keys. DUO-only targeting sends `ride_types: ["duo"]`.
 
-The marketing endpoints above are the frontend-side contract. Response mapping is intentionally tolerant in `src/services/marketing.ts` and `src/services/referrals.ts`; if the backend uses different paths or field names, update those services and `API_ROUTES` rather than the page components.
+The backend does not expose a promotion `status` field. The UI sets `is_active: false` for **Save as Draft**, and derives the visible status client-side: inactive is **Draft**, an ended campaign is **Expired**, a future start is **Scheduled**, otherwise **Active**. Activate/deactivate use their dedicated endpoints rather than sending a status update. Referral codes are exposed through the documented referral-user endpoints; the contract does not define admin endpoints to create, edit, delete, or send individual codes.
+
+Response mapping is intentionally tolerant in `src/services/marketing.ts` and `src/services/referrals.ts`; if the backend changes paths or field names, update those services and `API_ROUTES` rather than the page components.
 
 Referral API types live in `src/lib/referrals.ts`, endpoint functions in `src/services/referrals.ts`, and React Query hooks in `src/hooks/useReferrals.ts`. The `reward_config` value is JSON-safe and deliberately opaque to the frontend. Referral users and their activity are available in the Users & codes section of Programs & activity, using `GET /referrals/users` and `GET /referrals/users/{user_id}`; the backend does not define admin endpoints for managing individual codes.
 
-Marketing mock mode is on by default (`NEXT_PUBLIC_USE_MOCK_MARKETING` unset or `true`) for promotions only. It serves sample promotions from `src/lib/mockMarketing.ts` and shows a **Sample data** badge on the promotions page. Referral APIs always use the backend. Set `NEXT_PUBLIC_USE_MOCK_MARKETING=false` and rebuild to disable promotion samples.
+Promotion and referral APIs always use the backend; there is no marketing mock mode.
 
-Admin User Management uses the same approach. `src/services/adminUsers.ts` maps list, invite, update and activate/deactivate responses tolerantly, including `user`, `admin`, `page_size` and pagination aliases. Invite sends `name`, `phone`, `email`, `role`, `two_factor_required` and `send_welcome_sms`; updates send `role`, `permissions` and `two_factor_required`. Until the endpoints are available, set `NEXT_PUBLIC_USE_MOCK_ADMIN_USERS` unset or `true` to use the seeded admins in `src/lib/mockAdminUsers.ts`. Mock changes stay in memory for the current session; set the flag to `false` and rebuild to use the real API.
+Staff and RBAC management always use the backend; there is no mock mode. `src/services/staff.ts` maps `/staff`, role assignment, revocation and deactivation responses tolerantly. `src/services/rbac.ts` loads the live permission and role catalogs, creates roles, updates or deletes roles by UUID and loads/creates regions. Role updates send only `name`, `description` and `permissions`; the role key is immutable after creation. The documented invite endpoint only accepts `phone`, `role_id`, `scope_type`, `scope_id` and `assignment_expires_at`, so the invite action is disabled until the backend accepts name, email and permissions. Staff reactivation and invitation cancellation are also disabled because the backend does not document those endpoints.
 
 The unused legacy onboarding helper also references `POST /drivers/register` and `POST /drivers/onboarding/complete`. They are not part of the active UI flow.
 
@@ -519,17 +541,18 @@ raut_frontend/
 | `src/services/http.ts` | Authenticated fetch wrapper, token refresh, timeout and error handling |
 | `src/services/api.ts` | `apiGet`, `apiPost`, `apiPatch`, `apiPut`, `apiDelete` and query-string building |
 | `src/services/supportTickets.ts` | Support ticket endpoints, API response mapping and ticket mutation payloads |
-| `src/services/marketing.ts` | Promotion endpoints, tolerant response mapping, mutation payloads and the mock-mode switch |
+| `src/services/marketing.ts` | Promotion endpoints, tolerant response mapping, client-side list filtering and mutation payloads |
 | `src/services/referrals.ts` | Referral-program, enrollment, stats, user, relationship, payment, and user referral-code API functions |
 | `src/hooks/useReferrals.ts` | React Query hooks and mutation invalidation for referral-program APIs |
-| `src/lib/mockMarketing.ts` | Sample promotions, in-memory mock CRUD/list behavior and the promotion mock-data flag |
 | `src/lib/referrals.ts` | Referral API request/response types and JSON-safe reward configuration |
-| `src/lib/marketing.ts` | Promotion types, status labels, form defaults, date/currency formatting, promo-code generation, CSV parsing and payload mapping |
+| `src/lib/marketing.ts` | Promotion types, derived status labels, form defaults, date/currency formatting, promo-code generation, CSV parsing and payload mapping |
 | `src/schemas/marketingSchemas.ts` | Zod validation for promotion campaigns |
-| `src/services/adminUsers.ts` | Admin user list, invite, update and activate/deactivate endpoints with tolerant response mapping and the mock-mode switch |
-| `src/lib/mockAdminUsers.ts` | Seeded admin users, in-memory mock list/CRUD behavior and the mock-data flag |
-| `src/lib/adminUsers.ts` | Admin role catalog, permission matrix, status labels, formatting helpers and matrix CSV export |
-| `src/schemas/adminUserSchemas.ts` | Zod validation for inviting and editing admin users |
+| `src/services/staff.ts` | Staff list, role assignment, revocation and deactivation endpoints with tolerant response mapping |
+| `src/services/rbac.ts` | Live permission/role catalogs, role CRUD by UUID and region endpoints |
+| `src/types/staff.ts` | Staff member, assignment, list and mutation payload types |
+| `src/types/rbac.ts` | RBAC permission, role and region types |
+| `src/lib/adminUsers.ts` | Admin role metadata, status labels, formatting helpers and matrix CSV export |
+| `src/lib/rbacRoles.ts` | Role metadata helpers and fallback role definitions |
 | `src/services/auth.ts` | Email and password sign-in, session creation, role resolution and admin promotion |
 | `src/services/adminActions.ts` | Verify/reject/suspend drivers, cancel rides/routes and manage users |
 | `src/services/dashboard.ts` | Analytics aggregation, comparison windows and dashboard mapping |
@@ -580,9 +603,9 @@ Accessibility conventions include labeled controls, `aria-label` attributes for 
 Before deploying, run:
 
 ```bash
-npm run lint
-npm run typecheck
-npm run build
+pnpm run lint
+pnpm run typecheck
+pnpm run build
 ```
 
 The production build is written to `.next/`.
@@ -592,7 +615,7 @@ Deploy the app to a host that can run the Next.js production server. The server 
 To run the production build locally:
 
 ```bash
-npm run start
+pnpm run start
 ```
 
 Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Rebuild the app after changing the backend URL or admin roles.
@@ -605,11 +628,11 @@ Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Re
 
 ## Known limitations
 
-- Live Rides, Audit Logs, Platform Config and System Health are placeholder pages.
+- Live Rides and Platform Config are placeholder pages. Audit Logs and System Health use illustrative mock data and are not connected to backend audit or telemetry endpoints.
 - There is currently no automated test suite or CI configuration.
-- There is no role-level UI beyond the admin gate; every configured admin role sees every admin page. The Admin Users page is also intentionally not gated by role for now: any signed-in admin can open it.
-- The Admin Users permission matrix and per-admin overrides are informational. They are displayed, printed and exported, but the backend must enforce them before they restrict access.
-- Admin Users mock mode is enabled by default until the backend endpoints are ready. Sample invites, role changes and status changes are held in memory and reset on a full reload; set `NEXT_PUBLIC_USE_MOCK_ADMIN_USERS=false` to use the real API.
+- RBAC gating is UI-level only. The backend must still enforce every permission on its endpoints; hiding a control does not prevent a crafted API request.
+- The Staff & Roles permission matrix is sourced from the live RBAC catalogs. It is displayed, printed and exported, but the backend must enforce every permission before it restricts access.
+- Staff invitations, reactivation and invitation cancellation are disabled because the documented backend contract does not support the fields or endpoints they require. Role keys are immutable after creation.
 - The dashboard builds some summary cards from the analytics overview response and falls back to list totals when fields or endpoints are unavailable.
 - Driver, document and payout summaries fetch up to 100 records and calculate some totals client-side.
 - Batch payout review loads all pending payouts and checks failed payouts for driver-level history. Phone verification is only considered verified when the API explicitly provides a verification flag or timestamp. Pending payouts refresh every 30 seconds; approved and processing statuses refresh every 10 seconds, and failure history refreshes every five minutes.
@@ -617,8 +640,8 @@ Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Re
 - Payout receipts open the browser print dialog, where they can be printed or saved as PDF.
 - Dashboard cards render zero or empty states when an analytics endpoint fails, so partial data is expected during backend incidents.
 - Admin data comes from the external Raut backend. The Next.js server serves the app and its dynamic routes, including `/support-tickets/[id]` and `/marketing/promotions/[id]/edit`.
-- The marketing and referral API paths and payload field names are defined by this frontend contract. If the backend differs, adjust `API_ROUTES` and the corresponding service; the existing referral-code UI tolerates several field aliases and derives status from dates and pending counts when the API omits it.
-- Marketing mock mode applies to promotions only. Sample promotion changes are held in memory and reset on a full reload; referral APIs always use the real backend.
+- Promotions use the backend `/promotions/` contract. If the API path or field names change, adjust `API_ROUTES` and `src/services/marketing.ts`; the referral-code UI tolerates several field aliases and derives status from dates and pending counts when the API omits it.
+- Promotion status is derived from `is_active` and the start/end dates because the backend does not return a status field. The promotions list fetches all records and filters, searches and paginates in the browser.
 - Referral assignment search queries `/admin/users` with `is_driver` set from the selected user type. The user must be assigned before a code can be created.
 - Referral edit only changes expiry and maximum uses; status changes use the separate activate/deactivate actions. Delete is available only when completed and pending referral counts are both zero, and Send to User currently supports SMS and email.
 - DUO-only promotion targeting is disabled in the form when the DUO feature flag is switched off in platform configuration.
@@ -634,5 +657,5 @@ Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Re
 3. Normalize new response shapes in `src/services/mappers.ts`.
 4. Add or update query keys in `src/lib/queryKeys.ts`.
 5. When changing onboarding, keep the step components, Zod schemas, onboarding store and translations in sync.
-6. Run `npm run lint`, `npm run typecheck` and `npm run build` before opening a pull request.
+6. Run `pnpm run lint`, `pnpm run typecheck` and `pnpm run build` before opening a pull request.
 7. Do not commit `.env`, tokens or other secrets.

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { EllipsisVertical } from "lucide-react";
+import { Can } from "@/components/Can";
 import ViewCustomerPanel from "@/components/viewCustomerPanel";
 import { FilterStatCards } from "@/components/FilterStatCards";
 import {
@@ -41,6 +42,7 @@ import {
 } from "@/hooks/useAdminActions";
 import { usePageViewField } from "@/store/pageViewStore";
 import { useClampPage } from "@/hooks/useClampPage";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const statusStyles = {
   Active: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
@@ -244,14 +246,16 @@ function Customers() {
               <span className="text-xs font-semibold text-slate-600">
                 {selectedIds.size} selected
               </span>
-              <button
-                type="button"
-                onClick={() => setBulkDeleteOpen(true)}
-                className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-70"
-                disabled={deleteUser.isPending}
-              >
-                Delete selected
-              </button>
+              <Can permission={PERMISSIONS.CUSTOMERS_DELETE}>
+                <button
+                  type="button"
+                  onClick={() => setBulkDeleteOpen(true)}
+                  className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-70"
+                  disabled={deleteUser.isPending}
+                >
+                  Delete selected
+                </button>
+              </Can>
               <button
                 type="button"
                 onClick={clearSelection}
@@ -403,44 +407,52 @@ function Customers() {
                         >
                           View
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={() => {
-                            setRoleValue(c.role);
-                            setRoleTarget(c);
-                          }}
-                          className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
-                        >
-                          Change role
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator className="bg-slate-100" />
-                        {c.isActive ? (
+                        <Can permission={PERMISSIONS.CUSTOMERS_UPDATE}>
                           <DropdownMenuItem
-                            variant="destructive"
                             onSelect={() => {
-                              setDeactivateReason("");
-                              setDeactivateTarget(c);
+                              setRoleValue(c.role);
+                              setRoleTarget(c);
                             }}
-                            className="px-2.5 py-1.5 text-xs font-medium"
-                          >
-                            Deactivate
-                          </DropdownMenuItem>
-                        ) : (
-                          <DropdownMenuItem
-                            onSelect={() => reactivateUser.mutate()}
-                            disabled={reactivateUser.isPending}
                             className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                           >
-                            Reactivate
+                            Change role
                           </DropdownMenuItem>
+                        </Can>
+                        <DropdownMenuSeparator className="bg-slate-100" />
+                        {c.isActive ? (
+                          <Can permission={PERMISSIONS.CUSTOMERS_DEACTIVATE}>
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onSelect={() => {
+                                setDeactivateReason("");
+                                setDeactivateTarget(c);
+                              }}
+                              className="px-2.5 py-1.5 text-xs font-medium"
+                            >
+                              Deactivate
+                            </DropdownMenuItem>
+                          </Can>
+                        ) : (
+                          <Can permission={PERMISSIONS.CUSTOMERS_UPDATE}>
+                            <DropdownMenuItem
+                              onSelect={() => reactivateUser.mutate()}
+                              disabled={reactivateUser.isPending}
+                              className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
+                            >
+                              Reactivate
+                            </DropdownMenuItem>
+                          </Can>
                         )}
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onSelect={() => setDeleteTarget(c)}
-                          disabled={deleteUser.isPending}
-                          className="px-2.5 py-1.5 text-xs font-medium"
-                        >
-                          Delete
-                        </DropdownMenuItem>
+                        <Can permission={PERMISSIONS.CUSTOMERS_DELETE}>
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={() => setDeleteTarget(c)}
+                            disabled={deleteUser.isPending}
+                            className="px-2.5 py-1.5 text-xs font-medium"
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </Can>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
