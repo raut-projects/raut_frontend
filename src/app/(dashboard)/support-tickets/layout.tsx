@@ -3,5 +3,5 @@ export default function SupportTicketsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <>{ children }</>;
 }

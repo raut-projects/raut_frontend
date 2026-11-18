@@ -8,7 +8,9 @@ import {
 import { queryKeys } from "@/lib/queryKeys";
 import type { PromotionListParams, PromotionPayload } from "@/lib/marketing";
 import {
+  activatePromotion,
   createPromotion,
+  deactivatePromotion,
   deletePromotion,
   getPromotion,
   listPromotions,
@@ -64,6 +66,32 @@ export function useDeletePromotion() {
 
   return useMutation({
     mutationFn: (promotionId: string) => deletePromotion(promotionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.marketing.promotions.all,
+      });
+    },
+  });
+}
+
+export function useActivatePromotion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (promotionId: string) => activatePromotion(promotionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.marketing.promotions.all,
+      });
+    },
+  });
+}
+
+export function useDeactivatePromotion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (promotionId: string) => deactivatePromotion(promotionId),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.marketing.promotions.all,

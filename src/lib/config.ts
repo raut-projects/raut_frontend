@@ -24,6 +24,12 @@ export const API_ROUTES = {
     `/admin/users/${encodeURIComponent(userId)}`,
   drivers: "/admin/drivers",
   rides: "/admin/rides",
+  rideDispute: (rideId: string) =>
+    `/admin/rides/${encodeURIComponent(rideId)}/dispute`,
+  rideResolveDispute: (rideId: string) =>
+    `/admin/rides/${encodeURIComponent(rideId)}/resolve-dispute`,
+  rideRefund: (rideId: string) =>
+    `/admin/rides/${encodeURIComponent(rideId)}/refund`,
   routes: "/admin/routes",
   documents: "/admin/documents",
   transactions: "/admin/transactions",
@@ -56,9 +62,13 @@ export const API_ROUTES = {
     `/admin/support/tickets/${encodeURIComponent(ticketId)}/priority`,
   supportTicketEscalate: (ticketId: string) =>
     `/admin/support/tickets/${encodeURIComponent(ticketId)}/escalate`,
-  marketingPromotions: "/admin/marketing/promotions",
+  marketingPromotions: "/promotions/",
   marketingPromotion: (promotionId: string) =>
-    `/admin/marketing/promotions/${encodeURIComponent(promotionId)}`,
+    `/promotions/${encodeURIComponent(promotionId)}`,
+  marketingPromotionActivate: (promotionId: string) =>
+    `/promotions/${encodeURIComponent(promotionId)}/activate`,
+  marketingPromotionDeactivate: (promotionId: string) =>
+    `/promotions/${encodeURIComponent(promotionId)}/deactivate`,
   referralPrograms: "/referrals/programs",
   referralProgram: (programId: string) =>
     `/referrals/programs/${encodeURIComponent(programId)}`,

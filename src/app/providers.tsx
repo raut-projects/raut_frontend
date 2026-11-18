@@ -23,9 +23,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   }, [client, hydrateAuth]);
 
   return (
-    <QueryClientProvider client={client}>
+    <QueryClientProvider client={ client }>
       <TooltipProvider>
-        <ToastProvider>{children}</ToastProvider>
+        <ToastProvider>{ children }</ToastProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

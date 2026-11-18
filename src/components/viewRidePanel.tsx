@@ -1,4 +1,6 @@
+import Link from "next/link";
 import SidePanel from "./SidePanel";
+import { mockHasDispute } from "@/lib/rideDisputes";
 
 const labelClass = "mb-1.5 block text-xs font-semibold text-slate-600";
 const valueClass =
@@ -153,6 +155,21 @@ function ViewRidePanel({ open, onClose, ride }) {
             </label>
           </div>
         </section>
+
+        { mockHasDispute(ride.rideId) && (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-900">Dispute</h3>
+              <span className="text-xs text-slate-500">Open</span>
+            </div>
+            <Link
+              href={`/rides/${ride.rideId}/dispute`}
+              className="inline-flex items-center gap-2 text-sm font-medium text-brand-600 hover:text-brand-700"
+            >
+              Resolve dispute
+            </Link>
+          </section>
+        )}
       </div>
     </SidePanel>
   );

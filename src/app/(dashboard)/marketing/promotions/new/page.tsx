@@ -8,7 +8,10 @@ import { PromotionForm } from "@/components/marketing/PromotionForm";
 import { useToast } from "@/components/toastContext";
 import { useCreatePromotion } from "@/hooks/useMarketing";
 import { usePageViewStore } from "@/store/pageViewStore";
-import type { PromotionPayload } from "@/lib/marketing";
+import {
+  derivePromotionStatus,
+  type PromotionPayload,
+} from "@/lib/marketing";
 
 export default function NewPromotionPage() {
   const router = useRouter();
@@ -20,14 +23,22 @@ export default function NewPromotionPage() {
       await create.mutateAsync(payload);
       usePageViewStore
         .getState()
-        .setField("marketingPromotions", "status", payload.status);
+        .setField(
+          "marketingPromotions",
+          "status",
+          derivePromotionStatus({
+            isActive: payload.is_active,
+            startsAt: payload.start_date,
+            endsAt: payload.end_date,
+          }),
+        );
       usePageViewStore.getState().setField("marketingPromotions", "page", 1);
       toast.success(
-        payload.status === "draft"
-          ? "Promotion saved as a draft."
-          : "Promotion created.",
+        payload.is_active
+          ? "Promotion created."
+          : "Promotion saved as a draft.",
       );
-      router.push("/marketing");
+      router.push("/marketing/promotions");
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -51,16 +62,16 @@ export default function NewPromotionPage() {
           Create promotion
         </h2>
         <p className="mt-1 text-sm text-slate-500">
-          Set up a discount campaign for riders, then activate it immediately or
+          Set up a discount campaign for customers, then activate it immediately or
           save it as a draft.
         </p>
       </div>
 
       <PromotionForm
         mode="create"
-        isSubmitting={create.isPending}
-        onSubmit={handleSubmit}
-        onCancel={() => router.push("/marketing")}
+        isSubmitting={ create.isPending }
+        onSubmit={ handleSubmit }
+        onCancel={ () => router.push("/marketing/promotions") }
       />
     </div>
   );

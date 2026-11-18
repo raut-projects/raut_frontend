@@ -39,11 +39,10 @@ function BatchStatus({ status }) {
 
   return (
     <span
-      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${
-        processingStatusStyles[label] ?? processingStatusStyles.Queued
-      }`}
+      className={ `inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${processingStatusStyles[label] ?? processingStatusStyles.Queued
+        }` }
     >
-      {label}
+      { label }
     </span>
   );
 }
@@ -263,17 +262,17 @@ function PayoutBatchReview() {
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-card">
           <p className="text-sm font-medium text-slate-500">Pending payouts</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">
-            {isPending ? "…" : payouts.length}
+            { isPending ? "…" : payouts.length }
           </p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-card">
           <p className="text-sm font-medium text-slate-500">Pending total</p>
           <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">
-            {isPending
+            { isPending
               ? "…"
               : formatMoney(
-                  payouts.reduce((total, payout) => total + payout.amount, 0),
-                )}
+                payouts.reduce((total, payout) => total + payout.amount, 0),
+              ) }
           </p>
         </div>
         <div className="rounded-xl border border-brand-200 bg-brand-50 p-4">
@@ -281,7 +280,7 @@ function PayoutBatchReview() {
             Selected for approval
           </p>
           <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">
-            {selectedEligibleCount} · {formatMoney(selectedAmount)}
+            { selectedEligibleCount } · { formatMoney(selectedAmount) }
           </p>
         </div>
       </section>
@@ -297,7 +296,7 @@ function PayoutBatchReview() {
                   selectedIds.has(String(payout.id)),
                 )
               }
-              onCheckedChange={toggleEligiblePayouts}
+              onCheckedChange={ toggleEligiblePayouts }
               disabled={
                 isPending ||
                 eligiblePayouts.length === 0 ||
@@ -311,13 +310,13 @@ function PayoutBatchReview() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <RefreshIndicator
-              isFetching={isFetching}
-              updatedAt={dataUpdatedAt}
-              onRefresh={refetch}
+              isFetching={ isFetching }
+              updatedAt={ dataUpdatedAt }
+              onRefresh={ refetch }
             />
             <Button
               type="button"
-              onClick={openApprovalConfirmation}
+              onClick={ openApprovalConfirmation }
               disabled={
                 selectedEligibleCount === 0 ||
                 selectedEligibleCount !== selectedIds.size ||
@@ -326,14 +325,14 @@ function PayoutBatchReview() {
               }
               className="bg-brand-600 text-white hover:bg-brand-700"
             >
-              {approveBatch.isPending
+              { approveBatch.isPending
                 ? `Processing ${completedCount} of ${batchActivity.length}`
-                : "Approve batch"}
+                : "Approve batch" }
             </Button>
           </div>
         </div>
 
-        {approveBatch.isPending && (
+        { approveBatch.isPending && (
           <p
             className="border-b border-brand-100 bg-brand-50 px-4 py-2 text-sm text-brand-800"
             role="status"
@@ -342,10 +341,10 @@ function PayoutBatchReview() {
             Approvals are being sent one at a time. This page will refresh as
             each request completes.
           </p>
-        )}
+        ) }
 
         <div className="overflow-x-auto">
-          <Table className="min-w-[760px]">
+          <Table className="min-w-190">
             <TableHeader className="bg-slate-50 [&_tr]:border-slate-200">
               <TableRow className="hover:bg-transparent">
                 <TableHead className="w-10" />
@@ -357,21 +356,21 @@ function PayoutBatchReview() {
               </TableRow>
             </TableHeader>
 
-            {isPending && <TableSkeleton rows={5} cols={6} mobileCols={4} />}
+            { isPending && <TableSkeleton rows={ 5 } cols={ 6 } mobileCols={ 4 } /> }
 
-            {isError && (
+            { isError && (
               <TableBody>
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={6} className="p-0">
-                    <QueryError error={error} onRetry={refetch} />
+                  <TableCell colSpan={ 6 } className="p-0">
+                    <QueryError error={ error } onRetry={ refetch } />
                   </TableCell>
                 </TableRow>
               </TableBody>
-            )}
+            ) }
 
-            {!isPending && !isError && (
+            { !isPending && !isError && (
               <TableBody>
-                {payouts.map((payout) => {
+                { payouts.map((payout) => {
                   const key =
                     payout.id === null || payout.id === undefined
                       ? `${payout.driverId}:${payout.requestedAt}:${payout.amount}`
@@ -381,12 +380,12 @@ function PayoutBatchReview() {
                     payout.id !== null && payout.id !== undefined;
 
                   return (
-                    <TableRow key={key}>
+                    <TableRow key={ key }>
                       <TableCell>
                         <Checkbox
-                          aria-label={`Select payout for ${payout.driverName}`}
-                          checked={selectedIds.has(String(payout.id))}
-                          onCheckedChange={() => togglePayout(payout.id)}
+                          aria-label={ `Select payout for ${payout.driverName}` }
+                          checked={ selectedIds.has(String(payout.id)) }
+                          onCheckedChange={ () => togglePayout(payout.id) }
                           disabled={
                             hasIssues || !idIsValid || approveBatch.isPending
                           }
@@ -394,14 +393,14 @@ function PayoutBatchReview() {
                       </TableCell>
                       <TableCell>
                         <p className="font-medium text-slate-900">
-                          {payout.driverName}
+                          { payout.driverName }
                         </p>
                         <p className="mt-0.5 text-xs text-slate-500">
-                          {payout.driverPhone}
+                          { payout.driverPhone }
                         </p>
                       </TableCell>
                       <TableCell>
-                        {payout.phoneVerified === true ? (
+                        { payout.phoneVerified === true ? (
                           <span className="text-sm font-medium text-emerald-700">
                             Verified
                           </span>
@@ -411,63 +410,63 @@ function PayoutBatchReview() {
                               className="h-4 w-4"
                               aria-hidden="true"
                             />
-                            {payout.phoneVerified === false
+                            { payout.phoneVerified === false
                               ? "Unverified"
-                              : "Not provided"}
+                              : "Not provided" }
                           </span>
-                        )}
+                        ) }
                       </TableCell>
                       <TableCell>
-                        {payout.previousFailureCount > 0 ? (
+                        { payout.previousFailureCount > 0 ? (
                           <span className="inline-flex items-center gap-1.5 text-sm font-medium text-rose-700">
                             <CircleAlert
                               className="h-4 w-4"
                               aria-hidden="true"
                             />
-                            {payout.previousFailureCount}
+                            { payout.previousFailureCount }
                           </span>
                         ) : (
                           <span className="text-sm text-slate-500">
                             None found
                           </span>
-                        )}
+                        ) }
                       </TableCell>
                       <TableCell className="font-semibold tabular-nums text-slate-900">
-                        {payout.amountLabel}
+                        { payout.amountLabel }
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
                           <span className="badge bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20">
-                            {payout.status}
+                            { payout.status }
                           </span>
-                          {hasIssues && (
+                          { hasIssues && (
                             <p className="max-w-64 text-xs text-rose-700">
-                              {payout.issues.join("; ")}. Excluded from batch
+                              { payout.issues.join("; ") }. Excluded from batch
                               approval.
                             </p>
-                          )}
-                          {!idIsValid && (
+                          ) }
+                          { !idIsValid && (
                             <p className="text-xs text-rose-700">
                               Missing payout ID. Cannot approve.
                             </p>
-                          )}
+                          ) }
                         </div>
                       </TableCell>
                     </TableRow>
                   );
-                })}
-                {payouts.length === 0 && (
+                }) }
+                { payouts.length === 0 && (
                   <TableRow className="hover:bg-transparent">
                     <TableCell
-                      colSpan={6}
+                      colSpan={ 6 }
                       className="py-12 text-center text-sm text-slate-500"
                     >
                       No pending payouts need review.
                     </TableCell>
                   </TableRow>
-                )}
+                ) }
               </TableBody>
-            )}
+            ) }
           </Table>
         </div>
         <div className="flex items-start gap-2 border-t border-slate-200 px-4 py-3 text-xs text-slate-500 sm:px-5">
@@ -480,7 +479,7 @@ function PayoutBatchReview() {
         </div>
       </section>
 
-      {processingPayouts.length > 0 && (
+      { processingPayouts.length > 0 && (
         <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-base font-semibold text-slate-900">
@@ -491,18 +490,18 @@ function PayoutBatchReview() {
             </p>
           </div>
           <ul className="divide-y divide-slate-100">
-            {processingPayouts.map((payout) => (
+            { processingPayouts.map((payout) => (
               <li
-                key={String(payout.id)}
+                key={ String(payout.id) }
                 className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-slate-800">
-                    {payout.driverName}
+                    { payout.driverName }
                   </p>
                   <p className="text-xs text-slate-500">
-                    {formatMoney(payout.amount)}
-                    {payout.reference !== "—" ? ` · ${payout.reference}` : ""}
+                    { formatMoney(payout.amount) }
+                    { payout.reference !== "—" ? ` · ${payout.reference}` : "" }
                   </p>
                 </div>
                 <BatchStatus
@@ -511,71 +510,71 @@ function PayoutBatchReview() {
                   }
                 />
               </li>
-            ))}
+            )) }
           </ul>
         </section>
-      )}
+      ) }
 
-      {batchActivity.length > 0 && (
+      { batchActivity.length > 0 && (
         <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-slate-900">
               Latest batch activity
             </h2>
             <span className="text-xs text-slate-500" aria-live="polite">
-              {completedCount} of {batchActivity.length} completed
+              { completedCount } of { batchActivity.length } completed
             </span>
           </div>
           <ul className="divide-y divide-slate-100">
-            {batchActivity.map((payout) => (
+            { batchActivity.map((payout) => (
               <li
-                key={String(payout.id)}
+                key={ String(payout.id) }
                 className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-slate-800">
-                    {payout.driverName}
+                    { payout.driverName }
                   </p>
                   <p className="text-xs text-slate-500">
-                    {formatMoney(payout.amount)}
-                    {payout.message ? ` · ${payout.message}` : ""}
+                    { formatMoney(payout.amount) }
+                    { payout.message ? ` · ${payout.message}` : "" }
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <BatchStatus status={payout.status} />
-                  {payout.status === "failed" && (
+                  <BatchStatus status={ payout.status } />
+                  { payout.status === "failed" && (
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => retryApproval(payout)}
-                      disabled={approveBatch.isPending || isCheckingBatch}
+                      onClick={ () => retryApproval(payout) }
+                      disabled={ approveBatch.isPending || isCheckingBatch }
                     >
                       Try again
                     </Button>
-                  )}
+                  ) }
                 </div>
               </li>
-            ))}
+            )) }
           </ul>
         </section>
-      )}
+      ) }
 
-      {payouts.some((payout) => payout.issues.length > 0) && (
+      { payouts.some((payout) => payout.issues.length > 0) && (
         <div className="sr-only" role="status">
-          {payouts.filter((payout) => payout.issues.length > 0).length} pending
+          { payouts.filter((payout) => payout.issues.length > 0).length } pending
           payouts have issues and are excluded from batch approval.
         </div>
-      )}
+      ) }
 
       <ConfirmDialog
-        open={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
+        open={ confirmOpen }
+        onClose={ () => setConfirmOpen(false) }
         title="Approve selected payouts"
-        description={`${selectedEligibleCount} payouts totaling ${formatMoney(selectedAmount)} will be approved.`}
+        description={ `${selectedEligibleCount} payouts totaling ${formatMoney(selectedAmount)} will be approved.` }
         confirmLabel="Approve batch"
-        onConfirm={processBatch}
-        pending={approveBatch.isPending || isCheckingBatch}
+        onConfirm={ processBatch }
+        pending={ approveBatch.isPending || isCheckingBatch }
       >
         <p className="text-sm text-slate-600">
           Each payout is approved separately. If one fails, the remaining
@@ -584,15 +583,15 @@ function PayoutBatchReview() {
       </ConfirmDialog>
 
       <SidePanel
-        open={twoFactorNoticeOpen}
-        onClose={() => setTwoFactorNoticeOpen(false)}
+        open={ twoFactorNoticeOpen }
+        onClose={ () => setTwoFactorNoticeOpen(false) }
         title="Additional verification required"
-        description={`This batch totals ${formatMoney(selectedAmount)}. Batches over ${formatMoney(HIGH_VALUE_LIMIT)} require step-up verification.`}
+        description={ `This batch totals ${formatMoney(selectedAmount)}. Batches over ${formatMoney(HIGH_VALUE_LIMIT)} require step-up verification.` }
         footer={
           <Button
             type="button"
             variant="outline"
-            onClick={() => setTwoFactorNoticeOpen(false)}
+            onClick={ () => setTwoFactorNoticeOpen(false) }
           >
             Close
           </Button>

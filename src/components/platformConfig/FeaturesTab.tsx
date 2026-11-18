@@ -36,14 +36,14 @@ const FEATURES: {
   {
     key: "ratings",
     name: "Ratings",
-    description:
-      "Collect a rating from riders for the driver after each completed trip.",
+      description:
+        "Collect a rating from customers for the driver after each completed trip.",
   },
   {
     key: "in_app_chat",
     name: "In-app chat",
     description:
-      "Allow riders and drivers to message each other while a trip is active.",
+      "Allow customers and drivers to message each other while a trip is active.",
   },
   {
     key: "corporate_accounts",

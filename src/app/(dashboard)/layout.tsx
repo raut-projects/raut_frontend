@@ -17,7 +17,7 @@ export default function DashboardLayout({
         <SidebarInset className="min-w-0 bg-slate-50 print:bg-white">
           <Header />
           <div className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8 print:p-0">
-            {children}
+            { children }
           </div>
         </SidebarInset>
       </SidebarProvider>

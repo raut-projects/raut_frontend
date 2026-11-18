@@ -42,7 +42,6 @@ import {
 } from "@/hooks/useAdminActions";
 import { usePageViewField } from "@/store/pageViewStore";
 import { useClampPage } from "@/hooks/useClampPage";
-import { shortId } from "@/services/mappers";
 
 const statusStyles = {
   Verified: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
@@ -269,7 +268,6 @@ function Drivers() {
 
   const exportCsv = () => {
     const columns = [
-      "ID",
       "Name",
       "Phone",
       "Online",
@@ -282,7 +280,6 @@ function Drivers() {
       "Payout pending",
     ];
     const rows = filteredDrivers.map((driver) => [
-      driver.id,
       driver.name,
       driver.phone,
       driver.online === null
@@ -581,7 +578,6 @@ function Drivers() {
                   onCheckedChange={toggleSelectAll}
                 />
               </TableHead>
-              <TableHead>ID</TableHead>
               <TableHead>Driver</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Vehicle</TableHead>
@@ -593,15 +589,15 @@ function Drivers() {
           {(isPending || (payoutPending !== "all" && pendingPayoutsPending)) && (
             <TableSkeleton
               rows={PAGE_SIZE}
-              cols={7}
-              mobileCols={5}
+              cols={6}
+              mobileCols={4}
             />
           )}
 
           {isError && (
             <TableBody>
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={7} className="p-0">
+                <TableCell colSpan={6} className="p-0">
                   <QueryError error={error} onRetry={refetch} />
                 </TableCell>
               </TableRow>
@@ -613,7 +609,7 @@ function Drivers() {
             pendingPayoutsIsError && (
               <TableBody>
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={7} className="p-0">
+                  <TableCell colSpan={6} className="p-0">
                     <QueryError
                       error={pendingPayoutsError}
                       onRetry={refetchPendingPayouts}
@@ -652,11 +648,6 @@ function Drivers() {
                       checked={selectedIds.has(String(r.id))}
                       onCheckedChange={() => toggleSelect(r.id)}
                     />
-                  </TableCell>
-                  <TableCell>
-                    <span className="whitespace-nowrap text-xs font-medium text-slate-500">
-                      {shortId(r.id, "DRV")}
-                    </span>
                   </TableCell>
                   <TableCell>
                     <div className="min-w-40">

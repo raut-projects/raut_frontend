@@ -114,11 +114,11 @@ function printPayoutReceipt(payout) {
           <h1>Payout receipt</h1>
           <p>Paid payout record</p>
           <dl>${fields
-            .map(
-              ([label, value]) =>
-                `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`,
-            )
-            .join("")}</dl>
+      .map(
+        ([label, value]) =>
+          `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`,
+      )
+      .join("")}</dl>
         </main>
       </body>
     </html>`);
@@ -232,11 +232,11 @@ function Payouts() {
             Payouts
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            {isPending
+            { isPending
               ? "Loading payouts…"
               : status === "all"
                 ? `${total} payout${total === 1 ? "" : "s"} on record`
-                : `${total} ${status} payout${total === 1 ? "" : "s"}`}
+                : `${total} ${status} payout${total === 1 ? "" : "s"}` }
           </p>
           <Link
             href="/payouts/batch/"
@@ -248,10 +248,10 @@ function Payouts() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <select
-            value={status}
-            onChange={(event) => onStatusChange(event.target.value)}
+            value={ status }
+            onChange={ (event) => onStatusChange(event.target.value) }
             aria-label="Filter payouts by status"
-            className={controlClass}
+            className={ controlClass }
           >
             <option value="all">All statuses</option>
             <option value="pending">Awaiting approval</option>
@@ -264,10 +264,10 @@ function Payouts() {
           </select>
 
           <select
-            value={method}
-            onChange={(event) => onMethodChange(event.target.value)}
+            value={ method }
+            onChange={ (event) => onMethodChange(event.target.value) }
             aria-label="Filter payouts by method"
-            className={controlClass}
+            className={ controlClass }
           >
             <option value="all">All methods</option>
             <option value="mobile_money">Mobile money</option>
@@ -277,31 +277,31 @@ function Payouts() {
           </select>
 
           <select
-            value={driverId}
-            onChange={(event) => onDriverChange(event.target.value)}
+            value={ driverId }
+            onChange={ (event) => onDriverChange(event.target.value) }
             aria-label="Filter payouts by driver"
-            className={`${controlClass} max-w-48`}
+            className={ `${controlClass} max-w-48` }
           >
             <option value="">All drivers</option>
-            {drivers.map((driver) => (
-              <option key={driver.id} value={driver.id}>
-                {driver.name}
+            { drivers.map((driver) => (
+              <option key={ driver.id } value={ driver.id }>
+                { driver.name }
               </option>
-            ))}
+            )) }
           </select>
 
           <input
             type="date"
-            value={from}
-            onChange={(event) => onFromChange(event.target.value)}
+            value={ from }
+            onChange={ (event) => onFromChange(event.target.value) }
             aria-label="Payouts requested from"
             className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
           />
 
           <input
             type="date"
-            value={to}
-            onChange={(event) => onToChange(event.target.value)}
+            value={ to }
+            onChange={ (event) => onToChange(event.target.value) }
             aria-label="Payouts requested until"
             className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
           />
@@ -309,37 +309,36 @@ function Payouts() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {summaryCards.map((card) => {
+        { summaryCards.map((card) => {
           const active = status === card.status;
 
           return (
             <button
-              key={card.label}
+              key={ card.label }
               type="button"
-              onClick={() => onStatusChange(card.status)}
-              aria-pressed={active}
-              className={`cursor-pointer stat-card text-left transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
-                active ? "ring-2 ring-brand-500" : "hover:shadow-md"
-              }`}
+              onClick={ () => onStatusChange(card.status) }
+              aria-pressed={ active }
+              className={ `cursor-pointer stat-card text-left transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${active ? "ring-2 ring-brand-500" : "hover:shadow-md"
+                }` }
             >
               <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                {card.label}
+                { card.label }
               </p>
               <p className="mt-1.5 text-lg font-bold tracking-tight sm:text-2xl text-slate-900">
-                {card.value}
+                { card.value }
               </p>
-              <p className="mt-0.5 text-xs text-slate-500">{card.hint}</p>
+              <p className="mt-0.5 text-xs text-slate-500">{ card.hint }</p>
             </button>
           );
-        })}
+        }) }
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5">
           <RefreshIndicator
-            isFetching={isFetching}
-            updatedAt={dataUpdatedAt}
-            onRefresh={refetch}
+            isFetching={ isFetching }
+            updatedAt={ dataUpdatedAt }
+            onRefresh={ refetch }
           />
         </div>
         <Table className="min-w-full">
@@ -355,74 +354,73 @@ function Payouts() {
             </TableRow>
           </TableHeader>
 
-          {isPending && (
+          { isPending && (
             <TableSkeleton
-              rows={PAGE_SIZE}
-              cols={7}
-              mobileCols={4}
-              lgCols={6}
+              rows={ PAGE_SIZE }
+              cols={ 7 }
+              mobileCols={ 4 }
+              lgCols={ 6 }
             />
-          )}
+          ) }
 
-          {isError && (
+          { isError && (
             <TableBody>
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={7} className="p-0">
-                  <QueryError error={error} onRetry={refetch} />
+                <TableCell colSpan={ 7 } className="p-0">
+                  <QueryError error={ error } onRetry={ refetch } />
                 </TableCell>
               </TableRow>
             </TableBody>
-          )}
+          ) }
 
-          {!isPending && !isError && (
+          { !isPending && !isError && (
             <TableBody>
-              {payouts.map((payout) => (
-                <TableRow key={payout.id}>
+              { payouts.map((payout) => (
+                <TableRow key={ payout.id }>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700 sm:flex">
-                        {payout.driverName
+                        { payout.driverName
                           .split(" ")
                           .map((n) => n[0])
                           .join("")
-                          .slice(0, 2)}
+                          .slice(0, 2) }
                       </span>
-                      <span className="max-w-[5rem] truncate font-medium text-slate-900 sm:max-w-[8rem] lg:max-w-none">
-                        {payout.driverName}
+                      <span className="max-w-20 truncate font-medium text-slate-900 sm:max-w-32 lg:max-w-none">
+                        { payout.driverName }
                       </span>
                     </div>
                   </TableCell>
                   <TableCell className="font-medium text-slate-900">
-                    {payout.amountLabel}
+                    { payout.amountLabel }
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
                     <span className="block text-slate-700">
-                      {payout.method}
+                      { payout.method }
                     </span>
-                    {payout.methodDetails !== "—" && (
+                    { payout.methodDetails !== "—" && (
                       <span className="block text-xs text-slate-400">
-                        {payout.methodDetails}
+                        { payout.methodDetails }
                       </span>
-                    )}
+                    ) }
                   </TableCell>
                   <TableCell>
                     <span
-                      className={`badge ring-1 ring-inset ${
-                        statusStyles[payout.status] ?? statusStyles.Pending
-                      }`}
+                      className={ `badge ring-1 ring-inset ${statusStyles[payout.status] ?? statusStyles.Pending
+                        }` }
                     >
                       <span
-                        className={`h-1.5 w-1.5 rounded-full ${statusDots[payout.status] ?? statusDots.Pending}`}
+                        className={ `h-1.5 w-1.5 rounded-full ${statusDots[payout.status] ?? statusDots.Pending}` }
                         aria-hidden="true"
                       />
-                      {payout.status}
+                      { payout.status }
                     </span>
                   </TableCell>
                   <TableCell className="hidden text-xs text-slate-500 xl:table-cell">
-                    {payout.reference}
+                    { payout.reference }
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
-                    {payout.requestedAt}
+                    { payout.requestedAt }
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -432,7 +430,7 @@ function Payouts() {
                           variant="ghost"
                           size="icon"
                           className="text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                          aria-label={`Actions for ${payout.driverName}`}
+                          aria-label={ `Actions for ${payout.driverName}` }
                         >
                           <EllipsisVertical
                             className="h-4 w-4"
@@ -445,115 +443,115 @@ function Payouts() {
                         className="w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
                       >
                         <DropdownMenuItem
-                          onSelect={() => setViewTarget(payout)}
+                          onSelect={ () => setViewTarget(payout) }
                           className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                         >
                           View
                         </DropdownMenuItem>
-                        {payout.isSettled && (
+                        { payout.isSettled && (
                           <DropdownMenuItem
-                            onSelect={() => {
+                            onSelect={ () => {
                               try {
                                 printPayoutReceipt(payout);
                               } catch (receiptError) {
                                 toast.error(
                                   receiptError?.message ??
-                                    "The receipt could not be opened.",
+                                  "The receipt could not be opened.",
                                 );
                               }
-                            }}
+                            } }
                             className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                           >
                             <FileDown className="h-4 w-4" aria-hidden="true" />
                             Print / save receipt as PDF
                           </DropdownMenuItem>
-                        )}
-                        {payout.canApprove && (
+                        ) }
+                        { payout.canApprove && (
                           <>
                             <DropdownMenuSeparator className="bg-slate-100" />
                             <DropdownMenuItem
-                              onSelect={() => {
+                              onSelect={ () => {
                                 setApproveNotes("");
                                 setApproveTarget(payout);
-                              }}
+                              } }
                               className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                             >
                               Approve
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               variant="destructive"
-                              onSelect={() => {
+                              onSelect={ () => {
                                 setRejectReason("");
                                 setRejectTarget(payout);
-                              }}
+                              } }
                               className="px-2.5 py-1.5 text-xs font-medium"
                             >
                               Reject
                             </DropdownMenuItem>
                           </>
-                        )}
-                        {payout.canRetry && (
+                        ) }
+                        { payout.canRetry && (
                           <>
                             <DropdownMenuSeparator className="bg-slate-100" />
                             <DropdownMenuItem
-                              onSelect={() => setRetryTarget(payout)}
+                              onSelect={ () => setRetryTarget(payout) }
                               className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                             >
                               Retry
                             </DropdownMenuItem>
                           </>
-                        )}
+                        ) }
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))}
-              {payouts.length === 0 && (
+              )) }
+              { payouts.length === 0 && (
                 <TableRow className="hover:bg-transparent">
                   <TableCell
-                    colSpan={7}
+                    colSpan={ 7 }
                     className="py-10 text-center text-slate-500"
                   >
                     No payouts match these filters.
                   </TableCell>
                 </TableRow>
-              )}
+              ) }
             </TableBody>
-          )}
+          ) }
         </Table>
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3.5 sm:px-5">
           <p className="text-xs text-slate-500">
-            Showing{" "}
+            Showing{ " " }
             <span className="font-semibold text-slate-700">
-              {payouts.length}
-            </span>{" "}
-            of <span className="font-semibold text-slate-700">{total}</span>
-            {totalPages > 1 && (
+              { payouts.length }
+            </span>{ " " }
+            of <span className="font-semibold text-slate-700">{ total }</span>
+            { totalPages > 1 && (
               <>
-                {" "}
-                · Page{" "}
+                { " " }
+                · Page{ " " }
                 <span className="font-semibold text-slate-700">
-                  {page}
-                </span> of{" "}
+                  { page }
+                </span> of{ " " }
                 <span className="font-semibold text-slate-700">
-                  {totalPages}
+                  { totalPages }
                 </span>
               </>
-            )}
+            ) }
           </p>
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-              disabled={page <= 1 || isPlaceholderData}
+              onClick={ () => setPage((prev) => Math.max(1, prev - 1)) }
+              disabled={ page <= 1 || isPlaceholderData }
               className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400 disabled:hover:bg-white"
             >
               Previous
             </button>
             <button
               type="button"
-              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-              disabled={page >= totalPages || isPlaceholderData}
+              onClick={ () => setPage((prev) => Math.min(totalPages, prev + 1)) }
+              disabled={ page >= totalPages || isPlaceholderData }
               className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400 disabled:hover:bg-white"
             >
               Next
@@ -563,14 +561,14 @@ function Payouts() {
       </div>
 
       <ViewPayoutPanel
-        open={Boolean(viewTarget)}
-        onClose={() => setViewTarget(null)}
-        payout={viewTarget}
+        open={ Boolean(viewTarget) }
+        onClose={ () => setViewTarget(null) }
+        payout={ viewTarget }
       />
 
       <ReasonDialog
-        open={Boolean(approveTarget)}
-        onClose={() => setApproveTarget(null)}
+        open={ Boolean(approveTarget) }
+        onClose={ () => setApproveTarget(null) }
         title="Approve payout"
         description={
           approveTarget
@@ -582,16 +580,16 @@ function Payouts() {
         label="Notes"
         optional
         placeholder="Anything the finance team should know (optional)"
-        value={approveNotes}
-        onChange={setApproveNotes}
-        pending={approvePayout.isPending}
-        onConfirm={async (notes) => {
+        value={ approveNotes }
+        onChange={ setApproveNotes }
+        pending={ approvePayout.isPending }
+        onConfirm={ async (notes) => {
           await approvePayout.mutateAsync({
             payoutId: approveTarget.id,
             notes,
           } as never);
           setApproveTarget(null);
-        }}
+        } }
       >
         <p className="text-sm text-slate-600">
           Add any context that should be recorded with this approval.
@@ -599,8 +597,8 @@ function Payouts() {
       </ReasonDialog>
 
       <ReasonDialog
-        open={Boolean(rejectTarget)}
-        onClose={() => setRejectTarget(null)}
+        open={ Boolean(rejectTarget) }
+        onClose={ () => setRejectTarget(null) }
         title="Reject payout"
         description={
           rejectTarget
@@ -611,16 +609,16 @@ function Payouts() {
         label="Reason"
         tone="danger"
         placeholder="Why is this payout rejected?"
-        value={rejectReason}
-        onChange={setRejectReason}
-        pending={rejectPayout.isPending}
-        onConfirm={async (reason) => {
+        value={ rejectReason }
+        onChange={ setRejectReason }
+        pending={ rejectPayout.isPending }
+        onConfirm={ async (reason) => {
           await rejectPayout.mutateAsync({
             payoutId: rejectTarget.id,
             reason,
           } as never);
           setRejectTarget(null);
-        }}
+        } }
       >
         <p className="text-sm text-slate-600">
           Provide a reason so the rejection is documented for the finance team.
@@ -628,8 +626,8 @@ function Payouts() {
       </ReasonDialog>
 
       <ConfirmDialog
-        open={Boolean(retryTarget)}
-        onClose={() => setRetryTarget(null)}
+        open={ Boolean(retryTarget) }
+        onClose={ () => setRetryTarget(null) }
         title="Retry payout"
         description={
           retryTarget
@@ -637,11 +635,11 @@ function Payouts() {
             : undefined
         }
         confirmLabel="Retry payout"
-        onConfirm={async () => {
+        onConfirm={ async () => {
           await retryPayout.mutateAsync({ payoutId: retryTarget.id } as never);
           setRetryTarget(null);
-        }}
-        pending={retryPayout.isPending}
+        } }
+        pending={ retryPayout.isPending }
       >
         <p className="text-sm text-slate-600">
           The payout goes back into the queue for another attempt. The driver is

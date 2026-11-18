@@ -9,7 +9,11 @@ import { QueryError } from "@/components/queryStates";
 import { useToast } from "@/components/toastContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePromotion, useUpdatePromotion } from "@/hooks/useMarketing";
-import { promotionToFormValues, type PromotionPayload } from "@/lib/marketing";
+import {
+  derivePromotionStatus,
+  promotionToFormValues,
+  type PromotionPayload,
+} from "@/lib/marketing";
 import { usePageViewStore } from "@/store/pageViewStore";
 
 export default function EditPromotionPage() {
@@ -25,14 +29,22 @@ export default function EditPromotionPage() {
       await update.mutateAsync(payload);
       usePageViewStore
         .getState()
-        .setField("marketingPromotions", "status", payload.status);
+        .setField(
+          "marketingPromotions",
+          "status",
+          derivePromotionStatus({
+            isActive: payload.is_active,
+            startsAt: payload.start_date,
+            endsAt: payload.end_date,
+          }),
+        );
       usePageViewStore.getState().setField("marketingPromotions", "page", 1);
       toast.success(
-        payload.status === "draft"
-          ? "Promotion saved as a draft."
-          : "Promotion updated.",
+        payload.is_active
+          ? "Promotion updated."
+          : "Promotion saved as a draft.",
       );
-      router.push("/marketing");
+      router.push("/marketing/promotions");
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -56,46 +68,46 @@ export default function EditPromotionPage() {
           Edit promotion
         </h2>
         <p className="mt-1 text-sm text-slate-500">
-          {query.data
+          { query.data
             ? `Update ${query.data.code} · ${query.data.name}.`
-            : "Update the campaign details and save your changes."}
+            : "Update the campaign details and save your changes." }
         </p>
       </div>
 
-      {query.isPending ? (
+      { query.isPending ? (
         <div className="space-y-4">
-          {Array.from({ length: 3 }, (_, index) => (
+          { Array.from({ length: 3 }, (_, index) => (
             <div
-              key={index}
+              key={ index }
               className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-card"
             >
               <Skeleton className="h-4 w-40 bg-slate-200" />
               <div className="grid gap-4 sm:grid-cols-2">
-                {Array.from({ length: 4 }, (_, field) => (
-                  <div key={field} className="space-y-2">
+                { Array.from({ length: 4 }, (_, field) => (
+                  <div key={ field } className="space-y-2">
                     <Skeleton className="h-3 w-24 bg-slate-200" />
                     <Skeleton className="h-10 w-full bg-slate-100" />
                   </div>
-                ))}
+                )) }
               </div>
             </div>
-          ))}
+          )) }
         </div>
       ) : query.isError ? (
         <div className="rounded-xl border border-slate-200 bg-white shadow-card">
-          <QueryError error={query.error} onRetry={query.refetch} />
+          <QueryError error={ query.error } onRetry={ query.refetch } />
         </div>
       ) : query.data ? (
         <PromotionForm
-          key={query.data.id}
+          key={ query.data.id }
           mode="edit"
-          initialValues={promotionToFormValues(query.data)}
-          initialStatus={query.data.status}
-          isSubmitting={update.isPending}
-          onSubmit={handleSubmit}
-          onCancel={() => router.push("/marketing")}
+          initialValues={ promotionToFormValues(query.data) }
+          initialIsActive={ query.data.isActive }
+          isSubmitting={ update.isPending }
+          onSubmit={ handleSubmit }
+          onCancel={ () => router.push("/marketing/promotions") }
         />
-      ) : null}
+      ) : null }
     </div>
   );
 }

@@ -202,47 +202,47 @@ function Dashboard() {
           Analytics Report
         </h1>
         <p className="mt-1 text-sm text-slate-600">
-          {formatRangeLabel(range)} · {range.granularity} grouping ·{" "}
-          {compare ? "Compared with the previous period" : "Live snapshot"}
+          { formatRangeLabel(range) } · { range.granularity } grouping ·{ " " }
+          { compare ? "Compared with the previous period" : "Live snapshot" }
         </p>
         <p className="mt-0.5 text-xs text-slate-500">
-          Generated{" "}
-          {dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleString() : "—"}
+          Generated{ " " }
+          { dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleString() : "—" }
         </p>
       </div>
 
       <div className="flex flex-col gap-3 print:hidden xl:flex-row xl:items-end xl:justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-            Welcome back, {firstName}
+            Welcome back, { firstName }
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            {"Here's what's happening with your platform today."}
+            { "Here's what's happening with your platform today." }
           </p>
         </div>
         <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-end">
           <AnalyticsToolbar
-            range={range}
-            compare={compare}
-            comparisonReason={comparisonUnavailableReason}
-            disabled={!data || isFetching}
-            onRangeChange={setRange}
-            onCompareChange={setCompare}
-            onExportCsv={handleExportCsv}
-            onExportPdf={handleExportPdf}
+            range={ range }
+            compare={ compare }
+            comparisonReason={ comparisonUnavailableReason }
+            disabled={ !data || isFetching }
+            onRangeChange={ setRange }
+            onCompareChange={ setCompare }
+            onExportCsv={ handleExportCsv }
+            onExportPdf={ handleExportPdf }
           />
           <RefreshIndicator
-            isFetching={isFetching}
-            updatedAt={dataUpdatedAt}
-            onRefresh={refetch}
+            isFetching={ isFetching }
+            updatedAt={ dataUpdatedAt }
+            onRefresh={ refetch }
           />
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {isPending &&
+        { isPending &&
           Array.from({ length: 4 }, (_, index) => (
-            <div key={index} className="stat-card">
+            <div key={ index } className="stat-card">
               <div className="flex items-center justify-between">
                 <span className="block h-3.5 w-24 animate-pulse rounded bg-slate-200" />
                 <span className="block h-9 w-9 animate-pulse rounded-xl bg-slate-200" />
@@ -250,86 +250,86 @@ function Dashboard() {
               <span className="mt-3 block h-7 w-16 animate-pulse rounded bg-slate-200" />
               <span className="mt-2 block h-3 w-28 animate-pulse rounded bg-slate-200" />
             </div>
-          ))}
+          )) }
 
-        {!isPending &&
+        { !isPending &&
           !isError &&
           stats.map((stat) => (
-            <div key={stat.label} className="stat-card group">
+            <div key={ stat.label } className="stat-card group">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-slate-500">
-                  {stat.label}
+                  { stat.label }
                 </p>
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to from-slate-50 to-slate-100/50 text-slate-700 transition-transform group-hover:scale-110">
-                  {getStatIcon(stat.label)}
+                  { getStatIcon(stat.label) }
                 </div>
               </div>
               <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-                {stat.value}
+                { stat.value }
               </p>
               <p className="mt-1.5 flex items-center gap-1.5 text-xs">
                 <span
-                  className={`font-semibold ${stat.up ? "text-emerald-600" : "text-rose-600"}`}
+                  className={ `font-semibold ${stat.up ? "text-emerald-600" : "text-rose-600"}` }
                 >
-                  {stat.delta}
+                  { stat.delta }
                 </span>
-                <span className="text-slate-400">{stat.hint}</span>
+                <span className="text-slate-400">{ stat.hint }</span>
               </p>
             </div>
-          ))}
+          )) }
 
-        {isError && (
+        { isError && (
           <div className="sm:col-span-2 xl:col-span-4">
             <div className="card">
-              <QueryError error={error} onRetry={refetch} />
+              <QueryError error={ error } onRetry={ refetch } />
             </div>
           </div>
-        )}
+        ) }
       </div>
 
       <RidesChart
-        series={ridesAnalytics}
-        previous={previousRidesAnalytics}
-        comparison={comparison}
-        loading={isPending}
-        error={chartError}
-        onRetry={refetch}
+        series={ ridesAnalytics }
+        previous={ previousRidesAnalytics }
+        comparison={ comparison }
+        loading={ isPending }
+        error={ chartError }
+        onRetry={ refetch }
       />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="xl:col-span-2">
           <RevenueChart
-            series={revenueAnalytics}
-            previous={previousRevenueAnalytics}
-            comparison={comparison}
-            loading={isPending}
-            error={chartError}
-            onRetry={refetch}
+            series={ revenueAnalytics }
+            previous={ previousRevenueAnalytics }
+            comparison={ comparison }
+            loading={ isPending }
+            error={ chartError }
+            onRetry={ refetch }
           />
         </div>
         <div>
           <DriverStatusChart
-            stats={driversAnalytics}
-            loading={isPending}
-            error={chartError}
-            onRetry={refetch}
+            stats={ driversAnalytics }
+            loading={ isPending }
+            error={ chartError }
+            onRetry={ refetch }
           />
         </div>
       </div>
 
       <PeakHoursChart
-        points={peakHours}
-        periodDays={periodDays}
-        loading={isPending}
-        error={chartError}
-        onRetry={refetch}
+        points={ peakHours }
+        periodDays={ periodDays }
+        loading={ isPending }
+        error={ chartError }
+        onRetry={ refetch }
       />
 
       <OverviewMetrics
-        overview={overview}
-        loading={isPending}
-        error={chartError}
-        onRetry={refetch}
+        overview={ overview }
+        loading={ isPending }
+        error={ chartError }
+        onRetry={ refetch }
       />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
@@ -355,53 +355,53 @@ function Dashboard() {
                 </TableRow>
               </TableHeader>
 
-              {isPending && <TableSkeleton rows={5} cols={6} />}
+              { isPending && <TableSkeleton rows={ 5 } cols={ 6 } /> }
 
-              {isError && (
+              { isError && (
                 <TableBody>
                   <TableRow>
-                    <TableCell colSpan={6}>
-                      <QueryError error={error} onRetry={refetch} />
+                    <TableCell colSpan={ 6 }>
+                      <QueryError error={ error } onRetry={ refetch } />
                     </TableCell>
                   </TableRow>
                 </TableBody>
-              )}
+              ) }
 
-              {!isPending && !isError && (
+              { !isPending && !isError && (
                 <TableBody className="divide-y divide-slate-100">
-                  {recentDeliveries.map((d) => (
+                  { recentDeliveries.map((d) => (
                     <TableRow
-                      key={d.id}
+                      key={ d.id }
                       className="transition-colors hover:bg-slate-50/50"
                     >
                       <TableCell className="font-medium text-slate-900">
-                        {d.id}
+                        { d.id }
                       </TableCell>
-                      <TableCell>{d.customer}</TableCell>
-                      <TableCell>{d.driver}</TableCell>
-                      <TableCell>{d.route}</TableCell>
+                      <TableCell>{ d.customer }</TableCell>
+                      <TableCell>{ d.driver }</TableCell>
+                      <TableCell>{ d.route }</TableCell>
                       <TableCell className="font-medium text-slate-900">
-                        {d.amount}
+                        { d.amount }
                       </TableCell>
                       <TableCell>
-                        <span className={`badge ${statusStyles[d.status]}`}>
-                          {d.status}
+                        <span className={ `badge ${statusStyles[d.status]}` }>
+                          { d.status }
                         </span>
                       </TableCell>
                     </TableRow>
-                  ))}
-                  {recentDeliveries.length === 0 && (
+                  )) }
+                  { recentDeliveries.length === 0 && (
                     <TableRow>
                       <TableCell
-                        colSpan={6}
+                        colSpan={ 6 }
                         className="py-10 text-center text-slate-500"
                       >
                         No deliveries yet today.
                       </TableCell>
                     </TableRow>
-                  )}
+                  ) }
                 </TableBody>
-              )}
+              ) }
             </Table>
           </div>
         </div>
@@ -412,28 +412,28 @@ function Dashboard() {
               Top drivers
             </h3>
             <span className="text-xs font-medium text-slate-400">
-              {verifiedDrivers} verified
+              { verifiedDrivers } verified
             </span>
           </div>
-          {isPending ? (
+          { isPending ? (
             <ul className="divide-y divide-slate-100">
-              {Array.from({ length: 4 }, (_, index) => (
-                <li key={index} className="flex items-center gap-3 px-6 py-3.5">
+              { Array.from({ length: 4 }, (_, index) => (
+                <li key={ index } className="flex items-center gap-3 px-6 py-3.5">
                   <span className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-slate-200" />
                   <div className="flex-1 space-y-2">
                     <span className="block h-3.5 w-24 animate-pulse rounded bg-slate-200" />
                     <span className="block h-3 w-16 animate-pulse rounded bg-slate-200" />
                   </div>
                 </li>
-              ))}
+              )) }
             </ul>
           ) : isError ? (
-            <QueryError error={error} onRetry={refetch} />
+            <QueryError error={ error } onRetry={ refetch } />
           ) : (
             <ul className="divide-y divide-slate-100">
-              {topDrivers.map((r) => (
+              { topDrivers.map((r) => (
                 <li
-                  key={r.id ?? r.name}
+                  key={ r.id ?? r.name }
                   className="flex items-center gap-3 px-6 py-3.5 transition-colors hover:bg-slate-50/50"
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
@@ -454,29 +454,29 @@ function Dashboard() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-slate-800">
-                      {r.name}
+                      { r.name }
                     </p>
-                    <p className="text-xs text-slate-500">{r.status}</p>
+                    <p className="text-xs text-slate-500">{ r.status }</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold text-slate-900">
-                      {r.rides}
+                      { r.rides }
                     </p>
                     <p className="text-xs text-slate-400">rides</p>
                   </div>
                   <span
-                    className={`h-2 w-2 shrink-0 rounded-full ${r.active ? "bg-emerald-500 shadow-sm shadow-emerald-500/50" : "bg-slate-300"}`}
-                    aria-label={r.active ? "Verified" : "Not verified"}
+                    className={ `h-2 w-2 shrink-0 rounded-full ${r.active ? "bg-emerald-500 shadow-sm shadow-emerald-500/50" : "bg-slate-300"}` }
+                    aria-label={ r.active ? "Verified" : "Not verified" }
                   />
                 </li>
-              ))}
-              {topDrivers.length === 0 && (
+              )) }
+              { topDrivers.length === 0 && (
                 <li className="px-6 py-10 text-center text-sm text-slate-500">
                   No drivers are active right now.
                 </li>
-              )}
+              ) }
             </ul>
-          )}
+          ) }
         </div>
       </div>
     </div>

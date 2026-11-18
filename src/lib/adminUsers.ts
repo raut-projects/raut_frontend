@@ -139,7 +139,7 @@ export const PERMISSION_FEATURES: PermissionFeatureRow[] = [
   { key: "dashboard", label: "Dashboard", group: "Overview" },
   { key: "live_rides", label: "Live Rides", group: "Operations" },
   { key: "drivers", label: "Drivers", group: "Operations" },
-  { key: "customers", label: "Riders", group: "Operations" },
+  { key: "customers", label: "Customers", group: "Operations" },
   { key: "rides", label: "Rides", group: "Operations" },
   { key: "routes", label: "Routes", group: "Operations" },
   { key: "payouts", label: "Payouts", group: "Finance" },
