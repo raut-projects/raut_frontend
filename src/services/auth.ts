@@ -23,6 +23,7 @@ import {
   updateTokens,
 } from "./tokenStore";
 import { resetClientState } from "../store/resetClientState";
+import { usePermissionStore } from "../store/permissionStore";
 import { fetchMyPermissions } from "./rbac";
 
 /**
@@ -174,10 +175,13 @@ export async function loginWithEmail({
     remember,
   });
 
+  const permissions = usePermissionStore.getState();
+  permissions.clear();
+
   try {
-    updateSession({ access: await fetchMyPermissions() });
+    permissions.setAccess(await fetchMyPermissions());
   } catch {
-    updateSession({ access: null });
+    permissions.clear();
   }
 
   return session;
@@ -237,8 +241,8 @@ const signInAgainError = (message) => {
  * Promotes the signed-in account to admin using the shared admin secret.
  * POST /auth/promote (API_ROUTES.promote) as form-urlencoded with `{ secret }`.
  * Side effects: stores any returned refresh/access tokens, refreshes the token
- * pair when the response carries no access token, and persists the new role via
- * `updateSession`.
+ * pair when the response carries no access token, persists the new role via
+ * `updateSession`, and refreshes the cached permissions.
  * Returns `{ role, roleLabel, message }`.
  * Throws ApiError (403) when the secret is refused; a 409 error flagged
  * `requiresSignIn` when access was granted but a fresh token is required.
@@ -313,6 +317,15 @@ export async function requestAdminAccess(secret) {
     roleLabel: formatRole(role),
     roleVerifiedAt: Date.now(),
   });
+
+  const permissions = usePermissionStore.getState();
+  permissions.clear();
+
+  try {
+    permissions.setAccess(await fetchMyPermissions());
+  } catch {
+    permissions.clear();
+  }
 
   return {
     role,

@@ -19,6 +19,7 @@ import { firstRole, formatRole } from "../lib/roles";
 import { fetchCurrentUser, signOut } from "../services/auth";
 import { fetchMyPermissions } from "../services/rbac";
 import { updateSession } from "../services/tokenStore";
+import { usePermissionStore } from "../store/permissionStore";
 
 let verification = null;
 let accessVerification = null;
@@ -47,24 +48,26 @@ const isRoleFresh = (session) =>
   Boolean(session?.roleVerifiedAt) &&
   Date.now() - session.roleVerifiedAt < ROLE_REVALIDATE_MS;
 
-const isAccessFresh = (session) =>
-  Boolean(session?.access?.verifiedAt) &&
-  Date.now() - session.access.verifiedAt < RBAC_REVALIDATE_MS;
+const isAccessFresh = (access) =>
+  Boolean(access?.verifiedAt) &&
+  Date.now() - access.verifiedAt < RBAC_REVALIDATE_MS;
 
-const isAccessRecent = (session) =>
-  Boolean(session?.access?.verifiedAt) &&
-  Date.now() - session.access.verifiedAt < RBAC_STALE_GRACE_MS;
+const isAccessRecent = (access) =>
+  Boolean(access?.verifiedAt) &&
+  Date.now() - access.verifiedAt < RBAC_STALE_GRACE_MS;
 
 function RequireAdmin({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const session = useSession();
   const hydrated = useAuthHydrated();
+  const permissionAccess = usePermissionStore((state) => state.access);
+  const permissionHydrated = usePermissionStore((state) => state.hydrated);
   const [check, setCheck] = useState("idle");
   const [accessCheck, setAccessCheck] = useState("idle");
 
   const roleIsFresh = isRoleFresh(session);
-  const accessFresh = isAccessFresh(session);
+  const accessFresh = isAccessFresh(permissionAccess);
 
   useEffect(() => {
     if (!hydrated || !session || roleIsFresh) return undefined;
@@ -103,7 +106,7 @@ function RequireAdmin({ children }: { children: ReactNode }) {
   }, [hydrated, session, roleIsFresh]);
 
   useEffect(() => {
-    if (!hydrated || !session || accessFresh) return undefined;
+    if (!hydrated || !permissionHydrated || !session || accessFresh) return undefined;
 
     let active = true;
 
@@ -111,7 +114,7 @@ function RequireAdmin({ children }: { children: ReactNode }) {
       .then((access) => {
         if (!active) return;
 
-        updateSession({ access });
+        usePermissionStore.getState().setAccess(access);
         setAccessCheck("ready");
       })
       .catch((error) => {
@@ -129,20 +132,19 @@ function RequireAdmin({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [hydrated, session, accessFresh]);
+  }, [hydrated, permissionHydrated, session, accessFresh]);
 
   const verified = roleIsFresh || check === "passed" || check === "failed";
   const accessReady =
-    accessFresh ||
-    accessCheck === "ready" ||
-    accessCheck === "failed";
+    permissionHydrated &&
+    (accessFresh || accessCheck === "ready" || accessCheck === "failed");
 
   const requiredPermission = resolveRoutePermission(pathname);
   const permitted =
-    !requiredPermission || hasPermission(session?.access, requiredPermission);
+    !requiredPermission || hasPermission(permissionAccess, requiredPermission);
   const fallback =
     pathname === "/" && !permitted
-      ? firstPermittedRoute(session?.access)
+      ? firstPermittedRoute(permissionAccess)
       : null;
 
   const needsSignIn =
@@ -151,7 +153,7 @@ function RequireAdmin({ children }: { children: ReactNode }) {
     hydrated &&
     Boolean(session) &&
     verified &&
-    ((accessCheck === "failed" && !isAccessRecent(session)) ||
+    ((accessCheck === "failed" && !isAccessRecent(permissionAccess)) ||
       (!permitted && !fallback));
 
   useEffect(() => {

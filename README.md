@@ -245,10 +245,10 @@ If the page is opened outside the WebView, it falls back to a browser alert. Can
 3. The response returns the session, access token and optional refresh token.
 4. The session and tokens are persisted in `localStorage` and exposed to React through the Zustand auth store.
 5. `RequireAdmin` revalidates the role every five minutes (`ROLE_REVALIDATE_MS`). A missing or stale role is checked against `GET /auth/me`.
-6. `RequireAdmin` also loads effective RBAC permissions from `GET /me/permissions` (`RBAC_REVALIDATE_MS`) and stores them in the session.
+6. `loginWithEmail` loads effective RBAC permissions from `GET /me/permissions` and stores them in the persisted permission store (`raut-permission-storage`); `RequireAdmin` reuses that snapshot and re-fetches when it is older than five minutes (`RBAC_REVALIDATE_MS`) on the next gate render/navigation.
 7. Non-admin accounts are redirected to `/request-admin`, where the admin secret is submitted to `POST /admin/promote`.
 8. If the promoted access token still does not grant an admin role, the user is asked to sign in again.
-9. Authenticated requests that return `401` attempt a token refresh through `POST /auth/refresh`. If refresh fails, the session is cleared and the user returns to `/login`.
+9. Authenticated requests that return `401` attempt a token refresh through `POST /auth/refresh`. If refresh fails, the session and cached permissions are cleared and the user returns to `/login`.
 
 If role or permission revalidation fails because the server cannot be reached, the app keeps the last trusted role and recent permission snapshot instead of signing the administrator out. A `401` still clears the session.
 
@@ -261,9 +261,9 @@ The default admin roles are `admin` and `super_admin`. Override them with `NEXT_
 - `platform_manager`, `operator`, `support`, `analyst`, `finance` and `marketing` remain as their own roles.
 - The Staff & Roles page uses the live `/rbac/roles` catalog and keeps readable fallback labels for known legacy role keys. None of these role labels add admin-gate access unless the role is listed in `NEXT_PUBLIC_ADMIN_ROLES`.
 
-The dashboard has two gates. `RequireAdmin` still requires a configured admin role, then uses the `GET /me/permissions` response to hide sidebar sections, block unauthorized routes, and hide action controls. Permission codes follow `resource.action` (for example `drivers.verify` and `finance.payouts.approve`). A stale snapshot is trusted for up to `RBAC_STALE_GRACE_MS`; if the endpoint fails and no snapshot exists, the app denies access and shows an Access Denied screen. Ambiguous actions without a direct permission code, such as live-ride escalation and referral mark-paid, remain unchanged.
+The dashboard has two gates. `RequireAdmin` still requires a configured admin role, then reads the cached `GET /me/permissions` snapshot from Zustand to hide sidebar sections, block unauthorized routes, and hide action controls through `usePermissions` and `<Can>`. Permission codes follow `resource.action` (for example `drivers.verify` and `finance.payouts.approve`). A stale snapshot is trusted for up to `RBAC_STALE_GRACE_MS`; if the endpoint fails and no snapshot exists, the app denies access and shows an Access Denied screen. Ambiguous actions without a direct permission code, such as live-ride escalation and referral mark-paid, remain unchanged.
 
-Tokens are stored in browser `localStorage`, so the session can be restored across reloads. This does not replace server-side authorization; the backend must enforce permissions for every admin endpoint.
+Tokens are stored in browser `localStorage`, so the session can be restored across reloads. The effective permission snapshot is persisted separately under `raut-permission-storage` and is removed on sign-out, failed refresh and session expiry. This does not replace server-side authorization; the backend must enforce permissions for every admin endpoint.
 
 The onboarding flow writes its access token into the same token store used by API helpers, but it does not create an admin session.
 
@@ -471,7 +471,7 @@ Page -> Hook -> Service -> API helper -> HTTP client -> Backend
 - `src/hooks/*` wrap TanStack Query and admin mutations.
 - `src/services/*` contain endpoint functions, request behavior and mappers.
 - `src/lib/*` contains configuration, roles, query keys, date ranges, exports and the query client.
-- `src/store/*` contains shared client state; onboarding progress is persisted, while other stores are in memory.
+- `src/store/*` contains shared client state; onboarding progress and cached permissions are persisted, while other stores are in memory.
 - `src/schemas/onboardingSchemas.ts` holds the onboarding validation schemas.
 
 List services normalize pagination into `{ items, total, page, limit }`. Some summary cards fetch a larger overview page and calculate counts client-side. The dashboard uses `Promise.allSettled` so a failing analytics endpoint does not hide the rest of the page.
@@ -484,10 +484,11 @@ Zustand stores hold shared client-only state. Server data stays in TanStack Quer
 | --- | --- | --- |
 | `authStore` | Memory, hydrated from `tokenStore` | Mirrors the signed-in session for React components; tokens remain in `tokenStore`. |
 | `onboardingStore` | `localStorage` (`driver-onboarding-storage`) | Onboarding progress, token and language. |
+| `permissionStore` | `localStorage` (`raut-permission-storage`) | Effective RBAC permissions/roles used by gates; cleared on sign-out/401. |
 | `pageViewStore` | Memory | List filters and pagination retained across navigation within the tab. |
 | `toastStore` | Memory | Transient toast notifications. |
 
-The auth store starts empty so the static export and the first client render match. `Providers` hydrates it after mount, and route gates wait for hydration before redirecting. Signing out clears the token store, query cache, page views and toasts. Onboarding progress is not cleared because it belongs to a separate driver flow.
+The auth store starts empty so the static export and the first client render match. `Providers` hydrates it and the permission store after mount, and route gates wait for both before redirecting. Signing out clears the token store, query cache, cached permissions, page views and toasts. Onboarding progress is not cleared because it belongs to a separate driver flow.
 
 List filters and pagination survive navigation but reset on a full reload. Support ticket, promotion and referral-code records are fetched from the backend; promotion tabs plus referral status, search, user type, date range and page are kept in `pageViewStore`.
 
@@ -553,10 +554,11 @@ raut_frontend/
 | `src/types/rbac.ts` | RBAC permission, role and region types |
 | `src/lib/adminUsers.ts` | Admin role metadata, status labels, formatting helpers and matrix CSV export |
 | `src/lib/rbacRoles.ts` | Role metadata helpers and fallback role definitions |
-| `src/services/auth.ts` | Email and password sign-in, session creation, role resolution and admin promotion |
+| `src/services/auth.ts` | Email and password sign-in, session creation, role resolution, permission caching and admin promotion |
 | `src/services/adminActions.ts` | Verify/reject/suspend drivers, cancel rides/routes and manage users |
 | `src/services/dashboard.ts` | Analytics aggregation, comparison windows and dashboard mapping |
 | `src/services/tokenStore.ts` | localStorage session/token persistence and subscriptions |
+| `src/store/permissionStore.ts` | Persisted effective RBAC permission snapshot and hydration/clear helpers |
 | `src/services/mappers.ts` | API response normalization and display formatting |
 | `src/services/uploads.ts` | Multipart document uploads for onboarding |
 | `src/services/onboarding.ts` | Legacy complete-flow onboarding helper, not used by the current UI |
