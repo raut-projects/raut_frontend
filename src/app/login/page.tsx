@@ -1,21 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/toastContext";
 import GateLoader from "@/components/GateLoader";
 import { useFromParam } from "@/lib/useFromParam";
 import { useAuthHydrated, useSession } from "@/hooks/useSession";
-import {
-  loginWithEmail,
-  resetPassword as sendPasswordResetEmail,
-} from "@/services/auth";
+import { loginWithEmail } from "@/services/auth";
 import { isAdminRole } from "@/lib/roles";
 import { validateEmail } from "@/lib/validation";
-import {
-  getLoginErrorMessage,
-  getPasswordResetErrorMessage,
-} from "@/lib/authErrors";
+import { getLoginErrorMessage } from "@/lib/authErrors";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const inputClass =
@@ -37,10 +32,8 @@ function Login() {
     {},
   );
   const [formError, setFormError] = useState("");
-  const [resetSent, setResetSent] = useState("");
   const [remember, setRemember] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [resettingPassword, setResettingPassword] = useState(false);
 
   const from = useFromParam("/");
 
@@ -67,7 +60,6 @@ function Login() {
     setEmail(event.target.value);
     setErrors((previous) => ({ ...previous, email: undefined }));
     setFormError("");
-    setResetSent("");
   };
 
   const handlePasswordChange = (event) => {
@@ -114,34 +106,6 @@ function Login() {
     }
   };
 
-  const handlePasswordReset = async () => {
-    if (submitting || resettingPassword) return;
-
-    const value = email.trim();
-    const emailError = validateEmail(value);
-    if (emailError) {
-      setErrors({ email: emailError });
-      return;
-    }
-
-    setErrors({});
-    setFormError("");
-    setResetSent("");
-    setResettingPassword(true);
-
-    try {
-      await sendPasswordResetEmail(value);
-      const message =
-        "If that email is registered, we've sent a password reset link.";
-      setResetSent(message);
-      toast.success(message);
-    } catch (error) {
-      setFormError(getPasswordResetErrorMessage(error));
-    } finally {
-      setResettingPassword(false);
-    }
-  };
-
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-4 py-12">
       <div
@@ -183,28 +147,7 @@ function Login() {
             </div>
           ) }
 
-          { resetSent && (
-            <div
-              role="status"
-              className="mb-5 flex items-start gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 p-3"
-            >
-              <svg
-                className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <p className="text-sm font-medium text-emerald-800">{ resetSent }</p>
-            </div>
-          ) }
+
 
           <form
             onSubmit={ handleSubmit }
@@ -320,14 +263,16 @@ function Login() {
                   Remember me
                 </label>
               </div>
-              <button
-                type="button"
-                onClick={ handlePasswordReset }
-                disabled={ submitting || resettingPassword }
-                className="text-xs font-semibold text-slate-500 transition-colors hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-70"
+              <Link
+                href={
+                  from && from !== "/"
+                    ? `/login/forgot-password?from=${encodeURIComponent(from)}`
+                    : "/login/forgot-password"
+                }
+                className="text-xs font-semibold text-slate-500 transition-colors hover:text-slate-700"
               >
-                { resettingPassword ? "Sending…" : "Forgot password?" }
-              </button>
+                Forgot password?
+              </Link>
             </div>
 
             <button

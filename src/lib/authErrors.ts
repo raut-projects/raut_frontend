@@ -96,3 +96,33 @@ export function getPasswordResetErrorMessage(error: unknown): string {
 
   return "We couldn't send the reset email. Please try again.";
 }
+
+/**
+ * Maps a password update/reset-completion failure to a user-facing message.
+ */
+export function getPasswordUpdateErrorMessage(error: unknown): string {
+  const status = statusFrom(error);
+  const rawMessage = rawMessageFrom(error);
+
+  if (status === 0 && /took too long|timed out|timeout/i.test(rawMessage)) {
+    return "The request timed out. Check your connection and try again.";
+  }
+
+  if (status === 0) {
+    return "We couldn't reach the server. Check your internet connection and try again.";
+  }
+
+  if (status === 400 || status === 401 || status === 404 || status === 410 || status === 422) {
+    return "This reset link is invalid or has expired. Request a new one to continue.";
+  }
+
+  if (status === 429) {
+    return "Too many attempts. Please wait a minute and try again.";
+  }
+
+  if (status !== null && status >= 500) {
+    return "We couldn't update your password right now. Please try again shortly.";
+  }
+
+  return "We couldn't update your password. Please try again.";
+}

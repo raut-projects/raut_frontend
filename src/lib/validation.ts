@@ -14,6 +14,8 @@ const LOCAL_PART_PATTERN = /^[A-Za-z0-9._%+'-]+$/;
 const LABEL_PATTERN = /^[A-Za-z0-9-]+$/;
 const TLD_PATTERN = /^[A-Za-z]{2,}$/;
 
+const PASSWORD_MIN_LENGTH = 8;
+
 /**
  * Validates an email address and returns a user-facing error message.
  *
@@ -77,6 +79,39 @@ export function validateEmail(value: string): string | null {
     if (label.startsWith("-") || label.endsWith("-")) {
       return GENERIC_EMAIL_ERROR;
     }
+  }
+
+  return null;
+}
+
+/**
+ * Validates a new password for reset/update flows.
+ *
+ * @returns An error message, or null when the password is acceptable.
+ */
+export function validateNewPassword(value: string): string | null {
+  const password = String(value ?? "");
+
+  if (!password) return "Please enter a new password.";
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    return `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`;
+  }
+
+  return null;
+}
+
+/**
+ * Validates that a password confirmation matches the new password.
+ *
+ * @returns An error message, or null when the values match.
+ */
+export function validatePasswordConfirmation(
+  password: string,
+  confirmation: string,
+): string | null {
+  if (!String(confirmation ?? "")) return "Please confirm your new password.";
+  if (String(password ?? "") !== String(confirmation ?? "")) {
+    return "Passwords do not match.";
   }
 
   return null;

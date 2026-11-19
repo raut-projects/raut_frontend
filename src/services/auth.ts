@@ -323,7 +323,7 @@ export async function requestAdminAccess(secret) {
 
 /**
  * Requests a password reset email.
- * POST /auth/reset-password (API_ROUTES.resetPassword) with `{ email }` and no
+ * POST /auth/password/reset (API_ROUTES.resetPassword) with `{ email }` and no
  * bearer token. Returns the server's envelope message (empty string when the
  * response has none). Throws ApiError on failure.
  */
@@ -331,6 +331,52 @@ export async function resetPassword(email) {
   const payload = await request(API_ROUTES.resetPassword, {
     method: "POST",
     body: { email: String(email ?? "").trim() },
+    auth: false,
+  });
+
+  return envelopeMessage(payload);
+}
+
+/**
+ * Completes a password reset by submitting a new password with the reset token.
+ * POST /auth/password/update (API_ROUTES.passwordUpdate) with no bearer token.
+ * Accepts flexible token/code/email params to match backend reset-link payloads.
+ * Throws ApiError on failure.
+ */
+export async function updatePassword({
+  token,
+  code,
+  email,
+  password,
+}: {
+  token?: string | null;
+  code?: string | null;
+  email?: string | null;
+  password: string;
+}) {
+  const body: Record<string, string> = {
+    password: String(password ?? ""),
+    new_password: String(password ?? ""),
+    password_confirmation: String(password ?? ""),
+  };
+
+  const tokenValue = String(token ?? "").trim();
+  const codeValue = String(code ?? "").trim();
+  const emailValue = String(email ?? "").trim();
+
+  if (tokenValue) {
+    body.token = tokenValue;
+    body.reset_token = tokenValue;
+  }
+  if (codeValue) {
+    body.code = codeValue;
+    body.otp = codeValue;
+  }
+  if (emailValue) body.email = emailValue;
+
+  const payload = await request(API_ROUTES.passwordUpdate, {
+    method: "POST",
+    body,
     auth: false,
   });
 
