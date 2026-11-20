@@ -15,8 +15,7 @@ import {
   type Promotion,
 } from "@/lib/marketing";
 import { PERMISSIONS } from "@/lib/permissions";
-
-import { PromotionStatusBadge } from "./PromotionStatusBadge";
+import { PromotionStatusBadge } from "@/components/statusBadges";
 
 function discountSummary(promotion: Promotion) {
   if (promotion.discountType === "percentage") {

@@ -13,10 +13,8 @@ import {
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
-import {
-  TicketPriorityBadge,
-  TicketStatusBadge,
-} from "@/components/supportTicketBadges";
+import { TicketStatusBadge } from "@/components/statusBadges";
+import { TicketPriorityBadge } from "@/components/supportTicketBadges";
 import { useToast } from "@/components/toastContext";
 import { Button } from "@/components/ui/button";
 import {

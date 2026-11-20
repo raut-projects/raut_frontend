@@ -16,10 +16,8 @@ import { ManageStaffDialog } from "@/components/adminUsers/ManageStaffDialog";
 import { StaffInvitationsPanel } from "@/components/adminUsers/StaffInvitationsPanel";
 import { PermissionMatrixDialog } from "@/components/adminUsers/PermissionMatrixDialog";
 import { RoleEditorDialog } from "@/components/adminUsers/RoleEditorDialog";
-import {
-  AdminRoleBadge,
-  AdminUserStatusBadge,
-} from "@/components/adminUsers/AdminUserStatusBadge";
+import { AdminRoleBadge } from "@/components/adminUsers/AdminRoleBadge";
+import { AdminUserStatusBadge } from "@/components/statusBadges";
 import { ReasonDialog } from "@/components/reasonDialog";
 import { RefreshIndicator } from "@/components/queryStates";
 import { Button } from "@/components/ui/button";
