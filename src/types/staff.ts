@@ -46,6 +46,15 @@ export type StaffAssignRolePayload = {
   reason?: string;
 };
 
+export type StaffInvitePayload = {
+  email: string;
+  full_name: string;
+  role_id: string;
+  scope_type: StaffScopeType;
+  scope_id?: string | null;
+  assignment_expires_at?: string;
+};
+
 export type StaffRevokeRolePayload = {
   reason: string;
 };

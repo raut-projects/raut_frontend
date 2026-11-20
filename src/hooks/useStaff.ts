@@ -10,11 +10,13 @@ import { queryKeys } from "@/lib/queryKeys";
 import {
   assignStaffRole,
   deactivateStaff,
+  inviteStaff,
   listStaff,
   revokeStaffRole,
 } from "@/services/staff";
 import type {
   StaffAssignRolePayload,
+  StaffInvitePayload,
   StaffListParams,
 } from "@/types/staff";
 
@@ -24,6 +26,22 @@ export function useStaff(params: StaffListParams) {
     queryFn: () => listStaff(params),
     placeholderData: keepPreviousData,
     refetchInterval: 60_000,
+  });
+}
+
+export function useInviteStaff() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  return useMutation({
+    mutationFn: (payload: StaffInvitePayload) => inviteStaff(payload),
+    onSuccess: (_data, payload) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
+      toast.success(`Invitation sent to ${payload.email}.`);
+    },
+    onError: (error: Error) => {
+      toast.error(error?.message ?? "The staff invitation could not be sent.");
+    },
   });
 }
 

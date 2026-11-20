@@ -1,6 +1,7 @@
 import { API_ROUTES } from "@/lib/config";
 import type {
   StaffAssignRolePayload,
+  StaffInvitePayload,
   StaffListParams,
   StaffListResult,
   StaffMember,
@@ -72,6 +73,10 @@ export async function listStaff(
     hasPrev:
       typeof hasPrevValue === "boolean" ? hasPrevValue : currentPage > 1,
   };
+}
+
+export async function inviteStaff(payload: StaffInvitePayload): Promise<void> {
+  await apiPost(API_ROUTES.staffInvitations, payload);
 }
 
 export async function assignStaffRole(

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { Can } from "@/components/Can";
+import { InviteStaffDialog } from "@/components/adminUsers/InviteStaffDialog";
 import { ManageStaffDialog } from "@/components/adminUsers/ManageStaffDialog";
 import { PermissionMatrixDialog } from "@/components/adminUsers/PermissionMatrixDialog";
 import { RoleEditorDialog } from "@/components/adminUsers/RoleEditorDialog";
@@ -64,6 +65,7 @@ function AdminUsersPage() {
   );
   const [page, setPage] = usePageViewField("adminUsers", "page");
 
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [manageTarget, setManageTarget] = useState<StaffMember | null>(null);
   const [matrixOpen, setMatrixOpen] = useState(false);
   const [matrixRole, setMatrixRole] = useState<string | "all">("all");
@@ -224,8 +226,7 @@ function AdminUsersPage() {
             <Button
               type="button"
               size="sm"
-              disabled
-              title="Invite staff will be enabled when the backend supports name, email and permissions."
+              onClick={() => setInviteOpen(true)}
               className="h-9 px-3 text-sm font-semibold"
             >
               <Plus className="size-4" aria-hidden="true" />
@@ -467,15 +468,13 @@ function AdminUsersPage() {
                       No staff found.
                     </p>
                     <p className="mt-1 text-sm text-slate-500">
-                      Staff invitations will be available when the backend
-                      supports name, email and permissions.
+                      Invite a staff member to grant dashboard access.
                     </p>
                     <Can permission={PERMISSIONS.PLATFORM_ADMINS_MANAGE}>
                       <Button
                         type="button"
                         size="sm"
-                        disabled
-                        title="Invite staff will be enabled when the backend supports name, email and permissions."
+                        onClick={() => setInviteOpen(true)}
                         className="mt-3 h-auto px-3 py-1.5 text-xs font-semibold"
                       >
                         <Plus className="size-3.5" aria-hidden="true" />
@@ -518,6 +517,11 @@ function AdminUsersPage() {
           </div>
         </div>
       </div>
+
+      <InviteStaffDialog
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+      />
 
       <ManageStaffDialog
         key={`${manageTarget?.id ?? "none"}-${Boolean(manageTarget)}`}
