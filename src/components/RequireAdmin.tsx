@@ -14,7 +14,7 @@ import {
   firstPermittedRoute,
   resolveRoutePermission,
 } from "../lib/navigation";
-import { hasPermission } from "../lib/permissions";
+import { hasDashboardAccess, hasPermission } from "../lib/permissions";
 import { firstRole, formatRole } from "../lib/roles";
 import { fetchCurrentUser, signOut } from "../services/auth";
 import { fetchMyPermissions } from "../services/rbac";
@@ -139,9 +139,12 @@ function RequireAdmin({ children }: { children: ReactNode }) {
     permissionHydrated &&
     (accessFresh || accessCheck === "ready" || accessCheck === "failed");
 
+  const accessAvailable = hasDashboardAccess(permissionAccess);
   const requiredPermission = resolveRoutePermission(pathname);
   const permitted =
-    !requiredPermission || hasPermission(permissionAccess, requiredPermission);
+    accessAvailable &&
+    (!requiredPermission ||
+      hasPermission(permissionAccess, requiredPermission));
   const fallback =
     pathname === "/" && !permitted
       ? firstPermittedRoute(permissionAccess)
@@ -154,6 +157,7 @@ function RequireAdmin({ children }: { children: ReactNode }) {
     Boolean(session) &&
     verified &&
     ((accessCheck === "failed" && !isAccessRecent(permissionAccess)) ||
+      !accessAvailable ||
       (!permitted && !fallback));
 
   useEffect(() => {

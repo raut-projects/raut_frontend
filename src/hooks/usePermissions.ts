@@ -15,6 +15,7 @@ export function usePermissions() {
   return useMemo(
     () => ({
       access,
+      hydrated,
       roles: access?.roles ?? [],
       permissions: access?.permissions ?? [],
       loaded: hydrated && Boolean(access),

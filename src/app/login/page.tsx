@@ -7,8 +7,9 @@ import { useToast } from "@/components/toastContext";
 import GateLoader from "@/components/GateLoader";
 import { useFromParam } from "@/lib/useFromParam";
 import { useAuthHydrated, useSession } from "@/hooks/useSession";
-import { loginWithEmail } from "@/services/auth";
-import { isAdminRole } from "@/lib/roles";
+import { usePermissions } from "@/hooks/usePermissions";
+import { loginWithEmail, signOut } from "@/services/auth";
+import { resolvePostLoginRoute } from "@/lib/navigation";
 import { validateEmail } from "@/lib/validation";
 import { getLoginErrorMessage } from "@/lib/authErrors";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -24,6 +25,7 @@ function Login() {
   const toast = useToast();
   const session = useSession();
   const hydrated = useAuthHydrated();
+  const { access, hydrated: permissionHydrated } = usePermissions();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,17 +39,16 @@ function Login() {
 
   const from = useFromParam("/");
 
-  const sessionRedirect = session
-    ? isAdminRole(session.role)
-      ? from
-      : `/request-admin?from=${encodeURIComponent(from === "/request-admin" ? "/" : from)}`
-    : null;
+  const sessionRedirect =
+    session && permissionHydrated
+      ? resolvePostLoginRoute(access, from) ?? "/"
+      : null;
 
   useEffect(() => {
     if (sessionRedirect) router.replace(sessionRedirect);
   }, [sessionRedirect, router]);
 
-  if (!hydrated || session) {
+  if (!hydrated || !permissionHydrated || session) {
     return <GateLoader />;
   }
 
@@ -91,14 +92,21 @@ function Login() {
     resetFeedback();
 
     try {
-      const signedIn = await loginWithEmail({ email: value, password, remember });
-      const admin = isAdminRole(signedIn?.role);
+      const result = await loginWithEmail({
+        email: value,
+        password,
+        remember,
+      });
+      const destination = resolvePostLoginRoute(result.access, from);
+
+      if (!destination) {
+        signOut();
+        setFormError("Your account has no dashboard role or permissions.");
+        return;
+      }
+
       toast.success("Signed in successfully.");
-      router.replace(
-        admin
-          ? from
-          : `/request-admin?from=${encodeURIComponent(from === "/request-admin" ? "/" : from)}`,
-      );
+      router.replace(destination);
     } catch (error) {
       setFormError(getLoginErrorMessage(error));
     } finally {

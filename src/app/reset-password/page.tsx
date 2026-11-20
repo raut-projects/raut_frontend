@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/toastContext";
 import GateLoader from "@/components/GateLoader";
 import { useAuthHydrated, useSession } from "@/hooks/useSession";
-import { isAdminRole } from "@/lib/roles";
+import { usePermissions } from "@/hooks/usePermissions";
+import { resolvePostLoginRoute } from "@/lib/navigation";
 import { useIsClient } from "@/lib/useIsClient";
 import { getPasswordUpdateErrorMessage } from "@/lib/authErrors";
 import {
@@ -87,6 +88,7 @@ function ResetPassword() {
   const toast = useToast();
   const session = useSession();
   const hydrated = useAuthHydrated();
+  const { access, hydrated: permissionHydrated } = usePermissions();
   const mounted = useIsClient();
 
   const params = mounted
@@ -103,11 +105,10 @@ function ResetPassword() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
-  const sessionRedirect = session
-    ? isAdminRole(session.role)
-      ? "/"
-      : "/request-admin"
-    : null;
+  const sessionRedirect =
+    session && permissionHydrated
+      ? resolvePostLoginRoute(access, "/") ?? "/"
+      : null;
 
   useEffect(() => {
     if (sessionRedirect) router.replace(sessionRedirect);
@@ -115,7 +116,7 @@ function ResetPassword() {
 
   const hasCredential = Boolean(params.token || params.code);
 
-  if (!hydrated || session || !mounted) {
+  if (!hydrated || !permissionHydrated || session || !mounted) {
     return <GateLoader />;
   }
 

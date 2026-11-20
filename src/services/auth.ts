@@ -7,6 +7,7 @@
 import { API_ROUTES } from "../lib/config";
 import { firstRole, formatRole, isAdminRole, resolveRole } from "../lib/roles";
 import type { AuthSession } from "../types/models";
+import type { RbacAccessSnapshot } from "../types/rbac";
 import {
   ApiError,
   envelopeData,
@@ -127,19 +128,25 @@ const toSession = (user, phone, fallbackRole): AuthSession => {
   };
 };
 
+export type LoginResult = {
+  session: AuthSession;
+  access: RbacAccessSnapshot;
+};
+
 /**
  * Signs in with email and password.
  * POST /auth/login (API_ROUTES.login) with `{ email, password }` and no bearer
  * token. The response token is stored through `saveSession`; `remember`
  * chooses persistent (localStorage) or per-tab (sessionStorage) storage.
- * Returns the new AuthSession. Throws ApiError when the server rejects the
- * credentials or returns no access token.
+ * Returns the session and the current RBAC snapshot. Throws ApiError when the
+ * server rejects the credentials, returns no access token, or the permission
+ * endpoint cannot be reached.
  */
 export async function loginWithEmail({
   email,
   password,
   remember = true,
-}): Promise<AuthSession> {
+}): Promise<LoginResult> {
   const payload = await request(API_ROUTES.login, {
     method: "POST",
     body: {
@@ -175,16 +182,20 @@ export async function loginWithEmail({
     remember,
   });
 
-  const permissions = usePermissionStore.getState();
-  permissions.clear();
+  let access: RbacAccessSnapshot;
 
   try {
-    permissions.setAccess(await fetchMyPermissions());
-  } catch {
-    permissions.clear();
+    access = await fetchMyPermissions();
+  } catch (error) {
+    signOut();
+    throw error;
   }
 
-  return session;
+  const permissions = usePermissionStore.getState();
+  permissions.clear();
+  permissions.setAccess(access);
+
+  return { session, access };
 }
 
 /**

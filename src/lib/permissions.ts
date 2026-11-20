@@ -53,3 +53,12 @@ export const hasAnyPermission = (access, permissions: string[]) =>
 
 export const hasAllPermissions = (access, permissions: string[]) =>
   permissions.every((permission) => hasPermission(access, permission));
+
+export const hasDashboardAccess = (access) =>
+  Boolean(
+    access &&
+      Array.isArray(access.roles) &&
+      access.roles.length > 0 &&
+      Array.isArray(access.permissions) &&
+      access.permissions.length > 0,
+  );

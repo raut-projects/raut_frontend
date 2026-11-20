@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/toastContext";
 import GateLoader from "@/components/GateLoader";
 import { useAuthHydrated, useSession } from "@/hooks/useSession";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useFromParam } from "@/lib/useFromParam";
-import { isAdminRole } from "@/lib/roles";
+import { resolvePostLoginRoute } from "@/lib/navigation";
 import { validateEmail } from "@/lib/validation";
 import { getPasswordResetErrorMessage } from "@/lib/authErrors";
 import { resetPassword } from "@/services/auth";
@@ -23,6 +24,7 @@ function ForgotPassword() {
   const toast = useToast();
   const session = useSession();
   const hydrated = useAuthHydrated();
+  const { access, hydrated: permissionHydrated } = usePermissions();
   const from = useFromParam("/");
 
   const [email, setEmail] = useState("");
@@ -31,17 +33,16 @@ function ForgotPassword() {
   const [sentTo, setSentTo] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const sessionRedirect = session
-    ? isAdminRole(session.role)
-      ? from
-      : `/request-admin?from=${encodeURIComponent(from === "/request-admin" ? "/" : from)}`
-    : null;
+  const sessionRedirect =
+    session && permissionHydrated
+      ? resolvePostLoginRoute(access, from) ?? "/"
+      : null;
 
   useEffect(() => {
     if (sessionRedirect) router.replace(sessionRedirect);
   }, [sessionRedirect, router]);
 
-  if (!hydrated || session) {
+  if (!hydrated || !permissionHydrated || session) {
     return <GateLoader />;
   }
 

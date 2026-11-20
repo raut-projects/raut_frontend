@@ -247,7 +247,7 @@ If the page is opened outside the WebView, it falls back to a browser alert. Can
 4. The session and tokens are persisted in `localStorage` and exposed to React through the Zustand auth store.
 5. `RequireAdmin` revalidates the role every five minutes (`ROLE_REVALIDATE_MS`). A missing or stale role is checked against `GET /auth/me`.
 6. `loginWithEmail` loads effective RBAC permissions from `GET /me/permissions` and stores them in the persisted permission store (`raut-permission-storage`); `RequireAdmin` reuses that snapshot and re-fetches when it is older than five minutes (`RBAC_REVALIDATE_MS`) on the next gate render/navigation.
-7. Non-admin accounts are redirected to `/request-admin`, where the admin secret is submitted to `POST /admin/promote`.
+7. Sign-in routing uses the RBAC snapshot: accounts with at least one role and permission enter the requested route when permitted or the first permitted dashboard route; accounts without either are signed out and shown an access error. `/request-admin` is no longer an automatic redirect.
 8. If the promoted access token still does not grant an admin role, the user is asked to sign in again.
 9. Authenticated requests that return `401` attempt a token refresh through `POST /auth/refresh`. If refresh fails, the session and cached permissions are cleared and the user returns to `/login`.
 
