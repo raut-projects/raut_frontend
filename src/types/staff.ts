@@ -105,3 +105,29 @@ export type StaffRevokeRolePayload = {
 export type StaffDeactivatePayload = {
   reason: string;
 };
+
+export type StaffInvitationVerification = {
+  email: string;
+  fullName: string;
+  roleName: string;
+  scopeType: StaffScopeType | string;
+  scopeId: string | null;
+  invitationExpiresAt: string | null;
+  requiresPasswordSetup: boolean;
+  requiresPhoneSetup: boolean;
+  requiresCurrentPassword: boolean;
+};
+
+export type AcceptStaffInvitationPayload = {
+  token: string;
+  phone?: string | null;
+  current_password?: string | null;
+  change_password?: boolean;
+  password?: string | null;
+  password_confirmation?: string | null;
+};
+
+export type AcceptStaffInvitationResult = {
+  redirectUrl: string | null;
+  message: string;
+};

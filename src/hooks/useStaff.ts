@@ -8,6 +8,7 @@ import {
 import { useToast } from "@/components/toastContext";
 import { queryKeys } from "@/lib/queryKeys";
 import {
+  acceptStaffInvitation,
   assignStaffRole,
   cancelStaffInvitation,
   deactivateStaff,
@@ -16,8 +17,10 @@ import {
   listStaffInvitations,
   resendStaffInvitation,
   revokeStaffRole,
+  verifyStaffInvitation,
 } from "@/services/staff";
 import type {
+  AcceptStaffInvitationPayload,
   StaffAssignRolePayload,
   StaffInvitationListParams,
   StaffInvitePayload,
@@ -85,8 +88,7 @@ export function useResendStaffInvitation() {
   const toast = useToast();
 
   return useMutation({
-    mutationFn: (invitationId: string) =>
-      resendStaffInvitation(invitationId),
+    mutationFn: (invitationId: string) => resendStaffInvitation(invitationId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
       toast.success("Staff invitation resent.");
@@ -156,6 +158,30 @@ export function useDeactivateStaff() {
     },
     onError: (error: Error) => {
       toast.error(error?.message ?? "The account could not be deactivated.");
+    },
+  });
+}
+
+export function useVerifyStaffInvitation(token: string) {
+  return useQuery({
+    queryKey: queryKeys.staff.invitationVerification(token),
+    queryFn: () => verifyStaffInvitation(token),
+    enabled: Boolean(token),
+    retry: false,
+    staleTime: Infinity,
+  });
+}
+
+export function useAcceptStaffInvitation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: AcceptStaffInvitationPayload) =>
+      acceptStaffInvitation(payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.staff.invitations,
+      });
     },
   });
 }

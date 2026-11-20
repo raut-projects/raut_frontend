@@ -1,16 +1,20 @@
 import { API_ROUTES } from "@/lib/config";
 import type {
+  AcceptStaffInvitationPayload,
+  AcceptStaffInvitationResult,
   StaffAssignRolePayload,
   StaffInvitation,
   StaffInvitationListParams,
   StaffInvitationListResult,
   StaffInvitationStatus,
+  StaffInvitationVerification,
   StaffInvitePayload,
   StaffListParams,
   StaffListResult,
   StaffMember,
 } from "@/types/staff";
 import { apiDelete, apiGet, apiPost } from "./api";
+import { envelopeData, envelopeMessage, request } from "./http";
 import { mapStaffMember } from "./mappers";
 
 type RecordValue = Record<string, unknown>;
@@ -36,6 +40,12 @@ const numberValue = (value: unknown, fallback: number) => {
 const nullableString = (value: unknown) =>
   value === undefined || value === null || value === "" ? null : String(value);
 
+const textValue = (value: unknown) =>
+  value === undefined || value === null ? "" : String(value).trim();
+
+const booleanValue = (value: unknown) =>
+  value === true || value === 1 || value === "true" || value === "1";
+
 const INVITATION_STATUSES: StaffInvitationStatus[] = [
   "pending",
   "accepted",
@@ -46,9 +56,7 @@ const INVITATION_STATUSES: StaffInvitationStatus[] = [
 const normalizeInvitationStatus = (
   record: RecordValue,
 ): StaffInvitationStatus => {
-  const raw = String(
-    firstValue(record, "status", "invitation_status") ?? "",
-  )
+  const raw = String(firstValue(record, "status", "invitation_status") ?? "")
     .trim()
     .toLowerCase();
 
@@ -83,13 +91,13 @@ const mapStaffInvitation = (raw: unknown): StaffInvitation | null => {
   return {
     id,
     email: String(firstValue(item, "email") ?? ""),
-    fullName: String(
-      firstValue(item, "full_name", "fullName", "name") ?? "",
-    ),
+    fullName: String(firstValue(item, "full_name", "fullName", "name") ?? ""),
     roleId: String(firstValue(item, "role_id", "roleId") ?? ""),
     roleKey: String(firstValue(item, "role_key", "roleKey") ?? ""),
     roleName: String(firstValue(item, "role_name", "roleName") ?? ""),
-    scopeType: String(firstValue(item, "scope_type", "scopeType") ?? "platform"),
+    scopeType: String(
+      firstValue(item, "scope_type", "scopeType") ?? "platform",
+    ),
     scopeId: nullableString(firstValue(item, "scope_id", "scopeId")),
     status: normalizeInvitationStatus(item),
     invitationExpiresAt: nullableString(
@@ -119,8 +127,8 @@ const mapStaffInvitation = (raw: unknown): StaffInvitation | null => {
 export async function listStaff(
   params: StaffListParams = {},
 ): Promise<StaffListResult> {
-  const page = params.page ?? 1;
-  const pageSize = params.pageSize ?? 20;
+  const page = Math.max(1, Math.trunc(params.page ?? 1));
+  const pageSize = Math.max(1, Math.trunc(params.pageSize ?? 20));
   const data = await apiGet(API_ROUTES.staff, {
     params: { page, page_size: pageSize },
   });
@@ -131,21 +139,30 @@ export async function listStaff(
   const items = (Array.isArray(rawItems) ? rawItems : [])
     .map(mapStaffMember)
     .filter((member): member is StaffMember => Boolean(member.id));
-  const total = numberValue(
-    firstValue(record, "total_items", "total", "total_count"),
-    items.length,
+  const total = Math.max(
+    0,
+    numberValue(
+      firstValue(record, "total_items", "total", "total_count"),
+      items.length,
+    ),
   );
-  const totalPages = numberValue(
-    firstValue(record, "total_pages"),
-    Math.max(1, Math.ceil(total / pageSize)),
+  const totalPages = Math.max(
+    1,
+    Math.trunc(
+      numberValue(
+        firstValue(record, "total_pages"),
+        Math.max(1, Math.ceil(total / pageSize)),
+      ),
+    ),
   );
-  const currentPage = numberValue(firstValue(record, "page"), page);
-  const currentPageSize = numberValue(
-    firstValue(record, "page_size"),
-    pageSize,
+  const currentPage = Math.min(
+    totalPages,
+    Math.max(1, Math.trunc(numberValue(firstValue(record, "page"), page))),
   );
-  const hasNextValue = firstValue(record, "has_next");
-  const hasPrevValue = firstValue(record, "has_prev");
+  const currentPageSize = Math.max(
+    1,
+    Math.trunc(numberValue(firstValue(record, "page_size"), pageSize)),
+  );
 
   return {
     items,
@@ -153,21 +170,18 @@ export async function listStaff(
     page: currentPage,
     pageSize: currentPageSize,
     totalPages,
-    hasNext:
-      typeof hasNextValue === "boolean"
-        ? hasNextValue
-        : currentPage < totalPages,
-    hasPrev:
-      typeof hasPrevValue === "boolean" ? hasPrevValue : currentPage > 1,
+    hasNext: currentPage < totalPages,
+    hasPrev: currentPage > 1,
   };
 }
 
 export async function listStaffInvitations(
   params: StaffInvitationListParams = {},
 ): Promise<StaffInvitationListResult> {
-  const page = params.page ?? 1;
-  const pageSize = params.pageSize ?? 20;
-  const status = params.status && params.status !== "all" ? params.status : undefined;
+  const page = Math.max(1, Math.trunc(params.page ?? 1));
+  const pageSize = Math.max(1, Math.trunc(params.pageSize ?? 20));
+  const status =
+    params.status && params.status !== "all" ? params.status : undefined;
   const data = await apiGet(API_ROUTES.staffInvitations, {
     params: { status, page, page_size: pageSize },
   });
@@ -182,21 +196,30 @@ export async function listStaffInvitations(
   const items = (Array.isArray(rawItems) ? rawItems : [])
     .map(mapStaffInvitation)
     .filter((invitation): invitation is StaffInvitation => Boolean(invitation));
-  const total = numberValue(
-    firstValue(pagination, "total_items", "total", "total_count"),
-    items.length,
+  const total = Math.max(
+    0,
+    numberValue(
+      firstValue(pagination, "total_items", "total", "total_count"),
+      items.length,
+    ),
   );
-  const totalPages = numberValue(
-    firstValue(pagination, "total_pages"),
-    Math.max(1, Math.ceil(total / pageSize)),
+  const totalPages = Math.max(
+    1,
+    Math.trunc(
+      numberValue(
+        firstValue(pagination, "total_pages"),
+        Math.max(1, Math.ceil(total / pageSize)),
+      ),
+    ),
   );
-  const currentPage = numberValue(firstValue(pagination, "page"), page);
-  const currentPageSize = numberValue(
-    firstValue(pagination, "page_size"),
-    pageSize,
+  const currentPage = Math.min(
+    totalPages,
+    Math.max(1, Math.trunc(numberValue(firstValue(pagination, "page"), page))),
   );
-  const hasNextValue = firstValue(pagination, "has_next");
-  const hasPrevValue = firstValue(pagination, "has_prev");
+  const currentPageSize = Math.max(
+    1,
+    Math.trunc(numberValue(firstValue(pagination, "page_size"), pageSize)),
+  );
 
   return {
     items,
@@ -204,12 +227,8 @@ export async function listStaffInvitations(
     page: currentPage,
     pageSize: currentPageSize,
     totalPages,
-    hasNext:
-      typeof hasNextValue === "boolean"
-        ? hasNextValue
-        : currentPage < totalPages,
-    hasPrev:
-      typeof hasPrevValue === "boolean" ? hasPrevValue : currentPage > 1,
+    hasNext: currentPage < totalPages,
+    hasPrev: currentPage > 1,
   };
 }
 
@@ -252,4 +271,118 @@ export async function deactivateStaff(
   reason: string,
 ): Promise<void> {
   await apiPost(API_ROUTES.staffDeactivate(userId), { reason });
+}
+
+const pickRedirectUrl = (...sources: unknown[]) => {
+  for (const source of sources) {
+    const record = asRecord(source);
+    const nested = asRecord(firstValue(record, "data"));
+    const candidates = [
+      firstValue(
+        record,
+        "redirect_url",
+        "redirectUrl",
+        "dashboard_url",
+        "dashboardUrl",
+        "url",
+        "redirect",
+      ),
+      firstValue(
+        nested,
+        "redirect_url",
+        "redirectUrl",
+        "dashboard_url",
+        "dashboardUrl",
+        "url",
+        "redirect",
+      ),
+    ];
+
+    for (const candidate of candidates) {
+      if (typeof candidate === "string" && candidate.trim()) {
+        return candidate.trim();
+      }
+    }
+  }
+
+  return null;
+};
+
+/**
+ * Verifies an emailed invitation token without an admin session. The response
+ * carries no published schema, so field aliases and boolean spellings are
+ * normalised here rather than in the page.
+ */
+export async function verifyStaffInvitation(
+  token: string,
+): Promise<StaffInvitationVerification> {
+  const payload = await request(API_ROUTES.staffInvitationVerify, {
+    method: "POST",
+    body: { token },
+    auth: false,
+  });
+  const data = asRecord(envelopeData(payload) ?? payload);
+  const raw = asRecord(
+    firstValue(data, "invitation", "staff_invitation") ?? data,
+  );
+
+  return {
+    email: textValue(firstValue(raw, "email")),
+    fullName: textValue(firstValue(raw, "full_name", "fullName", "name")),
+    roleName: textValue(firstValue(raw, "role_name", "roleName", "role")),
+    scopeType:
+      textValue(firstValue(raw, "scope_type", "scopeType")) || "platform",
+    scopeId: nullableString(firstValue(raw, "scope_id", "scopeId")),
+    invitationExpiresAt: nullableString(
+      firstValue(
+        raw,
+        "invitation_expires_at",
+        "invitationExpiresAt",
+        "expires_at",
+      ),
+    ),
+    requiresPasswordSetup: booleanValue(
+      firstValue(raw, "requires_password_setup", "requiresPasswordSetup"),
+    ),
+    requiresPhoneSetup: booleanValue(
+      firstValue(raw, "requires_phone_setup", "requiresPhoneSetup"),
+    ),
+    requiresCurrentPassword: booleanValue(
+      firstValue(raw, "requires_current_password", "requiresCurrentPassword"),
+    ),
+  };
+}
+
+/**
+ * Accepts an emailed invitation. Only fields the invite requires are sent;
+ * the backend creates or matches the account and assigns the invited role.
+ */
+export async function acceptStaffInvitation(
+  input: AcceptStaffInvitationPayload,
+): Promise<AcceptStaffInvitationResult> {
+  const body: Record<string, string | boolean | null | undefined> = {
+    token: input.token.trim(),
+    change_password: Boolean(input.change_password),
+  };
+
+  if (input.current_password !== undefined) {
+    body.current_password = input.current_password;
+  }
+  if (input.phone !== undefined) body.phone = input.phone;
+  if (input.password !== undefined) body.password = input.password;
+  if (input.password_confirmation !== undefined) {
+    body.password_confirmation = input.password_confirmation;
+  }
+
+  const payload = await request(API_ROUTES.staffInvitationAccept, {
+    method: "POST",
+    body,
+    auth: false,
+  });
+  const data = envelopeData(payload) ?? payload;
+
+  return {
+    redirectUrl: pickRedirectUrl(payload, data),
+    message: envelopeMessage(payload) || "Invitation accepted.",
+  };
 }

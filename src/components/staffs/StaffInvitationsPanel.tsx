@@ -107,37 +107,33 @@ export function StaffInvitationsPanel({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-card">
-        <span className="mr-1 text-xs font-semibold text-slate-500">
-          Status
-        </span>
-        {STATUS_FILTERS.map((filter) => (
+        { STATUS_FILTERS.map((filter) => (
           <button
-            key={filter}
+            key={ filter }
             type="button"
-            aria-pressed={status === filter}
-            onClick={() => onStatusChange(filter)}
-            className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
-              status === filter
-                ? "border-brand-200 bg-brand-50 text-brand-700"
-                : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700"
-            }`}
+            aria-pressed={ status === filter }
+            onClick={ () => onStatusChange(filter) }
+            className={ `rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${status === filter
+              ? "border-brand-200 bg-brand-50 text-brand-700"
+              : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+              }` }
           >
-            {FILTER_LABELS[filter]}
+            { FILTER_LABELS[filter] }
           </button>
-        ))}
+        )) }
       </div>
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5">
           <p className="text-xs text-slate-500">
-            Showing{" "}
-            <span className="font-semibold text-slate-700">{rangeLabel}</span>{" "}
-            of{" "}
-            <span className="font-semibold text-slate-700">{total}</span>{" "}
+            Showing{ " " }
+            <span className="font-semibold text-slate-700">{ rangeLabel }</span>{ " " }
+            of{ " " }
+            <span className="font-semibold text-slate-700">{ total }</span>{ " " }
             invitations
           </p>
           <p className="text-xs text-slate-400">
-            Page {currentPage} of {totalPages}
+            Page { currentPage } of { totalPages }
           </p>
         </div>
 
@@ -156,92 +152,92 @@ export function StaffInvitationsPanel({
           </TableHeader>
 
           <TableBody>
-            {query.isError && (
+            { query.isError && (
               <TableRow className="hover:bg-transparent">
                 <TableCell
-                  colSpan={6}
+                  colSpan={ 6 }
                   className="px-4 py-12 text-center whitespace-normal"
                 >
                   <p className="text-sm font-medium text-rose-700">
-                    {query.error instanceof Error
+                    { query.error instanceof Error
                       ? query.error.message
-                      : "Invitations could not be loaded."}
+                      : "Invitations could not be loaded." }
                   </p>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => void query.refetch()}
+                    onClick={ () => void query.refetch() }
                     className="mt-3"
                   >
                     Try again
                   </Button>
                 </TableCell>
               </TableRow>
-            )}
+            ) }
 
-            {query.isPending && (
+            { query.isPending && (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={6} className="px-4 py-12 text-center">
+                <TableCell colSpan={ 6 } className="px-4 py-12 text-center">
                   <span className="text-sm text-slate-500">
                     Loading invitations.
                   </span>
                 </TableCell>
               </TableRow>
-            )}
+            ) }
 
-            {invitations.map((invitation) => (
-              <TableRow key={invitation.id}>
+            { invitations.map((invitation) => (
+              <TableRow key={ invitation.id }>
                 <TableCell className="whitespace-normal">
                   <div className="min-w-0">
                     <span className="block truncate font-medium text-slate-900">
-                      {invitation.fullName || invitation.email}
+                      { invitation.fullName || invitation.email }
                     </span>
                     <span className="mt-0.5 block truncate text-xs text-slate-500">
-                      {invitation.email}
+                      { invitation.email }
                     </span>
-                    {invitation.cancellationReason ? (
+                    { invitation.cancellationReason ? (
                       <span className="mt-0.5 block truncate text-xs text-rose-600">
-                        {invitation.cancellationReason}
+                        { invitation.cancellationReason }
                       </span>
-                    ) : null}
+                    ) : null }
                   </div>
                 </TableCell>
 
                 <TableCell>
-                  {invitation.roleKey ? (
-                    <AdminRoleBadge role={invitation.roleKey} />
+                  { invitation.roleKey ? (
+                    <AdminRoleBadge role={ invitation.roleKey } />
                   ) : (
                     <span className="text-xs text-slate-400">
-                      {invitation.roleName || "Unknown role"}
+                      { invitation.roleName || "Unknown role" }
                     </span>
-                  )}
+                  ) }
                 </TableCell>
 
                 <TableCell>
-                  <InvitationStatusBadge status={invitation.status} />
+                  <InvitationStatusBadge status={ invitation.status } />
                 </TableCell>
 
                 <TableCell className="hidden md:table-cell">
                   <span className="text-sm capitalize text-slate-600">
-                    {invitation.scopeType}
+                    { invitation.scopeType }
                   </span>
-                  {invitation.scopeId ? (
+                  { invitation.scopeId ? (
                     <span className="block text-xs text-slate-400">
-                      {invitation.scopeId}
+                      { invitation.scopeId }
                     </span>
-                  ) : null}
+                  ) : null }
                 </TableCell>
 
                 <TableCell className="hidden lg:table-cell">
                   <span className="text-sm text-slate-600">
-                    {formatDate(
+                    { formatDate(
                       invitation.assignmentExpiresAt ??
-                        invitation.invitationExpiresAt,
-                    )}
+                      invitation.invitationExpiresAt,
+                    ) }
                   </span>
                   <span className="block text-xs text-slate-400">
-                    {invitation.assignmentExpiresAt ? "Access" : "Invitation"}
+                    { invitation.assignmentExpiresAt ? "Access" : "Invitation" }
                   </span>
                 </TableCell>
 
@@ -253,7 +249,7 @@ export function StaffInvitationsPanel({
                         variant="ghost"
                         size="icon"
                         className="text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                        aria-label={`Actions for ${invitation.email}`}
+                        aria-label={ `Actions for ${invitation.email}` }
                       >
                         <EllipsisVertical
                           className="h-4 w-4"
@@ -265,23 +261,23 @@ export function StaffInvitationsPanel({
                       align="end"
                       className="w-52 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
                     >
-                      {canReadRoles && invitation.roleKey ? (
+                      { canReadRoles && invitation.roleKey ? (
                         <DropdownMenuItem
-                          onSelect={() => onViewPermissions(invitation.roleKey)}
+                          onSelect={ () => onViewPermissions(invitation.roleKey) }
                           className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                         >
                           <KeyRound className="size-3.5" aria-hidden="true" />
                           View permissions
                         </DropdownMenuItem>
-                      ) : null}
-                      {canManage && invitation.status !== "accepted" ? (
+                      ) : null }
+                      { canManage && invitation.status !== "accepted" ? (
                         <>
-                          {canReadRoles && invitation.roleKey ? (
+                          { canReadRoles && invitation.roleKey ? (
                             <DropdownMenuSeparator className="bg-slate-100" />
-                          ) : null}
+                          ) : null }
                           <DropdownMenuItem
-                            disabled={resendMutation.isPending}
-                            onSelect={() =>
+                            disabled={ resendMutation.isPending }
+                            onSelect={ () =>
                               resendMutation.mutate(invitation.id)
                             }
                             className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
@@ -292,32 +288,32 @@ export function StaffInvitationsPanel({
                             />
                             Resend invitation
                           </DropdownMenuItem>
-                          {invitation.status === "pending" ? (
+                          { invitation.status === "pending" ? (
                             <DropdownMenuItem
-                              onSelect={() => {
+                              onSelect={ () => {
                                 setCancelReason("");
                                 setCancelTarget(invitation);
-                              }}
+                              } }
                               className="px-2.5 py-1.5 text-xs font-medium text-rose-600 focus:bg-rose-50 focus:text-rose-700"
                             >
                               <UserX className="size-3.5" aria-hidden="true" />
                               Cancel invitation
                             </DropdownMenuItem>
-                          ) : null}
+                          ) : null }
                         </>
-                      ) : null}
+                      ) : null }
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
               </TableRow>
-            ))}
+            )) }
 
-            {!query.isError &&
+            { !query.isError &&
               !query.isPending &&
               invitations.length === 0 && (
                 <TableRow className="hover:bg-transparent">
                   <TableCell
-                    colSpan={6}
+                    colSpan={ 6 }
                     className="px-4 py-12 text-center whitespace-normal"
                   >
                     <p className="text-sm font-medium text-slate-700">
@@ -328,16 +324,16 @@ export function StaffInvitationsPanel({
                     </p>
                   </TableCell>
                 </TableRow>
-              )}
+              ) }
           </TableBody>
         </Table>
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3.5 sm:px-5">
           <p className="text-xs text-slate-500">
-            Showing{" "}
-            <span className="font-semibold text-slate-700">{rangeLabel}</span>{" "}
-            of{" "}
-            <span className="font-semibold text-slate-700">{total}</span>{" "}
+            Showing{ " " }
+            <span className="font-semibold text-slate-700">{ rangeLabel }</span>{ " " }
+            of{ " " }
+            <span className="font-semibold text-slate-700">{ total }</span>{ " " }
             invitations
           </p>
           <div className="flex gap-2">
@@ -345,8 +341,8 @@ export function StaffInvitationsPanel({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-              disabled={currentPage <= 1}
+              onClick={ () => onPageChange(Math.max(1, currentPage - 1)) }
+              disabled={ currentPage <= 1 }
               className="h-auto border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:text-slate-400 disabled:opacity-100"
             >
               Previous
@@ -355,8 +351,10 @@ export function StaffInvitationsPanel({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage >= totalPages}
+              onClick={ () =>
+                onPageChange(Math.min(totalPages, Math.max(1, currentPage + 1)))
+              }
+              disabled={ currentPage >= totalPages }
               className="h-auto border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:text-slate-400 disabled:opacity-100"
             >
               Next
@@ -366,25 +364,25 @@ export function StaffInvitationsPanel({
       </div>
 
       <ReasonDialog
-        open={Boolean(cancelTarget)}
-        onClose={closeCancel}
-        title={cancelTarget ? `Cancel ${cancelTarget.email}?` : "Cancel invitation"}
+        open={ Boolean(cancelTarget) }
+        onClose={ closeCancel }
+        title={ cancelTarget ? `Cancel ${cancelTarget.email}?` : "Cancel invitation" }
         description="This Invitation link will no longer work."
         confirmLabel="Cancel invitation"
         tone="danger"
-        value={cancelReason}
-        onChange={setCancelReason}
-        pending={cancelMutation.isPending}
-        onConfirm={confirmCancel}
+        value={ cancelReason }
+        onChange={ setCancelReason }
+        pending={ cancelMutation.isPending }
+        onConfirm={ confirmCancel }
       >
-        {cancelTarget && (
+        { cancelTarget && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
             <p className="font-semibold">
-              {cancelTarget.fullName || cancelTarget.email}
+              { cancelTarget.fullName || cancelTarget.email }
             </p>
-            <p className="mt-0.5 text-xs text-rose-700">{cancelTarget.email}</p>
+            <p className="mt-0.5 text-xs text-rose-700">{ cancelTarget.email }</p>
           </div>
-        )}
+        ) }
       </ReasonDialog>
     </div>
   );
