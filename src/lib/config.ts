@@ -70,6 +70,7 @@ export const API_ROUTES = {
     `/staff/${encodeURIComponent(userId)}/roles/${encodeURIComponent(assignmentId)}`,
   staffDeactivate: (userId: string) =>
     `/staff/${encodeURIComponent(userId)}/deactivate`,
+  confirmResetPassword: "/auth/password/reset/confirm",
   resetPassword: "/auth/password/reset",
   passwordUpdate: "/auth/password/update",
   notifications: "/notifications/",

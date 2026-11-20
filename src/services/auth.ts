@@ -395,3 +395,33 @@ export async function updatePassword({
 
   return envelopeMessage(payload);
 }
+
+/**
+ * Completes a password reset by submitting a new password with the reset token.
+ */
+export async function confirmResetPassword({
+  token,
+  password,
+}: {
+  token: string;
+  password: string;
+}) {
+  const body: Record<string, string> = {
+    password: String(password ?? ""),
+  };
+
+  const tokenValue = String(token ?? "").trim();
+
+  if (tokenValue) {
+    body.token = tokenValue;
+    body.reset_token = tokenValue;
+  }
+
+  const payload = await request(API_ROUTES.confirmResetPassword, {
+    method: "POST",
+    body,
+    auth: false,
+  });
+
+  return envelopeMessage(payload);
+}

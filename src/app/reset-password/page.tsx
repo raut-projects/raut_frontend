@@ -13,7 +13,7 @@ import {
   validateNewPassword,
   validatePasswordConfirmation,
 } from "@/lib/validation";
-import { updatePassword } from "@/services/auth";
+import { confirmResetPassword } from "@/services/auth"
 
 const inputClass =
   "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100";
@@ -158,10 +158,8 @@ function ResetPassword() {
     setFormError("");
 
     try {
-      await updatePassword({
+      await confirmResetPassword({
         token: params.token || undefined,
-        code: params.code || undefined,
-        email: params.email || undefined,
         password,
       });
       setDone(true);
