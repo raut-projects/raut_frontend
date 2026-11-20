@@ -4,7 +4,7 @@
  * machine-readable keys where both are needed.
  */
 /** Roles recognized by the admin application. */
-export type UserRole = 'user' | 'admin' | 'super_admin'
+export type UserRole = string
 
 /**
  * Customer/admin-user row used by the customers table.

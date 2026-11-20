@@ -160,10 +160,10 @@ function Header() {
           </span>
           <div className="hidden leading-tight lg:block">
             <p className="text-sm font-semibold text-slate-800">
-              {session?.name ?? "Admin"}
+              {session?.name ?? "User"}
             </p>
             <p className="text-xs text-slate-500">
-              {session?.roleLabel ?? session?.role ?? "Admin"}
+              {session?.roleLabel ?? session?.role ?? "User"}
             </p>
           </div>
         </div>

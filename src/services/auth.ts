@@ -5,7 +5,13 @@
 // surface as ApiError.
 
 import { API_ROUTES } from "../lib/config";
-import { firstRole, formatRole, isAdminRole, resolveRole } from "../lib/roles";
+import { hasDashboardAccess } from "../lib/permissions";
+import {
+  firstRole,
+  formatRole,
+  resolveRole,
+  roleLabelFromPayload,
+} from "../lib/roles";
 import type { AuthSession } from "../types/models";
 import type { RbacAccessSnapshot } from "../types/rbac";
 import {
@@ -100,9 +106,16 @@ const roleFromPayload = ({ user, data, accessToken }) =>
 const roleFromResponse = ({ user, data }) =>
   resolveRole(user?.role, user?.roles, data?.role, data?.roles);
 
-const toSession = (user, phone, fallbackRole): AuthSession => {
+const toSession = (
+  user,
+  phone,
+  fallbackRole,
+  roleLabelSources: unknown[] = [],
+): AuthSession => {
   const fallbackPhone = normalizePhone(phone);
   const role = firstRole(user?.role, user?.roles, fallbackRole) ?? "user";
+  const roleLabel =
+    roleLabelFromPayload(user, ...roleLabelSources) || formatRole(role);
 
   const resolvedName =
     firstText(user?.full_name, user?.fullName, user?.name, user?.email) ??
@@ -112,9 +125,7 @@ const toSession = (user, phone, fallbackRole): AuthSession => {
   // Accounts without a name fall back to their phone number, which reads badly
   // in the header and on the dashboard.
   const name = /^\+?\d[\d\s()-]{6,}$/.test(resolvedName)
-    ? isAdminRole(role)
-      ? "Admin"
-      : "User"
+    ? roleLabel
     : resolvedName;
 
   return {
@@ -122,7 +133,7 @@ const toSession = (user, phone, fallbackRole): AuthSession => {
     name,
     phone: user?.phone ?? fallbackPhone,
     role,
-    roleLabel: formatRole(role),
+    roleLabel,
     initials: buildInitials(name),
     signedInAt: new Date().toISOString(),
   };
@@ -172,7 +183,7 @@ export async function loginWithEmail({
   const user = data.user ?? data;
   const role = roleFromPayload({ user, data, accessToken });
 
-  const session = toSession(user, user?.phone ?? "", role);
+  const session = toSession(user, user?.phone ?? "", role, [data, payload]);
 
   saveSession({
     session: { ...session, roleVerifiedAt: Date.now() },
@@ -229,17 +240,20 @@ export function getToken() {
 /**
  * Fetches the currently authenticated user.
  * GET /auth/me (API_ROUTES.me) with the bearer token.
- * Returns `{ user, role }`, where the role is resolved from the response only.
+ * Returns `{ user, role, roleLabel }`, resolved from the response only.
  * Throws ApiError on an expired/invalid session or transport failure.
  */
 export async function fetchCurrentUser() {
   const payload = await request(API_ROUTES.me, { auth: true });
   const data = envelopeData(payload) ?? {};
   const user = data.user ?? data;
+  const role = roleFromResponse({ user, data });
+  const roleLabel = roleLabelFromPayload(user, data, payload) || formatRole(role);
 
   return {
     user,
-    role: roleFromResponse({ user, data }),
+    role,
+    roleLabel,
   };
 }
 
@@ -252,11 +266,13 @@ const signInAgainError = (message) => {
  * Promotes the signed-in account to admin using the shared admin secret.
  * POST /auth/promote (API_ROUTES.promote) as form-urlencoded with `{ secret }`.
  * Side effects: stores any returned refresh/access tokens, refreshes the token
- * pair when the response carries no access token, persists the new role via
- * `updateSession`, and refreshes the cached permissions.
+ * pair when the response carries no access token, verifies the backend RBAC
+ * snapshot, persists the returned role via `updateSession`, and refreshes the
+ * cached permissions.
  * Returns `{ role, roleLabel, message }`.
- * Throws ApiError (403) when the secret is refused; a 409 error flagged
- * `requiresSignIn` when access was granted but a fresh token is required.
+ * Throws ApiError (403) when the secret is refused or no RBAC access was
+ * granted; a 409 error flagged `requiresSignIn` when the refreshed session
+ * cannot be verified.
  */
 export async function requestAdminAccess(secret) {
   const payload = await request(API_ROUTES.promote, {
@@ -283,15 +299,27 @@ export async function requestAdminAccess(secret) {
     });
   }
 
-  const promotedUser = data.user ?? data;
-  let role = roleFromResponse({ user: promotedUser, data });
+  if (!promotedAccessToken) {
+    const refreshed = await refreshAccessToken();
 
-  if (!role) {
-    const current = await fetchCurrentUser();
-    role = current.role;
+    if (!refreshed || !getAccessToken()) {
+      throw signInAgainError(
+        "Your access was granted but your session could not be refreshed. Please sign in again.",
+      );
+    }
   }
 
-  if (!isAdminRole(role)) {
+  let access: RbacAccessSnapshot;
+
+  try {
+    access = await fetchMyPermissions();
+  } catch {
+    throw signInAgainError(
+      "Your access was updated but your dashboard permissions could not be verified. Please sign in again.",
+    );
+  }
+
+  if (!hasDashboardAccess(access)) {
     throw new ApiError(
       "That secret was not accepted. Your access level has not changed.",
       403,
@@ -299,48 +327,33 @@ export async function requestAdminAccess(secret) {
     );
   }
 
-  // The access token has to carry the new role, otherwise the backend keeps
-  // treating the user as a plain user on every later request.
-  let accessToken = promotedAccessToken ?? getAccessToken();
+  const promotedUser = data.user ?? data;
+  let role = roleFromResponse({ user: promotedUser, data });
+  let roleLabel = roleLabelFromPayload(promotedUser, data, payload);
 
-  if (!promotedAccessToken) {
-    const refreshed = await refreshAccessToken();
-    accessToken = getAccessToken();
+  if (!role || !roleLabel) {
+    const current = await fetchCurrentUser();
 
-    if (!refreshed || !accessToken) {
-      throw signInAgainError(
-        "Your access was granted but your session could not be refreshed. Please sign in again.",
-      );
-    }
+    role = role ?? current.role;
+    roleLabel = roleLabel || current.roleLabel;
   }
 
-  const claims = decodeJwtPayload(accessToken);
-  const claimRole = claims?.role ?? null;
-
-  if (claimRole && !isAdminRole(claimRole)) {
-    throw signInAgainError(
-      "Your account now has admin access. Please sign in again to continue.",
-    );
-  }
+  role = role ?? access.roles[0]?.key ?? "user";
+  roleLabel = roleLabel || formatRole(role);
 
   updateSession({
     role,
-    roleLabel: formatRole(role),
+    roleLabel,
     roleVerifiedAt: Date.now(),
   });
 
   const permissions = usePermissionStore.getState();
   permissions.clear();
-
-  try {
-    permissions.setAccess(await fetchMyPermissions());
-  } catch {
-    permissions.clear();
-  }
+  permissions.setAccess(access);
 
   return {
     role,
-    roleLabel: formatRole(role),
+    roleLabel,
     message: envelopeMessage(payload) || "Admin access granted.",
   };
 }

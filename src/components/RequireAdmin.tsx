@@ -75,14 +75,14 @@ function RequireAdmin({ children }: { children: ReactNode }) {
     let active = true;
 
     verifyRole()
-      .then(({ role }) => {
+      .then(({ role, roleLabel }) => {
         if (!active) return;
 
         const nextRole = firstRole(role, session.role) ?? "user";
 
         updateSession({
           role: nextRole,
-          roleLabel: formatRole(nextRole),
+          roleLabel: roleLabel || formatRole(nextRole),
           roleVerifiedAt: Date.now(),
         });
 

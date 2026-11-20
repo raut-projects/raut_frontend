@@ -118,13 +118,7 @@ Dashboard comparison is only available when the previous period falls inside the
 
    Use the backend origin without a trailing slash.
 
-5. Optionally override the roles that grant dashboard access:
-
-   ```env
-   NEXT_PUBLIC_ADMIN_ROLES=admin,super_admin
-   ```
-
-6. Start the development server:
+ 5. Start the development server:
 
    ```bash
    pnpm run dev
@@ -132,7 +126,7 @@ Dashboard comparison is only available when the previous period falls inside the
 
    Next.js prints the local URL, typically `http://localhost:3000`.
 
-7. To work on the driver onboarding flow, open:
+ 6. To work on the driver onboarding flow, open:
 
    ```text
    http://localhost:3000/onboarding?token=<access-token>&lang=en
@@ -147,7 +141,6 @@ Dashboard comparison is only available when the previous period falls inside the
 | Variable                        | Required | Default                   | Description                                                                                                                                                                                                                                                                                                                                      |
 | ------------------------------- | -------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `NEXT_PUBLIC_API_BASE_URL`      | Yes      | None                      | Base URL of the Raut backend API, for example `http://localhost:8000`. Trailing slashes are removed automatically. Inlined at build time, so rebuild after changing it.                                                                                                                                                                          |
-| `NEXT_PUBLIC_ADMIN_ROLES`       | No       | `admin,super_admin`       | Comma-separated list of roles allowed through the admin gate. Values such as `administrator`, `superadmin`, `super-admin` and `owner` are normalized. Other known roles such as `platform_manager`, `operator`, `support`, `analyst`, `finance` and `marketing` are normalized but do not grant access unless added here. Inlined at build time. |
 | `NEXT_PUBLIC_REFERRAL_BASE_URL` | No       | `https://raut.app/signup` | Base URL used to build referral signup links (`{base}?ref=CODE`). Inlined at build time, so rebuild after changing it.                                                                                                                                                                                                                           |
 
 ## Available scripts
@@ -168,7 +161,7 @@ Run `pnpm run build` before `pnpm run start` or `pnpm run preview`.
 | Route                             | Access               | Description                                                                                                                                                                                                                                                                                                                    |
 | --------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `/login`                          | Public               | Email and password sign-in                                                                                                                                                                                                                                                                                                     |
-| `/request-admin`                  | Signed in, non-admin | Enter the admin secret to upgrade the account                                                                                                                                                                                                                                                                                  |
+| `/request-admin`                  | Signed in, no RBAC access | Enter the admin secret to request backend admin access                                                                                                                                                                                                                                                              |
 | `/accept-staff-invitation`        | Public               | Verify an emailed staff invitation token and complete account setup                                                                                                                                                                                                                                                            |
 | `/onboarding`                     | Public / WebView     | Driver onboarding flow; expects `token` and optional `lang` query parameters                                                                                                                                                                                                                                                   |
 | `/`                               | Admin                | Dashboard overview and analytics                                                                                                                                                                                                                                                                                               |
@@ -245,24 +238,19 @@ If the page is opened outside the WebView, it falls back to a browser alert. Can
 2. `POST /auth/login` validates the credentials.
 3. The response returns the session, access token and optional refresh token.
 4. The session and tokens are persisted in `localStorage` and exposed to React through the Zustand auth store.
-5. `RequireAdmin` revalidates the role every five minutes (`ROLE_REVALIDATE_MS`). A missing or stale role is checked against `GET /auth/me`.
+5. `RequireAdmin` refreshes the cached role label every five minutes (`ROLE_REVALIDATE_MS`) from `GET /auth/me`; role names and labels are display data only.
 6. `loginWithEmail` loads effective RBAC permissions from `GET /me/permissions` and stores them in the persisted permission store (`raut-permission-storage`); `RequireAdmin` reuses that snapshot and re-fetches when it is older than five minutes (`RBAC_REVALIDATE_MS`) on the next gate render/navigation.
 7. Sign-in routing uses the RBAC snapshot: accounts with at least one role and permission enter the requested route when permitted or the first permitted dashboard route; accounts without either are signed out and shown an access error. `/request-admin` is no longer an automatic redirect.
-8. If the promoted access token still does not grant an admin role, the user is asked to sign in again.
+8. Promotion is accepted only when the refreshed `GET /me/permissions` snapshot contains at least one role and one permission; otherwise the user is asked to sign in again.
 9. Authenticated requests that return `401` attempt a token refresh through `POST /auth/refresh`. If refresh fails, the session and cached permissions are cleared and the user returns to `/login`.
 
-If role or permission revalidation fails because the server cannot be reached, the app keeps the last trusted role and recent permission snapshot instead of signing the administrator out. A `401` still clears the session.
+If role-label or permission revalidation fails because the server cannot be reached, the app keeps the last trusted role and recent permission snapshot instead of signing the administrator out. A `401` still clears the session.
 
 Access-token expiry is also watched client-side. While an admin session is active, a timer is scheduled for the stored `expiresAt`; when it elapses, the app signs out and shows “Your session expired. Please sign in again.” There is no pre-expiry warning. Background tabs are checked when they regain focus or become visible. Requests still refresh an expired access token before using it, and a successful refresh moves the timer to the new expiry.
 
-The default admin roles are `admin` and `super_admin`. Override them with `NEXT_PUBLIC_ADMIN_ROLES`. Role aliases are normalized in `src/lib/roles.ts`:
+Backend roles and permissions are the source of truth. Role labels come from the backend response when provided, otherwise from formatting the raw role key; no frontend allowlist or alias table grants access. The Staff & Roles page uses the live `/rbac/roles` catalog, and unknown backend roles keep their backend name with a deterministic badge color.
 
-- `administrator` becomes `admin`.
-- `superadmin`, `super-admin` and `owner` become `super_admin`.
-- `platform_manager`, `operator`, `support`, `analyst`, `finance` and `marketing` remain as their own roles.
-- The Staff & Roles page uses the live `/rbac/roles` catalog and keeps readable fallback labels for known legacy role keys. None of these role labels add admin-gate access unless the role is listed in `NEXT_PUBLIC_ADMIN_ROLES`.
-
-The dashboard has two gates. `RequireAdmin` still requires a configured admin role, then reads the cached `GET /me/permissions` snapshot from Zustand to hide sidebar sections, block unauthorized routes, and hide action controls through `usePermissions` and `<Can>`. Permission codes follow `resource.action` (for example `drivers.verify` and `finance.payouts.approve`). A stale snapshot is trusted for up to `RBAC_STALE_GRACE_MS`; if the endpoint fails and no snapshot exists, the app denies access and shows an Access Denied screen. Ambiguous actions without a direct permission code, such as live-ride escalation and referral mark-paid, remain unchanged.
+The dashboard gate reads the cached `GET /me/permissions` snapshot from Zustand to hide sidebar sections, block unauthorized routes, and hide action controls through `usePermissions` and `<Can>`. It requires at least one role and one permission before allowing any dashboard route. Permission codes follow `resource.action` (for example `drivers.verify` and `finance.payouts.approve`). A stale snapshot is trusted for up to `RBAC_STALE_GRACE_MS`; if the endpoint fails and no snapshot exists, the app denies access and shows an Access Denied screen. Live Rides uses `rides.cancel` for full management and `rides.read` for escalation and notes; referral mark-paid remains unchanged until a dedicated permission code is added.
 
 Tokens are stored in browser `localStorage`, so the session can be restored across reloads. The effective permission snapshot is persisted separately under `raut-permission-storage` and is removed on sign-out, failed refresh and session expiry. This does not replace server-side authorization; the backend must enforce permissions for every admin endpoint.
 
@@ -577,7 +565,7 @@ raut_frontend/
 | `src/services/uploads.ts`          | Multipart document uploads for onboarding                                                                                               |
 | `src/services/onboarding.ts`       | Legacy complete-flow onboarding helper, not used by the current UI                                                                      |
 | `src/lib/config.ts`                | Base URL, API routes and role revalidation constants                                                                                    |
-| `src/lib/roles.ts`                 | Role normalization, aliases and admin-role checks                                                                                       |
+| `src/lib/roles.ts`                 | Backend role normalization and display-label helpers                                                                                    |
 | `src/lib/queryClient.ts`           | TanStack Query client configuration                                                                                                     |
 | `src/lib/queryKeys.ts`             | Centralized query key factory                                                                                                           |
 | `src/lib/dateRange.ts`             | Analytics presets, custom ranges, limits and comparison windows                                                                         |
@@ -634,7 +622,7 @@ To run the production build locally:
 pnpm run start
 ```
 
-Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Rebuild the app after changing the backend URL or admin roles.
+Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Rebuild the app after changing the backend URL.
 
 ## Legal documents
 
