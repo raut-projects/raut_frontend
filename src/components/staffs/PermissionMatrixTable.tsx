@@ -37,7 +37,7 @@ export function PermissionMatrixTable({
       >
         <thead>
           <tr>
-            <th className="sticky left-0 z-10 min-w-[13rem] border-b border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-semibold text-slate-600">
+            <th className="sticky left-0 z-10 min-w-52 border-b border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-semibold text-slate-600">
               Permission
             </th>
             {visibleRoles.map((role) => (

@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { UseQueryResult } from "@tanstack/react-query";
 import { EllipsisVertical, KeyRound, RotateCcw, UserX } from "lucide-react";
 
-import { AdminRoleBadge } from "@/components/adminUsers/AdminRoleBadge";
+import { AdminRoleBadge } from "@/components/staffs/AdminRoleBadge";
 import { ReasonDialog } from "@/components/reasonDialog";
 import { InvitationStatusBadge } from "@/components/statusBadges";
 import { Button } from "@/components/ui/button";

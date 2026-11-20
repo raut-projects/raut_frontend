@@ -116,7 +116,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   };
 
   return (
-    <Sidebar collapsible="icon" className="print:hidden" {...props}>
+    <Sidebar collapsible="icon" className="print:hidden" { ...props }>
       <SidebarHeader className="border-b border-sidebar-border">
         <SidebarMenu>
           <SidebarMenuItem>
@@ -142,61 +142,61 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
-        {visibleGroups.map((group, index) => (
-          <SidebarGroup key={group.label ?? `home-${index}`}>
-            {group.label ? (
+        { visibleGroups.map((group, index) => (
+          <SidebarGroup key={ group.label ?? `home-${index}` }>
+            { group.label ? (
               <SidebarGroupLabel className="px-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                {group.label}
+                { group.label }
               </SidebarGroupLabel>
-            ) : null}
+            ) : null }
             <SidebarMenu>
-              {group.items.map((item) => {
+              { group.items.map((item) => {
                 const Icon = navIcons[item.icon];
                 const active = isItemActive(item);
 
                 return (
-                  <SidebarMenuItem key={item.title}>
+                  <SidebarMenuItem key={ item.title }>
                     <SidebarMenuButton
                       asChild
-                      isActive={active}
-                      tooltip={item.title}
+                      isActive={ active }
+                      tooltip={ item.title }
                     >
-                      <Link href={item.url}>
+                      <Link href={ item.url }>
                         <Icon />
-                        <span>{item.title}</span>
+                        <span>{ item.title }</span>
                       </Link>
                     </SidebarMenuButton>
-                    {item.badge ? (
-                      <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
-                    ) : null}
+                    { item.badge ? (
+                      <SidebarMenuBadge>{ item.badge }</SidebarMenuBadge>
+                    ) : null }
                   </SidebarMenuItem>
                 );
-              })}
+              }) }
             </SidebarMenu>
           </SidebarGroup>
-        ))}
+        )) }
 
-        {visibleSettingsItems.length > 0 ? (
+        { visibleSettingsItems.length > 0 ? (
           <SidebarGroup>
             <SidebarGroupLabel className="px-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
               System
             </SidebarGroupLabel>
             <SidebarMenu>
               <Collapsible
-                key={settingsActive ? "settings-open" : "settings-closed"}
-                defaultOpen={settingsActive}
+                key={ settingsActive ? "settings-open" : "settings-closed" }
+                defaultOpen={ settingsActive }
                 className="group/collapsible"
-                onOpenChange={(open) => {
+                onOpenChange={ (open) => {
                   if (open && state === "collapsed" && !isMobile) {
                     setOpen(true);
                   }
-                }}
+                } }
               >
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton
                       tooltip="Settings"
-                      isActive={settingsActive}
+                      isActive={ settingsActive }
                     >
                       <Settings />
                       <span>Settings</span>
@@ -205,25 +205,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      {visibleSettingsItems.map((item) => (
-                        <SidebarMenuSubItem key={item.title}>
+                      { visibleSettingsItems.map((item) => (
+                        <SidebarMenuSubItem key={ item.title }>
                           <SidebarMenuSubButton
                             asChild
-                            isActive={isActive(item.url)}
+                            isActive={ isActive(item.url) }
                           >
-                            <Link href={item.url}>
-                              <span>{item.title}</span>
+                            <Link href={ item.url }>
+                              <span>{ item.title }</span>
                             </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
-                      ))}
+                      )) }
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
             </SidebarMenu>
           </SidebarGroup>
-        ) : null}
+        ) : null }
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">
@@ -231,7 +231,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Logout"
-              onClick={handleSignOut}
+              onClick={ handleSignOut }
               className="text-slate-600 hover:bg-rose-50 hover:text-rose-600"
             >
               <LogOut />

@@ -208,7 +208,7 @@ export function PermissionMatrixDialog({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 sm:p-6">
       <div
         className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
         onClick={onClose}

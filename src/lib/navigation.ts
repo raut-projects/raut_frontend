@@ -74,7 +74,7 @@ export const ROUTE_RULES: { matches: (path: string) => boolean; permission: Perm
     permission: PERMISSIONS.PLATFORM_CONFIG_READ,
   },
   {
-    matches: startsWith("/settings/admin-users"),
+    matches: startsWith("/settings/staffs"),
     permission: PERMISSIONS.PLATFORM_ADMINS_READ,
   },
   {
@@ -213,7 +213,7 @@ export const SETTINGS_ITEMS: NavItem[] = [
   },
   {
     title: "Staff & Roles",
-    url: "/settings/admin-users",
+    url: "/settings/staffs",
     icon: "customers",
     permission: PERMISSIONS.PLATFORM_ADMINS_READ,
   },
