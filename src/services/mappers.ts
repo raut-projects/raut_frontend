@@ -913,8 +913,7 @@ export const mapRideDispute = (raw, rideIdHint = ""): RideDispute => {
       firstOf(source, ["currency"], DISPUTE_CURRENCY) ?? DISPUTE_CURRENCY,
     ),
     decision,
-    refundAmount:
-      refundValue === null ? undefined : numberOrZero(refundValue),
+    refundAmount: refundValue === null ? undefined : numberOrZero(refundValue),
     refundMethod,
     resolutionNote:
       resolutionNote === null ? undefined : String(resolutionNote),
@@ -1113,7 +1112,6 @@ export const mapConfigRecord = (raw) => ({
 export const mapConfigDetail = (raw) => {
   const source = raw?.config ?? raw ?? {};
 
-  
   return {
     key: String(source?.key ?? source?.config_key ?? ""),
     value: asConfigValue(source?.value ?? source?.config_value),
@@ -1185,8 +1183,7 @@ const roleAssignments = (value) => {
 };
 
 export function mapRbacAccess(raw) {
-  const data =
-    raw && typeof raw === "object" && "data" in raw ? raw.data : raw;
+  const data = raw && typeof raw === "object" && "data" in raw ? raw.data : raw;
   const source = data && typeof data === "object" ? data : {};
   const rawPermissions = firstOf(
     source,
@@ -1245,9 +1242,7 @@ export const mapRbacPermission = (raw): RbacCatalogPermission => {
 
   return {
     code,
-    name: String(
-      firstOf(source, ["name", "label", "title"], code) ?? code,
-    ),
+    name: String(firstOf(source, ["name", "label", "title"], code) ?? code),
     description: String(firstOf(source, ["description", "desc"], "") ?? ""),
     module: String(
       firstOf(source, ["module", "group", "category"], "general") ?? "general",
@@ -1279,7 +1274,14 @@ export const mapRbacRolePermission = (raw): RbacRolePermission => {
   const code = String(
     firstOf(
       source,
-      ["code", "permission", "permission_code", "permissionCode", "key", "name"],
+      [
+        "code",
+        "permission",
+        "permission_code",
+        "permissionCode",
+        "key",
+        "name",
+      ],
       "",
     ) ?? "",
   );
@@ -1313,7 +1315,9 @@ export const mapRbacCatalogRole = (raw): RbacCatalogRole => {
     key,
     name: String(firstOf(source, ["name", "label", "title"], key) ?? key),
     description: String(firstOf(source, ["description", "desc"], "") ?? ""),
-    isSystem: Boolean(firstOf(source, ["is_system", "isSystem", "system"], false)),
+    isSystem: Boolean(
+      firstOf(source, ["is_system", "isSystem", "system"], false),
+    ),
     createdAt: firstOf(source, ["created_at", "createdAt"]),
     updatedAt: firstOf(source, ["updated_at", "updatedAt"]),
     permissions: permissions
@@ -1326,9 +1330,7 @@ export const mapRbacRoleCatalog = (raw): RbacCatalogRole[] => {
   const data = raw && typeof raw === "object" && "data" in raw ? raw.data : raw;
   const items = rbacCollection(data, ["roles", "items", "results", "data"]);
 
-  return items
-    .map(mapRbacCatalogRole)
-    .filter((role) => role.key.trim());
+  return items.map(mapRbacCatalogRole).filter((role) => role.key.trim());
 };
 
 export const mapRbacRegion = (raw): RbacRegion => {
@@ -1369,9 +1371,7 @@ const mapStaffAssignment = (raw): StaffAssignment => {
 
   return {
     assignmentId,
-    roleId: String(
-      firstOf(source, ["role_id", "roleId"], "") ?? "",
-    ),
+    roleId: String(firstOf(source, ["role_id", "roleId"], "") ?? ""),
     roleKey,
     roleName,
     scope: String(

@@ -12,7 +12,7 @@ import {
   fetchRbacRoles,
   updateRbacRole,
 } from "@/services/rbac";
-import { updateSession } from "@/services/tokenStore";
+import { usePermissionStore } from "@/store/permissionStore";
 import type {
   RbacRegionPayload,
   RbacRoleCreatePayload,
@@ -24,10 +24,10 @@ const queryOptions = {
   refetchOnWindowFocus: false,
 };
 
-const refreshSessionAccess = async (queryClient: ReturnType<typeof useQueryClient>) => {
+const refreshCachedPermissions = async (queryClient: ReturnType<typeof useQueryClient>) => {
   try {
     const access = await fetchMyPermissions();
-    updateSession({ access });
+    usePermissionStore.getState().setAccess(access);
     queryClient.invalidateQueries({ queryKey: queryKeys.me.all });
   } catch {
     return;
@@ -37,7 +37,7 @@ const refreshSessionAccess = async (queryClient: ReturnType<typeof useQueryClien
 const invalidateRbac = async (queryClient: ReturnType<typeof useQueryClient>) => {
   await queryClient.invalidateQueries({ queryKey: queryKeys.rbac.all });
   await queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
-  await refreshSessionAccess(queryClient);
+  await refreshCachedPermissions(queryClient);
 };
 
 export function usePermissionCatalog(enabled: boolean) {

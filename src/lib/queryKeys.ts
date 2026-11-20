@@ -77,6 +77,14 @@ export const queryKeys = {
   staff: {
     all: ["staff"],
     list: (params) => ["staff", "list", params],
+    invitations: ["staff", "invitations"],
+    invitationList: (params) => ["staff", "invitations", "list", params],
+    invitationVerification: (token) => [
+      "staff",
+      "invitations",
+      "verify",
+      token,
+    ],
   },
   supportTickets: {
     all: ["support-tickets"],

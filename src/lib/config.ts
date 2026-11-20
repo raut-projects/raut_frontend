@@ -64,12 +64,18 @@ export const API_ROUTES = {
   rbacRegions: "/rbac/regions",
   staff: "/staff",
   staffInvitations: "/staff/invitations",
-  staffRoles: (userId: string) =>
-    `/staff/${encodeURIComponent(userId)}/roles`,
+  staffInvitationVerify: "/staff/invitations/verify",
+  staffInvitationAccept: "/staff/invitations/accept",
+  staffInvitationCancel: (invitationId: string) =>
+    `/staff/invitations/${encodeURIComponent(invitationId)}/cancel`,
+  staffInvitationResend: (invitationId: string) =>
+    `/staff/invitations/${encodeURIComponent(invitationId)}/resend`,
+  staffRoles: (userId: string) => `/staff/${encodeURIComponent(userId)}/roles`,
   staffRole: (userId: string, assignmentId: string) =>
     `/staff/${encodeURIComponent(userId)}/roles/${encodeURIComponent(assignmentId)}`,
   staffDeactivate: (userId: string) =>
     `/staff/${encodeURIComponent(userId)}/deactivate`,
+  confirmResetPassword: "/auth/password/reset/confirm",
   resetPassword: "/auth/password/reset",
   passwordUpdate: "/auth/password/update",
   notifications: "/notifications/",

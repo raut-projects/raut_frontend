@@ -1,4 +1,10 @@
-import { PERMISSIONS, hasPermission, normalizePath, type PermissionCode } from "@/lib/permissions";
+import {
+  PERMISSIONS,
+  hasDashboardAccess,
+  hasPermission,
+  normalizePath,
+  type PermissionCode,
+} from "@/lib/permissions";
 
 export type NavIconName =
   | "dashboard"
@@ -33,7 +39,10 @@ const isExactly = (target: string) => (path: string) => path === target;
 const startsWith = (prefix: string) => (path: string) =>
   path === prefix || path.startsWith(`${prefix}/`);
 
-export const ROUTE_RULES: { matches: (path: string) => boolean; permission: PermissionCode }[] = [
+export const ROUTE_RULES: {
+  matches: (path: string) => boolean;
+  permission: PermissionCode;
+}[] = [
   {
     matches: isExactly("/marketing/promotions/new"),
     permission: PERMISSIONS.MARKETING_PROMOTIONS_MANAGE,
@@ -52,7 +61,10 @@ export const ROUTE_RULES: { matches: (path: string) => boolean; permission: Perm
   { matches: startsWith("/customers"), permission: PERMISSIONS.CUSTOMERS_READ },
   { matches: startsWith("/rides"), permission: PERMISSIONS.RIDES_READ },
   { matches: startsWith("/routes"), permission: PERMISSIONS.RIDES_ROUTES_READ },
-  { matches: startsWith("/payouts"), permission: PERMISSIONS.FINANCE_PAYOUTS_READ },
+  {
+    matches: startsWith("/payouts"),
+    permission: PERMISSIONS.FINANCE_PAYOUTS_READ,
+  },
   {
     matches: startsWith("/transactions"),
     permission: PERMISSIONS.FINANCE_TRANSACTIONS_READ,
@@ -74,7 +86,7 @@ export const ROUTE_RULES: { matches: (path: string) => boolean; permission: Perm
     permission: PERMISSIONS.PLATFORM_CONFIG_READ,
   },
   {
-    matches: startsWith("/settings/admin-users"),
+    matches: startsWith("/settings/staffs"),
     permission: PERMISSIONS.PLATFORM_ADMINS_READ,
   },
   {
@@ -213,7 +225,7 @@ export const SETTINGS_ITEMS: NavItem[] = [
   },
   {
     title: "Staff & Roles",
-    url: "/settings/admin-users",
+    url: "/settings/staffs",
     icon: "customers",
     permission: PERMISSIONS.PLATFORM_ADMINS_READ,
   },
@@ -226,10 +238,42 @@ export const SETTINGS_ITEMS: NavItem[] = [
   { title: "System Health", url: "/settings/system-health", icon: "dashboard" },
 ];
 
-export const resolveRoutePermission = (pathname: string): PermissionCode | null =>
-  ROUTE_RULES.find((rule) => rule.matches(normalizePath(pathname)))?.permission ??
-  null;
+export const resolveRoutePermission = (
+  pathname: string,
+): PermissionCode | null =>
+  ROUTE_RULES.find((rule) => rule.matches(normalizePath(pathname)))
+    ?.permission ?? null;
 
 export const firstPermittedRoute = (access: unknown): string | null =>
-  LANDING_ROUTES.find((route) => hasPermission(access, route.permission))?.path ??
-  null;
+  LANDING_ROUTES.find((route) => hasPermission(access, route.permission))
+    ?.path ?? null;
+
+/**
+ * Picks the destination after a successful sign-in from the RBAC snapshot.
+ * Returns null when the account has no roles or permissions, so callers can
+ * refuse dashboard access instead of redirecting to a role gate.
+ */
+export const resolvePostLoginRoute = (
+  access: unknown,
+  requestedPath: string,
+): string | null => {
+  if (!hasDashboardAccess(access)) return null;
+
+  const requested = String(requestedPath ?? "");
+  const safePath =
+    requested.startsWith("/") &&
+    !requested.startsWith("//") &&
+    requested !== "/login" &&
+    requested !== "/request-admin"
+      ? normalizePath(requested)
+      : "/";
+
+  const pathname = safePath.split(/[?#]/, 1)[0] || "/";
+  const requiredPermission = resolveRoutePermission(pathname);
+
+  if (!requiredPermission || hasPermission(access, requiredPermission)) {
+    return safePath;
+  }
+
+  return firstPermittedRoute(access);
+};

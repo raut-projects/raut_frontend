@@ -8,13 +8,22 @@ import {
 import { useToast } from "@/components/toastContext";
 import { queryKeys } from "@/lib/queryKeys";
 import {
+  acceptStaffInvitation,
   assignStaffRole,
+  cancelStaffInvitation,
   deactivateStaff,
+  inviteStaff,
   listStaff,
+  listStaffInvitations,
+  resendStaffInvitation,
   revokeStaffRole,
+  verifyStaffInvitation,
 } from "@/services/staff";
 import type {
+  AcceptStaffInvitationPayload,
   StaffAssignRolePayload,
+  StaffInvitationListParams,
+  StaffInvitePayload,
   StaffListParams,
 } from "@/types/staff";
 
@@ -24,6 +33,69 @@ export function useStaff(params: StaffListParams) {
     queryFn: () => listStaff(params),
     placeholderData: keepPreviousData,
     refetchInterval: 60_000,
+  });
+}
+
+export function useStaffInvitations(params: StaffInvitationListParams) {
+  return useQuery({
+    queryKey: queryKeys.staff.invitationList(params),
+    queryFn: () => listStaffInvitations(params),
+    placeholderData: keepPreviousData,
+    refetchInterval: 60_000,
+  });
+}
+
+export function useInviteStaff() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  return useMutation({
+    mutationFn: (payload: StaffInvitePayload) => inviteStaff(payload),
+    onSuccess: (_data, payload) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
+      toast.success(`Invitation sent to ${payload.email}.`);
+    },
+    onError: (error: Error) => {
+      toast.error(error?.message ?? "The staff invitation could not be sent.");
+    },
+  });
+}
+
+export function useCancelStaffInvitation() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  return useMutation({
+    mutationFn: ({
+      invitationId,
+      reason,
+    }: {
+      invitationId: string;
+      reason: string;
+    }) => cancelStaffInvitation(invitationId, reason),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
+      toast.success("Staff invitation cancelled.");
+    },
+    onError: (error: Error) => {
+      toast.error(error?.message ?? "The invitation could not be cancelled.");
+    },
+  });
+}
+
+export function useResendStaffInvitation() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  return useMutation({
+    mutationFn: (invitationId: string) => resendStaffInvitation(invitationId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
+      toast.success("Staff invitation resent.");
+    },
+    onError: (error: Error) => {
+      toast.error(error?.message ?? "The invitation could not be resent.");
+    },
   });
 }
 
@@ -86,6 +158,30 @@ export function useDeactivateStaff() {
     },
     onError: (error: Error) => {
       toast.error(error?.message ?? "The account could not be deactivated.");
+    },
+  });
+}
+
+export function useVerifyStaffInvitation(token: string) {
+  return useQuery({
+    queryKey: queryKeys.staff.invitationVerification(token),
+    queryFn: () => verifyStaffInvitation(token),
+    enabled: Boolean(token),
+    retry: false,
+    staleTime: Infinity,
+  });
+}
+
+export function useAcceptStaffInvitation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: AcceptStaffInvitationPayload) =>
+      acceptStaffInvitation(payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.staff.invitations,
+      });
     },
   });
 }

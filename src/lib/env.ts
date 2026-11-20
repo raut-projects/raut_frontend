@@ -5,9 +5,6 @@
 /** Base URL for the backend API (NEXT_PUBLIC_API_BASE_URL); empty when unset. */
 export const API_BASE_URL_RAW = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
-/** Comma-separated admin role keys (NEXT_PUBLIC_ADMIN_ROLES); empty when unset. */
-export const ADMIN_ROLES_RAW = process.env.NEXT_PUBLIC_ADMIN_ROLES ?? "";
-
 /** Base URL used for referral sign-up links (NEXT_PUBLIC_REFERRAL_BASE_URL). */
 export const REFERRAL_BASE_URL_RAW =
   process.env.NEXT_PUBLIC_REFERRAL_BASE_URL ?? "";

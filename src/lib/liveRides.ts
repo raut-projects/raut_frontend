@@ -305,30 +305,6 @@ export function interpolatePosition(
   };
 }
 
-export function isFullControlRole(role: string | null): boolean {
-  if (!role) return false;
-  const normalized = role.trim().toLowerCase();
-  return ["super_admin", "platform_manager", "admin", "owner"].includes(
-    normalized,
-  );
-}
-
-export function canEscalateOrNote(role: string | null): boolean {
-  if (!role) return false;
-  const normalized = role.trim().toLowerCase();
-  return [
-    "operations_agent",
-    "operator",
-    "support_agent",
-    "support",
-    "analyst",
-    "super_admin",
-    "platform_manager",
-    "admin",
-    "owner",
-  ].includes(normalized);
-}
-
 /** Whether mock data is used for live rides (disabled only when env is "false"). */
 export const LIVE_RIDES_USE_MOCK_DATA =
   process.env.NEXT_PUBLIC_USE_MOCK_LIVE_RIDES !== "false";
