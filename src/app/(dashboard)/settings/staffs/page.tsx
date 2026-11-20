@@ -616,17 +616,23 @@ function AdminUsersPage() {
       />
 
       <PermissionMatrixDialog
-        key={ `${matrixOpen}-${matrixRole}` }
+        key={ `permission-matrix-${matrixOpen}-${matrixRole}` }
         open={ matrixOpen }
         initialRole={ matrixRole }
-        onClose={ () => setMatrixOpen(false) }
+        onClose={ () => {
+          setMatrixOpen(false);
+          setMatrixRole("all");
+        } }
       />
 
       <RoleEditorDialog
-        key={ `${roleEditorOpen}-${editingRole?.key ?? "new"}` }
+        key={ `role-editor-${roleEditorOpen}-${editingRole?.key ?? "new"}` }
         open={ roleEditorOpen }
         role={ editingRole }
-        onClose={ () => setRoleEditorOpen(false) }
+        onClose={ () => {
+          setRoleEditorOpen(false);
+          setEditingRole(null);
+        } }
       />
 
       <ReasonDialog
