@@ -64,6 +64,10 @@ export const API_ROUTES = {
   rbacRegions: "/rbac/regions",
   staff: "/staff",
   staffInvitations: "/staff/invitations",
+  staffInvitationCancel: (invitationId: string) =>
+    `/staff/invitations/${encodeURIComponent(invitationId)}/cancel`,
+  staffInvitationResend: (invitationId: string) =>
+    `/staff/invitations/${encodeURIComponent(invitationId)}/resend`,
   staffRoles: (userId: string) =>
     `/staff/${encodeURIComponent(userId)}/roles`,
   staffRole: (userId: string, assignmentId: string) =>

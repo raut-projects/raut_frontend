@@ -13,6 +13,7 @@ import {
 import { Can } from "@/components/Can";
 import { InviteStaffDialog } from "@/components/adminUsers/InviteStaffDialog";
 import { ManageStaffDialog } from "@/components/adminUsers/ManageStaffDialog";
+import { StaffInvitationsPanel } from "@/components/adminUsers/StaffInvitationsPanel";
 import { PermissionMatrixDialog } from "@/components/adminUsers/PermissionMatrixDialog";
 import { RoleEditorDialog } from "@/components/adminUsers/RoleEditorDialog";
 import {
@@ -37,11 +38,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { useClampPage } from "@/hooks/useClampPage";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useRbacRoles } from "@/hooks/useRbacCatalog";
 import { useSession } from "@/hooks/useSession";
-import { useDeactivateStaff, useStaff } from "@/hooks/useStaff";
+import {
+  useDeactivateStaff,
+  useStaff,
+  useStaffInvitations,
+} from "@/hooks/useStaff";
 import {
   formatPhone,
   initialsFromName,
@@ -50,9 +61,11 @@ import {
 import { PERMISSIONS } from "@/lib/permissions";
 import { usePageViewField } from "@/store/pageViewStore";
 import type { RbacCatalogRole } from "@/types/rbac";
-import type { StaffMember } from "@/types/staff";
+import type { StaffInvitationStatus, StaffMember } from "@/types/staff";
 
 const PAGE_SIZE = 20;
+
+type StaffView = "staff" | "invitations";
 
 function AdminUsersPage() {
   const session = useSession();
@@ -64,6 +77,15 @@ function AdminUsersPage() {
     [rolesQuery.data],
   );
   const [page, setPage] = usePageViewField("adminUsers", "page");
+  const [view, setView] = usePageViewField("adminUsers", "view");
+  const [invitationStatus, setInvitationStatus] = usePageViewField(
+    "adminUsers",
+    "invitationStatus",
+  );
+  const [invitationPage, setInvitationPage] = usePageViewField(
+    "adminUsers",
+    "invitationPage",
+  );
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [manageTarget, setManageTarget] = useState<StaffMember | null>(null);
@@ -88,6 +110,16 @@ function AdminUsersPage() {
 
   const staffQuery = useStaff(params);
 
+  const invitationParams = useMemo(
+    () => ({
+      status: invitationStatus,
+      page: invitationPage,
+      pageSize: PAGE_SIZE,
+    }),
+    [invitationPage, invitationStatus],
+  );
+  const invitationsQuery = useStaffInvitations(invitationParams);
+
   const staff = staffQuery.data?.items ?? [];
   const total = staffQuery.data?.total ?? 0;
   const totalPages =
@@ -100,6 +132,14 @@ function AdminUsersPage() {
     rangeEnd > rangeStart ? `${rangeStart}-${rangeEnd}` : String(rangeStart);
 
   useClampPage(page, totalPages, setPage);
+
+  const invitationTotal = invitationsQuery.data?.total ?? 0;
+  const invitationTotalPages =
+    invitationsQuery.data?.totalPages ??
+    Math.max(1, Math.ceil(invitationTotal / PAGE_SIZE));
+  const invitationCurrentPage = Math.min(invitationPage, invitationTotalPages);
+
+  useClampPage(invitationPage, invitationTotalPages, setInvitationPage);
 
   const sessionId = session?.id != null ? String(session.id) : "";
   const sessionPhone = normalizePhone(session?.phone).slice(-9);
@@ -117,6 +157,13 @@ function AdminUsersPage() {
   const openRoleEditor = (role: RbacCatalogRole | null) => {
     setEditingRole(role);
     setRoleEditorOpen(true);
+  };
+
+  const handleInvitationStatusChange = (
+    next: StaffInvitationStatus | "all",
+  ) => {
+    setInvitationStatus(next);
+    setInvitationPage(1);
   };
 
   const closeDeactivate = () => {
@@ -150,9 +197,21 @@ function AdminUsersPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <RefreshIndicator
-            isFetching={staffQuery.isFetching}
-            updatedAt={staffQuery.dataUpdatedAt}
-            onRefresh={() => void staffQuery.refetch()}
+            isFetching={
+              view === "invitations"
+                ? invitationsQuery.isFetching
+                : staffQuery.isFetching
+            }
+            updatedAt={
+              view === "invitations"
+                ? invitationsQuery.dataUpdatedAt
+                : staffQuery.dataUpdatedAt
+            }
+            onRefresh={() =>
+              void (view === "invitations"
+                ? invitationsQuery.refetch()
+                : staffQuery.refetch())
+            }
           />
           <Can permission={PERMISSIONS.PLATFORM_ROLES_READ}>
             <Button
@@ -236,8 +295,15 @@ function AdminUsersPage() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5">
+      <Tabs value={view} onValueChange={(next) => setView(next as StaffView)}>
+        <TabsList>
+          <TabsTrigger value="staff">Staff</TabsTrigger>
+          <TabsTrigger value="invitations">Invitations</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="staff">
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5">
           <p className="text-xs text-slate-500">
             Showing{" "}
             <span className="font-semibold text-slate-700">{rangeLabel}</span> of{" "}
@@ -426,12 +492,11 @@ function AdminUsersPage() {
                             </DropdownMenuItem>
                           ) : member.status === "invited" ? (
                             <DropdownMenuItem
-                              disabled
-                              title="Cancel invitation is unavailable until the backend endpoint exists."
-                              className="px-2.5 py-1.5 text-xs font-medium text-slate-400"
+                              onSelect={() => setView("invitations")}
+                              className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                             >
                               <UserX className="size-3.5" aria-hidden="true" />
-                              Cancel invitation
+                              View invitations
                             </DropdownMenuItem>
                           ) : (
                             <DropdownMenuItem
@@ -515,8 +580,22 @@ function AdminUsersPage() {
               Next
             </Button>
           </div>
-        </div>
-      </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="invitations">
+          <StaffInvitationsPanel
+            query={invitationsQuery}
+            status={invitationStatus}
+            onStatusChange={handleInvitationStatusChange}
+            currentPage={invitationCurrentPage}
+            totalPages={invitationTotalPages}
+            onPageChange={setInvitationPage}
+            onViewPermissions={openMatrix}
+          />
+        </TabsContent>
+      </Tabs>
 
       <InviteStaffDialog
         open={inviteOpen}

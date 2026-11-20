@@ -38,6 +38,49 @@ export type StaffListResult = {
   hasPrev: boolean;
 };
 
+export type StaffInvitationStatus =
+  | "pending"
+  | "accepted"
+  | "cancelled"
+  | "expired";
+
+export type StaffInvitation = {
+  id: string;
+  email: string;
+  fullName: string;
+  roleId: string;
+  roleKey: string;
+  roleName: string;
+  scopeType: StaffScopeType | string;
+  scopeId: string | null;
+  status: StaffInvitationStatus;
+  invitationExpiresAt: string | null;
+  assignmentExpiresAt: string | null;
+  acceptedAt: string | null;
+  cancelledAt: string | null;
+  cancellationReason: string | null;
+  deliveryStatus: string;
+  lastDeliveryAt: string | null;
+  invitedBy: string;
+  createdAt: string | null;
+};
+
+export type StaffInvitationListParams = {
+  status?: StaffInvitationStatus | "all";
+  page?: number;
+  pageSize?: number;
+};
+
+export type StaffInvitationListResult = {
+  items: StaffInvitation[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+};
+
 export type StaffAssignRolePayload = {
   role_id: string;
   scope_type: StaffScopeType;

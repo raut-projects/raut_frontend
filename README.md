@@ -52,7 +52,7 @@ A separate onboarding route guides drivers through personal, licence, vehicle an
 | Live Rides | Placeholder page; tracking and live-trip data are not implemented yet |
 | Marketing | API-backed promotions list with status tabs (active, scheduled, expired and drafts), search, pagination, activate/deactivate and delete; create/edit campaigns with discount, eligibility, schedule, usage limits, budget cap and DUO/peak-hour rules; referral programs, user enrollment and referral activity |
 | Support Tickets | API-backed ticket list, creation, search and filters, agent assignment, replies and internal notes, status/priority updates, escalation and CSV export |
-| Staff & Roles | API-backed staff list with pagination, invitations with role/scope assignment, role/scope assignment for existing staff, revoke and deactivate actions, live RBAC role editing, and a printable/exportable role permission matrix. Reactivate and cancel invitation are disabled until the backend endpoints exist. |
+| Staff & Roles | API-backed staff list with pagination, invitations with role/scope assignment, invitation status filters (all, pending, accepted, cancelled, expired) with resend/cancel actions, role/scope assignment for existing staff, revoke and deactivate actions, live RBAC role editing, and a printable/exportable role permission matrix. Staff reactivation remains disabled until the backend endpoint exists. |
 | Settings subpages | Mock-data audit log review and System Health dashboard; Platform Config placeholder |
 | Driver onboarding | Four-step driver application flow with English/Swahili UI, validation, document uploads and Flutter WebView hand-off |
 | User experience | Responsive sidebar and header, loading skeletons, retryable error states, refresh indicators, toast feedback and print-friendly analytics |
@@ -187,7 +187,7 @@ Run `pnpm run build` before `pnpm run start` or `pnpm run preview`.
 | `/support-tickets/new` | Admin | Create a support ticket for a rider or driver |
 | `/support-tickets/[id]` | Admin | Ticket detail, agent assignment, replies/internal notes, status/priority updates and escalation |
 | `/settings` | Admin | Signed-in account profile and access details |
-| `/settings/admin-users` | Admin | Staff list with pagination, invitations with role/scope assignment, role/scope assignment for existing staff, revoke and deactivate actions, live RBAC role editing and a role permission matrix. Reactivate and cancel invitation remain disabled until the backend endpoints exist. |
+| `/settings/admin-users` | Admin | Staff list with pagination, invitations with role/scope assignment, invitation status filters with resend/cancel actions, role/scope assignment for existing staff, revoke and deactivate actions, live RBAC role editing and a role permission matrix. Staff reactivation remains disabled until the backend endpoint exists. |
 | `/settings/audit-logs` | Admin | Searchable, filterable mock audit events with detail panel and CSV export |
 | `/settings/platform` | Admin | Platform configuration placeholder (Coming soon) |
 | `/settings/system-health` | Admin | Illustrative system status, uptime and latency trends, background jobs and recent incidents |
@@ -283,6 +283,8 @@ export const API_ROUTES = {
   rbacRegions: '/rbac/regions',
   staff: '/staff',
   staffInvitations: '/staff/invitations',
+  staffInvitationCancel: (invitationId) => `/staff/invitations/${invitationId}/cancel`,
+  staffInvitationResend: (invitationId) => `/staff/invitations/${invitationId}/resend`,
   staffRoles: (userId) => `/staff/${userId}/roles`,
   staffRole: (userId, assignmentId) => `/staff/${userId}/roles/${assignmentId}`,
   staffDeactivate: (userId) => `/staff/${userId}/deactivate`,
@@ -350,7 +352,10 @@ Raw API records are normalized in `src/services/mappers.ts`. Mappers provide con
 | `GET` | `/rbac/regions` | List regions used for staff role scopes |
 | `POST` | `/rbac/regions` | Create a region (`code`, `name`) |
 | `GET` | `/staff` | List staff with pagination (`page`, `page_size`) |
+| `GET` | `/staff/invitations` | List invitations with pagination and optional `status` filter (`all`, `pending`, `accepted`, `cancelled`, `expired`) |
 | `POST` | `/staff/invitations` | Invite staff with `email`, `full_name`, `role_id`, `scope_type`, optional `scope_id` and optional `assignment_expires_at` |
+| `POST` | `/staff/invitations/{invitation_id}/cancel` | Cancel a staff invitation with a `reason` |
+| `POST` | `/staff/invitations/{invitation_id}/resend` | Resend a staff invitation (no request body) |
 | `POST` | `/staff/{user_id}/roles` | Assign a role and scope to a staff member |
 | `DELETE` | `/staff/{user_id}/roles/{assignment_id}` | Revoke a staff role assignment |
 | `POST` | `/staff/{user_id}/deactivate` | Deactivate a staff account |
@@ -433,7 +438,7 @@ Referral API types live in `src/lib/referrals.ts`, endpoint functions in `src/se
 
 Promotion and referral APIs always use the backend; there is no marketing mock mode.
 
-Staff and RBAC management always use the backend; there is no mock mode. `src/services/staff.ts` maps `/staff`, role assignment, revocation and deactivation responses tolerantly. `src/services/rbac.ts` loads the live permission and role catalogs, creates roles, updates or deletes roles by UUID and loads/creates regions. Role updates send only `name`, `description` and `permissions`; the role key is immutable after creation. The invite action posts `email`, `full_name`, `role_id`, `scope_type`, optional `scope_id` (required for region scope) and optional `assignment_expires_at`. Permissions are inherited from the selected RBAC role because the endpoint has no permissions field. Staff reactivation and invitation cancellation are also disabled because the backend does not document those endpoints.
+Staff and RBAC management always use the backend; there is no mock mode. `src/services/staff.ts` maps `/staff`, invitation list, role assignment, revocation and deactivation responses tolerantly. `src/services/rbac.ts` loads the live permission and role catalogs, creates roles, updates or deletes roles by UUID and loads/creates regions. Role updates send only `name`, `description` and `permissions`; the role key is immutable after creation. The invite action posts `email`, `full_name`, `role_id`, `scope_type`, optional `scope_id` (required for region scope) and optional `assignment_expires_at`. Permissions are inherited from the selected RBAC role because the endpoint has no permissions field. The invitation list uses server-side `status` filtering and falls back to invitation timestamps when a status field is absent. Cancellation posts a `reason`; resend sends no request body. Staff reactivation is still disabled because the backend does not document that endpoint.
 
 The unused legacy onboarding helper also references `POST /drivers/register` and `POST /drivers/onboarding/complete`. They are not part of the active UI flow.
 
@@ -548,9 +553,9 @@ raut_frontend/
 | `src/lib/referrals.ts` | Referral API request/response types and JSON-safe reward configuration |
 | `src/lib/marketing.ts` | Promotion types, derived status labels, form defaults, date/currency formatting, promo-code generation, CSV parsing and payload mapping |
 | `src/schemas/marketingSchemas.ts` | Zod validation for promotion campaigns |
-| `src/services/staff.ts` | Staff list, invitations, role assignment, revocation and deactivation endpoints with tolerant response mapping |
+| `src/services/staff.ts` | Staff list, invitation list/create/cancel/resend, role assignment, revocation and deactivation endpoints with tolerant response mapping |
 | `src/services/rbac.ts` | Live permission/role catalogs, role CRUD by UUID and region endpoints |
-| `src/types/staff.ts` | Staff member, assignment, list and mutation payload types |
+| `src/types/staff.ts` | Staff member, assignment, invitation status/list, and mutation payload types |
 | `src/types/rbac.ts` | RBAC permission, role and region types |
 | `src/lib/adminUsers.ts` | Admin role metadata, status labels, formatting helpers and matrix CSV export |
 | `src/lib/rbacRoles.ts` | Role metadata helpers and fallback role definitions |
@@ -634,7 +639,7 @@ Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Re
 - There is currently no automated test suite or CI configuration.
 - RBAC gating is UI-level only. The backend must still enforce every permission on its endpoints; hiding a control does not prevent a crafted API request.
 - The Staff & Roles permission matrix is sourced from the live RBAC catalogs. It is displayed, printed and exported, but the backend must enforce every permission before it restricts access.
-- Staff reactivation and invitation cancellation are disabled because the backend does not document the endpoints they require. Invitations grant permissions through the selected RBAC role only; per-invite permission overrides are not supported. Role keys are immutable after creation.
+- Staff reactivation is disabled because the backend does not document the endpoint it requires. Invitation cancellation and resend use the documented staff invitation endpoints. Invitations grant permissions through the selected RBAC role only; per-invite permission overrides are not supported. Role keys are immutable after creation.
 - The dashboard builds some summary cards from the analytics overview response and falls back to list totals when fields or endpoints are unavailable.
 - Driver, document and payout summaries fetch up to 100 records and calculate some totals client-side.
 - Batch payout review loads all pending payouts and checks failed payouts for driver-level history. Phone verification is only considered verified when the API explicitly provides a verification flag or timestamp. Pending payouts refresh every 30 seconds; approved and processing statuses refresh every 10 seconds, and failure history refreshes every five minutes.

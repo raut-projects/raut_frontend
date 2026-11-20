@@ -9,13 +9,17 @@ import { useToast } from "@/components/toastContext";
 import { queryKeys } from "@/lib/queryKeys";
 import {
   assignStaffRole,
+  cancelStaffInvitation,
   deactivateStaff,
   inviteStaff,
   listStaff,
+  listStaffInvitations,
+  resendStaffInvitation,
   revokeStaffRole,
 } from "@/services/staff";
 import type {
   StaffAssignRolePayload,
+  StaffInvitationListParams,
   StaffInvitePayload,
   StaffListParams,
 } from "@/types/staff";
@@ -24,6 +28,15 @@ export function useStaff(params: StaffListParams) {
   return useQuery({
     queryKey: queryKeys.staff.list(params),
     queryFn: () => listStaff(params),
+    placeholderData: keepPreviousData,
+    refetchInterval: 60_000,
+  });
+}
+
+export function useStaffInvitations(params: StaffInvitationListParams) {
+  return useQuery({
+    queryKey: queryKeys.staff.invitationList(params),
+    queryFn: () => listStaffInvitations(params),
     placeholderData: keepPreviousData,
     refetchInterval: 60_000,
   });
@@ -41,6 +54,45 @@ export function useInviteStaff() {
     },
     onError: (error: Error) => {
       toast.error(error?.message ?? "The staff invitation could not be sent.");
+    },
+  });
+}
+
+export function useCancelStaffInvitation() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  return useMutation({
+    mutationFn: ({
+      invitationId,
+      reason,
+    }: {
+      invitationId: string;
+      reason: string;
+    }) => cancelStaffInvitation(invitationId, reason),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
+      toast.success("Staff invitation cancelled.");
+    },
+    onError: (error: Error) => {
+      toast.error(error?.message ?? "The invitation could not be cancelled.");
+    },
+  });
+}
+
+export function useResendStaffInvitation() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  return useMutation({
+    mutationFn: (invitationId: string) =>
+      resendStaffInvitation(invitationId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
+      toast.success("Staff invitation resent.");
+    },
+    onError: (error: Error) => {
+      toast.error(error?.message ?? "The invitation could not be resent.");
     },
   });
 }
