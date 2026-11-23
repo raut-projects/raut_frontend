@@ -25,6 +25,8 @@ import {
   clearSession,
   getAccessToken,
   getSessionSnapshot,
+  publishSession,
+  saveAuthTokens,
   saveSession,
   updateSession,
   updateTokens,
@@ -185,8 +187,9 @@ export async function loginWithEmail({
 
   const session = toSession(user, user?.phone ?? "", role, [data, payload]);
 
-  saveSession({
-    session: { ...session, roleVerifiedAt: Date.now() },
+  const nextSession = { ...session, roleVerifiedAt: Date.now() };
+
+  saveAuthTokens({
     accessToken,
     refreshToken: data.refresh_token ?? data.refreshToken ?? null,
     expiresIn: data.expires_in ?? data.expiresIn ?? null,
@@ -205,8 +208,9 @@ export async function loginWithEmail({
   const permissions = usePermissionStore.getState();
   permissions.clear();
   permissions.setAccess(access);
+  publishSession(nextSession);
 
-  return { session, access };
+  return { session: nextSession, access };
 }
 
 /**
@@ -341,15 +345,15 @@ export async function requestAdminAccess(secret) {
   role = role ?? access.roles[0]?.key ?? "user";
   roleLabel = roleLabel || formatRole(role);
 
+  const permissions = usePermissionStore.getState();
+  permissions.clear();
+  permissions.setAccess(access);
+
   updateSession({
     role,
     roleLabel,
     roleVerifiedAt: Date.now(),
   });
-
-  const permissions = usePermissionStore.getState();
-  permissions.clear();
-  permissions.setAccess(access);
 
   return {
     role,

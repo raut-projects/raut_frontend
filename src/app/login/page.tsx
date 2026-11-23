@@ -9,6 +9,7 @@ import { useFromParam } from "@/lib/useFromParam";
 import { useAuthHydrated, useSession } from "@/hooks/useSession";
 import { usePermissions } from "@/hooks/usePermissions";
 import { loginWithEmail, signOut } from "@/services/auth";
+import { hasDashboardAccess } from "@/lib/permissions";
 import { resolvePostLoginRoute } from "@/lib/navigation";
 import { validateEmail } from "@/lib/validation";
 import { getLoginErrorMessage } from "@/lib/authErrors";
@@ -40,16 +41,44 @@ function Login() {
   const from = useFromParam("/");
 
   const sessionRedirect =
-    session && permissionHydrated
-      ? resolvePostLoginRoute(access, from) ?? "/"
-      : null;
+    session && permissionHydrated ? resolvePostLoginRoute(access, from) : null;
 
   useEffect(() => {
+    if (!session || !permissionHydrated || submitting) return;
     if (sessionRedirect) router.replace(sessionRedirect);
-  }, [sessionRedirect, router]);
+  }, [permissionHydrated, router, session, sessionRedirect, submitting]);
 
-  if (!hydrated || !permissionHydrated || session) {
+  if (!hydrated || !permissionHydrated) {
     return <GateLoader />;
+  }
+
+  if (session) {
+    if (sessionRedirect) return <GateLoader />;
+
+    if (hasDashboardAccess(access)) return <GateLoader />;
+
+    return (
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-4 py-12">
+        <div className="relative w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-card sm:p-8">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">
+            Access unavailable
+          </h1>
+          <p className="mt-2 text-sm text-slate-500">
+            Your account is signed in, but no dashboard permissions were found.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              signOut();
+              router.replace("/login");
+            }}
+            className="mt-6 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const resetFeedback = () => {
