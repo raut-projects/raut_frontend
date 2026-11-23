@@ -50,7 +50,7 @@ export default function PlatformConfigPage() {
       { query.isPending ? (
         <ConfigCard
           title="Loading configuration"
-          description="Fetching settings from the config registry…"
+          description="Fetching settings from the config registry..."
         >
           <ConfigSkeleton fields={ 8 } />
         </ConfigCard>

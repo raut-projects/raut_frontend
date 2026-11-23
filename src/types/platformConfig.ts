@@ -25,6 +25,20 @@ export type ConfigRecord = {
   activeUntil: string | null;
   updatedAt: string | null;
   notes: string | null;
+  label?: string | null;
+  category?: string | null;
+  section?: string | null;
+  fieldType?: "number" | "text" | "switch" | "select" | "json" | null;
+  unit?: string | null;
+  min?: number | null;
+  max?: number | null;
+  step?: number | null;
+  options?: Array<{ label: string; value: string }> | null;
+  pattern?: string | null;
+  placeholder?: string | null;
+  order?: number | null;
+  hidden?: boolean;
+  readOnly?: boolean;
 };
 
 /** Compact key/value view of a configuration with its scope. */

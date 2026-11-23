@@ -8,6 +8,7 @@ import {
 } from "@/components/platformConfig/ConfigPrimitives";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import type {
   ConfigDraft,
   ConfigFieldSpec,
@@ -85,7 +86,8 @@ function FieldControl({
           id={ id }
           value={ String(draft[spec.key] ?? "") }
           onChange={ (event) => onChange(spec.key, event.target.value) }
-          className="h-10 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-800 outline-none focus-visible:border-brand-400 focus-visible:ring-3 focus-visible:ring-brand-100"
+          disabled={ spec.readOnly }
+          className="h-10 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-800 outline-none focus-visible:border-brand-400 focus-visible:ring-3 focus-visible:ring-brand-100 disabled:cursor-not-allowed disabled:bg-slate-50"
         >
           { spec.options?.map((option) => (
             <option key={ option.value } value={ option.value }>
@@ -93,6 +95,16 @@ function FieldControl({
             </option>
           )) }
         </select>
+      ) : spec.type === "json" ? (
+        <Textarea
+          id={ id }
+          value={ String(draft[spec.key] ?? "") }
+          placeholder={ spec.placeholder ?? "{\n  \n}" }
+          aria-invalid={ error ? true : undefined }
+          readOnly={ spec.readOnly }
+          onChange={ (event) => onChange(spec.key, event.target.value) }
+          className="min-h-28 border-slate-200 bg-white font-mono text-xs"
+        />
       ) : (
         <Input
           id={ id }
@@ -104,11 +116,11 @@ function FieldControl({
           value={ String(draft[spec.key] ?? "") }
           placeholder={ spec.placeholder }
           aria-invalid={ error ? true : undefined }
+          readOnly={ spec.readOnly }
           onChange={ (event) => onChange(spec.key, event.target.value) }
           className="h-10 border-slate-200 bg-white"
         />
-      ) }
-    </ConfigField>
+      ) }    </ConfigField>
   );
 }
 
@@ -207,3 +219,6 @@ export function ConfigSection({
     </ConfigCard>
   );
 }
+
+
+

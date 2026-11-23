@@ -105,7 +105,7 @@ export function PeakHoursDialog({
               disabled={ update.isPending }
               className="h-9 bg-brand-600 px-3.5 text-sm font-semibold text-white hover:bg-brand-700"
             >
-              { update.isPending ? "Saving…" : "Save peak hours" }
+              { update.isPending ? "Saving..." : "Save peak hours" }
             </Button>
           </Can>
         </>

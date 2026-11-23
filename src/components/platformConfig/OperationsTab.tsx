@@ -15,6 +15,8 @@ import {
   LATRA_SECTION,
   OPERATIONS_SECTIONS,
   isLATRAConfig,
+  isFeatureConfig,
+  isPricingConfig,
   isOperationsConfig,
   sectionsForRecords,
 } from "@/lib/configRegistry";
@@ -156,3 +158,6 @@ export function OperationsTab({ configs }: { configs: ConfigRecord[] }) {
     </div>
   );
 }
+
+
+

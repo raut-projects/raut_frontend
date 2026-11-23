@@ -1094,21 +1094,83 @@ const asConfigValue = (value) => {
   return { value };
 };
 
-export const mapConfigRecord = (raw) => ({
-  id: String(raw?.id ?? ""),
-  key: String(raw?.config_key ?? raw?.key ?? ""),
-  value: asConfigValue(raw?.config_value ?? raw?.value),
-  type: String(raw?.config_type ?? raw?.type ?? ""),
-  description: String(raw?.description ?? ""),
-  region: raw?.region ?? null,
-  vehicleType: raw?.vehicle_type ?? raw?.vehicleType ?? null,
-  version: Number(raw?.version ?? 0),
-  activeFrom: raw?.active_from ?? raw?.activeFrom ?? null,
-  activeUntil: raw?.active_until ?? raw?.activeUntil ?? null,
-  updatedAt: raw?.updated_at ?? raw?.updatedAt ?? null,
-  notes: raw?.notes ?? null,
-});
+const toConfigNumber = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+};
 
+const toConfigOptions = (value) => {
+  if (!Array.isArray(value)) return null;
+  const options = value
+    .map((option) => {
+      if (typeof option === "string") {
+        const text = option.trim();
+        return text ? { label: text, value: text } : null;
+      }
+      if (option && typeof option === "object") {
+        const rawValue = firstOf(option, ["value", "key", "id"]);
+        if (rawValue === null || rawValue === undefined) return null;
+        const label = firstOf(option, ["label", "name", "title"], rawValue);
+        return { label: String(label ?? rawValue), value: String(rawValue) };
+      }
+      return null;
+    })
+    .filter(Boolean);
+  return options.length ? options : null;
+};
+
+export const mapConfigRecord = (raw) => {
+  const metadata =
+    raw?.metadata &&
+    typeof raw.metadata === "object" &&
+    !Array.isArray(raw.metadata)
+      ? raw.metadata
+      : {};
+  const source = { ...metadata, ...(raw ?? {}) };
+  return {
+    id: String(raw?.id ?? ""),
+    key: String(raw?.config_key ?? raw?.key ?? ""),
+    value: asConfigValue(raw?.config_value ?? raw?.value),
+    type: String(raw?.config_type ?? raw?.type ?? ""),
+    description: String(firstOf(source, ["description", "hint"], "") ?? ""),
+    region: raw?.region ?? null,
+    vehicleType: raw?.vehicle_type ?? raw?.vehicleType ?? null,
+    version: Number(raw?.version ?? 0),
+    activeFrom: raw?.active_from ?? raw?.activeFrom ?? null,
+    activeUntil: raw?.active_until ?? raw?.activeUntil ?? null,
+    updatedAt: raw?.updated_at ?? raw?.updatedAt ?? null,
+    notes: raw?.notes ?? null,
+    label: firstOf(source, ["label", "name", "title"], null),
+    category: firstOf(source, ["category", "tab", "group"], null),
+    section: firstOf(source, ["section", "section_id", "sectionId"], null),
+    fieldType: firstOf(
+      source,
+      ["field_type", "fieldType", "input_type", "inputType"],
+      null,
+    ),
+    unit: firstOf(source, ["unit", "units"], null),
+    min: toConfigNumber(firstOf(source, ["min", "minimum"])),
+    max: toConfigNumber(firstOf(source, ["max", "maximum"])),
+    step: toConfigNumber(firstOf(source, ["step"])),
+    options: toConfigOptions(firstOf(source, ["options", "choices"])),
+    pattern: firstOf(source, ["pattern", "regex"], null),
+    placeholder: firstOf(source, ["placeholder"], null),
+    order: toConfigNumber(
+      firstOf(source, ["order", "sort_order", "sortOrder"]),
+    ),
+    hidden: Boolean(
+      firstOf(source, ["hidden", "is_hidden", "isHidden"], false),
+    ),
+    readOnly: Boolean(
+      firstOf(
+        source,
+        ["read_only", "readOnly", "is_read_only", "isReadOnly"],
+        false,
+      ),
+    ),
+  };
+};
 export const mapConfigDetail = (raw) => {
   const source = raw?.config ?? raw ?? {};
 
@@ -1162,7 +1224,8 @@ const roleAssignments = (value) => {
 };
 
 const normalizeAccessGrant = (code, raw) => {
-  const source = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+  const source =
+    raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
   const requiredScopes = Array.isArray(
     firstOf(source, ["required_scopes", "requiredScopes"]),
   )
@@ -1204,8 +1267,10 @@ const addAccessGrant = (grantsByCode, code, raw) => {
 };
 
 const collectAccessGrants = (value) => {
-  const grantsByCode: Record<string, ReturnType<typeof normalizeAccessGrant>[]> =
-    {};
+  const grantsByCode: Record<
+    string,
+    ReturnType<typeof normalizeAccessGrant>[]
+  > = {};
 
   if (Array.isArray(value)) {
     value.forEach((entry) => {
@@ -1227,7 +1292,9 @@ const collectAccessGrants = (value) => {
     Object.entries(value as Record<string, unknown>).forEach(
       ([code, rawGrant]) => {
         if (Array.isArray(rawGrant)) {
-          rawGrant.forEach((entry) => addAccessGrant(grantsByCode, code, entry));
+          rawGrant.forEach((entry) =>
+            addAccessGrant(grantsByCode, code, entry),
+          );
           return;
         }
 
