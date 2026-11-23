@@ -87,6 +87,14 @@ export const ROUTE_RULES: {
     permission: PERMISSIONS.PLATFORM_CONFIG_READ,
   },
   {
+    matches: startsWith("/settings/staffs/permissions"),
+    permission: PERMISSIONS.PLATFORM_ROLES_READ,
+  },
+  {
+    matches: startsWith("/settings/staffs/roles"),
+    permission: PERMISSIONS.PLATFORM_ROLES_READ,
+  },
+  {
     matches: startsWith("/settings/staffs"),
     permission: PERMISSIONS.PLATFORM_ADMINS_READ,
   },

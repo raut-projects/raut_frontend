@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   EllipsisVertical,
   KeyRound,
@@ -14,8 +16,6 @@ import { Can } from "@/components/Can";
 import { InviteStaffDialog } from "@/components/staffs/InviteStaffDialog";
 import { ManageStaffDialog } from "@/components/staffs/ManageStaffDialog";
 import { StaffInvitationsPanel } from "@/components/staffs/StaffInvitationsPanel";
-import { PermissionMatrixDialog } from "@/components/staffs/PermissionMatrixDialog";
-import { RoleEditorDialog } from "@/components/staffs/RoleEditorDialog";
 import { AdminRoleBadge } from "@/components/staffs/AdminRoleBadge";
 import { AdminUserStatusBadge } from "@/components/statusBadges";
 import { ReasonDialog } from "@/components/reasonDialog";
@@ -43,8 +43,6 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { useClampPage } from "@/hooks/useClampPage";
-import { usePermissions } from "@/hooks/usePermissions";
-import { useRbacRoles } from "@/hooks/useRbacCatalog";
 import { useSession } from "@/hooks/useSession";
 import {
   useDeactivateStaff,
@@ -58,7 +56,6 @@ import {
 } from "@/lib/adminUsers";
 import { PERMISSIONS } from "@/lib/permissions";
 import { usePageViewField } from "@/store/pageViewStore";
-import type { RbacCatalogRole } from "@/types/rbac";
 import type { StaffInvitationStatus, StaffMember } from "@/types/staff";
 
 const PAGE_SIZE = 20;
@@ -66,14 +63,8 @@ const PAGE_SIZE = 20;
 type StaffView = "staff" | "invitations";
 
 function AdminUsersPage() {
+  const router = useRouter();
   const session = useSession();
-  const { has } = usePermissions();
-  const canReadRoles = has(PERMISSIONS.PLATFORM_ROLES_READ);
-  const rolesQuery = useRbacRoles(canReadRoles);
-  const roles = useMemo(
-    () => (rolesQuery.data ?? []).filter((role) => role.id),
-    [rolesQuery.data],
-  );
   const [page, setPage] = usePageViewField("adminUsers", "page");
   const [view, setView] = usePageViewField("adminUsers", "view");
   const [invitationStatus, setInvitationStatus] = usePageViewField(
@@ -87,10 +78,6 @@ function AdminUsersPage() {
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [manageTarget, setManageTarget] = useState<StaffMember | null>(null);
-  const [matrixOpen, setMatrixOpen] = useState(false);
-  const [matrixRole, setMatrixRole] = useState<string | "all">("all");
-  const [roleEditorOpen, setRoleEditorOpen] = useState(false);
-  const [editingRole, setEditingRole] = useState<RbacCatalogRole | null>(null);
   const [deactivateTarget, setDeactivateTarget] = useState<StaffMember | null>(
     null,
   );
@@ -152,14 +139,8 @@ function AdminUsersPage() {
     (sessionPhone.length === 9 &&
       normalizePhone(member.phone).slice(-9) === sessionPhone);
 
-  const openMatrix = (role: string | "all" = "all") => {
-    setMatrixRole(role);
-    setMatrixOpen(true);
-  };
-
-  const openRoleEditor = (role: RbacCatalogRole | null) => {
-    setEditingRole(role);
-    setRoleEditorOpen(true);
+  const openPermissionsPage = () => {
+    router.push("/settings/staffs/permissions");
   };
 
   const handleInvitationStatusChange = (
@@ -216,73 +197,31 @@ function AdminUsersPage() {
                 : staffQuery.refetch())
             }
           />
-          <Can permission={ PERMISSIONS.PLATFORM_ROLES_READ }>
+          <Can permission={PERMISSIONS.PLATFORM_ROLES_READ}>
             <Button
-              type="button"
+              asChild
               variant="outline"
               size="sm"
-              onClick={ () => openMatrix() }
               className="h-9 border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
             >
-              <ShieldCheck className="size-4" aria-hidden="true" />
-              Permissions
+              <Link href="/settings/staffs/permissions">
+                <ShieldCheck className="size-4" aria-hidden="true" />
+                Permissions
+              </Link>
             </Button>
           </Can>
-          <Can permission={ PERMISSIONS.PLATFORM_ROLES_MANAGE }>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-9 border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  <ShieldCheck className="size-4" aria-hidden="true" />
-                  Roles
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-64 rounded-lg border border-slate-200 bg-white p-1 shadow-elevated ring-0"
-              >
-                <DropdownMenuItem
-                  onSelect={ () => openRoleEditor(null) }
-                  className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
-                >
-                  <Plus className="size-3.5" aria-hidden="true" />
-                  New role
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-slate-100" />
-                { rolesQuery.isPending ? (
-                  <DropdownMenuItem
-                    disabled
-                    className="px-2.5 py-1.5 text-xs text-slate-400"
-                  >
-                    Loading roles…
-                  </DropdownMenuItem>
-                ) : roles.length ? (
-                  roles.map((role) => (
-                    <DropdownMenuItem
-                      key={ role.id ?? role.key }
-                      onSelect={ () => openRoleEditor(role) }
-                      className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
-                    >
-                      <span className="truncate">{ role.name }</span>
-                      <span className="ml-auto font-mono text-[0.65rem] text-slate-400">
-                        { role.key }
-                      </span>
-                    </DropdownMenuItem>
-                  ))
-                ) : (
-                  <DropdownMenuItem
-                    disabled
-                    className="px-2.5 py-1.5 text-xs text-slate-400"
-                  >
-                    No roles yet
-                  </DropdownMenuItem>
-                ) }
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <Can permission={PERMISSIONS.PLATFORM_ROLES_READ}>
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="h-9 border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              <Link href="/settings/staffs/roles">
+                <ShieldCheck className="size-4" aria-hidden="true" />
+                Roles
+              </Link>
+            </Button>
           </Can>
           <Can permission={ PERMISSIONS.PLATFORM_ADMINS_MANAGE }>
             <Button
@@ -470,9 +409,9 @@ function AdminUsersPage() {
                                 Manage access
                               </DropdownMenuItem>
                             </Can>
-                            <Can permission={ PERMISSIONS.PLATFORM_ROLES_READ }>
+                            <Can permission={PERMISSIONS.PLATFORM_ROLES_READ}>
                               <DropdownMenuItem
-                                onSelect={ () => openMatrix(roleKey || "all") }
+                                onSelect={openPermissionsPage}
                                 className="px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:bg-slate-50 focus:text-slate-700"
                               >
                                 <KeyRound className="size-3.5" aria-hidden="true" />
@@ -591,13 +530,13 @@ function AdminUsersPage() {
 
         <TabsContent value="invitations">
           <StaffInvitationsPanel
-            query={ invitationsQuery }
-            status={ invitationStatus }
-            onStatusChange={ handleInvitationStatusChange }
-            currentPage={ invitationCurrentPage }
-            totalPages={ invitationTotalPages }
-            onPageChange={ setInvitationPage }
-            onViewPermissions={ openMatrix }
+            query={invitationsQuery}
+            status={invitationStatus}
+            onStatusChange={handleInvitationStatusChange}
+            currentPage={invitationCurrentPage}
+            totalPages={invitationTotalPages}
+            onPageChange={setInvitationPage}
+            onViewPermissions={openPermissionsPage}
           />
         </TabsContent>
       </Tabs>
@@ -615,25 +554,7 @@ function AdminUsersPage() {
         onClose={ () => setManageTarget(null) }
       />
 
-      <PermissionMatrixDialog
-        key={ `permission-matrix-${matrixOpen}-${matrixRole}` }
-        open={ matrixOpen }
-        initialRole={ matrixRole }
-        onClose={ () => {
-          setMatrixOpen(false);
-          setMatrixRole("all");
-        } }
-      />
 
-      <RoleEditorDialog
-        key={ `role-editor-${roleEditorOpen}-${editingRole?.key ?? "new"}` }
-        open={ roleEditorOpen }
-        role={ editingRole }
-        onClose={ () => {
-          setRoleEditorOpen(false);
-          setEditingRole(null);
-        } }
-      />
 
       <ReasonDialog
         open={ Boolean(deactivateTarget) }
