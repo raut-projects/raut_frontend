@@ -43,9 +43,9 @@ export function useLiveRides() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const socketRef = useRef<LiveRidesSocket | null>(null);
 
-  const { access } = usePermissions();
-  const canManage = hasPermission(access, PERMISSIONS.RIDES_CANCEL);
-  const canRead = hasPermission(access, PERMISSIONS.RIDES_READ);
+  const { access, hydrated } = usePermissions();
+  const canManage = hydrated && hasPermission(access, PERMISSIONS.RIDES_CANCEL);
+  const canRead = hydrated && hasPermission(access, PERMISSIONS.RIDES_READ);
   const permissions = {
     canManage,
     canEscalateNote: canRead && !canManage,

@@ -93,6 +93,18 @@ export const ROUTE_RULES: {
     matches: startsWith("/settings/audit-logs"),
     permission: PERMISSIONS.AUDIT_READ,
   },
+  {
+    matches: isExactly("/settings/system-health"),
+    permission: PERMISSIONS.ANALYTICS_READ,
+  },
+  {
+    matches: isExactly("/settings"),
+    permission: PERMISSIONS.PLATFORM_CONFIG_READ,
+  },
+  {
+    matches: startsWith("/customer-issues"),
+    permission: PERMISSIONS.SUPPORT_TICKETS_READ,
+  },
 ];
 
 export const LANDING_ROUTES: { permission: PermissionCode; path: string }[] = [
@@ -235,7 +247,12 @@ export const SETTINGS_ITEMS: NavItem[] = [
     icon: "analytics",
     permission: PERMISSIONS.AUDIT_READ,
   },
-  { title: "System Health", url: "/settings/system-health", icon: "dashboard" },
+  {
+    title: "System Health",
+    url: "/settings/system-health",
+    icon: "dashboard",
+    permission: PERMISSIONS.ANALYTICS_READ,
+  },
 ];
 
 export const resolveRoutePermission = (

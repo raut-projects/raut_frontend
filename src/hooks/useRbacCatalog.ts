@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { RBAC_REVALIDATE_MS } from "@/lib/config";
 import { queryKeys } from "@/lib/queryKeys";
 import {
   createRbacRegion,
@@ -19,18 +18,24 @@ import type {
   RbacRoleUpdatePayload,
 } from "@/types/rbac";
 
+const RBAC_CATALOG_STALE_MS = 5 * 60 * 1000;
+
 const queryOptions = {
-  staleTime: RBAC_REVALIDATE_MS,
+  staleTime: RBAC_CATALOG_STALE_MS,
   refetchOnWindowFocus: false,
 };
 
-const refreshCachedPermissions = async (queryClient: ReturnType<typeof useQueryClient>) => {
+const refreshCachedPermissions = async (
+  queryClient: ReturnType<typeof useQueryClient>,
+) => {
   try {
     const access = await fetchMyPermissions();
     usePermissionStore.getState().setAccess(access);
     queryClient.invalidateQueries({ queryKey: queryKeys.me.all });
-  } catch {
-    return;
+    return true;
+  } catch (error) {
+    console.error("Failed to refresh cached permissions", error);
+    return false;
   }
 };
 

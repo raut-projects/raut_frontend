@@ -18,7 +18,9 @@ export function Can({
   fallback = null,
   children,
 }: CanProps) {
-  const { has, hasAny, hasAll } = usePermissions();
+  const { hydrated, has, hasAny, hasAll } = usePermissions();
+
+  if (!hydrated) return null;
 
   const allowed = permission
     ? has(permission)

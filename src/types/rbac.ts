@@ -19,7 +19,6 @@ export type RbacRoleAssignment = {
 export type RbacAccessSnapshot = {
   permissions: string[];
   roles: RbacRoleAssignment[];
-  verifiedAt: number;
 };
 
 export type RbacCatalogPermission = {

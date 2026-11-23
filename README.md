@@ -238,19 +238,19 @@ If the page is opened outside the WebView, it falls back to a browser alert. Can
 2. `POST /auth/login` validates the credentials.
 3. The response returns the session, access token and optional refresh token.
 4. The session and tokens are persisted in `localStorage` and exposed to React through the Zustand auth store.
-5. `RequireAdmin` refreshes the cached role label every five minutes (`ROLE_REVALIDATE_MS`) from `GET /auth/me`; role names and labels are display data only.
-6. `loginWithEmail` loads effective RBAC permissions from `GET /me/permissions` and stores them in the persisted permission store (`raut-permission-storage`); `RequireAdmin` reuses that snapshot and re-fetches when it is older than five minutes (`RBAC_REVALIDATE_MS`) on the next gate render/navigation.
-7. Sign-in routing uses the RBAC snapshot: accounts with at least one role and permission enter the requested route when permitted or the first permitted dashboard route; accounts without either are signed out and shown an access error. `/request-admin` is no longer an automatic redirect.
-8. Promotion is accepted only when the refreshed `GET /me/permissions` snapshot contains at least one role and one permission; otherwise the user is asked to sign in again.
+5. `RequireAdmin` gates dashboard routes from the persisted RBAC permission store in Zustand (`raut-permission-storage`) after auth/permission hydration. It does not revalidate permissions over the network on navigation. Role labels are display data only.
+6. `loginWithEmail` loads effective RBAC permissions from `GET /me/permissions` and stores them in the persisted permission store. RBAC role mutations refresh permissions through the same endpoint; promotion also validates a fetched permission result before granting access.
+7. Sign-in routing uses the stored RBAC permissions: accounts with at least one role and permission enter the requested route when permitted or the first permitted dashboard route; accounts without either are signed out and shown an access error. `/request-admin` is no longer an automatic redirect.
+8. Promotion is accepted only when the fetched `GET /me/permissions` result contains at least one role and one permission; otherwise the user is asked to sign in again.
 9. Authenticated requests that return `401` attempt a token refresh through `POST /auth/refresh`. If refresh fails, the session and cached permissions are cleared and the user returns to `/login`.
 
-If role-label or permission revalidation fails because the server cannot be reached, the app keeps the last trusted role and recent permission snapshot instead of signing the administrator out. A `401` still clears the session.
+If permission loading fails during login, promotion, or an RBAC refresh, the explicit flow reports the error. The route gate denies access when the persisted permission store has no usable dashboard access.
 
 Access-token expiry is also watched client-side. While an admin session is active, a timer is scheduled for the stored `expiresAt`; when it elapses, the app signs out and shows “Your session expired. Please sign in again.” There is no pre-expiry warning. Background tabs are checked when they regain focus or become visible. Requests still refresh an expired access token before using it, and a successful refresh moves the timer to the new expiry.
 
 Backend roles and permissions are the source of truth. Role labels come from the backend response when provided, otherwise from formatting the raw role key; no frontend allowlist or alias table grants access. The Staff & Roles page uses the live `/rbac/roles` catalog, and unknown backend roles keep their backend name with a deterministic badge color.
 
-The dashboard gate reads the cached `GET /me/permissions` snapshot from Zustand to hide sidebar sections, block unauthorized routes, and hide action controls through `usePermissions` and `<Can>`. It requires at least one role and one permission before allowing any dashboard route. Permission codes follow `resource.action` (for example `drivers.verify` and `finance.payouts.approve`). A stale snapshot is trusted for up to `RBAC_STALE_GRACE_MS`; if the endpoint fails and no snapshot exists, the app denies access and shows an Access Denied screen. Live Rides uses `rides.cancel` for full management and `rides.read` for escalation and notes; referral mark-paid remains unchanged until a dedicated permission code is added.
+The dashboard gate reads persisted permissions from Zustand to hide sidebar sections, block unauthorized routes, and hide action controls through `usePermissions` and `<Can>`. It requires at least one role and one permission before allowing any dashboard route. Permission codes follow `resource.action` (for example `drivers.verify` and `finance.payouts.approve`). If no usable permission snapshot exists, access is denied and the Access Denied screen is shown. Live Rides uses `rides.cancel` for full management and `rides.read` for escalation and notes; referral mark-paid remains unchanged until a dedicated permission code is added.
 
 Tokens are stored in browser `localStorage`, so the session can be restored across reloads. The effective permission snapshot is persisted separately under `raut-permission-storage` and is removed on sign-out, failed refresh and session expiry. This does not replace server-side authorization; the backend must enforce permissions for every admin endpoint.
 
@@ -564,14 +564,14 @@ raut_frontend/
 | `src/services/mappers.ts`          | API response normalization and display formatting                                                                                       |
 | `src/services/uploads.ts`          | Multipart document uploads for onboarding                                                                                               |
 | `src/services/onboarding.ts`       | Legacy complete-flow onboarding helper, not used by the current UI                                                                      |
-| `src/lib/config.ts`                | Base URL, API routes and role revalidation constants                                                                                    |
+| `src/lib/config.ts`                | Base URL, API routes and request/auth constants                                                                                         |
 | `src/lib/roles.ts`                 | Backend role normalization and display-label helpers                                                                                    |
 | `src/lib/queryClient.ts`           | TanStack Query client configuration                                                                                                     |
 | `src/lib/queryKeys.ts`             | Centralized query key factory                                                                                                           |
 | `src/lib/dateRange.ts`             | Analytics presets, custom ranges, limits and comparison windows                                                                         |
 | `src/lib/analyticsExport.ts`       | Analytics CSV generation and download                                                                                                   |
 | `src/lib/i18n.ts`                  | English and Swahili onboarding translations and URL language parsing                                                                    |
-| `src/components/RequireAdmin.tsx`  | Server-confirmed admin route gate                                                                                                       |
+| `src/components/RequireAdmin.tsx`  | Persisted-store RBAC route gate                                                                                                         |
 | `src/components/RequireAuth.tsx`   | Signed-in route gate                                                                                                                    |
 | `src/components/Layout.tsx`        | Sidebar, header and page content shell                                                                                                  |
 | `src/components/app-sidebar.tsx`   | Grouped navigation, settings submenu and sign-out                                                                                       |
@@ -663,3 +663,4 @@ Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Re
 5. When changing onboarding, keep the step components, Zod schemas, onboarding store and translations in sync.
 6. Run `pnpm run lint`, `pnpm run typecheck` and `pnpm run build` before opening a pull request.
 7. Do not commit `.env`, tokens or other secrets.
+

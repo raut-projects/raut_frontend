@@ -1199,7 +1199,6 @@ export function mapRbacAccess(raw) {
   return {
     permissions: Array.from(new Set(permissionCodes(rawPermissions))),
     roles: roleAssignments(rawRoles),
-    verifiedAt: Date.now(),
   };
 }
 
