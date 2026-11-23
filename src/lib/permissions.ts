@@ -45,16 +45,38 @@ export const normalizePath = (value) =>
   String(value ?? "")
     .replace(/\/+$/, "") || "/";
 
-export const hasPermission = (access, permission: string) =>
-  Boolean(access && Array.isArray(access.permissions) && access.permissions.includes(permission));
+import type { RbacAccessGrant, RbacAccessSnapshot } from "@/types/rbac";
 
-export const hasAnyPermission = (access, permissions: string[]) =>
-  permissions.some((permission) => hasPermission(access, permission));
+export const hasPermission = (
+  access: RbacAccessSnapshot | null | undefined,
+  permission: string,
+) =>
+  Boolean(
+    access &&
+      Array.isArray(access.permissions) &&
+      access.permissions.includes(permission),
+  );
 
-export const hasAllPermissions = (access, permissions: string[]) =>
-  permissions.every((permission) => hasPermission(access, permission));
+export const hasAnyPermission = (
+  access: RbacAccessSnapshot | null | undefined,
+  permissions: string[],
+) => permissions.some((permission) => hasPermission(access, permission));
 
-export const hasDashboardAccess = (access) =>
+export const hasAllPermissions = (
+  access: RbacAccessSnapshot | null | undefined,
+  permissions: string[],
+) => permissions.every((permission) => hasPermission(access, permission));
+
+export const getPermissionGrants = (
+  access: RbacAccessSnapshot | null | undefined,
+  permission: string,
+): RbacAccessGrant[] => access?.grantsByCode?.[permission] ?? [];
+
+export const hasEffectivePermission = hasPermission;
+
+export const hasDashboardAccess = (
+  access: RbacAccessSnapshot | null | undefined,
+) =>
   Boolean(
     access &&
       Array.isArray(access.roles) &&

@@ -1,12 +1,15 @@
 export type RbacPermissionScope = "platform" | "region" | "assigned" | "own";
 
-export type RbacGrant = {
+export type RbacAccessGrant = {
+  code: string;
   scope: RbacPermissionScope | string;
   scopeId: string | null;
   requiredScopes: string[];
   assignmentId: string | null;
   constraints: Record<string, unknown>;
 };
+
+export type RbacGrant = RbacAccessGrant;
 
 export type RbacRoleAssignment = {
   assignmentId: string | null;
@@ -18,6 +21,7 @@ export type RbacRoleAssignment = {
 
 export type RbacAccessSnapshot = {
   permissions: string[];
+  grantsByCode: Record<string, RbacAccessGrant[]>;
   roles: RbacRoleAssignment[];
 };
 

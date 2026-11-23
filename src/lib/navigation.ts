@@ -1,3 +1,4 @@
+import type { RbacAccessSnapshot } from "@/types/rbac";
 import {
   PERMISSIONS,
   hasDashboardAccess,
@@ -261,7 +262,9 @@ export const resolveRoutePermission = (
   ROUTE_RULES.find((rule) => rule.matches(normalizePath(pathname)))
     ?.permission ?? null;
 
-export const firstPermittedRoute = (access: unknown): string | null =>
+export const firstPermittedRoute = (
+  access: RbacAccessSnapshot | null | undefined,
+): string | null =>
   LANDING_ROUTES.find((route) => hasPermission(access, route.permission))
     ?.path ?? null;
 
@@ -271,7 +274,7 @@ export const firstPermittedRoute = (access: unknown): string | null =>
  * refuse dashboard access instead of redirecting to a role gate.
  */
 export const resolvePostLoginRoute = (
-  access: unknown,
+  access: RbacAccessSnapshot | null | undefined,
   requestedPath: string,
 ): string | null => {
   if (!hasDashboardAccess(access)) return null;

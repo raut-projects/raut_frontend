@@ -1147,27 +1147,6 @@ export const mapConfigHistory = (response) => {
   return history.map(mapConfigHistoryEntry);
 };
 
-const permissionCodes = (value) => {
-  if (Array.isArray(value)) {
-    return value
-      .map((entry) =>
-        typeof entry === "string"
-          ? entry
-          : firstOf(entry, ["code", "permission", "key"]),
-      )
-      .filter((code) => typeof code === "string" && code.trim())
-      .map((code) => String(code).trim());
-  }
-
-  if (value && typeof value === "object") {
-    return Object.keys(value).filter(
-      (key) => value[key] !== null && value[key] !== undefined,
-    );
-  }
-
-  return [];
-};
-
 const roleAssignments = (value) => {
   if (!Array.isArray(value)) return [];
 
@@ -1182,12 +1161,102 @@ const roleAssignments = (value) => {
     .filter((role) => role.key);
 };
 
+const normalizeAccessGrant = (code, raw) => {
+  const source = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+  const requiredScopes = Array.isArray(
+    firstOf(source, ["required_scopes", "requiredScopes"]),
+  )
+    ? (firstOf(source, ["required_scopes", "requiredScopes"]) as unknown[])
+        .map((scope) => String(scope ?? "").trim())
+        .filter(Boolean)
+    : [];
+
+  return {
+    code,
+    scope: String(
+      firstOf(source, ["scope", "scope_type", "scopeType"], "platform") ??
+        "platform",
+    ),
+    scopeId:
+      firstOf(source, ["scope_id", "scopeId"], null) === undefined
+        ? null
+        : (firstOf(source, ["scope_id", "scopeId"], null) as string | null),
+    requiredScopes,
+    assignmentId:
+      firstOf(source, ["assignment_id", "assignmentId"], null) === undefined
+        ? null
+        : (firstOf(source, ["assignment_id", "assignmentId"], null) as
+            | string
+            | null),
+    constraints: rbacConstraints(
+      firstOf(source, ["constraints", "conditions", "metadata"]),
+    ),
+  };
+};
+
+const addAccessGrant = (grantsByCode, code, raw) => {
+  const normalizedCode = String(code ?? "").trim();
+  if (!normalizedCode) return;
+
+  const grant = normalizeAccessGrant(normalizedCode, raw);
+  const existing = grantsByCode[normalizedCode] ?? [];
+  grantsByCode[normalizedCode] = [...existing, grant];
+};
+
+const collectAccessGrants = (value) => {
+  const grantsByCode: Record<string, ReturnType<typeof normalizeAccessGrant>[]> =
+    {};
+
+  if (Array.isArray(value)) {
+    value.forEach((entry) => {
+      if (typeof entry === "string") {
+        addAccessGrant(grantsByCode, entry, null);
+        return;
+      }
+
+      if (entry && typeof entry === "object") {
+        const code = firstOf(entry, ["code", "permission", "key"]);
+        if (typeof code === "string") addAccessGrant(grantsByCode, code, entry);
+      }
+    });
+
+    return grantsByCode;
+  }
+
+  if (value && typeof value === "object") {
+    Object.entries(value as Record<string, unknown>).forEach(
+      ([code, rawGrant]) => {
+        if (Array.isArray(rawGrant)) {
+          rawGrant.forEach((entry) => addAccessGrant(grantsByCode, code, entry));
+          return;
+        }
+
+        addAccessGrant(grantsByCode, code, rawGrant);
+      },
+    );
+  }
+
+  return grantsByCode;
+};
+
 export function mapRbacAccess(raw) {
   const data = raw && typeof raw === "object" && "data" in raw ? raw.data : raw;
   const source = data && typeof data === "object" ? data : {};
   const rawPermissions = firstOf(
     source,
-    ["permissions", "permission_codes", "permissionCodes", "codes"],
+    [
+      "permissions",
+      "permission_codes",
+      "permissionCodes",
+      "codes",
+      "grants",
+      "permission_grants",
+      "permissionGrants",
+      "scoped_permissions",
+      "scopedPermissions",
+      "effective_permissions",
+      "effectivePermissions",
+    ],
     Array.isArray(data) ? data : [],
   );
   const rawRoles = firstOf(source, [
@@ -1195,9 +1264,11 @@ export function mapRbacAccess(raw) {
     "role_assignments",
     "roleAssignments",
   ]);
+  const grantsByCode = collectAccessGrants(rawPermissions);
 
   return {
-    permissions: Array.from(new Set(permissionCodes(rawPermissions))),
+    permissions: Object.keys(grantsByCode),
+    grantsByCode,
     roles: roleAssignments(rawRoles),
   };
 }
