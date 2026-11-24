@@ -1,3 +1,8 @@
+// Ride dispute service.
+// Loads a ride's dispute and resolves it or issues a refund. Uses the shared
+// `./api` helpers in production and mock helpers when RIDE_DISPUTES_USE_MOCK_DATA
+// is on. Failures surface as ApiError.
+
 import { API_ROUTES } from "../lib/config";
 import { apiGet, apiPost } from "./api";
 import {

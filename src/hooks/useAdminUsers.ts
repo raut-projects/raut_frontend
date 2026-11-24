@@ -1,3 +1,9 @@
+/**
+ * Admin-user management hooks for the access control screens.
+ * Provides paginated directory queries, single-user detail lookups and
+ * invite/update/deactivate/reactivate mutations. Collaborates with the
+ * adminUsers service, queryKeys and the toast context.
+ */
 import {
   keepPreviousData,
   useMutation,
@@ -21,6 +27,15 @@ import {
   updateAdminUser,
 } from "@/services/adminUsers";
 
+/**
+ * Lists admin users for the directory table, keyed by the supplied filters.
+ *
+ * Keeps the previous page visible while new params load and polls every
+ * 60 seconds. No additional gating: the screen controls when it is mounted.
+ *
+ * @param params - Search, role, status and pagination filters.
+ * @returns A React Query result containing the admin-user page.
+ */
 export function useAdminUsers(params: AdminUserListParams) {
   return useQuery({
     queryKey: queryKeys.adminUsers.list(params),
@@ -30,6 +45,15 @@ export function useAdminUsers(params: AdminUserListParams) {
   });
 }
 
+/**
+ * Loads a single admin user by id.
+ *
+ * Query key: `adminUsers.detail(userId)`. Disabled until `userId` is truthy,
+ * which avoids an empty-id request while a drawer or route param resolves.
+ *
+ * @param userId - Admin user identifier.
+ * @returns A React Query result containing the admin user.
+ */
 export function useAdminUser(userId: string) {
   return useQuery({
     queryKey: queryKeys.adminUsers.detail(userId),
@@ -38,6 +62,14 @@ export function useAdminUser(userId: string) {
   });
 }
 
+/**
+ * Invites a new admin user.
+ *
+ * On success invalidates `adminUsers.all` and toasts the invited user's name;
+ * failures surface the service error through the toast context.
+ *
+ * @returns A React Query mutation accepting an `AdminUserInvitePayload`.
+ */
 export function useInviteAdminUser() {
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -54,6 +86,14 @@ export function useInviteAdminUser() {
   });
 }
 
+/**
+ * Updates an admin user's roles or access settings.
+ *
+ * Variables: `{ userId, payload }`. Invalidates `adminUsers.all`, refreshing
+ * both the directory and any open detail query.
+ *
+ * @returns A React Query mutation for the update.
+ */
 export function useUpdateAdminUser() {
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -76,6 +116,14 @@ export function useUpdateAdminUser() {
   });
 }
 
+/**
+ * Deactivates an admin user, optionally recording a reason.
+ *
+ * Variables: `{ userId, reason? }`. Invalidates `adminUsers.all` so the
+ * directory and detail views reflect the new status.
+ *
+ * @returns A React Query mutation for the deactivation.
+ */
 export function useDeactivateAdminUser() {
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -93,6 +141,14 @@ export function useDeactivateAdminUser() {
   });
 }
 
+/**
+ * Reactivates a deactivated admin user.
+ *
+ * Variables: `{ userId }`. Invalidates `adminUsers.all` so access lists and
+ * detail drawers refresh.
+ *
+ * @returns A React Query mutation for the reactivation.
+ */
 export function useReactivateAdminUser() {
   const queryClient = useQueryClient();
   const toast = useToast();

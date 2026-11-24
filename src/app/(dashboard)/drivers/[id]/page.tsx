@@ -38,7 +38,6 @@ import {
   useVerifyDriver,
 } from "@/hooks/useAdminActions";
 import { useDriverDetails } from "@/hooks/useDriverDetails";
-import { useDriverDocuments } from "@/hooks/useDriverDocuments";
 import { useToast } from "@/components/toastContext";
 import { useAuthStore } from "@/store/authStore";
 import { usePageViewField } from "@/store/pageViewStore";
@@ -250,13 +249,11 @@ function DriverDetailsPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [lightboxPhoto]);
-  const {
-    data: documents,
-    isPending: documentsPending,
-    isError: documentsIsError,
-    error: documentsError,
-    refetch: refetchDocuments,
-  } = useDriverDocuments(driverId);
+  const documents = driver?.documents ?? [];
+  const documentsPending = driverPending;
+  const documentsIsError = driverIsError;
+  const documentsError = driverError;
+  const refetchDocuments = refetchDriver;
   const approveDocument = useApproveDocument();
   const rejectDocument = useRejectDocument();
   const verifyDriver = useVerifyDriver();
@@ -624,6 +621,12 @@ function DriverDetailsPage() {
       formatHours(getMetric(["average_weekly_hours", "avg_weekly_hours"])),
     ],
     ["Peak hours", getMetric(["peak_hours", "peak_activity_hours"])],
+    ...(driver.driveStats?.total_drives != null
+      ? ([["Total drives", driver.driveStats.total_drives]] as [string, unknown][])
+      : []),
+    ...(driver.lastActivity
+      ? ([["Last activity", formatRelative(driver.lastActivity)]] as [string, unknown][])
+      : []),
   ];
 
   return (
@@ -698,7 +701,7 @@ function DriverDetailsPage() {
                 Reject
               </Button>
             </>
-          )}
+          ) }
           { isSuspended ? (
             <Button
               type="button"
@@ -891,9 +894,24 @@ function DriverDetailsPage() {
           id="driver-documents"
           action={
             !documentsPending && !documentsIsError ? (
-              <span className="text-xs text-slate-500">
-                { items.length } document{ items.length === 1 ? "" : "s" }
-              </span>
+              <div className="flex items-center gap-2">
+                { driver.allDocumentsVerified === true && (
+                  <Badge
+                    variant="outline"
+                    className="border-emerald-200 bg-emerald-50 text-emerald-700"
+                  >
+                    All verified
+                  </Badge>
+                ) }
+                { (driver.missingDocuments?.length ?? 0) > 0 && (
+                  <span className="text-xs text-amber-700">
+                    { driver.missingDocuments.length } missing
+                  </span>
+                ) }
+                <span className="text-xs text-slate-500">
+                  { items.length } document{ items.length === 1 ? "" : "s" }
+                </span>
+              </div>
             ) : null
           }
         >
@@ -926,10 +944,10 @@ function DriverDetailsPage() {
                     <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-900">
                       <span
                         className={ `h-2 w-2 rounded-full ${document.isApproved
-                            ? "bg-emerald-500"
-                            : document.isRejected
-                              ? "bg-rose-500"
-                              : "bg-amber-500"
+                          ? "bg-emerald-500"
+                          : document.isRejected
+                            ? "bg-rose-500"
+                            : "bg-amber-500"
                           }` }
                         aria-hidden="true"
                       />
@@ -967,6 +985,21 @@ function DriverDetailsPage() {
                 </li>
               )) }
             </ul>
+          ) }
+          { !documentsPending && !documentsIsError && (driver.missingDocuments?.length ?? 0) > 0 && (
+            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              <p className="font-medium">Missing documents</p>
+              <ul className="mt-1 list-disc pl-4">
+                { driver.missingDocuments.map((doc, index) => (
+                  <li key={ index }>{ displayValue(doc) }</li>
+                )) }
+              </ul>
+              { driver.canBeVerified === false && (
+                <p className="mt-1 text-amber-700">
+                  Not ready to verify until these are uploaded.
+                </p>
+              ) }
+            </div>
           ) }
         </DriverSection>
 
@@ -1016,6 +1049,22 @@ function DriverDetailsPage() {
               />
             )) }
           </dl>
+          { driver.payoutStats && Object.keys(driver.payoutStats).length > 0 && (
+            <div className="mt-3 border-t border-slate-100 pt-3">
+              <h3 className="text-xs font-medium text-slate-500">Payout stats</h3>
+              <dl className="mt-2 grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
+                { Object.entries(driver.payoutStats).map(([key, value]) => (
+                  <InfoField
+                    key={ key }
+                    label={ key
+                      .replace(/_/g, " ")
+                      .replace(/\b\w/g, (char) => char.toUpperCase()) }
+                    value={ value }
+                  />
+                )) }
+              </dl>
+            </div>
+          ) }
           <p className="mt-2 text-xs text-slate-500">
             Earnings and payout totals for this date range are not provided by
             the current driver profile API.

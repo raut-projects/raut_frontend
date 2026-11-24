@@ -1,3 +1,9 @@
+// Authentication service for the admin console.
+// Wraps the login, session lookup, admin promotion and password reset
+// endpoints; stores the session and tokens through `./tokenStore` and clears
+// client-side stores on sign-out. All requests go through `./http`, so failures
+// surface as ApiError.
+
 import { API_ROUTES } from "../lib/config";
 import { firstRole, formatRole, isAdminRole, resolveRole } from "../lib/roles";
 import type { AuthSession } from "../types/models";
@@ -18,6 +24,11 @@ import {
 } from "./tokenStore";
 import { resetClientState } from "../store/resetClientState";
 
+/**
+ * Strips spaces, parentheses, hyphens and dots from a phone number so the same
+ * number compares equal across input formats.
+ * Returns an empty string for null/undefined input.
+ */
 export const normalizePhone = (value) =>
   String(value ?? "").replace(/[\s()\-.]/g, "");
 
@@ -55,6 +66,8 @@ const decodeJwtPayload = (token) => {
     const [, payload] = String(token ?? "").split(".");
     if (!payload) return null;
 
+    // JWTs use base64url, so translate the URL-safe characters and restore the
+    // padding before atob() will accept the value.
     const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
     const padded = normalized.padEnd(
       normalized.length + ((4 - (normalized.length % 4)) % 4),
@@ -112,6 +125,14 @@ const toSession = (user, phone, fallbackRole): AuthSession => {
   };
 };
 
+/**
+ * Signs in with email and password.
+ * POST /auth/login (API_ROUTES.login) with `{ email, password }` and no bearer
+ * token. The response token is stored through `saveSession`; `remember`
+ * chooses persistent (localStorage) or per-tab (sessionStorage) storage.
+ * Returns the new AuthSession. Throws ApiError when the server rejects the
+ * credentials or returns no access token.
+ */
 export async function loginWithEmail({
   email,
   password,
@@ -127,6 +148,8 @@ export async function loginWithEmail({
   });
 
   const data = envelopeData(payload) ?? {};
+  // Accept the snake_case, camelCase and short token field names the backend
+  // has used across versions.
   const accessToken = data.access_token ?? data.accessToken ?? data.token;
 
   if (!accessToken) {
@@ -153,21 +176,40 @@ export async function loginWithEmail({
   return session;
 }
 
+/**
+ * Returns the cached session snapshot, or null when signed out.
+ * Reads memory, not storage, so it is safe to call during render.
+ */
 export function getSession(): AuthSession | null {
   return getSessionSnapshot();
 }
 
+/**
+ * Signs the user out.
+ * Removes the session and tokens from both storages and resets in-memory client
+ * stores. Synchronous and never throws.
+ */
 export function signOut() {
   clearSession();
   resetClientState();
 }
 
+/**
+ * Returns the stored access token, or null when there is none.
+ * Does not refresh an expired token; `./http` handles that per request.
+ */
 export function getToken() {
   return getAccessToken();
 }
 
 // Asks the backend who the signed in user actually is. This is the source of
 // truth for the role, the local session only caches it.
+/**
+ * Fetches the currently authenticated user.
+ * GET /auth/me (API_ROUTES.me) with the bearer token.
+ * Returns `{ user, role }`, where the role is resolved from the response only.
+ * Throws ApiError on an expired/invalid session or transport failure.
+ */
 export async function fetchCurrentUser() {
   const payload = await request(API_ROUTES.me, { auth: true });
   const data = envelopeData(payload) ?? {};
@@ -184,6 +226,16 @@ const signInAgainError = (message) => {
   return Object.assign(error, { requiresSignIn: true });
 };
 
+/**
+ * Promotes the signed-in account to admin using the shared admin secret.
+ * POST /auth/promote (API_ROUTES.promote) as form-urlencoded with `{ secret }`.
+ * Side effects: stores any returned refresh/access tokens, refreshes the token
+ * pair when the response carries no access token, and persists the new role via
+ * `updateSession`.
+ * Returns `{ role, roleLabel, message }`.
+ * Throws ApiError (403) when the secret is refused; a 409 error flagged
+ * `requiresSignIn` when access was granted but a fresh token is required.
+ */
 export async function requestAdminAccess(secret) {
   const payload = await request(API_ROUTES.promote, {
     method: "POST",
@@ -262,6 +314,12 @@ export async function requestAdminAccess(secret) {
   };
 }
 
+/**
+ * Requests a password reset email.
+ * POST /auth/reset-password (API_ROUTES.resetPassword) with `{ email }` and no
+ * bearer token. Returns the server's envelope message (empty string when the
+ * response has none). Throws ApiError on failure.
+ */
 export async function resetPassword(email) {
   const payload = await request(API_ROUTES.resetPassword, {
     method: "POST",

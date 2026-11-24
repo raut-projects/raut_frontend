@@ -1,3 +1,6 @@
+// Marketing promotion helpers and types. Wraps the promotions API with local
+// status derivation and display formatting for the marketing screens.
+
 export type PromotionStatus = "active" | "scheduled" | "expired" | "draft";
 
 export type PromotionTab = PromotionStatus | "all";

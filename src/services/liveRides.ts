@@ -1,3 +1,9 @@
+// Live ride monitoring service.
+// Lists in-progress rides and issues operator actions (cancel, flag, note,
+// escalate, fare override). Each call switches on LIVE_RIDES_USE_MOCK_DATA: mock
+// helpers answer locally, otherwise the shared `./api` helpers call the backend.
+// Backend failures surface as ApiError.
+
 import { API_ROUTES } from "@/lib/config";
 import { apiGet, apiPut, apiPost } from "./api";
 import type {
@@ -19,6 +25,13 @@ import {
 } from "@/lib/liveRidesMock";
 import { LIVE_RIDES_USE_MOCK_DATA } from "@/lib/liveRides";
 
+/**
+ * Lists live rides, optionally filtered by status, ride type, driver/customer
+ * query or ride id, or restricted to rides with issues.
+ * GET /rides/live (API_ROUTES.liveRides) with snake_case params.
+ * Returns an empty array when mock mode is on (40 mock rides are returned) or
+ * when the response has neither `rides` nor `items`. Throws ApiError on failure.
+ */
 export async function listLiveRides(params?: {
   status?: string;
   type?: string;
@@ -43,6 +56,12 @@ export async function listLiveRides(params?: {
   return (data?.rides ?? data?.items ?? []).map(mapLiveRide);
 }
 
+/**
+ * Loads one live ride.
+ * GET /rides/live/:rideId (API_ROUTES.liveRideDetail), accepting either
+ * `{ ride }` or the ride itself. Returns null in mock mode when the mock has no
+ * matching ride. Throws ApiError on request failure.
+ */
 export async function getLiveRideDetail(
   rideId: string,
 ): Promise<LiveRide | null> {
@@ -53,6 +72,12 @@ export async function getLiveRideDetail(
   return mapLiveRide(data?.ride ?? data);
 }
 
+/**
+ * Cancels a live ride with a refund policy.
+ * PUT /rides/live/:rideId/cancel with `reason`, `refund`, `partial_percent`
+ * and `penalize_driver`. `partialPercent` only matters for a "partial" refund.
+ * Returns the updated LiveRide. Throws ApiError on failure.
+ */
 export async function cancelLiveRide(
   rideId: string,
   reason: string,
@@ -78,6 +103,11 @@ export async function cancelLiveRide(
   return mapLiveRide(data?.ride ?? data);
 }
 
+/**
+ * Flags a live ride for review.
+ * POST /rides/live/:rideId/flag with `{ reason }`.
+ * Returns the updated LiveRide. Throws ApiError on failure.
+ */
 export async function flagLiveRide(
   rideId: string,
   reason: string,
@@ -89,6 +119,11 @@ export async function flagLiveRide(
   return mapLiveRide(data?.ride ?? data);
 }
 
+/**
+ * Appends an operator note to a live ride.
+ * POST /rides/live/:rideId/note with `{ note }`.
+ * Returns the updated LiveRide. Throws ApiError on failure.
+ */
 export async function addLiveRideNote(
   rideId: string,
   text: string,
@@ -100,6 +135,11 @@ export async function addLiveRideNote(
   return mapLiveRide(data?.ride ?? data);
 }
 
+/**
+ * Escalates a live ride to a supervisor.
+ * POST /rides/live/:rideId/escalate with `{ note }`.
+ * Returns the updated LiveRide. Throws ApiError on failure.
+ */
 export async function escalateLiveRide(
   rideId: string,
   note: string,
@@ -111,6 +151,11 @@ export async function escalateLiveRide(
   return mapLiveRide(data?.ride ?? data);
 }
 
+/**
+ * Overrides a ride fare with an operator-supplied amount and reason.
+ * POST /rides/live/:rideId/override-fare with `{ amount, reason }`.
+ * Returns the updated LiveRide. Throws ApiError on failure.
+ */
 export async function overrideLiveRideFare(
   rideId: string,
   amount: number,
@@ -126,6 +171,12 @@ export async function overrideLiveRideFare(
   return mapLiveRide(data?.ride ?? data);
 }
 
+/**
+ * Loads the event history for a live ride.
+ * GET /rides/live/:rideId/history, reading the `history` array from the
+ * response (empty array when absent).
+ * Returns `{ time, event, detail? }[]`. Throws ApiError on failure.
+ */
 export async function getLiveRideHistory(
   rideId: string,
 ): Promise<Array<{ time: string; event: string; detail?: string }>> {
@@ -136,10 +187,17 @@ export async function getLiveRideHistory(
   return data?.history ?? [];
 }
 
+/**
+ * Intended to reset the mock live-ride store.
+ * The current body calls itself recursively, so calling it will overflow the
+ * stack rather than reset anything. Mock data is imported fresh per module load.
+ */
 export function resetMockLiveRides(): void {
   resetMockLiveRides();
 }
 
+// Normalises a loosely typed backend row into the LiveRide view model. Fields
+// the API does not send are given safe defaults so the map and cards can render.
 function mapLiveRide(row: LiveRideRawInput): LiveRide {
   const id = String(row.id ?? "");
   const statusKey = String(row.status ?? "accepted").toLowerCase();
@@ -164,6 +222,8 @@ function mapLiveRide(row: LiveRideRawInput): LiveRide {
   const heading = Number(row.driver_heading ?? 0);
   const fareAmount = Number(row.fare_amount ?? 0);
   const distanceKm = haversineKm(pickupLat, pickupLng, dropoffLat, dropoffLng);
+  // Average urban speed of ~0.6 km/min gives the ETA; the fare follows the same
+  // base + distance + time + platform-fee formula the mobile app uses.
   const etaMin = Math.max(1, Math.round(distanceKm / 0.6));
   const baseFare = 2000;
   const distanceCharge = Math.round(distanceKm * 500);
