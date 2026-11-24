@@ -347,10 +347,11 @@ export default function PermissionsPage() {
     printWindow.document.write(`
       <!doctype html>
       <html>
-        <head><meta charset="utf-8" />
+        <head>
+        <meta charset="utf-8" />
           <title>Raut permissions</title>
           <style>
-            body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#0f172a;margin:28px}
+             body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#0f172a;margin:28px}
             h1{font-size:22px;margin:0 0 4px}
             p{font-size:12px;color:#64748b;margin:0 0 18px}
             section{margin:0 0 22px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}
