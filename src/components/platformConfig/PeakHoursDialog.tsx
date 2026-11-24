@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 
+import { Can } from "@/components/Can";
 import { Button } from "@/components/ui/button";
 import SidePanel from "@/components/SidePanel";
 import { useToast } from "@/components/toastContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useUpdateConfigs } from "@/hooks/usePlatformConfig";
 import {
   PEAK_DAYS,
@@ -13,6 +15,7 @@ import {
   serializePeakHours,
   type PeakHoursSchedule,
 } from "@/lib/platformConfig";
+import { PERMISSIONS } from "@/lib/permissions";
 import type { ConfigValue } from "@/types/platformConfig";
 
 export const PEAK_HOURS_KEY = "surge.peak_hours";
@@ -26,6 +29,8 @@ export function PeakHoursDialog({
 }) {
   const update = useUpdateConfigs();
   const { success, error: toastError } = useToast();
+  const { has } = usePermissions();
+  const canManage = has(PERMISSIONS.PLATFORM_CONFIG_MANAGE);
   const [schedule, setSchedule] = useState<PeakHoursSchedule>(() =>
     parsePeakHours(value),
   );
@@ -96,14 +101,16 @@ export function PeakHoursDialog({
           >
             Cancel
           </Button>
-          <Button
-            type="button"
-            onClick={ handleSave }
-            disabled={ update.isPending }
-            className="h-9 bg-brand-600 px-3.5 text-sm font-semibold text-white hover:bg-brand-700"
-          >
-            { update.isPending ? "Saving…" : "Save peak hours" }
-          </Button>
+          <Can permission={ PERMISSIONS.PLATFORM_CONFIG_MANAGE }>
+            <Button
+              type="button"
+              onClick={ handleSave }
+              disabled={ update.isPending }
+              className="h-9 bg-brand-600 px-3.5 text-sm font-semibold text-white hover:bg-brand-700"
+            >
+              { update.isPending ? "Saving..." : "Save peak hours" }
+            </Button>
+          </Can>
         </>
       }
     >
@@ -123,7 +130,8 @@ export function PeakHoursDialog({
                 <button
                   type="button"
                   onClick={ () => addSlot(day.id) }
-                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-brand-700 transition-colors hover:bg-brand-50"
+                  disabled={ !canManage }
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-brand-700 transition-colors hover:bg-brand-50 disabled:cursor-not-allowed disabled:text-slate-400 disabled:hover:bg-transparent"
                 >
                   <Plus className="size-3.5" aria-hidden="true" />
                   Add window
@@ -140,27 +148,30 @@ export function PeakHoursDialog({
                       <input
                         type="time"
                         value={ slot.start }
+                        disabled={ !canManage }
                         onChange={ (event) =>
                           updateSlot(day.id, index, "start", event.target.value)
                         }
                         aria-label={ `${day.label} window ${index + 1} start` }
-                        className="h-9 flex-1 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-800 outline-none focus-visible:border-brand-400 focus-visible:ring-3 focus-visible:ring-brand-100"
+                        className="h-9 flex-1 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-800 outline-none focus-visible:border-brand-400 focus-visible:ring-3 focus-visible:ring-brand-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
                       />
                       <span className="text-xs text-slate-400">to</span>
                       <input
                         type="time"
                         value={ slot.end }
+                        disabled={ !canManage }
                         onChange={ (event) =>
                           updateSlot(day.id, index, "end", event.target.value)
                         }
                         aria-label={ `${day.label} window ${index + 1} end` }
-                        className="h-9 flex-1 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-800 outline-none focus-visible:border-brand-400 focus-visible:ring-3 focus-visible:ring-brand-100"
+                        className="h-9 flex-1 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-800 outline-none focus-visible:border-brand-400 focus-visible:ring-3 focus-visible:ring-brand-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
                       />
                       <button
                         type="button"
                         onClick={ () => removeSlot(day.id, index) }
+                        disabled={ !canManage }
                         aria-label={ `Remove ${day.label} window ${index + 1}` }
-                        className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
+                        className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
                       >
                         <Trash2 className="size-3.5" aria-hidden="true" />
                       </button>

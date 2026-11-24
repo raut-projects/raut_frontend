@@ -344,7 +344,7 @@ export type AdminUser = {
   name: string;
   email: string;
   phone: string;
-  role: AdminRoleKey;
+  role: string;
   status: AdminUserStatus;
   lastLoginAt: string | null;
   isOnline: boolean;
@@ -380,7 +380,7 @@ export type AdminUserFormValues = {
   name: string;
   phone: string;
   email: string;
-  role: AdminRoleKey;
+  role: string;
   twoFactorRequired: boolean;
   sendWelcomeSms: boolean;
 };
@@ -390,7 +390,7 @@ export type AdminUserInvitePayload = {
   name: string;
   phone: string;
   email: string;
-  role: AdminRoleKey;
+  role: string;
   permissions?: PermissionOverrides;
   two_factor_required: boolean;
   send_welcome_sms: boolean;
@@ -398,7 +398,7 @@ export type AdminUserInvitePayload = {
 
 /** Request body for updating an admin user's role and permissions. */
 export type AdminUserUpdatePayload = {
-  role: AdminRoleKey;
+  role: string;
   permissions?: PermissionOverrides;
   two_factor_required: boolean;
 };
@@ -413,45 +413,17 @@ export const ADMIN_USER_DEFAULT_FORM: AdminUserFormValues = {
   sendWelcomeSms: true,
 };
 
-/** Maps accepted role spellings to canonical admin role keys. */
-const ROLE_ALIASES: Record<string, AdminRoleKey> = {
-  super_admin: "super_admin",
-  superadmin: "super_admin",
-  "super-admin": "super_admin",
-  owner: "super_admin",
-  admin: "super_admin",
-  administrator: "super_admin",
-  platform_manager: "platform_manager",
-  "platform-manager": "platform_manager",
-  operations_agent: "operations_agent",
-  operations: "operations_agent",
-  operator: "operations_agent",
-  support_agent: "support_agent",
-  support: "support_agent",
-  "support-agent": "support_agent",
-  finance_manager: "finance_manager",
-  finance: "finance_manager",
-  finance_agent: "finance_agent",
-  marketing_manager: "marketing_manager",
-  marketing: "marketing_manager",
-  marketing_agent: "marketing_agent",
-  analyst: "analyst",
-  read_only: "analyst",
-};
-
 /**
- * Normalizes any role value to a canonical admin role key.
+ * Normalizes any role value for display and lookup.
  *
- * Trims, lowercases and collapses whitespace to underscores before alias
- * lookup; unknown values fall back to "analyst" (least privilege).
+ * Trims, lowercases and collapses whitespace to underscores; backend-defined
+ * roles are preserved unchanged apart from that formatting.
  */
-export function normalizeAdminRole(value: unknown): AdminRoleKey {
-  const key = String(value ?? "")
+export function normalizeAdminRole(value: unknown): string {
+  return String(value ?? "")
     .trim()
     .toLowerCase()
     .replace(/\s+/g, "_");
-
-  return ROLE_ALIASES[key] ?? "analyst";
 }
 
 /**
@@ -479,11 +451,21 @@ export function normalizeAdminStatus(value: unknown): AdminUserStatus {
   return "active";
 }
 
-/** Returns the display label for a role value, defaulting to "Analyst". */
+const formatRoleKey = (key: string) =>
+  key
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+
+/** Returns the display label for a role value, formatting unknown roles. */
 export function roleLabel(role: string) {
   const key = normalizeAdminRole(role);
 
-  return ADMIN_ROLE_LABELS[key] ?? "Analyst";
+  if (!key) return "User";
+
+  return (
+    ADMIN_ROLE_LABELS[key] ??
+    formatRoleKey(key)
+  );
 }
 
 /** Returns the description for a role value, or an empty string. */
@@ -491,21 +473,21 @@ export function roleDescription(role: string) {
   const key = normalizeAdminRole(role);
 
   return (
-    ADMIN_ROLES.find((entry) => entry.key === key)?.description ?? ""
+    ADMIN_ROLES.find((entry) => entry.key === (key as AdminRoleKey))?.description ?? ""
   );
 }
 
 /** Resolves the base permission level for a role on a feature (defaults to "none"). */
 export function resolvePermission(
-  role: AdminRoleKey,
+  role: string,
   feature: PermissionFeature,
 ): PermissionLevel {
-  return PERMISSION_MATRIX[feature]?.[role] ?? "none";
+  return PERMISSION_MATRIX[feature]?.[role as AdminRoleKey] ?? "none";
 }
 
 /** Resolves every feature's permission for a role, applying overrides when present. */
 export function resolvePermissions(
-  role: AdminRoleKey,
+  role: string,
   overrides?: PermissionOverrides,
 ): Record<PermissionFeature, PermissionLevel> {
   return PERMISSION_FEATURES.reduce(

@@ -15,6 +15,13 @@ import {
   type DisputeIssueType,
   type RefundMethod,
 } from "../lib/refundCalculator";
+import type {
+  RbacCatalogPermission,
+  RbacCatalogRole,
+  RbacRegion,
+  RbacRolePermission,
+} from "../types/rbac";
+import type { StaffAssignment, StaffMember } from "../types/staff";
 
 export const EMPTY = "—";
 
@@ -906,8 +913,7 @@ export const mapRideDispute = (raw, rideIdHint = ""): RideDispute => {
       firstOf(source, ["currency"], DISPUTE_CURRENCY) ?? DISPUTE_CURRENCY,
     ),
     decision,
-    refundAmount:
-      refundValue === null ? undefined : numberOrZero(refundValue),
+    refundAmount: refundValue === null ? undefined : numberOrZero(refundValue),
     refundMethod,
     resolutionNote:
       resolutionNote === null ? undefined : String(resolutionNote),
@@ -1088,21 +1094,83 @@ const asConfigValue = (value) => {
   return { value };
 };
 
-export const mapConfigRecord = (raw) => ({
-  id: String(raw?.id ?? ""),
-  key: String(raw?.config_key ?? raw?.key ?? ""),
-  value: asConfigValue(raw?.config_value ?? raw?.value),
-  type: String(raw?.config_type ?? raw?.type ?? ""),
-  description: String(raw?.description ?? ""),
-  region: raw?.region ?? null,
-  vehicleType: raw?.vehicle_type ?? raw?.vehicleType ?? null,
-  version: Number(raw?.version ?? 0),
-  activeFrom: raw?.active_from ?? raw?.activeFrom ?? null,
-  activeUntil: raw?.active_until ?? raw?.activeUntil ?? null,
-  updatedAt: raw?.updated_at ?? raw?.updatedAt ?? null,
-  notes: raw?.notes ?? null,
-});
+const toConfigNumber = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+};
 
+const toConfigOptions = (value) => {
+  if (!Array.isArray(value)) return null;
+  const options = value
+    .map((option) => {
+      if (typeof option === "string") {
+        const text = option.trim();
+        return text ? { label: text, value: text } : null;
+      }
+      if (option && typeof option === "object") {
+        const rawValue = firstOf(option, ["value", "key", "id"]);
+        if (rawValue === null || rawValue === undefined) return null;
+        const label = firstOf(option, ["label", "name", "title"], rawValue);
+        return { label: String(label ?? rawValue), value: String(rawValue) };
+      }
+      return null;
+    })
+    .filter(Boolean);
+  return options.length ? options : null;
+};
+
+export const mapConfigRecord = (raw) => {
+  const metadata =
+    raw?.metadata &&
+    typeof raw.metadata === "object" &&
+    !Array.isArray(raw.metadata)
+      ? raw.metadata
+      : {};
+  const source = { ...metadata, ...(raw ?? {}) };
+  return {
+    id: String(raw?.id ?? ""),
+    key: String(raw?.config_key ?? raw?.key ?? ""),
+    value: asConfigValue(raw?.config_value ?? raw?.value),
+    type: String(raw?.config_type ?? raw?.type ?? ""),
+    description: String(firstOf(source, ["description", "hint"], "") ?? ""),
+    region: raw?.region ?? null,
+    vehicleType: raw?.vehicle_type ?? raw?.vehicleType ?? null,
+    version: Number(raw?.version ?? 0),
+    activeFrom: raw?.active_from ?? raw?.activeFrom ?? null,
+    activeUntil: raw?.active_until ?? raw?.activeUntil ?? null,
+    updatedAt: raw?.updated_at ?? raw?.updatedAt ?? null,
+    notes: raw?.notes ?? null,
+    label: firstOf(source, ["label", "name", "title"], null),
+    category: firstOf(source, ["category", "tab", "group"], null),
+    section: firstOf(source, ["section", "section_id", "sectionId"], null),
+    fieldType: firstOf(
+      source,
+      ["field_type", "fieldType", "input_type", "inputType"],
+      null,
+    ),
+    unit: firstOf(source, ["unit", "units"], null),
+    min: toConfigNumber(firstOf(source, ["min", "minimum"])),
+    max: toConfigNumber(firstOf(source, ["max", "maximum"])),
+    step: toConfigNumber(firstOf(source, ["step"])),
+    options: toConfigOptions(firstOf(source, ["options", "choices"])),
+    pattern: firstOf(source, ["pattern", "regex"], null),
+    placeholder: firstOf(source, ["placeholder"], null),
+    order: toConfigNumber(
+      firstOf(source, ["order", "sort_order", "sortOrder"]),
+    ),
+    hidden: Boolean(
+      firstOf(source, ["hidden", "is_hidden", "isHidden"], false),
+    ),
+    readOnly: Boolean(
+      firstOf(
+        source,
+        ["read_only", "readOnly", "is_read_only", "isReadOnly"],
+        false,
+      ),
+    ),
+  };
+};
 export const mapConfigDetail = (raw) => {
   const source = raw?.config ?? raw ?? {};
 
@@ -1139,4 +1207,363 @@ export const mapConfigHistory = (response) => {
       : [];
 
   return history.map(mapConfigHistoryEntry);
+};
+
+const roleAssignments = (value) => {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((role) => ({
+      assignmentId: firstOf(role, ["assignment_id", "assignmentId"]),
+      key: String(firstOf(role, ["key", "name", "role"], "") ?? ""),
+      scope: firstOf(role, ["scope", "scope_type", "scopeType"], "platform"),
+      scopeId: firstOf(role, ["scope_id", "scopeId"]),
+      expiresAt: firstOf(role, ["expires_at", "expiresAt"]),
+    }))
+    .filter((role) => role.key);
+};
+
+const normalizeAccessGrant = (code, raw) => {
+  const source =
+    raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+  const requiredScopes = Array.isArray(
+    firstOf(source, ["required_scopes", "requiredScopes"]),
+  )
+    ? (firstOf(source, ["required_scopes", "requiredScopes"]) as unknown[])
+        .map((scope) => String(scope ?? "").trim())
+        .filter(Boolean)
+    : [];
+
+  return {
+    code,
+    scope: String(
+      firstOf(source, ["scope", "scope_type", "scopeType"], "platform") ??
+        "platform",
+    ),
+    scopeId:
+      firstOf(source, ["scope_id", "scopeId"], null) === undefined
+        ? null
+        : (firstOf(source, ["scope_id", "scopeId"], null) as string | null),
+    requiredScopes,
+    assignmentId:
+      firstOf(source, ["assignment_id", "assignmentId"], null) === undefined
+        ? null
+        : (firstOf(source, ["assignment_id", "assignmentId"], null) as
+            | string
+            | null),
+    constraints: rbacConstraints(
+      firstOf(source, ["constraints", "conditions", "metadata"]),
+    ),
+  };
+};
+
+const addAccessGrant = (grantsByCode, code, raw) => {
+  const normalizedCode = String(code ?? "").trim();
+  if (!normalizedCode) return;
+
+  const grant = normalizeAccessGrant(normalizedCode, raw);
+  const existing = grantsByCode[normalizedCode] ?? [];
+  grantsByCode[normalizedCode] = [...existing, grant];
+};
+
+const collectAccessGrants = (value) => {
+  const grantsByCode: Record<
+    string,
+    ReturnType<typeof normalizeAccessGrant>[]
+  > = {};
+
+  if (Array.isArray(value)) {
+    value.forEach((entry) => {
+      if (typeof entry === "string") {
+        addAccessGrant(grantsByCode, entry, null);
+        return;
+      }
+
+      if (entry && typeof entry === "object") {
+        const code = firstOf(entry, ["code", "permission", "key"]);
+        if (typeof code === "string") addAccessGrant(grantsByCode, code, entry);
+      }
+    });
+
+    return grantsByCode;
+  }
+
+  if (value && typeof value === "object") {
+    Object.entries(value as Record<string, unknown>).forEach(
+      ([code, rawGrant]) => {
+        if (Array.isArray(rawGrant)) {
+          rawGrant.forEach((entry) =>
+            addAccessGrant(grantsByCode, code, entry),
+          );
+          return;
+        }
+
+        addAccessGrant(grantsByCode, code, rawGrant);
+      },
+    );
+  }
+
+  return grantsByCode;
+};
+
+export function mapRbacAccess(raw) {
+  const data = raw && typeof raw === "object" && "data" in raw ? raw.data : raw;
+  const source = data && typeof data === "object" ? data : {};
+  const rawPermissions = firstOf(
+    source,
+    [
+      "permissions",
+      "permission_codes",
+      "permissionCodes",
+      "codes",
+      "grants",
+      "permission_grants",
+      "permissionGrants",
+      "scoped_permissions",
+      "scopedPermissions",
+      "effective_permissions",
+      "effectivePermissions",
+    ],
+    Array.isArray(data) ? data : [],
+  );
+  const rawRoles = firstOf(source, [
+    "roles",
+    "role_assignments",
+    "roleAssignments",
+  ]);
+  const grantsByCode = collectAccessGrants(rawPermissions);
+
+  return {
+    permissions: Object.keys(grantsByCode),
+    grantsByCode,
+    roles: roleAssignments(rawRoles),
+  };
+}
+
+const rbacCollection = (source, keys) => {
+  if (Array.isArray(source)) return source;
+
+  for (const key of keys) {
+    const value = firstOf(source, [key]);
+    if (Array.isArray(value)) return value;
+  }
+
+  return [];
+};
+
+const rbacConstraints = (value) => {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    try {
+      const parsed = JSON.parse(value);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      return { value };
+    }
+  }
+
+  return {};
+};
+
+export const mapRbacPermission = (raw): RbacCatalogPermission => {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const code = String(
+    firstOf(source, ["code", "permission_code", "permissionCode", "key"], "") ??
+      "",
+  );
+
+  return {
+    code,
+    name: String(firstOf(source, ["name", "label", "title"], code) ?? code),
+    description: String(firstOf(source, ["description", "desc"], "") ?? ""),
+    module: String(
+      firstOf(source, ["module", "group", "category"], "general") ?? "general",
+    ),
+    createdAt: firstOf(source, ["created_at", "createdAt"]),
+  };
+};
+
+export const mapRbacPermissionCatalog = (raw): RbacCatalogPermission[] => {
+  const data = raw && typeof raw === "object" && "data" in raw ? raw.data : raw;
+  const items = rbacCollection(data, [
+    "permissions",
+    "items",
+    "results",
+    "data",
+  ]);
+
+  return items
+    .map(mapRbacPermission)
+    .filter((permission) => permission.code.trim());
+};
+
+export const mapRbacRolePermission = (raw): RbacRolePermission => {
+  if (typeof raw === "string") {
+    return { code: raw, scope: "platform", constraints: {} };
+  }
+
+  const source = raw && typeof raw === "object" ? raw : {};
+  const code = String(
+    firstOf(
+      source,
+      [
+        "code",
+        "permission",
+        "permission_code",
+        "permissionCode",
+        "key",
+        "name",
+      ],
+      "",
+    ) ?? "",
+  );
+
+  return {
+    code,
+    scope: String(
+      firstOf(source, ["scope", "scope_type", "scopeType"], "platform") ??
+        "platform",
+    ),
+    constraints: rbacConstraints(
+      firstOf(source, ["constraints", "conditions", "metadata"]),
+    ),
+  };
+};
+
+export const mapRbacCatalogRole = (raw): RbacCatalogRole => {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const key = String(
+    firstOf(source, ["key", "role_key", "roleKey", "name"], "") ?? "",
+  );
+  const permissions = rbacCollection(source, [
+    "permissions",
+    "permission_grants",
+    "permissionGrants",
+    "grants",
+  ]);
+
+  return {
+    id: firstOf(source, ["id", "role_id", "roleId"]),
+    key,
+    name: String(firstOf(source, ["name", "label", "title"], key) ?? key),
+    description: String(firstOf(source, ["description", "desc"], "") ?? ""),
+    isSystem: Boolean(
+      firstOf(source, ["is_system", "isSystem", "system"], false),
+    ),
+    createdAt: firstOf(source, ["created_at", "createdAt"]),
+    updatedAt: firstOf(source, ["updated_at", "updatedAt"]),
+    permissions: permissions
+      .map(mapRbacRolePermission)
+      .filter((permission) => permission.code.trim()),
+  };
+};
+
+export const mapRbacRoleCatalog = (raw): RbacCatalogRole[] => {
+  const data = raw && typeof raw === "object" && "data" in raw ? raw.data : raw;
+  const items = rbacCollection(data, ["roles", "items", "results", "data"]);
+
+  return items.map(mapRbacCatalogRole).filter((role) => role.key.trim());
+};
+
+export const mapRbacRegion = (raw): RbacRegion => {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const code = String(firstOf(source, ["code", "region_code"], "") ?? "");
+  const id = String(firstOf(source, ["id", "region_id"], code) ?? code);
+
+  return {
+    id,
+    code,
+    name: String(firstOf(source, ["name", "label"], code) ?? code),
+    isActive: firstOf(source, ["is_active", "isActive"], true) !== false,
+    createdAt: firstOf(source, ["created_at", "createdAt"]),
+  };
+};
+
+export const mapRbacRegionCatalog = (raw): RbacRegion[] => {
+  const data = raw && typeof raw === "object" && "data" in raw ? raw.data : raw;
+  const items = rbacCollection(data, ["regions", "items", "results", "data"]);
+
+  return items
+    .map(mapRbacRegion)
+    .filter((region) => region.id.trim() || region.code.trim());
+};
+
+const mapStaffAssignment = (raw): StaffAssignment => {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const roleKey = String(
+    firstOf(source, ["role_key", "roleKey", "key"], "") ?? "",
+  );
+  const roleName = String(
+    firstOf(source, ["role_name", "roleName", "name", "role"], roleKey) ??
+      roleKey,
+  );
+  const assignmentId = String(
+    firstOf(source, ["assignment_id", "assignmentId", "id"], "") ?? "",
+  );
+
+  return {
+    assignmentId,
+    roleId: String(firstOf(source, ["role_id", "roleId"], "") ?? ""),
+    roleKey,
+    roleName,
+    scope: String(
+      firstOf(source, ["scope", "scope_type", "scopeType"], "platform") ??
+        "platform",
+    ),
+    scopeId:
+      firstOf(source, ["scope_id", "scopeId"]) === null
+        ? null
+        : String(firstOf(source, ["scope_id", "scopeId"], "") ?? "") || null,
+    expiresAt:
+      firstOf(source, ["expires_at", "expiresAt"]) === null
+        ? null
+        : String(firstOf(source, ["expires_at", "expiresAt"], "") ?? "") ||
+          null,
+    assignedAt:
+      firstOf(source, ["assigned_at", "assignedAt"]) === null
+        ? null
+        : String(firstOf(source, ["assigned_at", "assignedAt"], "") ?? "") ||
+          null,
+  };
+};
+
+export const mapStaffMember = (raw): StaffMember => {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const nested =
+    source.staff && typeof source.staff === "object" ? source.staff : source;
+  const name = String(
+    firstOf(nested, ["full_name", "fullName", "name"], "") ?? "",
+  );
+  const email = String(firstOf(nested, ["email"], "") ?? "");
+  const phone = String(
+    firstOf(nested, ["phone", "phone_number", "phoneNumber"], "") ?? "",
+  );
+  const isActive = firstOf(nested, ["is_active", "isActive"], true) !== false;
+  const rawStatus = String(firstOf(nested, ["status"], "") ?? "").toLowerCase();
+  const status =
+    rawStatus === "invited" || rawStatus === "pending"
+      ? "invited"
+      : isActive
+        ? "active"
+        : "deactivated";
+  const assignments = Array.isArray(nested.assignments)
+    ? nested.assignments
+        .map(mapStaffAssignment)
+        .filter((assignment) => assignment.assignmentId)
+    : [];
+
+  return {
+    id: String(firstOf(nested, ["id", "user_id", "userId"], "") ?? ""),
+    name: name.trim() || email.trim() || phone.trim() || "Unnamed staff",
+    email,
+    phone,
+    isActive,
+    status,
+    assignments,
+  };
 };

@@ -23,7 +23,10 @@ import { ConfirmDialog } from "@/components/reasonDialog";
 import { useToast } from "@/components/toastContext";
 import { useApprovePayoutBatch } from "@/hooks/useAdminActions";
 import { usePayoutBatchReview } from "@/hooks/usePayouts";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PERMISSIONS } from "@/lib/permissions";
 import { formatMoney } from "@/services/mappers";
+import { Can } from "@/components/Can";
 
 const HIGH_VALUE_LIMIT = 50_000;
 
@@ -67,6 +70,9 @@ function PayoutBatchReview() {
   const processingPayouts = reviewData.processing;
   const approveBatch = useApprovePayoutBatch();
   const toast = useToast();
+
+  const { has } = usePermissions();
+  const canManagePayouts = has(PERMISSIONS.FINANCE_PAYOUTS_MANAGE);
 
   const eligiblePayouts = useMemo(
     () =>
@@ -287,48 +293,54 @@ function PayoutBatchReview() {
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
-          <div className="flex items-center gap-3">
-            <Checkbox
-              aria-label="Select all eligible payouts"
-              checked={
-                eligiblePayouts.length > 0 &&
-                eligiblePayouts.every((payout) =>
-                  selectedIds.has(String(payout.id)),
-                )
-              }
-              onCheckedChange={ toggleEligiblePayouts }
-              disabled={
-                isPending ||
-                eligiblePayouts.length === 0 ||
-                approveBatch.isPending ||
-                isCheckingBatch
-              }
-            />
-            <span className="text-sm font-semibold text-slate-700">
-              Select eligible payouts
-            </span>
-          </div>
+          { canManagePayouts && (
+            <div className="flex items-center gap-3">
+              <Checkbox
+                aria-label="Select all eligible payouts"
+                checked={
+                  eligiblePayouts.length > 0 &&
+                  eligiblePayouts.every((payout) =>
+                    selectedIds.has(String(payout.id)),
+                  )
+                }
+                onCheckedChange={ toggleEligiblePayouts }
+                disabled={
+                  isPending ||
+                  eligiblePayouts.length === 0 ||
+                  approveBatch.isPending ||
+                  isCheckingBatch
+                }
+              />
+              <span className="text-sm font-semibold text-slate-700">
+                Select eligible payouts
+              </span>
+            </div>
+          ) }
           <div className="flex flex-wrap items-center gap-3">
             <RefreshIndicator
               isFetching={ isFetching }
               updatedAt={ dataUpdatedAt }
               onRefresh={ refetch }
             />
-            <Button
-              type="button"
-              onClick={ openApprovalConfirmation }
-              disabled={
-                selectedEligibleCount === 0 ||
-                selectedEligibleCount !== selectedIds.size ||
-                approveBatch.isPending ||
-                isCheckingBatch
-              }
-              className="bg-brand-600 text-white hover:bg-brand-700"
-            >
-              { approveBatch.isPending
-                ? `Processing ${completedCount} of ${batchActivity.length}`
-                : "Approve batch" }
-            </Button>
+            { canManagePayouts && (
+              <Can permission={ PERMISSIONS.FINANCE_PAYOUTS_APPROVE }>
+                <Button
+                  type="button"
+                  onClick={ openApprovalConfirmation }
+                  disabled={
+                    selectedEligibleCount === 0 ||
+                    selectedEligibleCount !== selectedIds.size ||
+                    approveBatch.isPending ||
+                    isCheckingBatch
+                  }
+                  className="bg-brand-600 text-white hover:bg-brand-700"
+                >
+                  { approveBatch.isPending
+                    ? `Processing ${completedCount} of ${batchActivity.length}`
+                    : "Approve batch" }
+                </Button>
+              </Can>
+            ) }
           </div>
         </div>
 
@@ -382,14 +394,16 @@ function PayoutBatchReview() {
                   return (
                     <TableRow key={ key }>
                       <TableCell>
-                        <Checkbox
-                          aria-label={ `Select payout for ${payout.driverName}` }
-                          checked={ selectedIds.has(String(payout.id)) }
-                          onCheckedChange={ () => togglePayout(payout.id) }
-                          disabled={
-                            hasIssues || !idIsValid || approveBatch.isPending
-                          }
-                        />
+                        { canManagePayouts && (
+                          <Checkbox
+                            aria-label={ `Select payout for ${payout.driverName}` }
+                            checked={ selectedIds.has(String(payout.id)) }
+                            onCheckedChange={ () => togglePayout(payout.id) }
+                            disabled={
+                              hasIssues || !idIsValid || approveBatch.isPending
+                            }
+                          />
+                        ) }
                       </TableCell>
                       <TableCell>
                         <p className="font-medium text-slate-900">
@@ -542,7 +556,7 @@ function PayoutBatchReview() {
                 </div>
                 <div className="flex items-center gap-3">
                   <BatchStatus status={ payout.status } />
-                  { payout.status === "failed" && (
+                  { payout.status === "failed" && canManagePayouts && (
                     <Button
                       type="button"
                       variant="outline"
@@ -567,20 +581,22 @@ function PayoutBatchReview() {
         </div>
       ) }
 
-      <ConfirmDialog
-        open={ confirmOpen }
-        onClose={ () => setConfirmOpen(false) }
-        title="Approve selected payouts"
-        description={ `${selectedEligibleCount} payouts totaling ${formatMoney(selectedAmount)} will be approved.` }
-        confirmLabel="Approve batch"
-        onConfirm={ processBatch }
-        pending={ approveBatch.isPending || isCheckingBatch }
-      >
-        <p className="text-sm text-slate-600">
-          Each payout is approved separately. If one fails, the remaining
-          approvals will continue and the failed item will be listed for review.
-        </p>
-      </ConfirmDialog>
+      <Can permission={PERMISSIONS.FINANCE_PAYOUTS_APPROVE}>
+        <ConfirmDialog
+          open={ confirmOpen }
+          onClose={ () => setConfirmOpen(false) }
+          title="Approve selected payouts"
+          description={ `${selectedEligibleCount} payouts totaling ${formatMoney(selectedAmount)} will be approved.` }
+          confirmLabel="Approve batch"
+          onConfirm={ processBatch }
+          pending={ approveBatch.isPending || isCheckingBatch }
+        >
+          <p className="text-sm text-slate-600">
+            Each payout is approved separately. If one fails, the remaining
+            approvals will continue and the failed item will be listed for review.
+          </p>
+        </ConfirmDialog>
+      </Can>
 
       <SidePanel
         open={ twoFactorNoticeOpen }

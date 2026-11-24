@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { Can } from "@/components/Can";
 import { Button } from "@/components/ui/button";
 import { useRideDispute, useResolveRideDispute } from "@/hooks/useRideDisputes";
+import { PERMISSIONS } from "@/lib/permissions";
 import { ResolveRideDisputeInput } from "@/lib/rideDisputes";
 import ResolveDisputeForm from "@/components/rideDispute/ResolveDisputeForm";
 import DisputeSummary from "@/components/rideDispute/DisputeSummary";
@@ -83,11 +85,20 @@ export default function ResolveDisputePage() {
             onBack={() => router.push("/rides")}
           />
         ) : (
-          <ResolveDisputeForm
-            dispute={dispute}
-            onResolve={handleResolve}
-            isPending={resolve.isPending}
-          />
+          <Can
+            permission={PERMISSIONS.FINANCE_REFUNDS_ISSUE}
+            fallback={
+              <p className="text-sm text-slate-500">
+                You do not have permission to issue refunds.
+              </p>
+            }
+          >
+            <ResolveDisputeForm
+              dispute={dispute}
+              onResolve={handleResolve}
+              isPending={resolve.isPending}
+            />
+          </Can>
         )}
       </div>
     </div>

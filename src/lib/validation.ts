@@ -14,6 +14,10 @@ const LOCAL_PART_PATTERN = /^[A-Za-z0-9._%+'-]+$/;
 const LABEL_PATTERN = /^[A-Za-z0-9-]+$/;
 const TLD_PATTERN = /^[A-Za-z]{2,}$/;
 
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MAX_LENGTH = 128;
+const PHONE_MAX_LENGTH = 24;
+
 /**
  * Validates an email address and returns a user-facing error message.
  *
@@ -77,6 +81,78 @@ export function validateEmail(value: string): string | null {
     if (label.startsWith("-") || label.endsWith("-")) {
       return GENERIC_EMAIL_ERROR;
     }
+  }
+
+  return null;
+}
+
+/**
+ * Validates a new password for reset/update flows.
+ *
+ * @returns An error message, or null when the password is acceptable.
+ */
+export function validateNewPassword(value: string): string | null {
+  const password = String(value ?? "");
+
+  if (!password) return "Please enter a new password.";
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    return `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`;
+  }
+  if (password.length > PASSWORD_MAX_LENGTH) {
+    return `Password must be at most ${PASSWORD_MAX_LENGTH} characters.`;
+  }
+
+  return null;
+}
+
+/**
+ * Formats a Tanzania mobile number (9 local digits) as +255 E.164.
+ */
+export function toTanzaniaE164Phone(value: string): string {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  const local = digits.startsWith("255")
+    ? digits.slice(3)
+    : digits.startsWith("0")
+      ? digits.slice(1)
+      : digits;
+
+  return `+255${local.slice(0, 9)}`;
+}
+
+/**
+ * Validates a Tanzania mobile number entered as 9 local digits.
+ */
+export function validateTanzaniaPhone(value: string): string | null {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  const local = digits.startsWith("255")
+    ? digits.slice(3)
+    : digits.startsWith("0")
+      ? digits.slice(1)
+      : digits;
+
+  if (!local) return "Please enter a phone number.";
+  if (local.length !== 9) return "Enter a valid 9-digit mobile number.";
+
+  const phone = `+255${local}`;
+  if (phone.length > PHONE_MAX_LENGTH) {
+    return "That phone number is too long.";
+  }
+
+  return null;
+}
+
+/**
+ * Validates that a password confirmation matches the new password.
+ *
+ * @returns An error message, or null when the values match.
+ */
+export function validatePasswordConfirmation(
+  password: string,
+  confirmation: string,
+): string | null {
+  if (!String(confirmation ?? "")) return "Please confirm your new password.";
+  if (String(password ?? "") !== String(confirmation ?? "")) {
+    return "Passwords do not match.";
   }
 
   return null;

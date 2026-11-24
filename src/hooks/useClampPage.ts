@@ -6,11 +6,11 @@
 import { useEffect } from "react";
 
 /**
- * Clamps `page` to `totalPages` whenever the current page overshoots.
+ * Clamps `page` into the valid range `[1, totalPages]`.
  *
  * Runs as an effect so it appends a corrective update rather than mutating
- * state during render. It only clamps downward; page selection and lower-bound
- * handling remain with the caller.
+ * state during render. Guards against non-finite values and a total page
+ * count below 1.
  *
  * @param page - Currently selected page.
  * @param totalPages - Last page available for the current result set.
@@ -22,8 +22,18 @@ export function useClampPage(
   setPage: (value: number | ((previous: number) => number)) => void,
 ) {
   useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
+    const safeTotalPages =
+      Number.isFinite(totalPages) && totalPages >= 1
+        ? Math.trunc(totalPages)
+        : 1;
+
+    if (!Number.isFinite(page) || page < 1) {
+      setPage(1);
+      return;
+    }
+
+    if (page > safeTotalPages) {
+      setPage(safeTotalPages);
     }
   }, [page, totalPages, setPage]);
 }

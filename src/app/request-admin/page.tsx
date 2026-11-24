@@ -6,7 +6,9 @@ import { useToast } from "@/components/toastContext";
 import GateLoader from "@/components/GateLoader";
 import { useFromParam } from "@/lib/useFromParam";
 import { useAuthHydrated, useSession } from "@/hooks/useSession";
-import { isAdminRole } from "@/lib/roles";
+import { usePermissions } from "@/hooks/usePermissions";
+import { hasDashboardAccess } from "@/lib/permissions";
+import { resolvePostLoginRoute } from "@/lib/navigation";
 import { requestAdminAccess, signOut } from "@/services/auth";
 
 const inputClass =
@@ -20,6 +22,7 @@ function RequestAdmin() {
   const toast = useToast();
   const session = useSession();
   const hydrated = useAuthHydrated();
+  const { access, hydrated: permissionHydrated } = usePermissions();
 
   const [secret, setSecret] = useState("");
   const [error, setError] = useState("");
@@ -29,17 +32,19 @@ function RequestAdmin() {
   const requested = useFromParam("/");
   const from = requested === "/request-admin" ? "/" : requested;
 
-  const isAdmin = Boolean(session) && isAdminRole(session.role);
+  const hasAccess = permissionHydrated && hasDashboardAccess(access);
 
   useEffect(() => {
     if (hydrated && !session) router.replace("/login?from=%2Frequest-admin");
   }, [hydrated, session, router]);
 
   useEffect(() => {
-    if (isAdmin) router.replace(from);
-  }, [isAdmin, from, router]);
+    if (hasAccess) {
+      router.replace(resolvePostLoginRoute(access, from) ?? from);
+    }
+  }, [access, from, hasAccess, router]);
 
-  if (!hydrated || !session || isAdmin) {
+  if (!hydrated || !permissionHydrated || !session || hasAccess) {
     return <GateLoader />;
   }
 

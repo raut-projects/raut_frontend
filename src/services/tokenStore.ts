@@ -114,19 +114,24 @@ const computeExpiresAt = (expiresIn) => {
   return Date.now() + seconds * 1000;
 };
 
-export const saveSession = ({
-  session,
-  accessToken,
-  refreshToken,
-  expiresIn,
-  remember = true,
-}: {
+type PersistedSession = {
   session: AuthSession;
   accessToken?: string | null;
   refreshToken?: string | null;
   expiresIn?: number | string | null;
   remember?: boolean;
-}) => {
+};
+
+const writeSessionToStorage = (
+  {
+    session,
+    accessToken,
+    refreshToken,
+    expiresIn,
+    remember = true,
+  }: PersistedSession,
+  { publish }: { publish: boolean },
+) => {
   const persistence: Persistence = remember ? "local" : "session";
   const target = getStorage(persistence);
   const stale = getStorage(persistence === "local" ? "session" : "local");
@@ -134,10 +139,35 @@ export const saveSession = ({
   STORAGE_KEYS.forEach((key) => removeFrom(stale, key));
 
   writeTo(target, PERSIST_KEY, persistence);
-  writeTo(target, SESSION_KEY, JSON.stringify(session));
   writeTo(target, ACCESS_TOKEN_KEY, accessToken ?? "");
   writeTo(target, REFRESH_TOKEN_KEY, refreshToken ?? "");
   writeTo(target, EXPIRES_AT_KEY, String(computeExpiresAt(expiresIn)));
+  writeTo(target, SESSION_KEY, publish ? JSON.stringify(session) : "");
+
+  if (publish) emit();
+};
+
+export const saveSession = (payload: PersistedSession) => {
+  writeSessionToStorage(payload, { publish: true });
+};
+
+export const saveAuthTokens = (
+  payload: Omit<PersistedSession, "session">,
+) => {
+  const persistence: Persistence = payload.remember ? "local" : "session";
+  const target = getStorage(persistence);
+  const stale = getStorage(persistence === "local" ? "session" : "local");
+
+  STORAGE_KEYS.forEach((key) => removeFrom(stale, key));
+
+  writeTo(target, PERSIST_KEY, persistence);
+  writeTo(target, ACCESS_TOKEN_KEY, payload.accessToken ?? "");
+  writeTo(target, REFRESH_TOKEN_KEY, payload.refreshToken ?? "");
+  writeTo(target, EXPIRES_AT_KEY, String(computeExpiresAt(payload.expiresIn)));
+};
+
+export const publishSession = (session: AuthSession) => {
+  write(SESSION_KEY, JSON.stringify(session));
   emit();
 };
 

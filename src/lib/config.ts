@@ -57,13 +57,30 @@ export const API_ROUTES = {
   login: "/auth/login",
   refresh: "/auth/refresh",
   me: "/auth/me",
+  myPermissions: "/me/permissions",
+  rbacPermissions: "/rbac/permissions",
+  rbacRoles: "/rbac/roles",
+  rbacRole: (roleId: string) => `/rbac/roles/${encodeURIComponent(roleId)}`,
+  rbacRegions: "/rbac/regions",
+  staff: "/staff",
+  staffInvitations: "/staff/invitations",
+  staffInvitationVerify: "/staff/invitations/verify",
+  staffInvitationAccept: "/staff/invitations/accept",
+  staffInvitationCancel: (invitationId: string) =>
+    `/staff/invitations/${encodeURIComponent(invitationId)}/cancel`,
+  staffInvitationResend: (invitationId: string) =>
+    `/staff/invitations/${encodeURIComponent(invitationId)}/resend`,
+  staffRoles: (userId: string) => `/staff/${encodeURIComponent(userId)}/roles`,
+  staffRole: (userId: string, assignmentId: string) =>
+    `/staff/${encodeURIComponent(userId)}/roles/${encodeURIComponent(assignmentId)}`,
+  staffDeactivate: (userId: string) =>
+    `/staff/${encodeURIComponent(userId)}/deactivate`,
+  confirmResetPassword: "/auth/password/reset/confirm",
   resetPassword: "/auth/password/reset",
   passwordUpdate: "/auth/password/update",
   notifications: "/notifications/",
   promote: "/admin/promote",
   users: "/admin/users",
-  adminUserInvite: "/admin/users/invite",
-  adminUser: (userId: string) => `/admin/users/${encodeURIComponent(userId)}`,
   drivers: "/admin/drivers",
   driverDetail: (driverId: string) =>
     `/admin/drivers/${encodeURIComponent(driverId)}`,
@@ -182,10 +199,4 @@ export const REFRESH_TOKEN_FIELD = "refresh_token";
 /** Default API request timeout in milliseconds (15 seconds). */
 export const REQUEST_TIMEOUT_MS = 15000;
 
-/**
- * How long a role confirmed by the server stays trusted before the admin gate
- * asks the backend again (GET /auth/me). Five minutes.
- */
-// How long a role confirmed by the server stays trusted before the admin gate
-// asks the backend again (GET /auth/me).
-export const ROLE_REVALIDATE_MS = 5 * 60 * 1000;
+

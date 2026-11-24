@@ -4,9 +4,12 @@ import type { ReactNode } from "react";
 import { LoaderCircle } from "lucide-react";
 import { cn } from "cn";
 
+import { Can } from "@/components/Can";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export function ConfigCard({
   title,
@@ -104,41 +107,50 @@ export function TabActions({
   onReset: () => void;
   saveLabel?: string;
 }) {
+  const { has } = usePermissions();
+  const canManage = has(PERMISSIONS.PLATFORM_CONFIG_MANAGE);
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4">
       <p className="text-xs text-slate-500">
         { isSaving
           ? "Saving configuration…"
-          : dirty
-            ? "You have unsaved changes."
-            : "All changes saved." }
+          : !canManage
+            ? "Read-only access. You can view these settings but cannot change them."
+            : dirty
+              ? "You have unsaved changes."
+              : "All changes saved." }
       </p>
-      <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={ onReset }
-          disabled={ !dirty || isSaving }
-          className="h-9 border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-        >
-          Discard
-        </Button>
-        <Button
-          type="button"
-          onClick={ onSave }
-          disabled={ !dirty || isSaving }
-          className="h-9 bg-brand-600 px-3.5 text-sm font-semibold text-white hover:bg-brand-700"
-        >
-          { isSaving ? (
-            <>
-              <LoaderCircle className="animate-spin" />
-              Saving…
-            </>
-          ) : (
-            saveLabel
-          ) }
-        </Button>
-      </div>
+      { canManage ? (
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={ onReset }
+            disabled={ !dirty || isSaving }
+            className="h-9 border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Discard
+          </Button>
+          <Can permission={ PERMISSIONS.PLATFORM_CONFIG_MANAGE }>
+            <Button
+              type="button"
+              onClick={ onSave }
+              disabled={ !dirty || isSaving }
+              className="h-9 bg-brand-600 px-3.5 text-sm font-semibold text-white hover:bg-brand-700"
+            >
+              { isSaving ? (
+                <>
+                  <LoaderCircle className="animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                saveLabel
+              ) }
+            </Button>
+          </Can>
+        </div>
+      ) : null }
     </div>
   );
 }

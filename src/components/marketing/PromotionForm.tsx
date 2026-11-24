@@ -11,6 +11,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderCircle, Sparkles, Upload, X } from "lucide-react";
 
+import { Can } from "@/components/Can";
 import { useToast } from "@/components/toastContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ import {
   type PromotionFormValues,
   type PromotionPayload,
 } from "@/lib/marketing";
+import { PERMISSIONS } from "@/lib/permissions";
 import { promotionFormSchema } from "@/schemas/marketingSchemas";
 
 const fieldClass =
@@ -833,31 +835,33 @@ export function PromotionForm({
         >
           Cancel
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => submitWith("draft")}
-          disabled={isSubmitting}
-          className="h-10 border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-        >
-          Save as Draft
-        </Button>
-        <Button
-          type="submit"
-          disabled={isSubmitting}
-          className="h-10 bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700"
-        >
-          {isSubmitting ? (
-            <>
-              <LoaderCircle className="animate-spin" aria-hidden="true" />
-              Saving…
-            </>
-          ) : mode === "create" ? (
-            "Activate Now"
-          ) : (
-            "Save changes"
-          )}
-        </Button>
+        <Can permission={PERMISSIONS.MARKETING_PROMOTIONS_MANAGE}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => submitWith("draft")}
+            disabled={isSubmitting}
+            className="h-10 border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Save as Draft
+          </Button>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="h-10 bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700"
+          >
+            {isSubmitting ? (
+              <>
+                <LoaderCircle className="animate-spin" aria-hidden="true" />
+                Saving…
+              </>
+            ) : mode === "create" ? (
+              "Activate Now"
+            ) : (
+              "Save changes"
+            )}
+          </Button>
+        </Can>
       </div>
     </form>
   );

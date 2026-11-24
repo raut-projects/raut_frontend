@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
-  Car,
+  CarFront,
   ChevronRight,
   CreditCard,
   Gift,
@@ -19,8 +19,6 @@ import {
   Ticket,
   Users,
   Wallet,
-  CarFront,
-  // BadgeAlert,
   type LucideIcon,
 } from "lucide-react";
 
@@ -46,92 +44,49 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { useSession } from "@/hooks/useSession";
+import { usePermissions } from "@/hooks/usePermissions";
+import {
+  NAV_GROUPS,
+  SETTINGS_ITEMS,
+  type NavIconName,
+  type NavItem,
+} from "@/lib/navigation";
+import { normalizePath } from "@/lib/permissions";
 import { signOut } from "@/services/auth";
 
-type NavItem = {
-  title: string;
-  url: string;
-  icon: LucideIcon;
-  badge?: string;
-  activeOn?: string;
-  exact?: boolean;
+const navIcons: Record<NavIconName, LucideIcon> = {
+  dashboard: LayoutDashboard,
+  liveRides: MapIcon,
+  drivers: CarFront,
+  customers: Users,
+  rides: MapPin,
+  routes: Route,
+  payouts: Wallet,
+  transactions: CreditCard,
+  promotions: Megaphone,
+  referrals: Gift,
+  support: Ticket,
+  analytics: BarChart3,
 };
-
-type NavGroup = {
-  label?: string;
-  items: NavItem[];
-};
-
-const navGroups: NavGroup[] = [
-  {
-    items: [
-      {
-        title: "Dashboard",
-        url: "/",
-        icon: LayoutDashboard,
-        // badge: "Home",
-      },
-    ],
-  },
-  {
-    label: "Operations",
-    items: [
-      { title: "Live Rides", url: "/live-rides", icon: MapIcon },
-      { title: "Drivers", url: "/drivers", icon: CarFront },
-      { title: "Customers", url: "/customers", icon: Users },
-      { title: "Rides", url: "/rides", icon: MapPin },
-      { title: "Routes", url: "/routes", icon: Route, badge: "DUO" },
-    ],
-  },
-  {
-    label: "Finance",
-    items: [
-      { title: "Payouts", url: "/payouts", icon: Wallet },
-      { title: "Transactions", url: "/transactions", icon: CreditCard },
-    ],
-  },
-  {
-    label: "Marketing",
-    items: [
-      { title: "Promotions", url: "/marketing/promotions", icon: Megaphone, exact: true },
-      { title: "Referrals", url: "/marketing/referrals", icon: Gift },
-    ],
-  },
-  {
-    label: "Support",
-    items: [
-      { title: "Support Tickets", url: "/support-tickets", icon: Ticket },
-      // { title: "Customer Issues", url: "/customer-issues", icon: BadgeAlert },
-    ],
-  },
-  {
-    label: "Insights",
-    items: [
-      {
-        title: "Analytics",
-        url: "/",
-        icon: BarChart3,
-        activeOn: "/analytics",
-      },
-    ],
-  },
-];
-
-const settingsItems = [
-  { title: "Platform Config", url: "/settings/platform-config" },
-  { title: "Admin Users", url: "/settings/admin-users" },
-  { title: "Audit Logs", url: "/settings/audit-logs" },
-  { title: "System Health", url: "/settings/system-health" },
-];
-
-const normalizePath = (value: string) => value.replace(/\/+$/, "") || "/";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const router = useRouter();
-  const session = useSession();
+  const { has } = usePermissions();
   const { setOpenMobile, state, setOpen, isMobile } = useSidebar();
+
+  const visibleGroups = NAV_GROUPS
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) => !item.permission || has(item.permission),
+      ),
+    }))
+    .filter((group) => group.items.length > 0);
+
+  const visibleSettingsItems = SETTINGS_ITEMS.filter(
+    (item) => !item.permission || has(item.permission),
+  );
 
   const currentPath = normalizePath(pathname);
   const settingsActive =
@@ -161,7 +116,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   };
 
   return (
-    <Sidebar collapsible="icon" className="print:hidden" {...props}>
+    <Sidebar collapsible="icon" className="print:hidden" { ...props }>
       <SidebarHeader className="border-b border-sidebar-border">
         <SidebarMenu>
           <SidebarMenuItem>
@@ -187,86 +142,88 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
-        {navGroups.map((group, index) => (
-          <SidebarGroup key={group.label ?? `home-${index}`}>
-            {group.label ? (
+        { visibleGroups.map((group, index) => (
+          <SidebarGroup key={ group.label ?? `home-${index}` }>
+            { group.label ? (
               <SidebarGroupLabel className="px-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                {group.label}
+                { group.label }
               </SidebarGroupLabel>
-            ) : null}
+            ) : null }
             <SidebarMenu>
-              {group.items.map((item) => {
-                const Icon = item.icon;
+              { group.items.map((item) => {
+                const Icon = navIcons[item.icon];
                 const active = isItemActive(item);
 
                 return (
-                  <SidebarMenuItem key={item.title}>
+                  <SidebarMenuItem key={ item.title }>
                     <SidebarMenuButton
                       asChild
-                      isActive={active}
-                      tooltip={item.title}
+                      isActive={ active }
+                      tooltip={ item.title }
                     >
-                      <Link href={item.url}>
+                      <Link href={ item.url }>
                         <Icon />
-                        <span>{item.title}</span>
+                        <span>{ item.title }</span>
                       </Link>
                     </SidebarMenuButton>
-                    {item.badge ? (
-                      <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
-                    ) : null}
+                    { item.badge ? (
+                      <SidebarMenuBadge>{ item.badge }</SidebarMenuBadge>
+                    ) : null }
                   </SidebarMenuItem>
                 );
-              })}
+              }) }
             </SidebarMenu>
           </SidebarGroup>
-        ))}
+        )) }
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="px-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-            System
-          </SidebarGroupLabel>
-          <SidebarMenu>
-            <Collapsible
-              key={settingsActive ? "settings-open" : "settings-closed"}
-              defaultOpen={settingsActive}
-              className="group/collapsible"
-              onOpenChange={(open) => {
-                if (open && state === "collapsed" && !isMobile) {
-                  setOpen(true);
-                }
-              }}
-            >
-              <SidebarMenuItem>
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton
-                    tooltip="Settings"
-                    isActive={settingsActive}
-                  >
-                    <Settings />
-                    <span>Settings</span>
-                    <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <SidebarMenuSub>
-                    {settingsItems.map((item) => (
-                      <SidebarMenuSubItem key={item.title}>
-                        <SidebarMenuSubButton
-                          asChild
-                          isActive={isActive(item.url)}
-                        >
-                          <Link href={item.url}>
-                            <span>{item.title}</span>
-                          </Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    ))}
-                  </SidebarMenuSub>
-                </CollapsibleContent>
-              </SidebarMenuItem>
-            </Collapsible>
-          </SidebarMenu>
-        </SidebarGroup>
+        { visibleSettingsItems.length > 0 ? (
+          <SidebarGroup>
+            <SidebarGroupLabel className="px-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              System
+            </SidebarGroupLabel>
+            <SidebarMenu>
+              <Collapsible
+                key={ settingsActive ? "settings-open" : "settings-closed" }
+                defaultOpen={ settingsActive }
+                className="group/collapsible"
+                onOpenChange={ (open) => {
+                  if (open && state === "collapsed" && !isMobile) {
+                    setOpen(true);
+                  }
+                } }
+              >
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      tooltip="Settings"
+                      isActive={ settingsActive }
+                    >
+                      <Settings />
+                      <span>Settings</span>
+                      <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      { visibleSettingsItems.map((item) => (
+                        <SidebarMenuSubItem key={ item.title }>
+                          <SidebarMenuSubButton
+                            asChild
+                            isActive={ isActive(item.url) }
+                          >
+                            <Link href={ item.url }>
+                              <span>{ item.title }</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      )) }
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+            </SidebarMenu>
+          </SidebarGroup>
+        ) : null }
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">
@@ -274,7 +231,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Logout"
-              onClick={handleSignOut}
+              onClick={ handleSignOut }
               className="text-slate-600 hover:bg-rose-50 hover:text-rose-600"
             >
               <LogOut />

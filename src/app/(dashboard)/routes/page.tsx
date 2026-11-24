@@ -23,6 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Can } from "@/components/Can";
 import { ReasonDialog } from "@/components/reasonDialog";
 import ViewRoutePanel from "@/components/viewRoutePanel";
 import { useCancelRoute } from "@/hooks/useAdminActions";
@@ -31,6 +32,7 @@ import { useDrivers } from "@/hooks/useDrivers";
 import { useRouteSummary, useRoutes } from "@/hooks/useRoutes";
 import { usePageViewField } from "@/store/pageViewStore";
 import { useClampPage } from "@/hooks/useClampPage";
+import { PERMISSIONS } from "@/lib/permissions";
 import { ROUTE_STATUS_LABELS } from "@/services/mappers";
 
 const statusStyles = {
@@ -420,7 +422,7 @@ function RoutesPage() {
                           View
                         </DropdownMenuItem>
                         { route.canCancel && (
-                          <>
+                          <Can permission={ PERMISSIONS.RIDES_CANCEL }>
                             <DropdownMenuSeparator className="bg-slate-100" />
                             <DropdownMenuItem
                               variant="destructive"
@@ -429,7 +431,7 @@ function RoutesPage() {
                             >
                               Cancel route
                             </DropdownMenuItem>
-                          </>
+                          </Can>
                         ) }
                       </DropdownMenuContent>
                     </DropdownMenu>

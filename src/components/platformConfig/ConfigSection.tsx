@@ -8,12 +8,15 @@ import {
 } from "@/components/platformConfig/ConfigPrimitives";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { usePermissions } from "@/hooks/usePermissions";
 import type {
   ConfigDraft,
   ConfigFieldSpec,
   ConfigFieldUnit,
   ConfigSectionSpec,
 } from "@/lib/configRegistry";
+import { PERMISSIONS } from "@/lib/permissions";
 import type { ConfigRecord, FieldErrors } from "@/types/platformConfig";
 
 const fieldId = (key: string) =>
@@ -55,12 +58,14 @@ function FieldControl({
   spec,
   draft,
   error,
+  locked,
   onChange,
   onShowHistory,
 }: {
   spec: ConfigFieldSpec;
   draft: ConfigDraft;
   error?: string;
+  locked: boolean;
   onChange: (key: string, value: string) => void;
   onShowHistory: (key: string) => void;
 }) {
@@ -85,7 +90,8 @@ function FieldControl({
           id={ id }
           value={ String(draft[spec.key] ?? "") }
           onChange={ (event) => onChange(spec.key, event.target.value) }
-          className="h-10 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-800 outline-none focus-visible:border-brand-400 focus-visible:ring-3 focus-visible:ring-brand-100"
+          disabled={ locked }
+          className="h-10 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-800 outline-none focus-visible:border-brand-400 focus-visible:ring-3 focus-visible:ring-brand-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
         >
           { spec.options?.map((option) => (
             <option key={ option.value } value={ option.value }>
@@ -93,6 +99,16 @@ function FieldControl({
             </option>
           )) }
         </select>
+      ) : spec.type === "json" ? (
+        <Textarea
+          id={ id }
+          value={ String(draft[spec.key] ?? "") }
+          placeholder={ spec.placeholder ?? "{\n  \n}" }
+          aria-invalid={ error ? true : undefined }
+          disabled={ locked }
+          onChange={ (event) => onChange(spec.key, event.target.value) }
+          className="min-h-28 border-slate-200 bg-white font-mono text-xs disabled:text-slate-500"
+        />
       ) : (
         <Input
           id={ id }
@@ -104,8 +120,9 @@ function FieldControl({
           value={ String(draft[spec.key] ?? "") }
           placeholder={ spec.placeholder }
           aria-invalid={ error ? true : undefined }
+          disabled={ locked }
           onChange={ (event) => onChange(spec.key, event.target.value) }
-          className="h-10 border-slate-200 bg-white"
+          className="h-10 border-slate-200 bg-white disabled:text-slate-500"
         />
       ) }
     </ConfigField>
@@ -115,11 +132,13 @@ function FieldControl({
 function SwitchControl({
   spec,
   draft,
+  locked,
   onChange,
   onShowHistory,
 }: {
   spec: ConfigFieldSpec;
   draft: ConfigDraft;
+  locked: boolean;
   onChange: (key: string, value: boolean) => void;
   onShowHistory: (key: string) => void;
 }) {
@@ -152,6 +171,7 @@ function SwitchControl({
         checked={ enabled }
         onCheckedChange={ (checked) => onChange(spec.key, checked) }
         aria-label={ spec.label }
+        disabled={ locked }
       />
     </div>
   );
@@ -172,6 +192,8 @@ export function ConfigSection({
   onChange: (key: string, value: string | boolean) => void;
   onShowHistory: (key: string) => void;
 }) {
+  const { has } = usePermissions();
+  const canManage = has(PERMISSIONS.PLATFORM_CONFIG_MANAGE);
   const recordByKey = new Map(records.map((record) => [record.key, record]));
 
   return (
@@ -179,6 +201,7 @@ export function ConfigSection({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         { section.fields.map((spec) => {
           if (!recordByKey.has(spec.key)) return null;
+          const locked = Boolean(spec.readOnly) || !canManage;
 
           if (spec.type === "switch") {
             return (
@@ -186,6 +209,7 @@ export function ConfigSection({
                 key={ spec.key }
                 spec={ spec }
                 draft={ draft }
+                locked={ locked }
                 onChange={ onChange }
                 onShowHistory={ onShowHistory }
               />
@@ -198,6 +222,7 @@ export function ConfigSection({
               spec={ spec }
               draft={ draft }
               error={ errors[spec.key] }
+              locked={ locked }
               onChange={ onChange }
               onShowHistory={ onShowHistory }
             />
@@ -207,3 +232,6 @@ export function ConfigSection({
     </ConfigCard>
   );
 }
+
+
+

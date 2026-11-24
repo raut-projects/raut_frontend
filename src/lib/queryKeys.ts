@@ -68,16 +68,29 @@ export const queryKeys = {
   me: {
     all: ["me"],
   },
+  rbac: {
+    all: ["rbac"],
+    permissions: ["rbac", "permissions"],
+    roles: ["rbac", "roles"],
+    regions: ["rbac", "regions"],
+  },
+  staff: {
+    all: ["staff"],
+    list: (params) => ["staff", "list", params],
+    invitations: ["staff", "invitations"],
+    invitationList: (params) => ["staff", "invitations", "list", params],
+    invitationVerification: (token) => [
+      "staff",
+      "invitations",
+      "verify",
+      token,
+    ],
+  },
   supportTickets: {
     all: ["support-tickets"],
     list: (params) => ["support-tickets", "list", params],
     detail: (ticketId) => ["support-tickets", "detail", ticketId],
     agents: ["support-tickets", "agents"],
-  },
-  adminUsers: {
-    all: ["admin-users"],
-    list: (params) => ["admin-users", "list", params],
-    detail: (userId) => ["admin-users", "detail", userId],
   },
   marketing: {
     all: ["marketing"],

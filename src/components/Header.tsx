@@ -26,7 +26,9 @@ const titles = {
   "/support-tickets": "Support Tickets",
   "/settings": "Settings",
   "/settings/platform": "Platform Config",
-  "/settings/admin-users": "Admin Users",
+  "/settings/staffs": "Staff & Roles",
+  "/settings/staffs/permissions": "Permissions",
+  "/settings/staffs/roles": "Roles",
   "/settings/audit-logs": "Audit Logs",
   "/settings/system-health": "System Health",
 };
@@ -160,10 +162,10 @@ function Header() {
           </span>
           <div className="hidden leading-tight lg:block">
             <p className="text-sm font-semibold text-slate-800">
-              {session?.name ?? "Admin"}
+              {session?.name ?? "User"}
             </p>
             <p className="text-xs text-slate-500">
-              {session?.roleLabel ?? session?.role ?? "Admin"}
+              {session?.roleLabel ?? session?.role ?? "User"}
             </p>
           </div>
         </div>

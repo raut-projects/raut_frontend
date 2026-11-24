@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { queryClient } from "@/lib/queryClient";
 import { useSessionExpiry } from "@/hooks/useSessionExpiry";
 import { useAuthStore } from "@/store/authStore";
+import { hydratePermissions } from "@/store/permissionStore";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [client] = useState(queryClient);
@@ -16,6 +17,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     hydrateAuth();
+    void hydratePermissions();
 
     return useAuthStore.subscribe((state, previous) => {
       if (previous.session && !state.session) client.clear();

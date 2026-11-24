@@ -22,6 +22,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+import { Can } from "@/components/Can";
 import { QueryError } from "@/components/queryStates";
 import { ReasonDialog } from "@/components/reasonDialog";
 import DocumentRejectionDialog from "@/components/documentRejectionDialog";
@@ -39,7 +40,7 @@ import {
 } from "@/hooks/useAdminActions";
 import { useDriverDetails } from "@/hooks/useDriverDetails";
 import { useToast } from "@/components/toastContext";
-import { useAuthStore } from "@/store/authStore";
+import { usePermissions } from "@/hooks/usePermissions";
 import { usePageViewField } from "@/store/pageViewStore";
 import {
   formatDate,
@@ -48,6 +49,7 @@ import {
   formatRelative,
 } from "@/services/mappers";
 import { ApiError } from "@/services/http";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const isRecord = (value) =>
   value !== null && typeof value === "object" && !Array.isArray(value);
@@ -213,12 +215,8 @@ function DriverDetailsPage() {
   const driverId = Array.isArray(routeId) ? routeId[0] : routeId;
   const router = useRouter();
   const toast = useToast();
-  const sessionRole = useAuthStore((state) => state.session?.role);
-  const normalizedRole = String(sessionRole ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/[\s-]+/g, "_");
-  const canProcessPayouts = ["finance", "finance_manager"].includes(normalizedRole);
+  const { has } = usePermissions();
+  const canProcessPayouts = has(PERMISSIONS.FINANCE_PAYOUTS_MANAGE);
   const [, setRidesDriverId] = usePageViewField("rides", "driverId");
   const [, setPayoutDriverId] = usePageViewField("payouts", "driverId");
   const [, setPayoutStatus] = usePageViewField("payouts", "status");
@@ -674,21 +672,23 @@ function DriverDetailsPage() {
         <div className="flex flex-wrap gap-2">
           { driver.statusKey === "pending" && (
             <>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={ verifyDriver.isPending }
-                onClick={ () =>
-                  (
-                    verifyDriver.mutate as unknown as (variables: {
-                      driverId: string;
-                    }) => void
-                  )({ driverId: String(driverId) })
-                }
-              >
-                <CircleCheck aria-hidden="true" />
-                Verify
-              </Button>
+              <Can permission={PERMISSIONS.DRIVERS_VERIFY}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={ verifyDriver.isPending }
+                  onClick={ () =>
+                    (
+                      verifyDriver.mutate as unknown as (variables: {
+                        driverId: string;
+                      }) => void
+                    )({ driverId: String(driverId) })
+                  }
+                >
+                  <CircleCheck aria-hidden="true" />
+                  Verify
+                </Button>
+              </Can>
               <Button
                 type="button"
                 variant="destructive"
@@ -702,44 +702,46 @@ function DriverDetailsPage() {
               </Button>
             </>
           ) }
-          { isSuspended ? (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={ unsuspendDriver.isPending }
-              onClick={ () =>
-                (
-                  unsuspendDriver.mutate as unknown as (variables: {
-                    driverId: string;
-                  }) => void
-                )({ driverId: String(driverId) })
-              }
-            >
-              Reactivate
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="destructive"
-              disabled={
-                suspendDriver.isPending ||
-                !driver.isActive ||
-                driver.statusKey !== "verified"
-              }
-              title={
-                driver.isActive && driver.statusKey === "verified"
-                  ? undefined
-                  : "Only active, verified drivers can be suspended."
-              }
-              onClick={ () => {
-                setSuspendReason("");
-                setSuspendOpen(true);
-              } }
-            >
-              <ShieldAlert aria-hidden="true" />
-              Suspend
-            </Button>
-          ) }
+          <Can permission={PERMISSIONS.DRIVERS_SUSPEND}>
+            { isSuspended ? (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={ unsuspendDriver.isPending }
+                onClick={ () =>
+                  (
+                    unsuspendDriver.mutate as unknown as (variables: {
+                      driverId: string;
+                    }) => void
+                  )({ driverId: String(driverId) })
+                }
+              >
+                Reactivate
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={
+                  suspendDriver.isPending ||
+                  !driver.isActive ||
+                  driver.statusKey !== "verified"
+                }
+                title={
+                  driver.isActive && driver.statusKey === "verified"
+                    ? undefined
+                    : "Only active, verified drivers can be suspended."
+                }
+                onClick={ () => {
+                  setSuspendReason("");
+                  setSuspendOpen(true);
+                } }
+              >
+                <ShieldAlert aria-hidden="true" />
+                Suspend
+              </Button>
+            ) }
+          </Can>
           <Button
             type="button"
             variant="outline"
@@ -972,15 +974,17 @@ function DriverDetailsPage() {
                     ) }
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={ documentMutationPending }
-                      onClick={ () => setReviewTarget(document) }
-                    >
-                      View Document →
-                    </Button>
+                    <Can permission={PERMISSIONS.DRIVERS_DOCUMENTS_REVIEW}>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={ documentMutationPending }
+                        onClick={ () => setReviewTarget(document) }
+                      >
+                        View Document →
+                      </Button>
+                    </Can>
                   </div>
                 </li>
               )) }
@@ -1134,30 +1138,32 @@ function DriverDetailsPage() {
         </DriverSection>
       </div>
 
-      { reviewTarget && (
-        <DocumentReviewDialog
-          key={ reviewTarget.id }
-          open
-          document={ reviewTarget }
-          onClose={ closeDocumentReview }
-          onApprove={ (documentId, notes) =>
-            (
-              approveDocument.mutate as unknown as (
-                variables: { documentId: string; notes: string },
-                options: { onSuccess: () => void },
-              ) => void
-            )(
-              { documentId, notes },
-              { onSuccess: () => setReviewTarget(null) },
-            )
-          }
-          onReject={ (document) => {
-            setReviewTarget(null);
-            setRejectTarget(document);
-          } }
-          pending={ documentMutationPending }
-        />
-      ) }
+      <Can permission={PERMISSIONS.DRIVERS_DOCUMENTS_REVIEW}>
+        { reviewTarget && (
+          <DocumentReviewDialog
+            key={ reviewTarget.id }
+            open
+            document={ reviewTarget }
+            onClose={ closeDocumentReview }
+            onApprove={ (documentId, notes) =>
+              (
+                approveDocument.mutate as unknown as (
+                  variables: { documentId: string; notes: string },
+                  options: { onSuccess: () => void },
+                ) => void
+              )(
+                { documentId, notes },
+                { onSuccess: () => setReviewTarget(null) },
+              )
+            }
+            onReject={ (document) => {
+              setReviewTarget(null);
+              setRejectTarget(document);
+            } }
+            pending={ documentMutationPending }
+          />
+        ) }
+      </Can>
 
       { lightboxPhoto && (
         <div
@@ -1239,26 +1245,28 @@ function DriverDetailsPage() {
         } }
       />
 
-      <DocumentRejectionDialog
-        key={ rejectTarget?.id ?? "closed" }
-        open={ Boolean(rejectTarget) }
-        onClose={ () => setRejectTarget(null) }
-        description={
-          rejectTarget
-            ? `${rejectTarget.typeLabel} for ${driver.name} will be rejected.`
-            : undefined
-        }
-        pending={ rejectDocument.isPending }
-        onConfirm={ async (reason) => {
-          await (
-            rejectDocument.mutateAsync as unknown as (variables: {
-              documentId: string;
-              reason: string;
-            }) => Promise<unknown>
-          )({ documentId: rejectTarget.id, reason });
-          setRejectTarget(null);
-        } }
-      />
+      <Can permission={PERMISSIONS.DRIVERS_DOCUMENTS_REVIEW}>
+        <DocumentRejectionDialog
+          key={ rejectTarget?.id ?? "closed" }
+          open={ Boolean(rejectTarget) }
+          onClose={ () => setRejectTarget(null) }
+          description={
+            rejectTarget
+              ? `${rejectTarget.typeLabel} for ${driver.name} will be rejected.`
+              : undefined
+          }
+          pending={ rejectDocument.isPending }
+          onConfirm={ async (reason) => {
+            await (
+              rejectDocument.mutateAsync as unknown as (variables: {
+                documentId: string;
+                reason: string;
+              }) => Promise<unknown>
+            )({ documentId: rejectTarget.id, reason });
+            setRejectTarget(null);
+          } }
+        />
+      </Can>
     </>
   );
 }
