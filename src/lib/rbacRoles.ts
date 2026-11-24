@@ -39,6 +39,13 @@ const normalizeRoleKey = (value: unknown) =>
     .toLowerCase()
     .replace(/\s+/g, "_");
 
+const NON_ASSIGNABLE_STAFF_ROLE_KEYS = new Set(["super_admin"]);
+
+export function isAssignableStaffRole(role: RbacCatalogRole) {
+  if (!role.id) return false;
+  return !NON_ASSIGNABLE_STAFF_ROLE_KEYS.has(normalizeRoleKey(role.key));
+}
+
 export function findCatalogRole(
   roles: RbacCatalogRole[],
   key: string | null | undefined,

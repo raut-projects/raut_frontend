@@ -13,6 +13,7 @@ import {
 } from "@/hooks/useRbacCatalog";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PERMISSIONS } from "@/lib/permissions";
+import { isAssignableStaffRole } from "@/lib/rbacRoles";
 import { validateEmail } from "@/lib/validation";
 import type { StaffInvitePayload, StaffScopeType } from "@/types/staff";
 
@@ -52,7 +53,7 @@ export function InviteStaffDialog({ open, onClose }: InviteStaffDialogProps) {
   const inviteMutation = useInviteStaff();
 
   const roles = useMemo(
-    () => (rolesQuery.data ?? []).filter((role) => role.id),
+    () => (rolesQuery.data ?? []).filter(isAssignableStaffRole),
     [rolesQuery.data],
   );
   const selectedRole = roles.find((role) => role.id === roleId);
@@ -93,6 +94,11 @@ export function InviteStaffDialog({ open, onClose }: InviteStaffDialogProps) {
 
     if (!roleId) {
       setError("Choose a role for this staff member.");
+      return;
+    }
+
+    if (!roles.some((role) => role.id === roleId)) {
+      setError("The Super Admin role cannot be assigned.");
       return;
     }
 
