@@ -30,6 +30,8 @@ import {
   AUDIT_SEVERITY_LABELS,
   AUDIT_SEVERITIES,
   auditDateKey,
+  auditValuesDiffer,
+  buildAuditChangeRows,
   downloadAuditLogsCsv,
   formatAuditDateTime,
   MOCK_AUDIT_LOGS,
@@ -88,27 +90,54 @@ function Stat({
 function ChangeBlock({
   label,
   value,
+  compare,
   tone,
+  emptyLabel,
 }: {
   label: string;
   value?: Record<string, unknown>;
+  compare?: Record<string, unknown>;
   tone: "before" | "after";
+  emptyLabel: string;
 }) {
+  const rows = buildAuditChangeRows(value);
+
   return (
     <div className="min-w-0 rounded-lg border border-slate-200 bg-slate-50 p-3">
       <p className="mb-2 text-xs font-semibold text-slate-600">{label}</p>
-      {value ? (
-        <pre
-          className={`overflow-x-auto whitespace-pre-wrap wrap-break-words rounded-md p-3 font-mono text-xs leading-5 ${
-            tone === "before"
-              ? "bg-white text-slate-600"
-              : "bg-white text-slate-800"
-          }`}
-        >
-          {JSON.stringify(value, null, 2)}
-        </pre>
+      {rows.length > 0 ? (
+        <dl className="divide-y divide-slate-200 overflow-hidden rounded-md bg-white">
+          {rows.map((row) => {
+            const changed =
+              tone === "after" &&
+              compare !== undefined &&
+              auditValuesDiffer(compare[row.key], value?.[row.key]);
+
+            return (
+              <div
+                key={row.key}
+                className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-3 py-2"
+              >
+                <dt className="text-xs font-medium text-slate-500">
+                  {row.label}
+                </dt>
+                <dd
+                  className={`min-w-0 break-words text-right text-sm ${
+                    changed
+                      ? "font-semibold text-slate-900"
+                      : tone === "before"
+                        ? "text-slate-600"
+                        : "text-slate-700"
+                  }`}
+                >
+                  {row.value}
+                </dd>
+              </div>
+            );
+          })}
+        </dl>
       ) : (
-        <p className="text-sm text-slate-500">No previous value recorded.</p>
+        <p className="text-sm text-slate-500">{emptyLabel}</p>
       )}
     </div>
   );
@@ -621,11 +650,14 @@ function AuditLogsPage() {
                   label="Before"
                   value={selectedEntry.before}
                   tone="before"
+                  emptyLabel="No previous value recorded."
                 />
                 <ChangeBlock
                   label="After"
                   value={selectedEntry.after}
+                  compare={selectedEntry.before}
                   tone="after"
+                  emptyLabel="No new value recorded."
                 />
               </div>
             </section>
