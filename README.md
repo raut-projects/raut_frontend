@@ -358,17 +358,18 @@ Raw API records are normalized in `src/services/mappers.ts`. Mappers provide con
 | `PUT` | `/admin/payouts/{id}/approve` | Approve a payout |
 | `PUT` | `/admin/payouts/{id}/reject` | Reject a payout |
 | `PUT` | `/admin/payouts/{id}/retry` | Retry a payout |
-| `POST` | `/admin/support/tickets` | Create a support ticket |
-| `GET` | `/admin/support/tickets` | List and filter support tickets |
-| `GET` | `/admin/support/agents` | List eligible ticket assignees and roles |
-| `GET` | `/admin/support/tickets/{ticket_id}` | Get ticket details |
-| `GET` | `/admin/support/tickets/{ticket_id}/messages` | List ticket messages and internal notes |
-| `POST` | `/admin/support/tickets/{ticket_id}/messages` | Reply or add an internal note |
-| `PATCH` | `/admin/support/tickets/{ticket_id}/assignment` | Assign or reassign a ticket |
-| `POST` | `/admin/support/tickets/{ticket_id}/assign-to-me` | Claim an unassigned ticket |
-| `PATCH` | `/admin/support/tickets/{ticket_id}/status` | Update ticket status |
-| `PATCH` | `/admin/support/tickets/{ticket_id}/priority` | Change ticket priority |
-| `POST` | `/admin/support/tickets/{ticket_id}/escalate` | Escalate a ticket |
+| `POST` | `/support/tickets/queue` | Create a support ticket |
+| `GET` | `/support/tickets/queue` | List and filter support tickets |
+| `GET` | `/support/agents` | List eligible ticket assignees and roles |
+| `GET` | `/support/tickets/queue/{ticket_id}` | Get ticket details |
+| `GET` | `/support/tickets/queue/{ticket_id}/context` | Get requester context for a ticket |
+| `GET` | `/support/tickets/queue/{ticket_id}/messages` | List ticket messages and internal notes |
+| `POST` | `/support/tickets/queue/{ticket_id}/messages` | Reply or add an internal note |
+| `PATCH` | `/support/tickets/queue/{ticket_id}/assignment` | Assign or reassign a ticket |
+| `POST` | `/support/tickets/queue/{ticket_id}/assign-to-me` | Claim an unassigned ticket |
+| `PATCH` | `/support/tickets/queue/{ticket_id}/status` | Update ticket status |
+| `PATCH` | `/support/tickets/queue/{ticket_id}/priority` | Change ticket priority |
+| `POST` | `/support/tickets/queue/{ticket_id}/escalate` | Escalate a ticket |
 | `GET` | `/promotions/` | List promotion campaigns (optional `status`); the UI fetches all and filters/searches/paginates client-side |
 | `POST` | `/promotions/` | Create a promotion campaign |
 | `GET` | `/promotions/{promotion_id}` | Get a promotion campaign |

@@ -2,6 +2,20 @@
 // Everything the screens display is formatted here so the pages stay free of
 // data shaping.
 
+import {
+  DISPUTE_COMPLAINT_LABELS,
+  DISPUTE_CURRENCY,
+  type DisputeDecision,
+  type DisputeStatus,
+  type FareBreakdown,
+  type RideDispute,
+} from "../lib/rideDisputes";
+import {
+  suggestRefund,
+  type DisputeIssueType,
+  type RefundMethod,
+} from "../lib/refundCalculator";
+
 export const EMPTY = "—";
 
 const numberFormat = new Intl.NumberFormat("en-US");
@@ -720,6 +734,184 @@ export const mapRide = (ride) => {
     hasDispute: Boolean(ride?.has_dispute ?? ride?.hasDispute ?? ride?.dispute),
     disputeStatus: ride?.dispute_status ?? ride?.disputeStatus ?? null,
     disputeId: ride?.dispute_id ?? ride?.disputeId ?? null,
+  };
+};
+
+const DISPUTE_ISSUE_TYPES: DisputeIssueType[] = [
+  "wrong_route",
+  "overcharge",
+  "driver_no_show",
+  "late_arrival",
+  "other",
+];
+
+const numberOrZero = (value) => {
+  const amount = Number(value);
+
+  return Number.isFinite(amount) ? amount : 0;
+};
+
+const mapDisputeIssueType = (value): DisputeIssueType => {
+  const issue = String(value ?? "")
+    .trim()
+    .toLowerCase();
+
+  return DISPUTE_ISSUE_TYPES.includes(issue as DisputeIssueType)
+    ? (issue as DisputeIssueType)
+    : "other";
+};
+
+// Dispute responses are not typed by the backend contract, so fields are read
+// through aliases and coerced to the numeric/shape the dispute forms expect.
+export const mapRideDispute = (raw, rideIdHint = ""): RideDispute => {
+  const source = raw?.dispute ?? raw ?? {};
+  const rawEvidence = source?.evidence ?? raw?.evidence ?? {};
+  const rawFare =
+    rawEvidence?.fare_breakdown ??
+    rawEvidence?.fareBreakdown ??
+    source?.fare_breakdown ??
+    source?.fareBreakdown ??
+    {};
+
+  const rideId = String(
+    firstOf(
+      source,
+      ["ride_id", "rideId"],
+      firstOf(raw, ["ride_id", "rideId"], rideIdHint),
+    ) ??
+      rideIdHint ??
+      "",
+  );
+  const complaint = mapDisputeIssueType(
+    firstOf(source, ["complaint", "issue_type", "issueType", "reason"]),
+  );
+  const actualDistanceKm = numberOrZero(
+    firstOf(rawEvidence, [
+      "actual_distance_km",
+      "actualDistanceKm",
+      "actual_distance",
+    ]),
+  );
+  const optimalDistanceKm = numberOrZero(
+    firstOf(rawEvidence, [
+      "optimal_distance_km",
+      "optimalDistanceKm",
+      "optimal_distance",
+    ]),
+  );
+  const extraDistanceKm = numberOrZero(
+    firstOf(
+      rawEvidence,
+      ["extra_distance_km", "extraDistanceKm", "extra_distance"],
+      Math.max(0, actualDistanceKm - optimalDistanceKm),
+    ),
+  );
+  const originalFare = numberOrZero(
+    firstOf(
+      rawEvidence,
+      ["original_fare", "originalFare", "fare_amount", "fareAmount"],
+      firstOf(source, ["original_fare", "fare_amount", "fare"]),
+    ),
+  );
+  const suggestedRefundValue = firstOf(source, [
+    "suggested_refund",
+    "suggestedRefund",
+  ]);
+  const statusValue = String(
+    firstOf(source, ["status", "dispute_status"], "open"),
+  ).toLowerCase();
+  const status: DisputeStatus = ["resolved", "closed", "completed"].includes(
+    statusValue,
+  )
+    ? "resolved"
+    : "open";
+  const decisionValue = String(
+    firstOf(source, ["decision", "resolution_decision"], ""),
+  ).toLowerCase();
+  const decision = ["rider", "driver", "split"].includes(decisionValue)
+    ? (decisionValue as DisputeDecision)
+    : undefined;
+  const refundValue = firstOf(source, ["refund_amount", "refundAmount"]);
+  const methodValue = String(
+    firstOf(source, ["refund_method", "refundMethod"], ""),
+  ).toLowerCase();
+  const refundMethod = ["mpesa", "wallet", "next_ride_discount"].includes(
+    methodValue,
+  )
+    ? (methodValue as RefundMethod)
+    : undefined;
+  const resolutionNote = firstOf(source, [
+    "resolution_note",
+    "resolutionNote",
+    "note",
+  ]);
+  const filedAt = firstOf(source, [
+    "filed_at",
+    "filedAt",
+    "created_at",
+    "createdAt",
+  ]);
+  const resolvedAt = firstOf(source, ["resolved_at", "resolvedAt"]);
+  const displayId =
+    firstOf(source, ["display_id", "displayId"]) ?? shortId(rideId, "RD");
+  const id =
+    firstOf(source, ["id", "dispute_id", "disputeId"]) ??
+    `DIS-${String(displayId).replace(/^#RD-/, "")}`;
+  const fareBreakdown: FareBreakdown = {
+    baseFare: numberOrZero(firstOf(rawFare, ["base_fare", "baseFare"])),
+    distanceCharge: numberOrZero(
+      firstOf(rawFare, ["distance_charge", "distanceCharge"]),
+    ),
+    timeCharge: numberOrZero(firstOf(rawFare, ["time_charge", "timeCharge"])),
+    platformFee: numberOrZero(
+      firstOf(rawFare, ["platform_fee", "platformFee"]),
+    ),
+    total: numberOrZero(firstOf(rawFare, ["total"], originalFare)),
+  };
+
+  return {
+    id: String(id),
+    rideId,
+    displayId: String(displayId),
+    status,
+    disputingParty: String(
+      firstOf(
+        source,
+        ["disputing_party", "disputingParty", "filed_by", "complainant"],
+        EMPTY,
+      ) ?? EMPTY,
+    ),
+    complaint,
+    complaintLabel: DISPUTE_COMPLAINT_LABELS[complaint],
+    filedAt: formatDateTime(filedAt),
+    evidence: {
+      actualDistanceKm,
+      optimalDistanceKm,
+      extraDistanceKm,
+      originalFare,
+      routeLabel:
+        firstOf(rawEvidence, ["route_label", "routeLabel"]) ?? undefined,
+      fareBreakdown,
+    },
+    suggestedRefund:
+      suggestedRefundValue === null
+        ? suggestRefund({
+            issueType: complaint,
+            originalFare,
+            actualDistanceKm,
+            extraDistanceKm,
+          })
+        : numberOrZero(suggestedRefundValue),
+    currency: String(
+      firstOf(source, ["currency"], DISPUTE_CURRENCY) ?? DISPUTE_CURRENCY,
+    ),
+    decision,
+    refundAmount:
+      refundValue === null ? undefined : numberOrZero(refundValue),
+    refundMethod,
+    resolutionNote:
+      resolutionNote === null ? undefined : String(resolutionNote),
+    resolvedAt: resolvedAt ? formatDateTime(resolvedAt) : undefined,
   };
 };
 
