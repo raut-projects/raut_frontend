@@ -43,17 +43,17 @@ A separate onboarding route guides drivers through personal, licence, vehicle an
 | Dashboard         | Customer, driver, ride and revenue summaries; recent rides; top drivers; analytics charts; 7D/30D/90D/custom date ranges; previous-period comparison; CSV export; print/PDF export; automatic refresh every 60 seconds                                                                                                                                                                                       |
 | Customers         | Search, active/inactive filtering, pagination, customer details, role changes, deactivate and reactivate accounts, delete accounts (single and bulk)                                                                                                                                                                                                                                                         |
 | Drivers           | Search, status summary, driver details, document review, verify, reject, suspend and unsuspend drivers; approve or reject documents; delete drivers (single and bulk)                                                                                                                                                                                                                                        |
-| Rides             | Filter by status, driver and date range; summary counts; ride details; cancel with reason and refund option                                                                                                                                                                                                                                                                                                  |
+| Rides             | Filter by status, driver and date range; summary counts; ride details, dispute resolution with refunds, and cancel with reason and refund option                                                                                                                                                                                                                                                                                                  |
 | Routes            | Filter by status, driver, origin, destination and date range; summary counts; route details; cancel route with an option to cancel active rides                                                                                                                                                                                                                                                              |
 | Payouts           | Filter by status, method, driver and date range; payout summary; details; approve, reject and retry payouts                                                                                                                                                                                                                                                                                                  |
 | Transactions      | Filter by status, type and date range; transaction summary; paginated transaction table                                                                                                                                                                                                                                                                                                                      |
-| Notifications     | Unread count in the header, notification panel, mark one/all as read, dismiss notifications                                                                                                                                                                                                                                                                                                                  |
+| Notifications     | Unread count in the header, notification panel and mark-one-as-read action                                                                                                                                                                                                                                                                                                                  |
 | Settings          | Read-only profile and access details for the signed-in administrator                                                                                                                                                                                                                                                                                                                                         |
-| Live Rides        | Placeholder page; tracking and live-trip data are not implemented yet                                                                                                                                                                                                                                                                                                                                        |
+| Live Rides        | Map, list and split views with REST bootstrap and WebSocket updates, filters, issue-only view, detail panel, cancel/flag/note/escalate/fare override, contact and trip history; mock mode is on by default                                                                                                                                                                                                                                                                                                                                        |
 | Marketing         | API-backed promotions list with status tabs (active, scheduled, expired and drafts), search, pagination, activate/deactivate and delete; create/edit campaigns with discount, eligibility, schedule, usage limits, budget cap and DUO/peak-hour rules; referral programs, user enrollment and referral activity                                                                                              |
 | Support Tickets   | API-backed ticket list, creation, search and filters, agent assignment, replies and internal notes, status/priority updates, escalation and CSV export                                                                                                                                                                                                                                                       |
-| Staff & Roles     | API-backed staff list with pagination, invitations with role/scope assignment, invitation status filters (all, pending, accepted, cancelled, expired) with resend/cancel actions, role/scope assignment for existing staff, revoke and deactivate actions, live RBAC role editing, and a printable/exportable role permission matrix. Staff reactivation remains disabled until the backend endpoint exists. |
-| Settings subpages | Mock-data audit log review and System Health dashboard; Platform Config placeholder                                                                                                                                                                                                                                                                                                                          |
+| Staff & Roles     | API-backed staff list with pagination, invitations with role/scope assignment, invitation status filters (all, pending, accepted, cancelled, expired) with resend/cancel actions, role/scope assignment for existing staff, revoke and deactivate actions, live RBAC role editing on the Roles page, and a searchable permission catalog with print and CSV export on the Permissions page. Staff reactivation remains disabled until the backend endpoint exists. |
+| Settings subpages | Mock-data audit log review and System Health dashboard; API-backed Platform Config at /settings/platform-config, while /settings/platform is a legacy Coming Soon placeholder                                                                                                                                                                                                                                                                                                                          |
 | Driver onboarding | Four-step driver application flow with English/Swahili UI, validation, document uploads and Flutter WebView hand-off                                                                                                                                                                                                                                                                                         |
 | User experience   | Responsive sidebar and header, loading skeletons, retryable error states, refresh indicators, toast feedback and print-friendly analytics                                                                                                                                                                                                                                                                    |
 
@@ -138,56 +138,69 @@ Dashboard comparison is only available when the previous period falls inside the
 
 ## Environment variables
 
-| Variable                        | Required | Default                   | Description                                                                                                                                                                                                                                                                                                                                      |
-| ------------------------------- | -------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `NEXT_PUBLIC_API_BASE_URL`      | Yes      | None                      | Base URL of the Raut backend API, for example `http://localhost:8000`. Trailing slashes are removed automatically. Inlined at build time, so rebuild after changing it.                                                                                                                                                                          |
-| `NEXT_PUBLIC_REFERRAL_BASE_URL` | No       | `https://raut.app/signup` | Base URL used to build referral signup links (`{base}?ref=CODE`). Inlined at build time, so rebuild after changing it.                                                                                                                                                                                                                           |
+| Variable                          | Required            | Default                                          | Description                                                                                                                                                                                                                       |
+| --------------------------------- | ------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_API_BASE_URL`        | Yes                 | None                                             | Base URL of the Raut backend API, for example `http://localhost:8000`. Trailing slashes are removed automatically. It also seeds the live-ride WebSocket URL. Inlined at build time, so rebuild after changing it.             |
+| `NEXT_PUBLIC_REFERRAL_BASE_URL`   | No                  | `https://raut.app/signup`                        | Base URL used to build referral signup links (`{base}?ref=CODE`). Inlined at build time, so rebuild after changing it.                                                                                                          |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Yes, for the map    | None                                             | Google Maps JavaScript API key loaded dynamically by the Live Rides map. Without it, the map shows a configuration error.                                                                                                        |
+| `NEXT_PUBLIC_LIVE_RIDES_WS_URL`   | No                  | Derived from `NEXT_PUBLIC_API_BASE_URL`          | WebSocket endpoint for live ride updates. When unset, the HTTP base URL is converted to a `ws`/`wss` URL.                                                                                                                        |
+| `NEXT_PUBLIC_USE_MOCK_LIVE_RIDES` | No                  | `true`                                           | Set exactly to `false` to use backend live-ride data; every other value keeps the seeded mock dataset.                                                                                                                           |
+| All `NEXT_PUBLIC_*` variables     | See individual rows | See individual rows                              | Inlined at build time. Rebuild the app after changing any of them.                                                                                                                                                                 |
 
 ## Available scripts
 
-| Command              | Description                                                    |
-| -------------------- | -------------------------------------------------------------- |
-| `pnpm run dev`       | Start the Next.js development server with hot module reloading |
-| `pnpm run build`     | Build the app for the Next.js production server                |
-| `pnpm run typecheck` | Run TypeScript type checking without emitting files            |
-| `pnpm run lint`      | Run ESLint across the repository                               |
-| `pnpm run start`     | Start the production server                                    |
-| `pnpm run preview`   | Start the production server for verification                   |
+| Command              | Description                                                                       |
+| -------------------- | --------------------------------------------------------------------------------- |
+| `pnpm run dev`       | Start the Next.js development server with hot module reloading                    |
+| `pnpm run build`     | Build the app for the Next.js production server                                   |
+| `pnpm run typecheck` | Run TypeScript type checking without emitting files                               |
+| `pnpm run lint`      | Run ESLint across the repository                                                  |
+| `pnpm run start`     | Start the production server                                                       |
+| `pnpm run preview`   | Start the production server for verification                                      |
+| `pnpm run vercel-build` | Build only for the `staging` branch; no-op on other branches                   |
 
 Run `pnpm run build` before `pnpm run start` or `pnpm run preview`.
 
 ## Application routes
 
-| Route                             | Access               | Description                                                                                                                                                                                                                                                                                                                    |
-| --------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/login`                          | Public               | Email and password sign-in                                                                                                                                                                                                                                                                                                     |
-| `/request-admin`                  | Signed in, no RBAC access | Enter the admin secret to request backend admin access                                                                                                                                                                                                                                                              |
-| `/accept-staff-invitation`        | Public               | Verify an emailed staff invitation token and complete account setup                                                                                                                                                                                                                                                            |
-| `/onboarding`                     | Public / WebView     | Driver onboarding flow; expects `token` and optional `lang` query parameters                                                                                                                                                                                                                                                   |
-| `/`                               | Admin                | Dashboard overview and analytics                                                                                                                                                                                                                                                                                               |
-| `/customers`                      | Admin                | Customer management                                                                                                                                                                                                                                                                                                            |
-| `/drivers`                        | Admin                | Driver and document management                                                                                                                                                                                                                                                                                                 |
-| `/rides`                          | Admin                | Ride management                                                                                                                                                                                                                                                                                                                |
-| `/routes`                         | Admin                | Route management                                                                                                                                                                                                                                                                                                               |
-| `/payouts`                        | Admin                | Payout review and processing                                                                                                                                                                                                                                                                                                   |
-| `/payouts/batch`                  | Admin                | Pending payout batch review and approval                                                                                                                                                                                                                                                                                       |
-| `/transactions`                   | Admin                | Transaction history                                                                                                                                                                                                                                                                                                            |
-| `/live-rides`                     | Admin                | Live rides placeholder (Coming soon)                                                                                                                                                                                                                                                                                           |
-| `/marketing/promotions`           | Admin                | API-backed promotion campaigns grouped by status tab, with search, pagination, activate/deactivate and delete                                                                                                                                                                                                                  |
-| `/marketing/promotions/new`       | Admin                | Create a promotion campaign and activate it or save it as a draft                                                                                                                                                                                                                                                              |
-| `/marketing/promotions/[id]/edit` | Admin                | Edit an existing campaign and save changes or a draft                                                                                                                                                                                                                                                                          |
-| `/marketing/referrals`            | Admin                | Referral-code stats, status tabs, search, user-type/date filters, pagination, Create Referral dialog, shareable Referral Created dialog, row actions and bulk selection actions                                                                                                                                                |
-| `/support-tickets`                | Admin                | API-backed ticket search, filters, pagination, status actions and CSV export                                                                                                                                                                                                                                                   |
-| `/support-tickets/new`            | Admin                | Create a support ticket for a rider or driver                                                                                                                                                                                                                                                                                  |
-| `/support-tickets/[id]`           | Admin                | Ticket detail, agent assignment, replies/internal notes, status/priority updates and escalation                                                                                                                                                                                                                                |
-| `/settings`                       | Admin                | Signed-in account profile and access details                                                                                                                                                                                                                                                                                   |
-| `/settings/staffs`                | Admin                | Staff list with pagination, invitations with role/scope assignment, invitation status filters with resend/cancel actions, role/scope assignment for existing staff, revoke and deactivate actions, live RBAC role editing and a role permission matrix. Staff reactivation remains disabled until the backend endpoint exists. |
-| `/settings/audit-logs`            | Admin                | Searchable, filterable mock audit events with detail panel and CSV export                                                                                                                                                                                                                                                      |
-| `/settings/platform`              | Admin                | Platform configuration placeholder (Coming soon)                                                                                                                                                                                                                                                                               |
-| `/settings/system-health`         | Admin                | Illustrative system status, uptime and latency trends, background jobs and recent incidents                                                                                                                                                                                                                                    |
-| `*`                               | Public               | Render the not-found page                                                                                                                                                                                                                                                                                                      |
+| Route                             | Access                    | Description                                                                                                                                                                                                                        |
+| --------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `/login`                          | Public                    | Email and password sign-in                                                                                                                                                                                                         |
+| `/login/forgot-password`          | Public                    | Request a password-reset link                                                                                                                                                                                                      |
+| `/reset-password`                 | Public                    | Complete a password reset from the emailed token                                                                                                                                                                                   |
+| `/request-admin`                  | Signed in, no RBAC access | Enter the admin secret to request backend admin access                                                                                                                                                                             |
+| `/accept-staff-invitation`        | Public                    | Verify an emailed staff invitation token and complete account setup                                                                                                                                                                |
+| `/onboarding`                     | Public / WebView          | Driver onboarding flow; expects `token` and optional `lang` query parameters                                                                                                                                                       |
+| `/`                               | Admin                     | Dashboard overview and analytics                                                                                                                                                                                                   |
+| `/customers`                      | Admin                     | Customer management                                                                                                                                                                                                                |
+| `/drivers`                        | Admin                     | Driver and document management                                                                                                                                                                                                     |
+| `/drivers/[id]`                   | Admin                     | Driver detail, documents and verification actions                                                                                                                                                                                 |
+| `/rides`                          | Admin                     | Ride management                                                                                                                                                                                                                    |
+| `/rides/[id]/dispute`             | Admin                     | Resolve a ride dispute and issue a refund                                                                                                                                                                                         |
+| `/routes`                         | Admin                     | Route management                                                                                                                                                                                                                   |
+| `/payouts`                        | Admin                     | Payout review and processing                                                                                                                                                                                                       |
+| `/payouts/batch`                  | Admin                     | Pending payout batch review and approval                                                                                                                                                                                           |
+| `/transactions`                   | Admin                     | Transaction history                                                                                                                                                                                                                |
+| `/live-rides`                     | Admin                     | Live ride map/list monitoring, filters and ride actions                                                                                                                                                                            |
+| `/customer-issues`                | Admin                     | Customer Issues placeholder                                                                                                                                                                                                        |
+| `/marketing/promotions`           | Admin                     | API-backed promotion campaigns grouped by status tab, with search, pagination, activate/deactivate and delete                                                                                                                       |
+| `/marketing/promotions/new`       | Admin                     | Create a promotion campaign and activate it or save it as a draft                                                                                                                                                                   |
+| `/marketing/promotions/[id]/edit` | Admin                     | Edit an existing campaign and save changes or a draft                                                                                                                                                                               |
+| `/marketing/referrals`            | Admin                     | Referral-code stats, status tabs, search, user-type/date filters, pagination, Create Referral dialog, shareable Referral Created dialog, row actions and bulk selection actions                                                     |
+| `/support-tickets`                | Admin                     | API-backed ticket search, filters, pagination, status actions and CSV export                                                                                                                                                        |
+| `/support-tickets/new`            | Admin                     | Create a support ticket for a rider or driver                                                                                                                                                                                       |
+| `/support-tickets/[id]`           | Admin                     | Ticket detail, agent assignment, replies/internal notes, status/priority updates and escalation                                                                                                                                     |
+| `/settings`                       | Admin                     | Signed-in account profile and access details                                                                                                                                                                                       |
+| `/settings/staffs`                | Admin                     | Staff list, invitations, role/scope assignment, revoke and deactivate actions; staff reactivation remains disabled until the backend endpoint exists                                                                              |
+| `/settings/staffs/roles`          | Admin                     | Live RBAC role catalog and role editor                                                                                                                                                                                             |
+| `/settings/staffs/permissions`    | Admin                     | Searchable permission catalog with module grouping, print and CSV export                                                                                                                                                           |
+| `/settings/platform-config`       | Admin                     | API-backed pricing, features, operations and integrations configuration with history                                                                                                                                               |
+| `/settings/platform`              | Admin                     | Legacy Platform Config placeholder (Coming soon); canonical config lives at `/settings/platform-config`                                                                                                                            |
+| `/settings/audit-logs`            | Admin                     | Searchable, filterable mock audit events with detail panel and CSV export                                                                                                                                                          |
+| `/settings/system-health`         | Admin                     | Illustrative system status, uptime and latency trends, background jobs and recent incidents                                                                                                                                         |
+| `*`                               | Public                    | Render the not-found page, which redirects to `/`                                                                                                                                                                                  |
 
-`RequireAuth` protects the admin-access request page. `RequireAdmin` protects the dashboard route group and revalidates the signed-in user's role against `GET /auth/me` before opening admin pages.
+`RequireAdmin` protects the dashboard route group using the hydrated session and the persisted RBAC snapshot described in `src/lib/navigation.ts`; it does not call `GET /auth/me` during navigation. `/request-admin` performs its own session and permission checks.
 
 ## Driver onboarding
 
@@ -225,7 +238,8 @@ If the page is opened outside the WebView, it falls back to a browser alert. Can
 - Forms use React Hook Form with Zod schemas in `src/schemas/onboardingSchemas.ts`.
 - Driver photos must be images up to 5 MB.
 - Vehicle photos and documents accept images or PDF up to 5 MB.
-- Supported document types include `profile_photo`, `license`, `vehicle_photo`, `registration`, `insurance` and `sticker_photo`.
+- Supported document types include `profile_photo`, `license`, `vehicle_photo`, `registration`, `insurance`, `sticker_photo`, `inspection` and `certificate_of_authorization`.
+- Mobile-money networks are VODACOM (M-Pesa), AIRTEL (Airtel Money), HALOTEL (HaloPesa) and MIXX BY YASS.
 - Errors from form validation and uploads are shown inline. Step-level API failures currently fall back to browser alerts.
 
 ### Legacy onboarding helper
@@ -237,7 +251,7 @@ If the page is opened outside the WebView, it falls back to a browser alert. Can
 1. The administrator enters an email address and password on `/login`.
 2. `POST /auth/login` validates the credentials.
 3. The response returns the session, access token and optional refresh token.
-4. The session and tokens are persisted in `localStorage` and exposed to React through the Zustand auth store.
+4. The session and tokens are persisted by `src/services/tokenStore.ts` and exposed to React through the Zustand auth store. With **Remember me** enabled they use `localStorage`; otherwise they use per-tab `sessionStorage`.
 5. `RequireAdmin` gates dashboard routes from the persisted RBAC permission store in Zustand (`raut-permission-storage`) after auth/permission hydration. It does not revalidate permissions over the network on navigation. Role labels are display data only.
 6. `loginWithEmail` loads effective RBAC permissions from `GET /me/permissions` and stores them in the persisted permission store. RBAC role mutations refresh permissions through the same endpoint; promotion also validates a fetched permission result before granting access.
 7. Sign-in routing uses the stored RBAC permissions: accounts with at least one role and permission enter the requested route when permitted or the first permitted dashboard route; accounts without either are signed out and shown an access error. `/request-admin` is no longer an automatic redirect.
@@ -246,13 +260,13 @@ If the page is opened outside the WebView, it falls back to a browser alert. Can
 
 If permission loading fails during login, promotion, or an RBAC refresh, the explicit flow reports the error. The route gate denies access when the persisted permission store has no usable dashboard access.
 
-Access-token expiry is also watched client-side. While an admin session is active, a timer is scheduled for the stored `expiresAt`; when it elapses, the app signs out and shows “Your session expired. Please sign in again.” There is no pre-expiry warning. Background tabs are checked when they regain focus or become visible. Requests still refresh an expired access token before using it, and a successful refresh moves the timer to the new expiry.
+Access-token expiry is also watched client-side. While an admin session is active, a timer is scheduled for the stored expiry; when it elapses, the app signs out and shows “Your session expired. Please sign in again.” There is no pre-expiry warning. Background tabs are checked when they regain focus or become visible. Requests still refresh an expired access token before using it, and a successful refresh moves the timer to the new expiry. If the login/refresh response has no positive expiry value, the stored expiry is `0` and no client-side timer is scheduled; the backend still enforces token validity.
 
-Backend roles and permissions are the source of truth. Role labels come from the backend response when provided, otherwise from formatting the raw role key; no frontend allowlist or alias table grants access. The Staff & Roles page uses the live `/rbac/roles` catalog, and unknown backend roles keep their backend name with a deterministic badge color.
+Backend roles and permissions are the source of truth. Role labels come from the backend response when provided, otherwise from formatting the raw role key; no frontend allowlist or alias table grants access. The Staff & Roles pages use the live `/rbac/roles` and `/rbac/permissions` catalogs, and unknown backend roles keep their backend name with a deterministic badge color.
 
 The dashboard gate reads persisted permissions from Zustand to hide sidebar sections, block unauthorized routes, and hide action controls through `usePermissions` and `<Can>`. It requires at least one role and one permission before allowing any dashboard route. Permission codes follow `resource.action` (for example `drivers.verify` and `finance.payouts.approve`). If no usable permission snapshot exists, access is denied and the Access Denied screen is shown. Live Rides uses `rides.cancel` for full management and `rides.read` for escalation and notes; referral mark-paid remains unchanged until a dedicated permission code is added.
 
-Tokens are stored in browser `localStorage`, so the session can be restored across reloads. The effective permission snapshot is persisted separately under `raut-permission-storage` and is removed on sign-out, failed refresh and session expiry. This does not replace server-side authorization; the backend must enforce permissions for every admin endpoint.
+`src/services/tokenStore.ts` stores the session, access token, refresh token and expiry under `raut_admin_session`, `raut_admin_access_token`, `raut_admin_refresh_token` and `raut_admin_access_expires_at`. With **Remember me** enabled these live in `localStorage`; otherwise they live in per-tab `sessionStorage`. `raut_admin_persist` records the chosen storage mode, and a per-tab session marker prevents a stale persistent session from being restored after a non-persistent sign-in. Storage access is guarded, so private-mode browsers fall back to in-memory state. The effective permission snapshot is persisted separately under `raut-permission-storage` and is removed on sign-out, failed refresh and session expiry. This does not replace server-side authorization; the backend must enforce permissions for every admin endpoint.
 
 The onboarding flow writes its access token into the same token store used by API helpers, but it does not create an admin session.
 
@@ -268,51 +282,74 @@ export const API_ROUTES = {
   myPermissions: "/me/permissions",
   rbacPermissions: "/rbac/permissions",
   rbacRoles: "/rbac/roles",
-  rbacRole: (roleId) => `/rbac/roles/${roleId}`,
+  rbacRole: (roleId) => `/rbac/roles/${encodeURIComponent(roleId)}`,
   rbacRegions: "/rbac/regions",
   staff: "/staff",
   staffInvitations: "/staff/invitations",
-  staffInvitationVerify: "/staff/invitations/verify",
-  staffInvitationAccept: "/staff/invitations/accept",
-  staffInvitationCancel: (invitationId) =>
-    `/staff/invitations/${invitationId}/cancel`,
-  staffInvitationResend: (invitationId) =>
-    `/staff/invitations/${invitationId}/resend`,
-  staffRoles: (userId) => `/staff/${userId}/roles`,
-  staffRole: (userId, assignmentId) => `/staff/${userId}/roles/${assignmentId}`,
-  staffDeactivate: (userId) => `/staff/${userId}/deactivate`,
-  notifications: "/notifications/",
-  promote: "/admin/promote",
-  users: "/admin/users",
-  drivers: "/admin/drivers",
-  rides: "/admin/rides",
-  routes: "/admin/routes",
-  documents: "/admin/documents",
-  transactions: "/admin/transactions",
-  payouts: "/admin/payouts",
-  analyticsOverview: "/admin/analytics/overview",
-  analyticsRevenue: "/admin/analytics/revenue",
-  analyticsDrivers: "/admin/analytics/drivers",
-  analyticsRides: "/admin/analytics/rides",
-  analyticsPeakHours: "/admin/analytics/peak-hours",
+  liveRides: "/admin/rides/live",
+  liveRideDetail: (rideId) => `/admin/rides/${encodeURIComponent(rideId)}/detail`,
+  liveRideCancel: (rideId) => `/admin/rides/${encodeURIComponent(rideId)}/cancel`,
+  liveRideFlag: (rideId) => `/admin/rides/${encodeURIComponent(rideId)}/flag`,
+  liveRideNote: (rideId) => `/admin/rides/${encodeURIComponent(rideId)}/note`,
+  liveRideContact: (rideId) =>
+    `/admin/rides/${encodeURIComponent(rideId)}/contact`,
+  liveRideHistory: (rideId) =>
+    `/admin/rides/${encodeURIComponent(rideId)}/history`,
+  liveRideOverrideFare: (rideId) =>
+    `/admin/rides/${encodeURIComponent(rideId)}/override-fare`,
+  liveRideEscalate: (rideId) =>
+    `/admin/rides/${encodeURIComponent(rideId)}/escalate`,
+  rideDispute: (rideId) => `/admin/rides/${encodeURIComponent(rideId)}/dispute`,
+  rideResolveDispute: (rideId) =>
+    `/admin/rides/${encodeURIComponent(rideId)}/resolve-dispute`,
+  rideRefund: (rideId) => `/admin/rides/${encodeURIComponent(rideId)}/refund`,
+  configs: "/admin/configs",
+  config: (configKey) => `/admin/configs/${encodeURIComponent(configKey)}`,
+  configHistory: (configKey) =>
+    `/admin/configs/${encodeURIComponent(configKey)}/history`,
+  supportTickets: "/support/tickets/queue",
+  supportAgents: "/support/agents",
+  supportTicket: (ticketId) =>
+    `/support/tickets/queue/${encodeURIComponent(ticketId)}`,
+  supportTicketContext: (ticketId) =>
+    `/support/tickets/queue/${encodeURIComponent(ticketId)}/context`,
+  supportTicketMessages: (ticketId) =>
+    `/support/tickets/queue/${encodeURIComponent(ticketId)}/messages`,
+  supportTicketAssignment: (ticketId) =>
+    `/support/tickets/queue/${encodeURIComponent(ticketId)}/assignment`,
+  supportTicketAssignToMe: (ticketId) =>
+    `/support/tickets/queue/${encodeURIComponent(ticketId)}/assign-to-me`,
+  supportTicketStatus: (ticketId) =>
+    `/support/tickets/queue/${encodeURIComponent(ticketId)}/status`,
+  supportTicketPriority: (ticketId) =>
+    `/support/tickets/queue/${encodeURIComponent(ticketId)}/priority`,
+  supportTicketEscalate: (ticketId) =>
+    `/support/tickets/queue/${encodeURIComponent(ticketId)}/escalate`,
   marketingPromotions: "/promotions/",
-  marketingPromotion: (promotionId) => `/promotions/${promotionId}`,
+  marketingPromotion: (promotionId) =>
+    `/promotions/${encodeURIComponent(promotionId)}`,
   marketingPromotionActivate: (promotionId) =>
-    `/promotions/${promotionId}/activate`,
+    `/promotions/${encodeURIComponent(promotionId)}/activate`,
   marketingPromotionDeactivate: (promotionId) =>
-    `/promotions/${promotionId}/deactivate`,
+    `/promotions/${encodeURIComponent(promotionId)}/deactivate`,
+  referralPrograms: "/referrals/programs",
+  referralUsers: "/referrals/users",
+  referralStats: "/referrals/stats",
+  myReferralCode: "/referrals/my-code",
 };
 ```
 
-The promotion detail route is built with `API_ROUTES.marketingPromotion(id)`; activate and deactivate use `API_ROUTES.marketingPromotionActivate(id)` and `API_ROUTES.marketingPromotionDeactivate(id)`.
+This is an abridged excerpt. The full table in `src/lib/config.ts` also contains staff-invitation, analytics, region, password-reset, driver-detail, promotion, referral, WebSocket-derived and other parameterized routes. Parameterized paths URL-encode their arguments.
 
-Onboarding endpoints are currently called directly from `src/services/uploads.ts` and the onboarding step components rather than being added to `API_ROUTES`.
+Promotion detail, activation and deactivation use `API_ROUTES.marketingPromotion(id)`, `API_ROUTES.marketingPromotionActivate(id)` and `API_ROUTES.marketingPromotionDeactivate(id)`.
 
-Admin requests go through `src/services/http.ts` and the `apiGet`, `apiPost`, `apiPut` and `apiDelete` helpers in `src/services/api.ts`.
+Onboarding endpoints are still called directly from `src/services/uploads.ts` and the onboarding step components rather than being added to `API_ROUTES`.
+
+Admin requests go through `src/services/http.ts` and the `apiGet`, `apiPost`, `apiPut`, `apiPatch` and `apiDelete` helpers in `src/services/api.ts`.
 
 ### Request behavior
 
-- JSON bodies by default; the admin promotion request uses form encoding.
+- JSON bodies by default; promotion create/update use `URLSearchParams` form encoding so backend rules such as activation and budget fields are sent in the expected format.
 - Bearer token attached to authenticated requests.
 - Automatic token refresh before an expired token is used and after a `401`.
 - 15-second request timeout using `AbortController`.
@@ -334,6 +371,9 @@ Raw API records are normalized in `src/services/mappers.ts`. Mappers provide con
 | `POST`   | `/auth/login`                                       | Sign in with an email address and password                                                                                |
 | `POST`   | `/auth/refresh`                                     | Refresh an access token                                                                                                   |
 | `GET`    | `/auth/me`                                          | Fetch the signed-in user and role                                                                                         |
+| `POST`   | `/auth/password/reset`                              | Request a password-reset email                                                                                            |
+| `POST`   | `/auth/password/reset/confirm`                      | Confirm a password reset from the emailed token                                                                           |
+| `POST`   | `/auth/password/update`                             | Change the signed-in user's password                                                                                      |
 | `GET`    | `/me/permissions`                                   | Fetch effective RBAC permissions and role assignments                                                                     |
 | `POST`   | `/admin/promote`                                    | Promote a signed-in account to admin using a secret                                                                       |
 | `GET`    | `/notifications/`                                   | List notifications                                                                                                        |
@@ -358,12 +398,23 @@ Raw API records are normalized in `src/services/mappers.ts`. Mappers provide con
 | `POST`   | `/staff/{user_id}/deactivate`                       | Deactivate a staff account                                                                                                |
 | `DELETE` | `/admin/users/{id}`                                 | Delete a user/account (customers and drivers)                                                                             |
 | `GET`    | `/admin/drivers`                                    | List drivers                                                                                                              |
+| `GET`    | `/admin/drivers/{id}`                               | Get driver detail and documents                                                                                           |
 | `PUT`    | `/admin/drivers/{id}/verify`                        | Verify a driver                                                                                                           |
 | `PUT`    | `/admin/drivers/{id}/reject`                        | Reject a driver application                                                                                               |
 | `PUT`    | `/admin/drivers/{id}/suspend`                       | Suspend a driver                                                                                                          |
 | `PUT`    | `/admin/drivers/{id}/unsuspend`                     | Reinstate a driver                                                                                                        |
 | `GET`    | `/admin/rides`                                      | List rides                                                                                                                |
-| `PUT`    | `/admin/rides/{id}/cancel`                          | Cancel a ride                                                                                                             |
+| `PUT`    | `/admin/rides/{id}/cancel`                          | Cancel a ride from the Rides list                                                                                         |
+| `GET`    | `/admin/rides/live`                                 | List in-progress rides with optional status/type/driver/customer/ride filters and `issues_only`                           |
+| `GET`    | `/admin/rides/{id}/detail`                          | Get live ride detail                                                                                                      |
+| `POST`   | `/admin/rides/{id}/flag`                            | Flag a live ride with a `reason`                                                                                          |
+| `POST`   | `/admin/rides/{id}/note`                            | Append an operator `note` to a live ride                                                                                  |
+| `POST`   | `/admin/rides/{id}/escalate`                        | Escalate a live ride with a `note`                                                                                        |
+| `POST`   | `/admin/rides/{id}/override-fare`                   | Override a live ride fare with `amount` and `reason`                                                                      |
+| `GET`    | `/admin/rides/{id}/history`                         | Get live ride event history                                                                                               |
+| `GET`    | `/admin/rides/{id}/dispute`                         | Get a ride dispute                                                                                                        |
+| `POST`   | `/admin/rides/{id}/resolve-dispute`                 | Resolve a ride dispute                                                                                                    |
+| `POST`   | `/admin/rides/{id}/refund`                          | Issue a ride refund                                                                                                       |
 | `GET`    | `/admin/routes`                                     | List routes                                                                                                               |
 | `PUT`    | `/admin/routes/{id}/cancel`                         | Cancel a route                                                                                                            |
 | `GET`    | `/admin/documents`                                  | List driver documents                                                                                                     |
@@ -416,6 +467,10 @@ Raw API records are normalized in `src/services/mappers.ts`. Mappers provide con
 | `GET`    | `/admin/analytics/drivers`                          | Driver performance analytics                                                                                              |
 | `GET`    | `/admin/analytics/rides`                            | Ride analytics                                                                                                            |
 | `GET`    | `/admin/analytics/peak-hours`                       | Peak-hour analytics used by the dashboard charts                                                                          |
+| `GET`    | `/admin/configs`                                    | List the flat system-configuration registry                                                                               |
+| `GET`    | `/admin/configs/{config_key}`                       | Get one configuration value; optional scope parameters are passed through                                                 |
+| `PUT`    | `/admin/configs/{config_key}`                       | Update one configuration value with `{ value }`                                                                           |
+| `GET`    | `/admin/configs/{config_key}/history`               | Get up to 50 recent configuration-history entries with `limit`                                                            |
 | `POST`   | `/drivers/documents`                                | Upload an onboarding document (`multipart/form-data`)                                                                     |
 | `PUT`    | `/users/me`                                         | Save personal and driver details during onboarding                                                                        |
 | `POST`   | `/drivers/vehicles`                                 | Create a vehicle during onboarding                                                                                        |
@@ -423,9 +478,9 @@ Raw API records are normalized in `src/services/mappers.ts`. Mappers provide con
 
 Analytics endpoints receive a `period` of `day`, `week` or `month`, plus `days_back` where applicable. Dashboard custom ranges are capped at 365 days.
 
-Support ticket creation sends `requester_id`, `requester_type`, `subject`, `category`, `priority` and `message`. Replies and internal notes send `body` and `is_internal`; assignments send `assignee_id`.
+Support ticket creation sends `requester_id`, `category`, `priority`, `subject`, `description` and optional `ride_id`. Replies and internal notes send `message`, `version` and `is_internal`; assignments send `assigned_to` and `version`; claiming sends `{ version }`; status updates send `status`, `version` and optional `note`; priority updates send `priority`, `version` and `reason`; escalation sends `version` and `note`. Every mutation carries the ticket `version` for optimistic concurrency. Live ride cancellation sends `reason`, `refund`, `partial_percent` and `penalize_driver`; flagging sends `reason`, notes and escalation send `note`, and fare override sends `amount` and `reason`. Ride dispute resolution sends `decision`, `refundAmount`, `refundMethod` and `resolutionNote`; refunds send `amount`, `method` and optional `note`.
 
-Promotion create/update sends `code`, `name`, `description`, `discount_type` (`percentage`, `fixed` or `free_ride`), `discount_value`, optional `max_discount_amount`, `start_date`, `end_date`, `per_user_limit`, optional `total_uses_limit`, `budget_cap_tzs`, `eligibility_criteria` and `is_active`. The percentage discount cap and the free-ride maximum value both use `max_discount_amount`. `eligibility_criteria` is a free-form object: the UI sends the documented `new_users_only`, `existing_users_only`, `phones`, `min_ride_amount` and `ride_types` keys, plus the custom `peak_hours_only`, `peak_hours_label`, `notify_sms` and `in_app_banner` keys. DUO-only targeting sends `ride_types: ["duo"]`.
+Promotion create/update sends `code`, `name`, `description`, `discount_type` (`percentage`, `fixed` or `free_ride`), `discount_value`, optional `max_discount_amount`, `start_date`, `end_date`, `per_user_limit`, optional `total_uses_limit`, `budget_cap_tzs`, `eligibility_criteria` and `is_active`. The percentage discount cap and the free-ride maximum value both use `max_discount_amount`. `eligibility_criteria` is a free-form object: the UI sends the documented `new_users_only`, `existing_users_only`, `phones`, `min_ride_amount` and `ride_types` keys, plus the custom `peak_hours_only`, `peak_hours_label`, `notify_sms` and `in_app_banner` keys. DUO-only targeting sends `ride_types: ["duo"]`. If the backend rejects the object with an `eligibility_criteria` argument-type error, `src/services/marketing.ts` retries once with the value serialized as a JSON string; response mapping also accepts a JSON string.
 
 The backend does not expose a promotion `status` field. The UI sets `is_active: false` for **Save as Draft**, and derives the visible status client-side: inactive is **Draft**, an ended campaign is **Expired**, a future start is **Scheduled**, otherwise **Active**. Activate/deactivate use their dedicated endpoints rather than sending a status update. Referral codes are exposed through the documented referral-user endpoints; the contract does not define admin endpoints to create, edit, delete, or send individual codes.
 
@@ -435,9 +490,9 @@ Referral API types live in `src/lib/referrals.ts`, endpoint functions in `src/se
 
 Promotion and referral APIs always use the backend; there is no marketing mock mode.
 
-Staff and RBAC management always use the backend; there is no mock mode. `src/services/staff.ts` maps `/staff`, invitation list/verify/accept, role assignment, revocation and deactivation responses tolerantly. `src/services/rbac.ts` loads the live permission and role catalogs, creates roles, updates or deletes roles by UUID and loads/creates regions. Role updates send only `name`, `description` and `permissions`; the role key is immutable after creation. The invite action posts `email`, `full_name`, `role_id`, `scope_type`, optional `scope_id` (required for region scope) and optional `assignment_expires_at`. Permissions are inherited from the selected RBAC role because the endpoint has no permissions field. Invitation acceptance is a public token-based flow (`/accept-staff-invitation`) that verifies the token, collects only the required fields (`phone`, `current_password`, and/or `password` + `password_confirmation`) with `change_password: false` by default, and redirects on success. The invitation list uses server-side `status` filtering and falls back to invitation timestamps when a status field is absent. Cancellation posts a `reason`; resend sends no request body. Staff reactivation is still disabled because the backend does not document that endpoint.
+Staff and RBAC management always use the backend; there is no mock mode. `src/services/staff.ts` maps `/staff`, invitation list/verify/accept, role assignment, revocation and deactivation responses tolerantly. `src/services/rbac.ts` loads the live permission and role catalogs, creates roles, updates or deletes roles by UUID and loads/creates regions. Role creation sends `key`, `name`, `description` and `permissions`; updates send only `name`, `description` and `permissions`, so the role key is immutable after creation. Each permission entry is `{ code, scope, constraints }`, with `scope` defaulting to `platform` in the role editor. The invite action posts `email`, `full_name`, `role_id`, `scope_type`, optional `scope_id` (required for region scope) and optional `assignment_expires_at`. Permissions are inherited from the selected RBAC role because the endpoint has no permissions field. The Super Admin role is hidden from staff invitation and role-assignment dialogs and rejected by `isAssignableStaffRole` in `src/lib/rbacRoles.ts`. Invitation acceptance is a public token-based flow (`/accept-staff-invitation`) that verifies the token, collects only the required fields (`phone`, `current_password`, and/or `password` + `password_confirmation`) with `change_password: false` by default, and redirects on success. The invitation list uses server-side `status` filtering and falls back to invitation timestamps when a status field is absent. Cancellation posts a `reason`; resend sends no request body. Staff reactivation is still disabled because the backend does not document that endpoint.
 
-`GET /me/permissions` is treated as the source of effective dashboard permissions. The frontend normalizes its scoped grant map (`{ [code]: [{ scope, scope_id, required_scopes, assignment_id, constraints }] }`) into flat scope-free permission codes for gating, while retaining `grantsByCode` metadata for scope-aware/debug use. Any scope returned by `/me/permissions` is considered granted access.
+`GET /me/permissions` is treated as the source of effective dashboard permissions. The frontend normalizes its scoped grant map (`{ [code]: [{ scope, scope_id, required_scopes, assignment_id, constraints }] }`) into flat scope-free permission codes for gating, while retaining `grantsByCode` metadata for scope-aware/debug use. Any scope returned by `/me/permissions` is considered granted access; the Roles editor can assign `scope` and `constraints` per permission code, but the route gate currently does not enforce those scopes itself.
 
 The unused legacy onboarding helper also references `POST /drivers/register` and `POST /drivers/onboarding/complete`. They are not part of the active UI flow.
 
@@ -455,9 +510,10 @@ Polling is configured per hook:
 - Dashboard, customer lists and notifications refetch every 60 seconds.
 - Driver, ride, route, payout and transaction lists refetch every 30 seconds.
 - Support ticket lists and details refetch every 30 seconds; eligible agents are cached for 5 minutes.
-- Promotion lists, referral-code lists and referral stats refetch every 60 seconds; referral-code stats are cached for 1 minute.
+- Live rides bootstrap over REST and then receive WebSocket updates; mock mode supplies seeded rides locally.
+- Promotion lists, referral-code lists and referral stats refetch every 60 seconds; referral-code stats are cached for 1 minute. Referral users and activity do not poll automatically.
 - Ride, route and transaction summary queries refetch every 60 seconds.
-- Driver documents load on demand when a driver detail panel opens.
+- Driver documents load on demand when a driver detail panel opens; they do not poll.
 - List queries use `keepPreviousData` so pagination and filter changes do not flash an empty table.
 
 Query keys are centralized in `src/lib/queryKeys.ts`.
@@ -492,7 +548,7 @@ Zustand stores hold shared client-only state. Server data stays in TanStack Quer
 | `pageViewStore`   | Memory                                       | List filters and pagination retained across navigation within the tab.             |
 | `toastStore`      | Memory                                       | Transient toast notifications.                                                     |
 
-The auth store starts empty so the static export and the first client render match. `Providers` hydrates it and the permission store after mount, and route gates wait for both before redirecting. Signing out clears the token store, query cache, cached permissions, page views and toasts. Onboarding progress is not cleared because it belongs to a separate driver flow.
+The auth store starts empty so the server render and the first client render match. `Providers` hydrates it and the permission store after mount, and route gates wait for both before redirecting. Signing out clears the token store, query cache, cached permissions, page views and toasts. Onboarding progress is not cleared because it belongs to a separate driver flow.
 
 List filters and pagination survive navigation but reset on a full reload. Support ticket, promotion and referral-code records are fetched from the backend; promotion tabs plus referral status, search, user type, date range and page are kept in `pageViewStore`.
 
@@ -510,33 +566,40 @@ raut_frontend/
 ├─ src/
 │  ├─ app/                 App Router routes, layouts, providers and global CSS
 │  │  ├─ (dashboard)/      Admin-only route group and shared shell
-│  │  ├─ login/            Email and password sign-in route
+│  │  ├─ login/            Sign-in and forgot-password routes
+│  │  ├─ reset-password/   Password reset completion route
+│  │  ├─ accept-staff-invitation/  Public staff invitation acceptance route
 │  │  ├─ onboarding/       Driver onboarding route
 │  │  ├─ request-admin/    Admin promotion route
 │  │  ├─ globals.css       Tailwind import, theme tokens and shared component classes
 │  │  ├─ layout.tsx        Root layout, metadata and Inter font
 │  │  ├─ not-found.tsx     Not-found page that redirects to the dashboard
-│  │  └─ providers.tsx     TanStack Query and toast providers
+│  │  └─ providers.tsx     Query, auth and toast providers
 │  ├─ components/          Shared layout, navigation, panels, dialogs, toasts, charts and UI primitives
 │  │  ├─ analytics/        Dashboard metric cards and Recharts visualizations
-│  │  ├─ marketing/        Promotion cards/forms plus referral stats, tabs, table, create and success dialogs
+│  │  ├─ liveRides/        Live ride map/list panels, detail panel and action dialogs
+│  │  ├─ marketing/        Promotion cards/forms plus referral stats, tabs, table and dialogs
 │  │  ├─ platformConfig/   Platform configuration forms and shared config primitives
+│  │  ├─ staffs/           Staff, role and permission panels
+│  │  ├─ supportTickets/   Ticket queue, detail and form panels
 │  │  └─ ui/               shadcn-style components (sidebar, table, badge, sheet, tooltip and others)
 │  ├─ hooks/               TanStack Query hooks and session helpers
-│  ├─ lib/                 API config, env, roles, query client, query keys, date ranges and exports
+│  ├─ lib/                 API config, env, RBAC/role helpers, query keys, live-ride models/mocks, date ranges and exports
 │  ├─ onboarding/          The four onboarding step components
 │  ├─ schemas/             Zod validation schemas
-│  ├─ services/            API services, HTTP client, token store, uploads and mappers
+│  ├─ services/            API services, HTTP client, token store, live-ride socket, uploads and mappers
 │  ├─ store/               Zustand stores for authentication, onboarding, toasts and list views
 │  ├─ styles/              Legacy Flutter theme constants
 │  └─ types/               Shared TypeScript type definitions
 ├─ .env.example            Documented environment variables
+├─ .github/workflows/main.yml  CI/CD lint/build/Docker/VPS deploy for main and staging
 ├─ eslint.config.js        ESLint flat configuration
 ├─ next.config.ts          Next.js configuration
 ├─ package.json            Dependencies and scripts
 ├─ postcss.config.mjs      Tailwind CSS PostCSS plugin
 ├─ README.md
-└─ tsconfig.json           TypeScript configuration
+├─ tsconfig.json           TypeScript configuration
+└─ vercel.json             Vercel deployment enabled only for staging
 ```
 
 ### Key modules
@@ -546,7 +609,14 @@ raut_frontend/
 | `src/services/http.ts`             | Authenticated fetch wrapper, token refresh, timeout and error handling                                                                  |
 | `src/services/api.ts`              | `apiGet`, `apiPost`, `apiPatch`, `apiPut`, `apiDelete` and query-string building                                                        |
 | `src/services/supportTickets.ts`   | Support ticket endpoints, API response mapping and ticket mutation payloads                                                             |
-| `src/services/marketing.ts`        | Promotion endpoints, tolerant response mapping, client-side list filtering and mutation payloads                                        |
+| `src/services/liveRides.ts`        | Live ride REST actions, tolerant mapping and mock-mode switching                                                                        |
+| `src/services/liveRidesSocket.ts`  | WebSocket connection, reconnect behavior and live position/status updates                                                              |
+| `src/lib/liveRides.ts`             | Live ride types, status helpers, distance calculation and mock-mode flag                                                                |
+| `src/lib/liveRidesMock.ts`         | Seeded live rides and local mutations used when mock mode is enabled                                                                    |
+| `src/services/platformConfig.ts`   | Flat config registry reads, scoped reads, updates and history                                                                           |
+| `src/services/rideDisputes.ts`     | Ride dispute reads, resolution and refund actions                                                                                       |
+| `src/lib/rideDisputes.ts`          | Ride dispute types, labels and form defaults                                                                                            |
+| `src/services/marketing.ts`        | Promotion endpoints, tolerant response mapping, eligibility compatibility retry, client-side list filtering and mutation payloads       |
 | `src/services/referrals.ts`        | Referral-program, enrollment, stats, user, relationship, payment, and user referral-code API functions                                  |
 | `src/hooks/useReferrals.ts`        | React Query hooks and mutation invalidation for referral-program APIs                                                                   |
 | `src/lib/referrals.ts`             | Referral API request/response types and JSON-safe reward configuration                                                                  |
@@ -557,16 +627,16 @@ raut_frontend/
 | `src/types/staff.ts`               | Staff member, assignment, invitation status/list, and mutation payload types                                                            |
 | `src/types/rbac.ts`                | RBAC permission, role and region types                                                                                                  |
 | `src/lib/adminUsers.ts`            | Admin role metadata, status labels, formatting helpers and matrix CSV export                                                            |
-| `src/lib/rbacRoles.ts`             | Role metadata helpers and fallback role definitions                                                                                     |
+| `src/lib/rbacRoles.ts`             | Role metadata helpers, fallback role definitions and assignable-staff-role filtering                                                    |
 | `src/services/auth.ts`             | Email and password sign-in, session creation, role resolution, permission caching and admin promotion                                   |
 | `src/services/adminActions.ts`     | Verify/reject/suspend drivers, cancel rides/routes and manage users                                                                     |
 | `src/services/dashboard.ts`        | Analytics aggregation, comparison windows and dashboard mapping                                                                         |
-| `src/services/tokenStore.ts`       | localStorage session/token persistence and subscriptions                                                                                |
+| `src/services/tokenStore.ts`       | Session/token persistence in localStorage or sessionStorage, subscriptions and expiry handling                                           |
 | `src/store/permissionStore.ts`     | Persisted effective RBAC permission snapshot and hydration/clear helpers                                                                |
 | `src/services/mappers.ts`          | API response normalization and display formatting                                                                                       |
 | `src/services/uploads.ts`          | Multipart document uploads for onboarding                                                                                               |
 | `src/services/onboarding.ts`       | Legacy complete-flow onboarding helper, not used by the current UI                                                                      |
-| `src/lib/config.ts`                | Base URL, API routes and request/auth constants                                                                                         |
+| `src/lib/config.ts`                | Env normalization, base URL, derived WebSocket URL, API routes and request/auth constants                                                |
 | `src/lib/roles.ts`                 | Backend role normalization and display-label helpers                                                                                    |
 | `src/lib/queryClient.ts`           | TanStack Query client configuration                                                                                                     |
 | `src/lib/queryKeys.ts`             | Centralized query key factory                                                                                                           |
@@ -614,9 +684,9 @@ pnpm run typecheck
 pnpm run build
 ```
 
-The production build is written to `.next/`.
+The production build is written to `.next/`. `next.config.ts` enables `trailingSlash: true` and unoptimized Next.js images.
 
-Deploy the app to a host that can run the Next.js production server. The server is required for routes with runtime parameters, including `/support-tickets/[id]` and `/marketing/promotions/[id]/edit`.
+Deploy the app to a host that can run the Next.js production server. The server is required for routes with runtime parameters, including `/support-tickets/[id]`, `/drivers/[id]`, `/rides/[id]/dispute` and `/marketing/promotions/[id]/edit`.
 
 To run the production build locally:
 
@@ -624,7 +694,11 @@ To run the production build locally:
 pnpm run start
 ```
 
-Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Rebuild the app after changing the backend URL.
+Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Rebuild the app after changing any of them, including the backend URL, Maps key, live-ride WebSocket URL or mock flag.
+
+`vercel.json` disables Vercel deployments on every branch except `staging`, and `pnpm run vercel-build` skips the build on non-staging branches.
+
+`.github/workflows/main.yml` runs lint and build on pushes and pull requests to `main` and `staging`. On pushes to `main`, it also builds and pushes `ghcr.io/<owner>/<repo>/frontend:latest`, then deploys the image over SSH to the production VPS at `/opt/raut_frontend` and verifies the container health check and `http://localhost:3000`. The workflow still passes a `VITE_API_URL` build argument, but this app reads `NEXT_PUBLIC_API_BASE_URL` at build time; confirm the Docker build consumes the intended variable before relying on GitHub Actions for production releases.
 
 ## Legal documents
 
@@ -634,9 +708,10 @@ Environment variables prefixed with `NEXT_PUBLIC_` are inlined at build time. Re
 
 ## Known limitations
 
-- Live Rides and Platform Config are placeholder pages. Audit Logs and System Health use illustrative mock data and are not connected to backend audit or telemetry endpoints.
-- There is currently no automated test suite or CI configuration.
-- RBAC gating is UI-level only. The backend must still enforce every permission on its endpoints; hiding a control does not prevent a crafted API request.
+- Live Rides has real REST/WebSocket integration, but `NEXT_PUBLIC_USE_MOCK_LIVE_RIDES` defaults to seeded mock data; set it exactly to `false` for backend data. Its contact dialog uses device `tel:`/`sms:` links rather than the configured contact endpoint. Platform Config is API-backed at `/settings/platform-config`; `/settings/platform` is a legacy placeholder. Customer Issues is also a placeholder. Audit Logs and System Health use illustrative mock data and are not connected to backend audit or telemetry endpoints.
+- There is no automated test suite. CI exists in `.github/workflows/main.yml`, but it only runs lint and build checks; it does not run tests.
+- Vercel deployments are enabled only for `staging`, while the GitHub Actions VPS deploy runs only on `main`; confirm the intended release path before enabling both.
+- RBAC gating is UI-level only. The backend must still enforce every permission on its endpoints; hiding a control does not prevent a crafted API request. Scoped role grants are stored and displayed, but the route gate currently flattens them to permission codes and does not enforce `scope`, `scope_id` or `constraints` itself.
 - The Staff & Roles permission matrix is sourced from the live RBAC catalogs. It is displayed, printed and exported, but the backend must enforce every permission before it restricts access.
 - Staff reactivation is disabled because the backend does not document the endpoint it requires. Invitation cancellation and resend use the documented staff invitation endpoints. Invitations grant permissions through the selected RBAC role only; per-invite permission overrides are not supported. Role keys are immutable after creation.
 - The dashboard builds some summary cards from the analytics overview response and falls back to list totals when fields or endpoints are unavailable.
