@@ -606,13 +606,6 @@ export const OPERATIONS_SECTIONS: ConfigSectionSpec[] = [
   },
 ];
 
-const LATRA_CONFIG_KEYS = new Set([
-  "latra.auto_submit_daily_report",
-  "latra.auto_submit_trips",
-  "latra.cets_base_url",
-  "latra.jwt_expiry_minutes",
-]);
-
 export const LATRA_SECTION: ConfigSectionSpec = {
   id: "latra",
   title: "LATRA compliance",
@@ -626,7 +619,7 @@ export const LATRA_SECTION: ConfigSectionSpec = {
 };
 
 export const isLATRAConfig = (record: ConfigRecord) =>
-  LATRA_CONFIG_KEYS.has(record.key);
+  record.key.startsWith("latra.");
 
 // Keys belonging to the public (boda/bajaji) pricing tab.
 const PUBLIC_KEYS = new Set([
@@ -674,15 +667,17 @@ export function pricingTabForKey(key: string): PricingTabId | null {
 
 /** True when a record is a feature flag (by type or "feature." key). */
 export const isFeatureConfig = (record: ConfigRecord) =>
-  record.type === "feature_flag" || record.key.startsWith("feature.");
+  !isLATRAConfig(record) &&
+  (record.type === "feature_flag" || record.key.startsWith("feature."));
 
 /** True when a record is a quoting or ride-rule config. */
 export const isOperationsConfig = (record: ConfigRecord) =>
-  record.key.startsWith("quote.") || record.key.startsWith("ride.");
+  !isLATRAConfig(record) &&
+  (record.key.startsWith("quote.") || record.key.startsWith("ride."));
 
 /** True when a record belongs to one of the pricing tabs. */
 export const isPricingConfig = (record: ConfigRecord) =>
-  pricingTabForKey(record.key) !== null;
+  !isLATRAConfig(record) && pricingTabForKey(record.key) !== null;
 
 // Fallback spec inferred from the first value's runtime type.
 const inferFieldSpec = (record: ConfigRecord): ConfigFieldSpec => {
