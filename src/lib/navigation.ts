@@ -103,7 +103,7 @@ export const ROUTE_RULES: {
     permission: PERMISSIONS.AUDIT_READ,
   },
   {
-    matches: isExactly("/settings/system-health"),
+    matches: startsWith("/settings/system-health"),
     permission: PERMISSIONS.ANALYTICS_READ,
   },
   {
@@ -228,9 +228,8 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       {
         title: "Analytics",
-        url: "/",
+        url: "/analytics",
         icon: "analytics",
-        activeOn: "/analytics",
         permission: PERMISSIONS.ANALYTICS_READ,
       },
     ],
