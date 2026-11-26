@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { EllipsisVertical } from "lucide-react";
 import {
   QueryError,
@@ -63,6 +63,8 @@ const controlClass =
   "rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100";
 
 function Rides() {
+  const searchParams = useSearchParams();
+  const disputeTab = searchParams.get("tab") === "disputes";
   const [status, setStatus] = usePageViewField("rides", "status");
   const [driverId, setDriverId] = usePageViewField("rides", "driverId");
   const [from, setFrom] = usePageViewField("rides", "from");
@@ -71,7 +73,7 @@ function Rides() {
   const [viewTarget, setViewTarget] = useState(null);
   const [cancelTarget, setCancelTarget] = useState(null);
   const [cancelReason, setCancelReason] = useState("");
-  const [onlyDisputed, setOnlyDisputed] = useState(false);
+  const [onlyDisputed, setOnlyDisputed] = useState(() => disputeTab);
 
   const params = {
     status,
@@ -504,4 +506,14 @@ function Rides() {
   );
 }
 
-export default Rides;
+function RidesPage() {
+  return (
+    <Suspense
+      fallback={<div className="p-6 text-sm text-slate-500">Loading rides…</div>}
+    >
+      <Rides />
+    </Suspense>
+  );
+}
+
+export default RidesPage;

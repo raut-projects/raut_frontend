@@ -41,6 +41,16 @@ export const LIVE_RIDES_WS_URL = (() => {
   return API_BASE_URL.replace(/^http/, "ws");
 })();
 
+export const DASHBOARD_WS_URL = (() => {
+  const raw = (process.env.NEXT_PUBLIC_DASHBOARD_WS_URL ?? "").trim();
+  if (raw) return raw;
+  if (!API_BASE_URL) return "";
+  return `${API_BASE_URL.replace(/^http/, "ws").replace(/\/+$/, "")}/ws/admin/dashboard`;
+})();
+
+export const DASHBOARD_USE_MOCK_DATA =
+  process.env.NEXT_PUBLIC_USE_MOCK_DASHBOARD !== "false";
+
 /**
  * Base URL for referral sign-up links, defaulting to https://raut.app/signup
  * when unset. Trailing slashes are stripped.
@@ -121,6 +131,10 @@ export const API_ROUTES = {
   analyticsDrivers: "/admin/analytics/drivers",
   analyticsRides: "/admin/analytics/rides",
   analyticsPeakHours: "/admin/analytics/peak-hours",
+  dashboardStats: "/admin/dashboard/stats",
+  dashboardAlerts: "/admin/dashboard/alerts",
+  analyticsRevenueHourly: "/admin/analytics/revenue/hourly",
+  healthServices: "/admin/health/services",
 
   // System configuration endpoints (flat config registry).
   configs: "/admin/configs",

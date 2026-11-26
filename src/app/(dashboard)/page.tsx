@@ -1,20 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import {
-  QueryError,
-  RefreshIndicator,
-  TableSkeleton,
-} from "@/components/queryStates";
-import { AnalyticsToolbar } from "@/components/analytics/AnalyticsToolbar";
-import { DriverStatusChart } from "@/components/analytics/DriverStatusChart";
-import { OverviewMetrics } from "@/components/analytics/OverviewMetrics";
-import { PeakHoursChart } from "@/components/analytics/PeakHoursChart";
-import { RevenueChart } from "@/components/analytics/RevenueChart";
-import { RidesChart } from "@/components/analytics/RidesChart";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { AlertsSection } from "@/components/dashboard/AlertsSection";
+import { HourlyRevenueChart } from "@/components/dashboard/HourlyRevenueChart";
+import { LiveMapPreview } from "@/components/dashboard/LiveMapPreview";
+import { OperationsStatCards } from "@/components/dashboard/OperationsStatCards";
+import { RoleFocusPanel } from "@/components/dashboard/RoleFocusPanel";
+import { SystemHealthWidget } from "@/components/dashboard/SystemHealthWidget";
 import { useDashboard } from "@/hooks/useDashboard";
-import { useSession } from "@/hooks/useSession";
-import { formatRangeLabel, getDefaultRange } from "@/lib/dateRange";
+import { useDashboardRealtime } from "@/hooks/useDashboardOps";
+import {
+  formatRangeLabel,
+  getCustomRange,
+  getDefaultRange,
+  todayInput,
+} from "@/lib/dateRange";
 import { downloadAnalyticsCsv } from "@/lib/analyticsExport";
 import type {
   AnalyticsRange,
@@ -23,13 +24,20 @@ import type {
   RevenuePoint,
   RidesPoint,
 } from "@/types/index";
+import { Clock3 } from "lucide-react";
 
-// const statusStyles = {
-//   Delivered: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
-//   "In transit": "bg-brand-50 text-brand-700 ring-brand-600/20",
-//   Pending: "bg-amber-50 text-amber-700 ring-amber-600/20",
-//   Cancelled: "bg-rose-50 text-rose-700 ring-rose-600/20",
-// };
+import { useSession } from "@/hooks/useSession";
+
+const dateTimeFormatter = new Intl.DateTimeFormat("en-TZ", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+  timeZone: "Africa/Dar_es_Salaam",
+});
 
 const EMPTY_DRIVERS: DriverStats = {
   totalDrivers: 0,
@@ -123,34 +131,30 @@ const statIcons = {
 };
 
 function Dashboard() {
-  const [range, setRange] = useState<AnalyticsRange>(() => getDefaultRange());
+  const searchParams = useSearchParams();
+  const [range, setRange] = useState<AnalyticsRange>(() => {
+    if (searchParams.get("range") === "today") {
+      return getCustomRange(todayInput(), todayInput()) ?? getDefaultRange();
+    }
+    return getDefaultRange();
+  });
   const [compare, setCompare] = useState(false);
+  useDashboardRealtime();
   const {
     data,
-    isPending,
     isError,
     error,
-    isFetching,
     dataUpdatedAt,
-    refetch,
   } = useDashboard(range, compare);
-  const session = useSession();
-  const firstName = session?.name?.split(" ")[0] ?? "there";
 
-  const stats = data?.stats ?? [];
-  const recentDeliveries = data?.recentDeliveries ?? [];
-  const topDrivers = data?.topDrivers ?? [];
-  const verifiedDrivers = data?.verifiedDrivers ?? 0;
   const overview = data?.overview ?? {};
   const ridesAnalytics = data?.ridesAnalytics ?? EMPTY_RIDES;
   const revenueAnalytics = data?.revenueAnalytics ?? EMPTY_REVENUE;
   const previousRidesAnalytics = data?.previousRidesAnalytics ?? null;
   const previousRevenueAnalytics = data?.previousRevenueAnalytics ?? null;
   const comparison = data?.comparison ?? null;
-  const comparisonUnavailableReason = data?.comparisonUnavailableReason ?? null;
   const driversAnalytics = data?.driversAnalytics ?? EMPTY_DRIVERS;
   const peakHours = data?.peakHours ?? [];
-  const periodDays = data?.periodDays ?? range.daysBack;
 
   const handleExportCsv = () => {
     if (data) {
@@ -184,6 +188,15 @@ function Dashboard() {
     return statIcons.users;
   };
 
+  const session = useSession();
+  const [now, setNow] = useState(() => new Date());
+  const firstName = session?.name?.trim().split(/\s+/)[0] || "there";
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <div className="space-y-6 print:space-y-4">
       <div className="hidden border-b border-slate-300 pb-4 print:block">
@@ -203,276 +216,45 @@ function Dashboard() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-3 print:hidden xl:flex-row xl:items-end xl:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-            Welcome back, { firstName }
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            { "Here's what's happening with your platform today." }
-          </p>
-        </div>
-        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-end">
-          <AnalyticsToolbar
-            range={ range }
-            compare={ compare }
-            comparisonReason={ comparisonUnavailableReason }
-            disabled={ !data || isFetching }
-            onRangeChange={ setRange }
-            onCompareChange={ setCompare }
-            onExportCsv={ handleExportCsv }
-            onExportPdf={ handleExportPdf }
-          />
-          <RefreshIndicator
-            isFetching={ isFetching }
-            updatedAt={ dataUpdatedAt }
-            onRefresh={ refetch }
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        { isPending &&
-          Array.from({ length: 4 }, (_, index) => (
-            <div key={ index } className="stat-card">
-              <div className="flex items-center justify-between">
-                <span className="block h-3.5 w-24 animate-pulse rounded bg-slate-200" />
-                <span className="block h-9 w-9 animate-pulse rounded-xl bg-slate-200" />
-              </div>
-              <span className="mt-3 block h-7 w-16 animate-pulse rounded bg-slate-200" />
-              <span className="mt-2 block h-3 w-28 animate-pulse rounded bg-slate-200" />
-            </div>
-          )) }
-
-        { !isPending &&
-          !isError &&
-          stats.map((stat) => (
-            <div key={ stat.label } className="stat-card group">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-slate-500">
-                  { stat.label }
-                </p>
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to from-slate-50 to-slate-100/50 text-slate-700 transition-transform group-hover:scale-110">
-                  { getStatIcon(stat.label) }
-                </div>
-              </div>
-              <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-                { stat.value }
-              </p>
-              <p className="mt-1.5 flex items-center gap-1.5 text-xs">
-                <span
-                  className={ `font-semibold ${stat.up ? "text-emerald-600" : "text-rose-600"}` }
-                >
-                  { stat.delta }
-                </span>
-                <span className="text-slate-400">{ stat.hint }</span>
-              </p>
-            </div>
-          )) }
-
-        { isError && (
-          <div className="sm:col-span-2 xl:col-span-4">
-            <div className="card">
-              <QueryError error={ error } onRetry={ refetch } />
-            </div>
+      <div className="space-y-6 print:hidden">
+        {/* <DashboardWelcome /> */ }
+        <section className="flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Welcome back, { firstName }
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Last login: { session?.signedInAt || "—" }
+            </p>
           </div>
-        ) }
-      </div>
-
-      <RidesChart
-        series={ ridesAnalytics }
-        previous={ previousRidesAnalytics }
-        comparison={ comparison }
-        loading={ isPending }
-        error={ chartError }
-        onRetry={ refetch }
-      />
-
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <div className="xl:col-span-2">
-          <RevenueChart
-            series={ revenueAnalytics }
-            previous={ previousRevenueAnalytics }
-            comparison={ comparison }
-            loading={ isPending }
-            error={ chartError }
-            onRetry={ refetch }
-          />
-        </div>
-        <div>
-          <DriverStatusChart
-            stats={ driversAnalytics }
-            loading={ isPending }
-            error={ chartError }
-            onRetry={ refetch }
-          />
-        </div>
-      </div>
-
-      <PeakHoursChart
-        points={ peakHours }
-        periodDays={ periodDays }
-        loading={ isPending }
-        error={ chartError }
-        onRetry={ refetch }
-      />
-
-      <OverviewMetrics
-        overview={ overview }
-        loading={ isPending }
-        error={ chartError }
-        onRetry={ refetch }
-      />
-
-      {/* <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <div className="xl:col-span-2">
-          <div className="card overflow-hidden">
-            <div className="card-header">
-              <h3 className="text-base font-semibold text-slate-900">
-                Recent Rides
-              </h3>
-              <button className="text-sm font-medium text-brand-600 hover:text-brand-700 print:hidden">
-                View all
-              </button>
-            </div>
-            <Table className="min-w-full divide-y divide-slate-200">
-              <TableHeader className="bg-slate-50/50">
-                <TableRow>
-                  <TableHead>Order</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Driver</TableHead>
-                  <TableHead>Route</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-
-              { isPending && <TableSkeleton rows={ 5 } cols={ 6 } /> }
-
-              { isError && (
-                <TableBody>
-                  <TableRow>
-                    <TableCell colSpan={ 6 }>
-                      <QueryError error={ error } onRetry={ refetch } />
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              ) }
-
-              { !isPending && !isError && (
-                <TableBody className="divide-y divide-slate-100">
-                  { recentDeliveries.map((d) => (
-                    <TableRow
-                      key={ d.id }
-                      className="transition-colors hover:bg-slate-50/50"
-                    >
-                      <TableCell className="font-medium text-slate-900">
-                        { d.id }
-                      </TableCell>
-                      <TableCell>{ d.customer }</TableCell>
-                      <TableCell>{ d.driver }</TableCell>
-                      <TableCell>{ d.route }</TableCell>
-                      <TableCell className="font-medium text-slate-900">
-                        { d.amount }
-                      </TableCell>
-                      <TableCell>
-                        <span className={ `badge ${statusStyles[d.status]}` }>
-                          { d.status }
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  )) }
-                  { recentDeliveries.length === 0 && (
-                    <TableRow>
-                      <TableCell
-                        colSpan={ 6 }
-                        className="py-10 text-center text-slate-500"
-                      >
-                        No deliveries yet today.
-                      </TableCell>
-                    </TableRow>
-                  ) }
-                </TableBody>
-              ) }
-            </Table>
+          <div className="inline-flex w-fit items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+            <Clock3 className="size-4 text-slate-400" aria-hidden="true" />
+            <time dateTime={ now.toISOString() }>{ dateTimeFormatter.format(now) } EAT</time>
           </div>
+        </section>
+        <OperationsStatCards />
+        <LiveMapPreview />
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+          <HourlyRevenueChart />
+          <SystemHealthWidget />
         </div>
-
-        <div className="card overflow-hidden">
-          <div className="card-header">
-            <h3 className="text-base font-semibold text-slate-900">
-              Top drivers
-            </h3>
-            <span className="text-xs font-medium text-slate-400">
-              { verifiedDrivers } verified
-            </span>
-          </div>
-          { isPending ? (
-            <ul className="divide-y divide-slate-100">
-              { Array.from({ length: 4 }, (_, index) => (
-                <li key={ index } className="flex items-center gap-3 px-6 py-3.5">
-                  <span className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-slate-200" />
-                  <div className="flex-1 space-y-2">
-                    <span className="block h-3.5 w-24 animate-pulse rounded bg-slate-200" />
-                    <span className="block h-3 w-16 animate-pulse rounded bg-slate-200" />
-                  </div>
-                </li>
-              )) }
-            </ul>
-          ) : isError ? (
-            <QueryError error={ error } onRetry={ refetch } />
-          ) : (
-            <ul className="divide-y divide-slate-100">
-              { topDrivers.map((r) => (
-                <li
-                  key={ r.id ?? r.name }
-                  className="flex items-center gap-3 px-6 py-3.5 transition-colors hover:bg-slate-50/50"
-                >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
-                    <svg
-                      className="h-5 w-5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-                      />
-                    </svg>
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-slate-800">
-                      { r.name }
-                    </p>
-                    <p className="text-xs text-slate-500">{ r.status }</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-slate-900">
-                      { r.rides }
-                    </p>
-                    <p className="text-xs text-slate-400">rides</p>
-                  </div>
-                  <span
-                    className={ `h-2 w-2 shrink-0 rounded-full ${r.active ? "bg-emerald-500 shadow-sm shadow-emerald-500/50" : "bg-slate-300"}` }
-                    aria-label={ r.active ? "Verified" : "Not verified" }
-                  />
-                </li>
-              )) }
-              { topDrivers.length === 0 && (
-                <li className="px-6 py-10 text-center text-sm text-slate-500">
-                  No drivers are active right now.
-                </li>
-              ) }
-            </ul>
-          ) }
-        </div>
-      </div> */}
+        <AlertsSection />
+        <RoleFocusPanel />
+      </div>
     </div>
   );
 }
 
-export default Dashboard;
+function DashboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-6 text-sm text-slate-500">Loading dashboard…</div>
+      }
+    >
+      <Dashboard />
+    </Suspense>
+  );
+}
+
+export default DashboardPage;

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { EllipsisVertical, Search } from "lucide-react";
 import { Can } from "@/components/Can";
 import {
@@ -72,6 +72,7 @@ const DRIVER_TABS = [
   { value: "all", label: "All" },
   { value: "pending", label: "Pending" },
   { value: "active", label: "Active" },
+  { value: "online", label: "Online" },
   { value: "incomplete", label: "Incomplete" },
   { value: "suspended", label: "Suspended" },
   { value: "blocked", label: "Blocked" },
@@ -81,6 +82,9 @@ const matchesStatusTab = (driver, tab) => {
   if (tab === "all") return true;
   if (tab === "active") {
     return driver.statusKey === "verified" && driver.isActive;
+  }
+  if (tab === "online") {
+    return driver.online === true;
   }
   if (tab === "blocked") {
     return ["blocked", "rejected"].includes(driver.statusKey);
@@ -96,6 +100,8 @@ const csvValue = (value) => {
 
 function Drivers() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const statusParam = searchParams.get("status");
   const [query, setQuery] = usePageViewField("drivers", "query");
   const [status, setStatus] = usePageViewField("drivers", "status");
   const [rating, setRating] = usePageViewField("drivers", "rating");
@@ -114,6 +120,13 @@ function Drivers() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  useEffect(() => {
+    if (statusParam === "online" || statusParam === "pending") {
+      setStatus(statusParam);
+      setPage(1);
+    }
+  }, [statusParam, setStatus, setPage]);
 
   const debouncedQuery = useDebouncedValue(query, 300);
 
@@ -1042,4 +1055,16 @@ function Drivers() {
   );
 }
 
-export default Drivers;
+function DriversPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-6 text-sm text-slate-500">Loading drivers…</div>
+      }
+    >
+      <Drivers />
+    </Suspense>
+  );
+}
+
+export default DriversPage;

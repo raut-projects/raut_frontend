@@ -17,6 +17,9 @@ type LiveMapProps = {
   onRideHover: (rideId: string | null) => void;
   google: typeof window.google | null;
   hasGoogleMaps: boolean;
+  showWaypointPins?: boolean;
+  compact?: boolean;
+  onMapClick?: () => void;
 };
 
 const DAR_BOUNDS = {
@@ -69,11 +72,19 @@ export default function LiveMap({
   onRideHover,
   google,
   hasGoogleMaps,
+  showWaypointPins = false,
+  compact = false,
+  onMapClick,
 }: LiveMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<any>(null);
   const [zoom, setZoom] = useState(12);
   const markersRef = useRef<{ marker: any; polyline?: any; cluster?: any }[]>([]);
+  const onMapClickRef = useRef(onMapClick);
+
+  useEffect(() => {
+    onMapClickRef.current = onMapClick;
+  }, [onMapClick]);
 
   const clearOverlays = useCallback(() => {
     markersRef.current.forEach((m) => {
@@ -98,7 +109,8 @@ export default function LiveMap({
             title: `${group.count} rides`,
             clickable: true,
           });
-          marker.addListener("click", () => {
+          marker.addListener("click", (event: any) => {
+            if (onMapClickRef.current) event?.stop?.();
             const bounds = new google.maps.LatLngBounds();
             group.rides.forEach((r) => bounds.extend({ lat: r.position.lat, lng: r.position.lng }));
             gMap.fitBounds(bounds);
@@ -108,13 +120,14 @@ export default function LiveMap({
           const ride = group.ride;
           const isSelected = ride.id === selectedRideId;
           const isHovered = ride.id === hoveredRideId;
+          const iconSize = compact ? 28 : 34;
           const marker = new google.maps.Marker({
             position: { lat: ride.position.lat, lng: ride.position.lng },
             map: gMap,
             icon: {
               url: carMarkerIcon(ride.position.heading, isSelected ? "#dc2626" : "#2563eb"),
-              scaledSize: new google.maps.Size(34, 34),
-              anchor: new google.maps.Point(17, 17),
+              scaledSize: new google.maps.Size(iconSize, iconSize),
+              anchor: new google.maps.Point(iconSize / 2, iconSize / 2),
               rotation: ride.position.heading,
             },
             title: `${ride.displayId} - ${ride.driver.name}`,
@@ -131,14 +144,47 @@ export default function LiveMap({
             strokeWeight: 2,
             icons: [{ icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW }, offset: "100%" }],
           });
-          marker.addListener("click", () => onRideClick(ride.id));
+          const waypointSize = compact ? 20 : 28;
+          const waypointMarkers = showWaypointPins
+            ? [
+              new google.maps.Marker({
+                position: { lat: ride.pickup.lat, lng: ride.pickup.lng },
+                map: gMap,
+                icon: {
+                  url: pinMarkerIcon("#2563eb"),
+                  scaledSize: new google.maps.Size(waypointSize, waypointSize),
+                  anchor: new google.maps.Point(waypointSize / 2, waypointSize / 2),
+                },
+                title: `Pickup - ${ride.displayId}`,
+                clickable: false,
+              }),
+              new google.maps.Marker({
+                position: { lat: ride.dropoff.lat, lng: ride.dropoff.lng },
+                map: gMap,
+                icon: {
+                  url: pinMarkerIcon("#dc2626"),
+                  scaledSize: new google.maps.Size(waypointSize, waypointSize),
+                  anchor: new google.maps.Point(waypointSize / 2, waypointSize / 2),
+                },
+                title: `Dropoff - ${ride.displayId}`,
+                clickable: false,
+              }),
+            ]
+            : [];
+          marker.addListener("click", (event: any) => {
+            if (onMapClickRef.current) event?.stop?.();
+            onRideClick(ride.id);
+          });
           marker.addListener("mouseover", () => onRideHover(ride.id));
           marker.addListener("mouseout", () => onRideHover(null));
           markersRef.current.push({ marker, polyline });
+          waypointMarkers.forEach((waypointMarker) => {
+            markersRef.current.push({ marker: waypointMarker });
+          });
         }
       }
     },
-    [google, rides, selectedRideId, hoveredRideId, onRideClick, onRideHover, clearOverlays],
+    [google, rides, selectedRideId, hoveredRideId, onRideClick, onRideHover, clearOverlays, showWaypointPins, compact],
   );
 
   // --- Google Maps ---
@@ -155,9 +201,10 @@ export default function LiveMap({
       backgroundColor: "#f3f4f6",
     });
     setMap(gMap);
-    new google.maps.TrafficLayer().setMap(gMap);
+    if (!compact) new google.maps.TrafficLayer().setMap(gMap);
+    gMap.addListener("click", () => onMapClickRef.current?.());
     gMap.addListener("zoom_changed", () => setZoom(gMap.getZoom()));
-  }, [google, map]);
+  }, [google, map, compact]);
 
   // --- draw overlays ---
   useEffect(() => {
@@ -169,7 +216,7 @@ export default function LiveMap({
 
   return (
     <div
-      className="relative w-full h-full bg-slate-100 rounded-xl overflow-hidden border border-slate-200"
+      className={ `relative w-full h-full bg-slate-100 overflow-hidden border border-slate-200 ${compact ? "rounded-lg" : "rounded-xl"}` }
       style={ { height: "100%" } }
     >
       {/* Google Maps owns this node. React must never render children here. */ }
@@ -181,6 +228,7 @@ export default function LiveMap({
             className="w-full h-full"
             viewBox="0 0 1000 700"
             preserveAspectRatio="xMidYMid slice"
+            onClick={ () => onMapClick?.() }
             onMouseLeave={ () => onRideHover(null) }
           >
             <rect width="1000" height="700" fill="#f3f4f6" />
@@ -212,7 +260,7 @@ export default function LiveMap({
               if (group.kind === "cluster") {
                 const { x, y } = project(group.lat, group.lng, 1000, 700);
                 return (
-                  <g key={ `c-${group.lat}-${group.lng}` } onClick={ () => { } } transform={ `translate(${x},${y})` }>
+                  <g key={ `c-${group.lat}-${group.lng}` } onClick={ (event) => event.stopPropagation() } transform={ `translate(${x},${y})` }>
                     <circle r="14" fill="#6b7280" opacity="0.9" />
                     <text x="0" y="5" fontSize="10" fontWeight="bold" fill="white" textAnchor="middle">{ group.count }</text>
                     <text x="0" y="18" fontSize="9" fill="#374151" textAnchor="middle">{ group.count } rides</text>
@@ -223,17 +271,31 @@ export default function LiveMap({
               const { x, y } = project(ride.position.lat, ride.position.lng, 1000, 700);
               const isSelected = ride.id === selectedRideId;
               const isHovered = ride.id === hoveredRideId;
+              const { x: pickupX, y: pickupY } = project(ride.pickup.lat, ride.pickup.lng, 1000, 700);
+              const { x: dropoffX, y: dropoffY } = project(ride.dropoff.lat, ride.dropoff.lng, 1000, 700);
               return (
                 <g
                   key={ ride.id }
-                  onClick={ () => onRideClick(ride.id) }
+                  onClick={ (event) => {
+                    event.stopPropagation();
+                    onRideClick(ride.id);
+                  } }
                   onMouseEnter={ () => onRideHover(ride.id) }
                   onMouseLeave={ () => onRideHover(null) }
                   style={ { cursor: "pointer" } }
                 >
                   <path d="M12 2 C8.7 2 6 4.7 6 8 C6 11.3 12 16 12 16 C12 16 18 11.3 18 8 C18 4.7 15.3 2 12 2 Z" fill={ isSelected ? "#dc2626" : "#2563eb" } transform={ `translate(${x - 12},${y - 12}) rotate(${ride.position.heading},12,12)` } />
-                  <circle cx={ x } cy={ y - 18 } r="6" fill="#16a34a" />
-                  <circle cx={ x } cy={ y + 18 } r="5" fill="#dc2626" />
+                  { showWaypointPins ? (
+                    <>
+                      <path d="M12 2 C8.7 2 6 4.7 6 8 C6 11.3 12 16 12 16 C12 16 18 11.3 18 8 C18 4.7 15.3 2 12 2 Z" fill="#2563eb" transform={ `translate(${pickupX - 8},${pickupY - 16}) scale(0.7)` } style={ { pointerEvents: "none" } } />
+                      <path d="M12 2 C8.7 2 6 4.7 6 8 C6 11.3 12 16 12 16 C12 16 18 11.3 18 8 C18 4.7 15.3 2 12 2 Z" fill="#dc2626" transform={ `translate(${dropoffX - 8},${dropoffY - 16}) scale(0.7)` } style={ { pointerEvents: "none" } } />
+                    </>
+                  ) : (
+                    <>
+                      <circle cx={ x } cy={ y - 18 } r="6" fill="#16a34a" />
+                      <circle cx={ x } cy={ y + 18 } r="5" fill="#dc2626" />
+                    </>
+                  ) }
                 </g>
               );
             }) }

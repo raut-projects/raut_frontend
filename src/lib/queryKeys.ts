@@ -52,6 +52,11 @@ export const queryKeys = {
   },
   dashboard: {
     all: ["dashboard"],
+    stats: ["dashboard", "stats"],
+    alerts: ["dashboard", "alerts"],
+    hourlyRevenue: (date) => ["dashboard", "hourly-revenue", date ?? "today"],
+    health: ["dashboard", "health"],
+    mapRides: ["dashboard", "map-rides"],
     byRange: (range, compare) => [
       "dashboard",
       range.startStr,
