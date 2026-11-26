@@ -4,7 +4,6 @@ import { useState } from "react";
 import {
   Activity,
   AlertTriangle,
-  CheckCircle2,
   Clock3,
   Database,
   Server,
@@ -23,6 +22,12 @@ import {
 
 import { AnalyticsCard } from "@/components/analytics/AnalyticsCard";
 import { ChartTooltip } from "@/components/analytics/ChartTooltip";
+import { BackgroundJobsTable } from "@/components/systemHealth/BackgroundJobsTable";
+import {
+  formatHealthSampleTime,
+  ServiceStatusBadge,
+} from "@/components/systemHealth/healthBadges";
+import { RecentIncidentsList } from "@/components/systemHealth/RecentIncidentsList";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   axisProps,
@@ -33,36 +38,13 @@ import {
 import {
   HEALTH_PERIODS,
   HEALTH_SAMPLED_AT,
-  HEALTH_STATUS_LABELS,
-  JOB_STATUS_LABELS,
   MOCK_HEALTH_INCIDENTS,
   MOCK_HEALTH_JOBS,
   MOCK_HEALTH_SERVICES,
   MOCK_HEALTH_TRENDS,
   type HealthPeriod,
   type HealthService,
-  type HealthStatus,
-  type IncidentStatus,
-  type JobStatus,
 } from "@/lib/systemHealth";
-
-const serviceStatusStyles: Record<HealthStatus, string> = {
-  healthy: "bg-emerald-50 text-emerald-800",
-  degraded: "bg-amber-50 text-amber-800",
-  outage: "bg-rose-50 text-rose-800",
-};
-
-const jobStatusStyles: Record<JobStatus, string> = {
-  healthy: "bg-emerald-50 text-emerald-800",
-  delayed: "bg-amber-50 text-amber-800",
-  attention: "bg-rose-50 text-rose-800",
-};
-
-const incidentStatusStyles: Record<IncidentStatus, string> = {
-  Investigating: "bg-rose-50 text-rose-800",
-  Monitoring: "bg-amber-50 text-amber-800",
-  Resolved: "bg-slate-100 text-slate-600",
-};
 
 const serviceIcons: Record<string, typeof Server> = {
   "api-gateway": Server,
@@ -80,36 +62,6 @@ const periodSubtitle: Record<HealthPeriod, string> = {
   "7d": "Daily samples across the last 7 days",
   "30d": "Sampled across the last 30 days",
 };
-
-const formatSampleTime = (value: string) =>
-  new Intl.DateTimeFormat("en-TZ", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "Africa/Dar_es_Salaam",
-  }).format(new Date(value));
-
-function StatusBadge({ status }: { status: HealthStatus }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${serviceStatusStyles[status]}`}
-    >
-      <span
-        className={`size-1.5 rounded-full ${
-          status === "healthy"
-            ? "bg-emerald-500"
-            : status === "degraded"
-              ? "bg-amber-500"
-              : "bg-rose-500"
-        }`}
-        aria-hidden="true"
-      />
-      {HEALTH_STATUS_LABELS[status]}
-    </span>
-  );
-}
 
 function ServiceHealthTable({ services }: { services: HealthService[] }) {
   return (
@@ -165,7 +117,7 @@ function ServiceHealthTable({ services }: { services: HealthService[] }) {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <StatusBadge status={service.status} />
+                  <ServiceStatusBadge status={service.status} />
                 </TableCell>
                 <TableCell className="text-right font-medium tabular-nums text-slate-700">
                   {service.latencyMs} ms
@@ -293,20 +245,19 @@ function SystemHealthPage() {
     ) / MOCK_HEALTH_SERVICES.length;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900">
             System Health
           </h2>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-            Service availability, performance, background jobs and recent
-            incidents.
+            Service availability, performance and health summary.
           </p>
         </div>
         <span className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600">
           <Clock3 className="size-3.5 text-slate-400" aria-hidden="true" />
-          Sample snapshot · {formatSampleTime(HEALTH_SAMPLED_AT)} EAT
+          Sample snapshot · {formatHealthSampleTime(HEALTH_SAMPLED_AT)} EAT
         </span>
       </header>
 
@@ -403,125 +354,9 @@ function SystemHealthPage() {
 
       <ServiceHealthTable services={MOCK_HEALTH_SERVICES} />
 
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
-          <div className="flex items-end justify-between gap-3 border-b border-slate-200 px-4 py-4 sm:px-5">
-            <div>
-              <h3 className="text-base font-semibold text-slate-900">
-                Background jobs
-              </h3>
-              <p className="mt-0.5 text-xs text-slate-500">
-                Latest example runs from scheduled platform work.
-              </p>
-            </div>
-            <Workflow
-              className="size-4 shrink-0 text-slate-400"
-              aria-hidden="true"
-            />
-          </div>
-          <Table>
-            <TableHeader className="bg-slate-50 [&_tr]:border-slate-200">
-              <TableRow className="hover:bg-transparent">
-                <TableHead>Job</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="hidden text-right sm:table-cell">
-                  Last run
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {MOCK_HEALTH_JOBS.map((job) => (
-                <TableRow key={job.id}>
-                  <TableCell className="whitespace-normal">
-                    <span className="block font-medium text-slate-800">
-                      {job.name}
-                    </span>
-                    <span className="mt-0.5 block max-w-sm text-xs leading-5 text-slate-500">
-                      {job.description}
-                    </span>
-                    <span className="mt-1 block text-xs text-slate-500 sm:hidden">
-                      {job.lastRun} · {job.duration}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex whitespace-nowrap rounded-full px-2 py-1 text-xs font-semibold ${jobStatusStyles[job.status]}`}
-                    >
-                      {JOB_STATUS_LABELS[job.status]}
-                    </span>
-                    <span className="mt-1 block max-w-48 text-xs leading-5 text-slate-500">
-                      {job.note}
-                    </span>
-                  </TableCell>
-                  <TableCell className="hidden text-right sm:table-cell">
-                    <span className="block text-xs font-medium text-slate-700">
-                      {job.lastRun}
-                    </span>
-                    <span className="mt-0.5 block text-xs text-slate-500">
-                      {job.duration}
-                    </span>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </section>
-
-        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
-          <div className="flex items-end justify-between gap-3 border-b border-slate-200 px-4 py-4 sm:px-5">
-            <div>
-              <h3 className="text-base font-semibold text-slate-900">
-                Recent incidents
-              </h3>
-              <p className="mt-0.5 text-xs text-slate-500">
-                Illustrative service events and their current state.
-              </p>
-            </div>
-            <CheckCircle2
-              className="size-4 shrink-0 text-slate-400"
-              aria-hidden="true"
-            />
-          </div>
-          <ol className="divide-y divide-slate-100">
-            {MOCK_HEALTH_INCIDENTS.map((incident) => (
-              <li key={incident.id} className="px-4 py-4 sm:px-5">
-                <div className="flex items-start gap-3">
-                  <span
-                    className={`mt-1.5 size-2 shrink-0 rounded-full ${
-                      incident.status === "Resolved"
-                        ? "bg-slate-300"
-                        : incident.severity === "Major"
-                          ? "bg-rose-500"
-                          : "bg-amber-500"
-                    }`}
-                    aria-hidden="true"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="text-sm font-semibold text-slate-900">
-                        {incident.title}
-                      </h4>
-                      <span
-                        className={`inline-flex rounded-full px-2 py-0.5 text-[0.65rem] font-semibold ${incidentStatusStyles[incident.status]}`}
-                      >
-                        {incident.status}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs font-medium text-slate-600">
-                      {incident.service} · {incident.severity} · {incident.startedAt}
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-slate-500">
-                      {incident.summary}
-                    </p>
-                    <p className="mt-2 text-xs text-slate-400">
-                      Duration: {incident.duration}
-                    </p>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </section>
+      <div className="grid items-start gap-5 xl:grid-cols-2">
+        <BackgroundJobsTable jobs={MOCK_HEALTH_JOBS} compact />
+        <RecentIncidentsList incidents={MOCK_HEALTH_INCIDENTS} compact />
       </div>
     </div>
   );

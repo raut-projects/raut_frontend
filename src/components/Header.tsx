@@ -35,6 +35,7 @@ const titles = {
   "/marketing": "Promotions",
   "/marketing/referrals": "Referrals",
   "/support-tickets": "Support Tickets",
+  "/analytics": "Analytics",
   "/settings": "Settings",
   "/settings/platform": "Platform Config",
   "/settings/staffs": "Staff & Roles",
@@ -42,6 +43,8 @@ const titles = {
   "/settings/staffs/roles": "Roles",
   "/settings/audit-logs": "Audit Logs",
   "/settings/system-health": "System Health",
+  "/settings/system-health/jobs": "Background Jobs",
+  "/settings/system-health/incidents": "Recent Incidents",
 };
 
 function resolveTitle(pathname: string) {
