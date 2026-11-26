@@ -41,14 +41,14 @@ const refreshCachedPermissions = async (
 
 const invalidateRbac = async (queryClient: ReturnType<typeof useQueryClient>) => {
   await queryClient.invalidateQueries({ queryKey: queryKeys.rbac.all });
-  await queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
+  await queryClient.invalidateQueries({ queryKey: queryKeys.staff.lists() });
   await refreshCachedPermissions(queryClient);
 };
 
 export function usePermissionCatalog(enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.rbac.permissions,
-    queryFn: fetchPermissionCatalog,
+    queryFn: ({ signal }) => fetchPermissionCatalog({ signal }),
     enabled,
     ...queryOptions,
   });
@@ -57,7 +57,7 @@ export function usePermissionCatalog(enabled: boolean) {
 export function useRbacRoles(enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.rbac.roles,
-    queryFn: fetchRbacRoles,
+    queryFn: ({ signal }) => fetchRbacRoles({ signal }),
     enabled,
     ...queryOptions,
   });
@@ -66,7 +66,7 @@ export function useRbacRoles(enabled: boolean) {
 export function useRbacRegions(enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.rbac.regions,
-    queryFn: fetchRbacRegions,
+    queryFn: ({ signal }) => fetchRbacRegions({ signal }),
     enabled,
     ...queryOptions,
   });

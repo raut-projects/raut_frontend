@@ -39,8 +39,34 @@ import {
   updateReferralProgram,
 } from "@/services/referrals";
 
-function invalidateReferrals(queryClient: ReturnType<typeof useQueryClient>) {
-  queryClient.invalidateQueries({ queryKey: queryKeys.referrals.all });
+type QueryClient = ReturnType<typeof useQueryClient>;
+
+function invalidatePrograms(queryClient: QueryClient) {
+  queryClient.invalidateQueries({ queryKey: queryKeys.referrals.programs.all });
+  queryClient.invalidateQueries({ queryKey: queryKeys.referrals.statsAll() });
+  queryClient.invalidateQueries({
+    queryKey: queryKeys.referrals.topReferrersAll(),
+  });
+}
+
+function invalidateEnrollment(queryClient: QueryClient) {
+  queryClient.invalidateQueries({ queryKey: queryKeys.referrals.users.all });
+  queryClient.invalidateQueries({
+    queryKey: queryKeys.referrals.relationships.all,
+  });
+  queryClient.invalidateQueries({ queryKey: queryKeys.referrals.statsAll() });
+  queryClient.invalidateQueries({
+    queryKey: queryKeys.referrals.topReferrersAll(),
+  });
+}
+
+function invalidatePayments(queryClient: QueryClient) {
+  queryClient.invalidateQueries({ queryKey: queryKeys.referrals.pendingPayments });
+}
+
+function invalidateReferralActivity(queryClient: QueryClient) {
+  invalidateEnrollment(queryClient);
+  queryClient.invalidateQueries({ queryKey: queryKeys.referrals.myCode });
 }
 
 /**
@@ -52,7 +78,7 @@ export function useReferralPrograms(
 ) {
   return useQuery({
     queryKey: queryKeys.referrals.programs.list(params),
-    queryFn: () => listReferralPrograms(params),
+    queryFn: ({ signal }) => listReferralPrograms(params, { signal }),
     placeholderData: keepPreviousData,
     enabled,
   });
@@ -64,7 +90,7 @@ export function useReferralPrograms(
 export function useReferralProgram(programId: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.referrals.programs.detail(programId),
-    queryFn: () => getReferralProgram(programId),
+    queryFn: ({ signal }) => getReferralProgram(programId, { signal }),
     enabled: enabled && Boolean(programId),
   });
 }
@@ -78,7 +104,7 @@ export function useCreateReferralProgram() {
   return useMutation({
     mutationFn: (payload: ReferralProgramPayload) =>
       createReferralProgram(payload),
-    onSuccess: () => invalidateReferrals(queryClient),
+    onSuccess: () => invalidatePrograms(queryClient),
   });
 }
 
@@ -96,7 +122,7 @@ export function useUpdateReferralProgram() {
       programId: string;
       payload: ReferralProgramUpdatePayload;
     }) => updateReferralProgram(programId, payload),
-    onSuccess: () => invalidateReferrals(queryClient),
+    onSuccess: () => invalidatePrograms(queryClient),
   });
 }
 
@@ -114,7 +140,7 @@ export function useEnrollReferralUser() {
       programId: string;
       userId: string;
     }) => enrollReferralUser(programId, userId),
-    onSuccess: () => invalidateReferrals(queryClient),
+    onSuccess: () => invalidateEnrollment(queryClient),
   });
 }
 
@@ -132,7 +158,7 @@ export function useBulkEnrollReferralUsers() {
       programId: string;
       userIds: string[];
     }) => bulkEnrollReferralUsers(programId, userIds),
-    onSuccess: () => invalidateReferrals(queryClient),
+    onSuccess: () => invalidateEnrollment(queryClient),
   });
 }
 
@@ -150,7 +176,7 @@ export function useUnenrollReferralUser() {
       programId: string;
       userId: string;
     }) => unenrollReferralUser(programId, userId),
-    onSuccess: () => invalidateReferrals(queryClient),
+    onSuccess: () => invalidateEnrollment(queryClient),
   });
 }
 
@@ -163,7 +189,7 @@ export function useReferralUsers(
 ) {
   return useQuery({
     queryKey: queryKeys.referrals.users.list(params),
-    queryFn: () => listReferralUsers(params),
+    queryFn: ({ signal }) => listReferralUsers(params, { signal }),
     placeholderData: keepPreviousData,
     enabled,
   });
@@ -175,7 +201,7 @@ export function useReferralUsers(
 export function useReferralUser(userId: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.referrals.users.detail(userId),
-    queryFn: () => getReferralUser(userId),
+    queryFn: ({ signal }) => getReferralUser(userId, { signal }),
     enabled: enabled && Boolean(userId),
   });
 }
@@ -189,7 +215,7 @@ export function useReferralRelationships(
 ) {
   return useQuery({
     queryKey: queryKeys.referrals.relationships.list(params),
-    queryFn: () => listReferralRelationships(params),
+    queryFn: ({ signal }) => listReferralRelationships(params, { signal }),
     placeholderData: keepPreviousData,
     enabled,
   });
@@ -204,7 +230,7 @@ export function useReferralStats(
 ) {
   return useQuery({
     queryKey: queryKeys.referrals.stats(params),
-    queryFn: () => getReferralStats(params),
+    queryFn: ({ signal }) => getReferralStats(params, { signal }),
     enabled,
   });
 }
@@ -215,7 +241,7 @@ export function useReferralStats(
 export function useTopReferrers(limit?: number, enabled = true) {
   return useQuery({
     queryKey: queryKeys.referrals.topReferrers(limit),
-    queryFn: () => listTopReferrers(limit),
+    queryFn: ({ signal }) => listTopReferrers(limit, { signal }),
     enabled,
   });
 }
@@ -226,7 +252,7 @@ export function useTopReferrers(limit?: number, enabled = true) {
 export function usePendingReferralPayments(enabled = true) {
   return useQuery({
     queryKey: queryKeys.referrals.pendingPayments,
-    queryFn: () => listPendingReferralPayments(),
+    queryFn: ({ signal }) => listPendingReferralPayments({ signal }),
     enabled,
   });
 }
@@ -245,7 +271,7 @@ export function useMarkReferralPaymentPaid() {
       paymentId: string;
       payload: ReferralPaymentPayload;
     }) => markReferralPaymentPaid(paymentId, payload),
-    onSuccess: () => invalidateReferrals(queryClient),
+    onSuccess: () => invalidatePayments(queryClient),
   });
 }
 
@@ -255,7 +281,7 @@ export function useMarkReferralPaymentPaid() {
 export function useMyReferralCode(enabled = true) {
   return useQuery({
     queryKey: queryKeys.referrals.myCode,
-    queryFn: () => getMyReferralCode(),
+    queryFn: ({ signal }) => getMyReferralCode({ signal }),
     enabled,
   });
 }
@@ -268,6 +294,6 @@ export function useProcessReferral() {
 
   return useMutation({
     mutationFn: (payload: ProcessReferralPayload) => processReferral(payload),
-    onSuccess: () => invalidateReferrals(queryClient),
+    onSuccess: () => invalidateReferralActivity(queryClient),
   });
 }

@@ -7,6 +7,7 @@ import {
 
 import { useToast } from "@/components/toastContext";
 import { queryKeys } from "@/lib/queryKeys";
+import { polledQueryOptions } from "@/lib/queryClient";
 import {
   acceptStaffInvitation,
   assignStaffRole,
@@ -30,8 +31,9 @@ import type {
 export function useStaff(params: StaffListParams) {
   return useQuery({
     queryKey: queryKeys.staff.list(params),
-    queryFn: () => listStaff(params),
+    queryFn: ({ signal }) => listStaff(params, { signal }),
     placeholderData: keepPreviousData,
+    ...polledQueryOptions,
     refetchInterval: 60_000,
   });
 }
@@ -39,8 +41,9 @@ export function useStaff(params: StaffListParams) {
 export function useStaffInvitations(params: StaffInvitationListParams) {
   return useQuery({
     queryKey: queryKeys.staff.invitationList(params),
-    queryFn: () => listStaffInvitations(params),
+    queryFn: ({ signal }) => listStaffInvitations(params, { signal }),
     placeholderData: keepPreviousData,
+    ...polledQueryOptions,
     refetchInterval: 60_000,
   });
 }
@@ -52,7 +55,7 @@ export function useInviteStaff() {
   return useMutation({
     mutationFn: (payload: StaffInvitePayload) => inviteStaff(payload),
     onSuccess: (_data, payload) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.staff.invitationLists() });
       toast.success(`Invitation sent to ${payload.email}.`);
     },
     onError: (error: Error) => {
@@ -74,7 +77,7 @@ export function useCancelStaffInvitation() {
       reason: string;
     }) => cancelStaffInvitation(invitationId, reason),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.staff.invitationLists() });
       toast.success("Staff invitation cancelled.");
     },
     onError: (error: Error) => {
@@ -90,7 +93,7 @@ export function useResendStaffInvitation() {
   return useMutation({
     mutationFn: (invitationId: string) => resendStaffInvitation(invitationId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.staff.invitationLists() });
       toast.success("Staff invitation resent.");
     },
     onError: (error: Error) => {
@@ -112,7 +115,7 @@ export function useAssignStaffRole() {
       payload: StaffAssignRolePayload;
     }) => assignStaffRole(userId, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.staff.lists() });
       toast.success("Role assigned.");
     },
     onError: (error: Error) => {
@@ -136,7 +139,7 @@ export function useRevokeStaffRole() {
       reason: string;
     }) => revokeStaffRole(userId, assignmentId, reason),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.staff.lists() });
       toast.success("Role removed.");
     },
     onError: (error: Error) => {
@@ -153,7 +156,7 @@ export function useDeactivateStaff() {
     mutationFn: ({ userId, reason }: { userId: string; reason: string }) =>
       deactivateStaff(userId, reason),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.staff.lists() });
       toast.success("Staff account deactivated.");
     },
     onError: (error: Error) => {
@@ -165,7 +168,7 @@ export function useDeactivateStaff() {
 export function useVerifyStaffInvitation(token: string) {
   return useQuery({
     queryKey: queryKeys.staff.invitationVerification(token),
-    queryFn: () => verifyStaffInvitation(token),
+    queryFn: ({ signal }) => verifyStaffInvitation(token, { signal }),
     enabled: Boolean(token),
     retry: false,
     staleTime: Infinity,

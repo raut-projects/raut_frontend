@@ -125,7 +125,10 @@ function SupportTicketDetail({ ticketId }: { ticketId: string }) {
     try {
       await action;
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.supportTickets.all,
+        queryKey: queryKeys.supportTickets.lists(),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.supportTickets.detail(ticketId),
       });
       toast.success(successMessage);
       return true;

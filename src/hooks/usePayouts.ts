@@ -3,6 +3,7 @@
  * Lists payouts with 30s polling and pending-batch review aggregation.
  * Collaborates with payouts service and queryKeys.
  */
+import { useCallback, useMemo } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   getPayoutFailureCounts,
@@ -12,6 +13,7 @@ import {
   withPayoutReviewIssues,
 } from "../services/payouts";
 import { queryKeys } from "../lib/queryKeys";
+import { polledQueryOptions } from "../lib/queryClient";
 
 /**
  * usePayouts hook.
@@ -19,8 +21,9 @@ import { queryKeys } from "../lib/queryKeys";
 export function usePayouts(params) {
   return useQuery({
     queryKey: queryKeys.payouts.list(params),
-    queryFn: () => listPayouts(params),
+    queryFn: ({ signal }) => listPayouts(params, { signal }),
     placeholderData: keepPreviousData,
+    ...polledQueryOptions,
     refetchInterval: 30_000,
   });
 }
@@ -31,7 +34,8 @@ export function usePayouts(params) {
 export function usePendingPayouts() {
   return useQuery({
     queryKey: queryKeys.payouts.batchReview,
-    queryFn: listPendingPayoutBatch,
+    queryFn: ({ signal }) => listPendingPayoutBatch({ signal }),
+    ...polledQueryOptions,
     refetchInterval: 30_000,
   });
 }
@@ -42,39 +46,49 @@ export function usePendingPayouts() {
 export function usePayoutBatchReview() {
   const pendingQuery = useQuery({
     queryKey: queryKeys.payouts.batchReview,
-    queryFn: listPendingPayoutBatch,
+    queryFn: ({ signal }) => listPendingPayoutBatch({ signal }),
+    ...polledQueryOptions,
     refetchInterval: 30_000,
   });
   const processingQuery = useQuery({
     queryKey: queryKeys.payouts.batchProcessing,
-    queryFn: listPayoutBatchProcessing,
+    queryFn: ({ signal }) => listPayoutBatchProcessing({ signal }),
+    ...polledQueryOptions,
     refetchInterval: 10_000,
   });
   const failuresQuery = useQuery({
     queryKey: queryKeys.payouts.batchFailures,
-    queryFn: getPayoutFailureCounts,
+    queryFn: ({ signal }) => getPayoutFailureCounts({ signal }),
     staleTime: 5 * 60_000,
+    ...polledQueryOptions,
     refetchInterval: 5 * 60_000,
   });
 
-  const data =
-    pendingQuery.data && processingQuery.data && failuresQuery.data
-      ? {
-          pending: pendingQuery.data.map((payout) =>
-            withPayoutReviewIssues(payout, failuresQuery.data),
-          ),
-          processing: processingQuery.data,
-        }
-      : undefined;
+  const { refetch: refetchPending } = pendingQuery;
+  const { refetch: refetchProcessing } = processingQuery;
+  const { refetch: refetchFailures } = failuresQuery;
 
-  const refetch = async () => {
+  const data = useMemo(
+    () =>
+      pendingQuery.data && processingQuery.data && failuresQuery.data
+        ? {
+            pending: pendingQuery.data.map((payout) =>
+              withPayoutReviewIssues(payout, failuresQuery.data),
+            ),
+            processing: processingQuery.data,
+          }
+        : undefined,
+    [pendingQuery.data, processingQuery.data, failuresQuery.data],
+  );
+
+  const refetch = useCallback(async () => {
     const [pending, processing, failures] = await Promise.all([
-      pendingQuery.refetch(),
-      processingQuery.refetch(),
-      failuresQuery.refetch(),
+      refetchPending(),
+      refetchProcessing(),
+      refetchFailures(),
     ]);
 
-    if (pending.isError || processing.isError || failures.isError) {
+    if (pending.error || processing.error || failures.error) {
       return { data: undefined };
     }
 
@@ -89,7 +103,7 @@ export function usePayoutBatchReview() {
             }
           : undefined,
     };
-  };
+  }, [refetchPending, refetchProcessing, refetchFailures]);
 
   return {
     data,

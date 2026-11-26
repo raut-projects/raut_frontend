@@ -7,6 +7,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "../components/toastContext";
 import { queryKeys } from "../lib/queryKeys";
+import { polledQueryOptions } from "../lib/queryClient";
 import {
   listNotifications,
   markNotificationRead,
@@ -23,7 +24,8 @@ import {
 export function useNotifications() {
   return useQuery({
     queryKey: queryKeys.notifications.all,
-    queryFn: listNotifications,
+    queryFn: ({ signal }) => listNotifications({ signal }),
+    ...polledQueryOptions,
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
@@ -44,12 +46,39 @@ export function useMarkNotificationRead() {
   return useMutation({
     mutationFn: markNotificationRead,
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+    onMutate: async (notificationId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.notifications.all });
+      const previous = queryClient.getQueryData<
+        Awaited<ReturnType<typeof listNotifications>>
+      >(queryKeys.notifications.all);
+
+      queryClient.setQueryData<
+        Awaited<ReturnType<typeof listNotifications>>
+      >(queryKeys.notifications.all, (current) =>
+        current?.map((notification) =>
+          notification.id === notificationId
+            ? { ...notification, read: true }
+            : notification,
+        ),
+      );
+
+      return { previous };
     },
 
-    onError: (error) => {
+    onError: (error, _notificationId, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(
+          queryKeys.notifications.all,
+          context.previous,
+        );
+      }
       toast.error(error?.message ?? "The notification could not be updated.");
+    },
+
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.notifications.all,
+      });
     },
   });
 }

@@ -4,6 +4,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
+import { polledQueryOptions } from "@/lib/queryClient";
 import { useToast } from "@/components/toastContext";
 import {
   getRideDispute,
@@ -21,8 +22,9 @@ import type {
 export function useRideDispute(rideId: string) {
   return useQuery({
     queryKey: queryKeys.rides.dispute(rideId),
-    queryFn: () => getRideDispute(rideId),
+    queryFn: ({ signal }) => getRideDispute(rideId, { signal }),
     enabled: Boolean(rideId),
+    ...polledQueryOptions,
     refetchInterval: 30_000,
   });
 }
@@ -40,7 +42,8 @@ export function useResolveRideDispute() {
 
     onSuccess: (_data, variables) => {
       toast.success("Dispute resolved.");
-      queryClient.invalidateQueries({ queryKey: queryKeys.rides.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.rides.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.rides.summary });
       queryClient.invalidateQueries({
         queryKey: queryKeys.rides.dispute(variables.rideId),
       });
@@ -65,7 +68,8 @@ export function useIssueRideRefund() {
 
     onSuccess: (_data, variables) => {
       toast.success("Refund issued.");
-      queryClient.invalidateQueries({ queryKey: queryKeys.rides.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.rides.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.rides.summary });
       queryClient.invalidateQueries({
         queryKey: queryKeys.rides.dispute(variables.rideId),
       });

@@ -23,12 +23,22 @@ import {
 import { approveDocument, rejectDocument } from "../services/documents";
 import { approvePayout, rejectPayout, retryPayout } from "../services/payouts";
 
+const DRIVER_CACHE = [queryKeys.drivers.all, queryKeys.dashboard.all];
+const RIDE_CACHE = [queryKeys.rides.all, queryKeys.dashboard.all];
+const PAYOUT_CACHE = [queryKeys.payouts.all, queryKeys.dashboard.all];
+const USER_CACHE = [
+  queryKeys.customers.lists(),
+  queryKeys.customers.stats,
+  queryKeys.staff.lists(),
+  queryKeys.me.all,
+  queryKeys.dashboard.all,
+];
+
 /**
  * Shared mutation factory for simple admin actions.
  *
- * Always invalidates the aggregate customers, drivers and dashboard caches so
- * lists and counters reflect the action, then invalidates any extra keys
- * supplied by the caller. Errors surface through the toast context.
+ * Invalidates only the caches supplied by each action. Errors surface through
+ * the toast context.
  */
 const useAction = ({ mutationFn, successMessage, invalidate = [] }) => {
   const queryClient = useQueryClient();
@@ -43,10 +53,6 @@ const useAction = ({ mutationFn, successMessage, invalidate = [] }) => {
           ? successMessage(variables)
           : successMessage,
       );
-
-      queryClient.invalidateQueries({ queryKey: queryKeys.customers.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.drivers.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
 
       invalidate.forEach((queryKey) => {
         queryClient.invalidateQueries({ queryKey });
@@ -71,6 +77,7 @@ export const useVerifyDriver = () =>
   useAction({
     mutationFn: ({ driverId }) => verifyDriver(driverId),
     successMessage: "Driver verified.",
+    invalidate: DRIVER_CACHE,
   });
 
 /**
@@ -85,6 +92,7 @@ export const useRejectDriver = () =>
   useAction({
     mutationFn: ({ driverId, reason }) => rejectDriver(driverId, reason),
     successMessage: "Driver application rejected.",
+    invalidate: DRIVER_CACHE,
   });
 
 /**
@@ -99,6 +107,7 @@ export const useSuspendDriver = () =>
   useAction({
     mutationFn: ({ driverId, reason }) => suspendDriver(driverId, reason),
     successMessage: "Driver suspended.",
+    invalidate: DRIVER_CACHE,
   });
 
 /**
@@ -113,6 +122,7 @@ export const useUnsuspendDriver = () =>
   useAction({
     mutationFn: ({ driverId }) => unsuspendDriver(driverId),
     successMessage: "Driver reinstated.",
+    invalidate: DRIVER_CACHE,
   });
 
 /**
@@ -128,7 +138,7 @@ export const useCancelRide = () =>
     mutationFn: ({ rideId, reason, refund }) =>
       cancelRide(rideId, reason, refund),
     successMessage: "Ride cancelled.",
-    invalidate: [queryKeys.rides.all],
+    invalidate: RIDE_CACHE,
   });
 
 /**
@@ -144,7 +154,7 @@ export const useCancelRoute = () =>
     mutationFn: ({ routeId, reason, cancelRides }) =>
       cancelRoute(routeId, reason, cancelRides),
     successMessage: "Route cancelled.",
-    invalidate: [queryKeys.routes.all, queryKeys.rides.all],
+    invalidate: [queryKeys.routes.all, ...RIDE_CACHE],
   });
 
 /**
@@ -159,7 +169,7 @@ export const useApproveDocument = () =>
   useAction({
     mutationFn: ({ documentId, notes }) => approveDocument(documentId, notes),
     successMessage: "Document approved.",
-    invalidate: [queryKeys.documents.all, queryKeys.drivers.all],
+    invalidate: [queryKeys.documents.all, ...DRIVER_CACHE],
   });
 
 /**
@@ -174,7 +184,7 @@ export const useRejectDocument = () =>
   useAction({
     mutationFn: ({ documentId, reason }) => rejectDocument(documentId, reason),
     successMessage: "Document rejected.",
-    invalidate: [queryKeys.documents.all, queryKeys.drivers.all],
+    invalidate: [queryKeys.documents.all, ...DRIVER_CACHE],
   });
 
 /**
@@ -189,7 +199,7 @@ export const useApprovePayout = () =>
   useAction({
     mutationFn: ({ payoutId, notes }) => approvePayout(payoutId, notes),
     successMessage: "Payout approved.",
-    invalidate: [queryKeys.payouts.all],
+    invalidate: PAYOUT_CACHE,
   });
 
 type BatchPayout = {
@@ -264,8 +274,9 @@ export function useApprovePayoutBatch() {
       return results;
     },
     onSuccess: (results) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.payouts.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      PAYOUT_CACHE.forEach((queryKey) => {
+        queryClient.invalidateQueries({ queryKey });
+      });
 
       const approved = results.filter(
         (result) => result.status === "approved",
@@ -297,7 +308,7 @@ export const useRejectPayout = () =>
   useAction({
     mutationFn: ({ payoutId, reason }) => rejectPayout(payoutId, reason),
     successMessage: "Payout rejected.",
-    invalidate: [queryKeys.payouts.all],
+    invalidate: PAYOUT_CACHE,
   });
 
 /**
@@ -312,7 +323,7 @@ export const useRetryPayout = () =>
   useAction({
     mutationFn: ({ payoutId }) => retryPayout(payoutId),
     successMessage: "Payout queued for another attempt.",
-    invalidate: [queryKeys.payouts.all],
+    invalidate: PAYOUT_CACHE,
   });
 
 /**
@@ -327,6 +338,7 @@ export const useSetUserRole = () =>
   useAction({
     mutationFn: ({ userId, role }) => setUserRole(userId, role),
     successMessage: ({ role }) => `Role changed to ${role.replace("_", " ")}.`,
+    invalidate: USER_CACHE,
   });
 
 /**
@@ -340,6 +352,7 @@ export const useDeactivateUser = () =>
   useAction({
     mutationFn: ({ userId, reason }) => deactivateUser(userId, reason),
     successMessage: "Account deactivated.",
+    invalidate: USER_CACHE,
   });
 
 /**
@@ -353,6 +366,7 @@ export const useReactivateUser = () =>
   useAction({
     mutationFn: ({ userId }) => reactivateUser(userId),
     successMessage: "Account reactivated.",
+    invalidate: USER_CACHE,
   });
 
 /**
@@ -366,4 +380,5 @@ export const useDeleteUser = () =>
   useAction({
     mutationFn: ({ userId }) => deleteUser(userId),
     successMessage: "Account deleted.",
+    invalidate: USER_CACHE,
   });

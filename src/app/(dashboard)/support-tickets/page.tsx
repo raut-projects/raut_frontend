@@ -209,17 +209,20 @@ function SupportTicketsPage() {
     resetPage();
   };
 
-  const updateTicketStatus = (
+  const updateTicketStatus = async (
     ticket: SupportTicket,
     nextStatus: SupportTicketStatus,
   ) => {
     void updateSupportTicketStatus(ticket.id, nextStatus, ticket.version)
-      .then(() => {
+      .then(async () => {
         toast.success(
           `${ticket.id} marked ${TICKET_STATUS_LABELS[nextStatus].toLowerCase()}.`,
         );
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.supportTickets.lists(),
+        });
         return queryClient.invalidateQueries({
-          queryKey: queryKeys.supportTickets.all,
+          queryKey: queryKeys.supportTickets.detail(ticket.id),
         });
       })
       .catch((error: unknown) => {
