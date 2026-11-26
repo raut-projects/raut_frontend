@@ -20,7 +20,7 @@ import { queryKeys } from "../lib/queryKeys";
 export function useDriverDocuments(driverId) {
   return useQuery({
     queryKey: queryKeys.documents.list(driverId),
-    queryFn: () => listDriverDocuments(driverId),
+    queryFn: ({ signal }) => listDriverDocuments(driverId, { signal }),
     enabled: Boolean(driverId),
   });
 }

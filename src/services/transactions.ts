@@ -6,12 +6,15 @@ import { API_ROUTES } from "../lib/config";
 import { apiGet } from "./api";
 import { mapTransaction } from "./mappers";
 
-const countTransactions = async (status = "all") => {
+const countTransactions = async (
+  status = "all",
+  { signal }: { signal?: AbortSignal } = {},
+) => {
   const params: Record<string, string | number> = { page: 1, page_size: 1 };
 
   if (status && status !== "all") params.status = status;
 
-  const data = await apiGet(API_ROUTES.transactions, { params });
+  const data = await apiGet(API_ROUTES.transactions, { params, signal });
 
   return data?.pagination?.total_items ?? 0;
 };
@@ -29,7 +32,7 @@ export async function listTransactions({
   to = "",
   page = 1,
   limit = 10,
-} = {}) {
+} = {}, { signal }: { signal?: AbortSignal } = {}) {
   const params: Record<string, string | number> = {
     page,
     page_size: limit,
@@ -42,7 +45,7 @@ export async function listTransactions({
   if (from) params.start_date = from;
   if (to) params.end_date = to;
 
-  const data = await apiGet(API_ROUTES.transactions, { params });
+  const data = await apiGet(API_ROUTES.transactions, { params, signal });
   const items = asTransactionList(data).map(mapTransaction);
 
   return {
@@ -53,12 +56,14 @@ export async function listTransactions({
   };
 }
 
-export async function getTransactionSummary() {
+export async function getTransactionSummary({
+  signal,
+}: { signal?: AbortSignal } = {}) {
   const [total, pending, completed, failed] = await Promise.all([
-    countTransactions(),
-    countTransactions("pending"),
-    countTransactions("completed"),
-    countTransactions("failed"),
+    countTransactions(undefined, { signal }),
+    countTransactions("pending", { signal }),
+    countTransactions("completed", { signal }),
+    countTransactions("failed", { signal }),
   ]);
 
   return { total, pending, completed, failed };

@@ -229,8 +229,9 @@ export async function createReferralProgram(
 
 export async function listReferralPrograms(
   params: ReferralProgramListParams = {},
+  { signal }: { signal?: AbortSignal } = {},
 ): Promise<ReferralProgram[]> {
-  const data = await apiGet(API_ROUTES.referralPrograms, { params });
+  const data = await apiGet(API_ROUTES.referralPrograms, { params, signal });
 
   return responseArray(data, ["programs", "items"], "Referral programs").map(
     mapReferralProgram,
@@ -239,8 +240,9 @@ export async function listReferralPrograms(
 
 export async function getReferralProgram(
   programId: string,
+  { signal }: { signal?: AbortSignal } = {},
 ): Promise<ReferralProgram> {
-  const data = await apiGet(API_ROUTES.referralProgram(programId));
+  const data = await apiGet(API_ROUTES.referralProgram(programId), { signal });
 
   return mapReferralProgram(
     responseObject(data, ["program", "referral_program"], "Referral program"),
@@ -303,16 +305,20 @@ export async function unenrollReferralUser(
 
 export async function listReferralUsers(
   params: ReferralUsersParams = {},
+  { signal }: { signal?: AbortSignal } = {},
 ): Promise<ReferralUser[]> {
-  const data = await apiGet(API_ROUTES.referralUsers, { params });
+  const data = await apiGet(API_ROUTES.referralUsers, { params, signal });
 
   return responseArray(data, ["users", "items"], "Referral users").map(
     mapReferralUser,
   );
 }
 
-export async function getReferralUser(userId: string): Promise<ReferralUser> {
-  const data = await apiGet(API_ROUTES.referralUser(userId));
+export async function getReferralUser(
+  userId: string,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<ReferralUser> {
+  const data = await apiGet(API_ROUTES.referralUser(userId), { signal });
 
   return mapReferralUser(
     responseObject(data, ["user", "referral_user"], "Referral user"),
@@ -321,8 +327,12 @@ export async function getReferralUser(userId: string): Promise<ReferralUser> {
 
 export async function listReferralRelationships(
   params: ReferralRelationshipsParams = {},
+  { signal }: { signal?: AbortSignal } = {},
 ): Promise<ReferralRelationship[]> {
-  const data = await apiGet(API_ROUTES.referralRelationships, { params });
+  const data = await apiGet(API_ROUTES.referralRelationships, {
+    params,
+    signal,
+  });
 
   return responseArray(
     data,
@@ -333,8 +343,9 @@ export async function listReferralRelationships(
 
 export async function getReferralStats(
   params: ReferralStatsParams = {},
+  { signal }: { signal?: AbortSignal } = {},
 ): Promise<ReferralStats> {
-  const data = await apiGet(API_ROUTES.referralStats, { params });
+  const data = await apiGet(API_ROUTES.referralStats, { params, signal });
   const record = responseObject(data, ["stats"], "Referral stats");
 
   return {
@@ -369,19 +380,21 @@ export async function getReferralStats(
 
 export async function listTopReferrers(
   limit?: number,
+  { signal }: { signal?: AbortSignal } = {},
 ): Promise<ReferralTopReferrer[]> {
   const data = await apiGet(API_ROUTES.referralTopReferrers, {
     params: { limit },
+    signal,
   });
 
   return responseArray(data, ["top_referrers", "referrers", "items"], "Top referrers")
     .map(mapTopReferrer);
 }
 
-export async function listPendingReferralPayments(): Promise<
-  ReferralPendingPayment[]
-> {
-  const data = await apiGet(API_ROUTES.referralPendingPayments);
+export async function listPendingReferralPayments({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<ReferralPendingPayment[]> {
+  const data = await apiGet(API_ROUTES.referralPendingPayments, { signal });
 
   return responseArray(
     data,
@@ -402,8 +415,10 @@ export async function markReferralPaymentPaid(
   return toJsonValue(data, "Referral payment response");
 }
 
-export async function getMyReferralCode(): Promise<ReferralMyCode> {
-  const data = await apiGet(API_ROUTES.myReferralCode);
+export async function getMyReferralCode({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<ReferralMyCode> {
+  const data = await apiGet(API_ROUTES.myReferralCode, { signal });
   const record = responseObject(data, ["code", "my_code"], "Referral code");
 
   return {

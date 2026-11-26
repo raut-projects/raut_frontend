@@ -8,6 +8,7 @@ import {
   listTransactions,
 } from "../services/transactions";
 import { queryKeys } from "../lib/queryKeys";
+import { polledQueryOptions } from "../lib/queryClient";
 
 /**
  * useTransactions hook.
@@ -15,8 +16,9 @@ import { queryKeys } from "../lib/queryKeys";
 export function useTransactions(params) {
   return useQuery({
     queryKey: queryKeys.transactions.list(params),
-    queryFn: () => listTransactions(params),
+    queryFn: ({ signal }) => listTransactions(params, { signal }),
     placeholderData: keepPreviousData,
+    ...polledQueryOptions,
     refetchInterval: 30_000,
   });
 }
@@ -27,7 +29,8 @@ export function useTransactions(params) {
 export function useTransactionSummary() {
   return useQuery({
     queryKey: queryKeys.transactions.summary,
-    queryFn: getTransactionSummary,
+    queryFn: ({ signal }) => getTransactionSummary({ signal }),
+    ...polledQueryOptions,
     refetchInterval: 60_000,
   });
 }

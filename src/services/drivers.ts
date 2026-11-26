@@ -19,7 +19,9 @@ const FLEET_PAGE_SIZE = 100;
  * Throws ApiError on request failure, or a plain Error when the page guard
  * trips. `total` prefers the server-reported count.
  */
-export async function listAllDrivers() {
+export async function listAllDrivers({
+  signal,
+}: { signal?: AbortSignal } = {}) {
   const items = [];
   let page = 1;
   let totalItems = null;
@@ -32,6 +34,7 @@ export async function listAllDrivers() {
         sort_by: "total_rides",
         sort_order: "desc",
       },
+      signal,
     });
     const pageItems = data?.items ?? [];
     items.push(...pageItems);
@@ -78,7 +81,7 @@ export async function listDrivers({
   status = "all",
   page = 1,
   limit = 8,
-} = {}) {
+} = {}, { signal }: { signal?: AbortSignal } = {}) {
   const query = String(search ?? "").trim();
 
   const params: Record<string, string | number> = {
@@ -93,7 +96,7 @@ export async function listDrivers({
     params.driver_status = String(status).toLowerCase();
 
   const [data, fleet] = await Promise.all([
-    apiGet(API_ROUTES.drivers, { params }),
+    apiGet(API_ROUTES.drivers, { params, signal }),
     apiGet(API_ROUTES.drivers, {
       params: {
         page: 1,
@@ -101,6 +104,7 @@ export async function listDrivers({
         sort_by: "total_rides",
         sort_order: "desc",
       },
+      signal,
     }),
   ]);
 

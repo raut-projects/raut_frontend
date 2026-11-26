@@ -126,11 +126,13 @@ const mapStaffInvitation = (raw: unknown): StaffInvitation | null => {
 
 export async function listStaff(
   params: StaffListParams = {},
+  { signal }: { signal?: AbortSignal } = {},
 ): Promise<StaffListResult> {
   const page = Math.max(1, Math.trunc(params.page ?? 1));
   const pageSize = Math.max(1, Math.trunc(params.pageSize ?? 20));
   const data = await apiGet(API_ROUTES.staff, {
     params: { page, page_size: pageSize },
+    signal,
   });
   const record = asRecord(data);
   const rawItems = Array.isArray(data)
@@ -177,6 +179,7 @@ export async function listStaff(
 
 export async function listStaffInvitations(
   params: StaffInvitationListParams = {},
+  { signal }: { signal?: AbortSignal } = {},
 ): Promise<StaffInvitationListResult> {
   const page = Math.max(1, Math.trunc(params.page ?? 1));
   const pageSize = Math.max(1, Math.trunc(params.pageSize ?? 20));
@@ -184,6 +187,7 @@ export async function listStaffInvitations(
     params.status && params.status !== "all" ? params.status : undefined;
   const data = await apiGet(API_ROUTES.staffInvitations, {
     params: { status, page, page_size: pageSize },
+    signal,
   });
   const record = asRecord(data);
   const pagination = {
@@ -315,11 +319,13 @@ const pickRedirectUrl = (...sources: unknown[]) => {
  */
 export async function verifyStaffInvitation(
   token: string,
+  { signal }: { signal?: AbortSignal } = {},
 ): Promise<StaffInvitationVerification> {
   const payload = await request(API_ROUTES.staffInvitationVerify, {
     method: "POST",
     body: { token },
     auth: false,
+    signal,
   });
   const data = asRecord(envelopeData(payload) ?? payload);
   const raw = asRecord(

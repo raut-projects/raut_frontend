@@ -10,12 +10,15 @@ import { mapRide } from "./mappers";
 // pagination.total_items instead of paging through the whole book of rides.
 const SUMMARY_STATUSES = ["requested", "completed", "cancelled"];
 
-const countRides = async (status?: string) => {
+const countRides = async (
+  status?: string,
+  { signal }: { signal?: AbortSignal } = {},
+) => {
   const params: Record<string, string | number> = { page: 1, page_size: 1 };
 
   if (status) params.status = status;
 
-  const data = await apiGet(API_ROUTES.rides, { params });
+  const data = await apiGet(API_ROUTES.rides, { params, signal });
 
   return data?.pagination?.total_items ?? 0;
 };
@@ -28,7 +31,7 @@ export async function listRides({
   to = "",
   page = 1,
   limit = 10,
-} = {}) {
+} = {}, { signal }: { signal?: AbortSignal } = {}) {
   const params: Record<string, string | number> = {
     page,
     page_size: limit,
@@ -42,7 +45,7 @@ export async function listRides({
   if (from) params.start_date = from;
   if (to) params.end_date = to;
 
-  const data = await apiGet(API_ROUTES.rides, { params });
+  const data = await apiGet(API_ROUTES.rides, { params, signal });
   const items = (data?.items ?? []).map(mapRide);
 
   return {
@@ -53,10 +56,12 @@ export async function listRides({
   };
 }
 
-export async function getRideSummary() {
+export async function getRideSummary({
+  signal,
+}: { signal?: AbortSignal } = {}) {
   const [total, pending, delivered, cancelled] = await Promise.all([
-    countRides(),
-    ...SUMMARY_STATUSES.map(countRides),
+    countRides(undefined, { signal }),
+    ...SUMMARY_STATUSES.map((status) => countRides(status, { signal })),
   ]);
 
   return { total, pending, delivered, cancelled };

@@ -4,6 +4,7 @@
  */
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../lib/queryKeys";
+import { polledQueryOptions } from "../lib/queryClient";
 import { getRouteSummary, listRoutes } from "../services/routes";
 
 /**
@@ -12,8 +13,9 @@ import { getRouteSummary, listRoutes } from "../services/routes";
 export function useRoutes(params) {
   return useQuery({
     queryKey: queryKeys.routes.list(params),
-    queryFn: () => listRoutes(params),
+    queryFn: ({ signal }) => listRoutes(params, { signal }),
     placeholderData: keepPreviousData,
+    ...polledQueryOptions,
     refetchInterval: 30_000,
   });
 }
@@ -24,7 +26,8 @@ export function useRoutes(params) {
 export function useRouteSummary() {
   return useQuery({
     queryKey: queryKeys.routes.summary,
-    queryFn: getRouteSummary,
+    queryFn: ({ signal }) => getRouteSummary({ signal }),
+    ...polledQueryOptions,
     refetchInterval: 60_000,
   });
 }

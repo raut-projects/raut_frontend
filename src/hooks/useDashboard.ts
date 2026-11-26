@@ -6,6 +6,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getDashboard } from "../services/dashboard";
 import { queryKeys } from "../lib/queryKeys";
+import { polledQueryOptions } from "../lib/queryClient";
 import type { AnalyticsRange } from "../types/index";
 
 /**
@@ -23,7 +24,8 @@ import type { AnalyticsRange } from "../types/index";
 export function useDashboard(range: AnalyticsRange, compare = false) {
   return useQuery({
     queryKey: queryKeys.dashboard.byRange(range, compare),
-    queryFn: () => getDashboard(range, compare),
+    queryFn: ({ signal }) => getDashboard(range, compare, { signal }),
+    ...polledQueryOptions,
     refetchInterval: 60_000,
     placeholderData: keepPreviousData,
   });

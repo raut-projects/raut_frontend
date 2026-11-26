@@ -11,8 +11,11 @@ import type {
   RideDispute,
 } from "../lib/rideDisputes";
 
-export async function getRideDispute(rideId: string): Promise<RideDispute> {
-  const data = await apiGet(API_ROUTES.rideDispute(rideId));
+export async function getRideDispute(
+  rideId: string,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<RideDispute> {
+  const data = await apiGet(API_ROUTES.rideDispute(rideId), { signal });
 
   return mapRideDispute(data, rideId);
 }

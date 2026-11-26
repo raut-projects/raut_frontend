@@ -357,10 +357,11 @@ export function mapPromotion(value: unknown): Promotion {
  */
 export async function listPromotions(
   params: PromotionListParams = {},
+  { signal }: { signal?: AbortSignal } = {},
 ): Promise<PromotionListResult> {
   const page = Math.max(1, params.page ?? 1);
   const limit = Math.max(1, params.limit ?? 20);
-  const data = await apiGet(API_ROUTES.marketingPromotions);
+  const data = await apiGet(API_ROUTES.marketingPromotions, { signal });
   const items = listItems(data, "promotions").map(mapPromotion);
   const search = params.search?.trim().toLowerCase() ?? "";
   const filtered = items.filter((promotion) => {
@@ -393,8 +394,13 @@ export async function listPromotions(
  * GET /marketing/promotions/:promotionId, accepting `{ promotion }` or the
  * record itself. Returns the mapped Promotion. Throws ApiError on failure.
  */
-export async function getPromotion(promotionId: string): Promise<Promotion> {
-  const data = await apiGet(API_ROUTES.marketingPromotion(promotionId));
+export async function getPromotion(
+  promotionId: string,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<Promotion> {
+  const data = await apiGet(API_ROUTES.marketingPromotion(promotionId), {
+    signal,
+  });
   const record = asRecord(data);
 
   return mapPromotion(firstValue(record, "promotion") ?? data);

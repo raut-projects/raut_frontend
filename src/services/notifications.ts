@@ -12,8 +12,10 @@ import { mapNotification } from './mappers'
  * `{ items }` and maps each entry for display.
  * Returns an empty array when nothing is returned. Throws ApiError on failure.
  */
-export async function listNotifications() {
-  const data = await apiGet(API_ROUTES.notifications)
+export async function listNotifications({
+  signal,
+}: { signal?: AbortSignal } = {}) {
+  const data = await apiGet(API_ROUTES.notifications, { signal })
   const items = Array.isArray(data) ? data : (data?.items ?? [])
 
   return items.map(mapNotification)

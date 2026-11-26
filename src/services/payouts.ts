@@ -28,7 +28,10 @@ const sumAmounts = (payouts) =>
 // Pages through one status until the reported total is reached. A short page
 // ends the scan when the server omits pagination; a 10,000-page guard stops a
 // backend that never reports a total.
-async function listAllPayoutsByStatus(status) {
+async function listAllPayoutsByStatus(
+  status,
+  { signal }: { signal?: AbortSignal } = {},
+) {
   const payouts = [];
   let page = 1;
   let totalItems = null;
@@ -42,6 +45,7 @@ async function listAllPayoutsByStatus(status) {
         sort_by: "created_at",
         sort_order: "desc",
       },
+      signal,
     });
     const items = asPayoutList(data);
     payouts.push(...items);
@@ -90,10 +94,12 @@ const uniquePayouts = (payouts) => {
  * Returns Payout[]. Throws ApiError on request failure or a plain Error when the
  * page guard trips.
  */
-export async function listPendingPayoutBatch() {
+export async function listPendingPayoutBatch({
+  signal,
+}: { signal?: AbortSignal } = {}) {
   const [pending, requested] = await Promise.all([
-    listAllPayoutsByStatus("pending"),
-    listAllPayoutsByStatus("requested"),
+    listAllPayoutsByStatus("pending", { signal }),
+    listAllPayoutsByStatus("requested", { signal }),
   ]);
   const uniquePending = new Map();
 
@@ -120,10 +126,12 @@ export async function listPendingPayoutBatch() {
  * those statuses and removes duplicates.
  * Returns Payout[]. Throws ApiError or a plain Error on the page guard.
  */
-export async function listPayoutBatchProcessing() {
+export async function listPayoutBatchProcessing({
+  signal,
+}: { signal?: AbortSignal } = {}) {
   const [processing, approved] = await Promise.all([
-    listAllPayoutsByStatus("processing"),
-    listAllPayoutsByStatus("approved"),
+    listAllPayoutsByStatus("processing", { signal }),
+    listAllPayoutsByStatus("approved", { signal }),
   ]);
 
   return uniquePayouts(
@@ -140,11 +148,13 @@ export async function listPayoutBatchProcessing() {
  * Returns a `{ [driverId]: count }` record.
  * Throws ApiError or a plain Error on the page guard.
  */
-export async function getPayoutFailureCounts() {
+export async function getPayoutFailureCounts({
+  signal,
+}: { signal?: AbortSignal } = {}) {
   const [failed, errors, reversed] = await Promise.all([
-    listAllPayoutsByStatus("failed"),
-    listAllPayoutsByStatus("error"),
-    listAllPayoutsByStatus("reversed"),
+    listAllPayoutsByStatus("failed", { signal }),
+    listAllPayoutsByStatus("error", { signal }),
+    listAllPayoutsByStatus("reversed", { signal }),
   ]);
   const failedPayouts = [...failed, ...errors, ...reversed];
   const failuresByDriver = new Map();
@@ -214,7 +224,7 @@ export async function listPayouts({
   to = "",
   page = 1,
   limit = 8,
-} = {}) {
+} = {}, { signal }: { signal?: AbortSignal } = {}) {
   const params: Record<string, string | number> = {
     page,
     page_size: limit,
@@ -229,7 +239,7 @@ export async function listPayouts({
   if (to) params.end_date = to;
 
   const [data, overview] = await Promise.all([
-    apiGet(API_ROUTES.payouts, { params }),
+    apiGet(API_ROUTES.payouts, { params, signal }),
     apiGet(API_ROUTES.payouts, {
       params: {
         page: 1,
@@ -237,6 +247,7 @@ export async function listPayouts({
         sort_by: "created_at",
         sort_order: "desc",
       },
+      signal,
     }),
   ]);
 

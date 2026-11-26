@@ -30,7 +30,7 @@ const configQueryOptions = {
 export function useConfigs(filters: ConfigListFilters = {}) {
   return useQuery({
     queryKey: queryKeys.config.list(filters),
-    queryFn: () => listConfigs(filters),
+    queryFn: ({ signal }) => listConfigs(filters, { signal }),
     ...configQueryOptions,
   });
 }
@@ -41,7 +41,7 @@ export function useConfigs(filters: ConfigListFilters = {}) {
 export function useConfig(configKey: string | null, scope: ConfigScope = {}) {
   return useQuery({
     queryKey: queryKeys.config.detail(configKey, scope),
-    queryFn: () => getConfig(configKey as string, scope),
+    queryFn: ({ signal }) => getConfig(configKey as string, scope, { signal }),
     enabled: Boolean(configKey),
     ...configQueryOptions,
   });
@@ -53,7 +53,8 @@ export function useConfig(configKey: string | null, scope: ConfigScope = {}) {
 export function useConfigHistory(configKey: string | null, limit = 50) {
   return useQuery({
     queryKey: queryKeys.config.history(configKey, limit),
-    queryFn: () => getConfigHistory(configKey as string, limit),
+    queryFn: ({ signal }) =>
+      getConfigHistory(configKey as string, limit, { signal }),
     enabled: Boolean(configKey),
     ...configQueryOptions,
   });
@@ -86,7 +87,8 @@ const isEnabled = (
 export function useFeatureFlags() {
   return useQuery({
     queryKey: queryKeys.config.list({ config_type: "feature_flag" }),
-    queryFn: () => listConfigs({ config_type: "feature_flag" }),
+    queryFn: ({ signal }) =>
+      listConfigs({ config_type: "feature_flag" }, { signal }),
     select: (configs): FeatureFlags => ({
       scheduled_rides: isEnabled(configs, "feature.scheduled_routes"),
       duo:

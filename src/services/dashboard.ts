@@ -230,12 +230,17 @@ const toSeries = <T>(rows: any[], mapper: (row: any) => T): AnalyticsSeries<T> =
  * params and its dates filter the bucketed rows locally.
  * @param compare When true and the window supports it, also fetches enough
  * history to build deltas against the previous equivalent period.
+ * @param signal Optional signal used to cancel the dashboard requests.
  * @returns Stats cards, overview, current/previous series, comparison deltas,
  * driver and peak-hour analytics, recent rides and top drivers.
  * Throws only if the shaping code itself fails; individual ApiErrors from
  * `apiGet` are swallowed into null sections.
  */
-export async function getDashboard(range: AnalyticsRange, compare = false) {
+export async function getDashboard(
+  range: AnalyticsRange,
+  compare = false,
+  { signal }: { signal?: AbortSignal } = {},
+) {
   const comparisonWindow = getComparisonWindow(range)
   const comparisonActive = compare && comparisonWindow.enabled
   const fetchDays = comparisonActive ? comparisonWindow.fetchDays : range.daysBack
@@ -243,20 +248,23 @@ export async function getDashboard(range: AnalyticsRange, compare = false) {
     compare && !comparisonWindow.enabled ? comparisonWindow.reason : null
 
   const results = await Promise.allSettled([
-    apiGet(API_ROUTES.users, { params: { page: 1, page_size: 1, is_driver: false } }),
+    apiGet(API_ROUTES.users, { params: { page: 1, page_size: 1, is_driver: false }, signal }),
     apiGet(API_ROUTES.drivers, {
       params: { page: 1, page_size: FLEET_PAGE_SIZE, sort_by: 'total_rides', sort_order: 'desc' },
+      signal,
     }),
-    apiGet(API_ROUTES.analyticsOverview, { params: { period: range.granularity } }),
+    apiGet(API_ROUTES.analyticsOverview, { params: { period: range.granularity }, signal }),
     apiGet(API_ROUTES.analyticsRides, {
       params: { period: range.granularity, days_back: fetchDays },
+      signal,
     }),
     apiGet(API_ROUTES.analyticsRevenue, {
       params: { period: range.granularity, days_back: fetchDays },
+      signal,
     }),
-    apiGet(API_ROUTES.analyticsDrivers, { params: { period: range.granularity } }),
-    apiGet(API_ROUTES.analyticsPeakHours, { params: { days_back: range.daysBack } }),
-    apiGet(API_ROUTES.rides, { params: { page: 1, page_size: 5, sort_by: 'created_at', sort_order: 'desc' } }),
+    apiGet(API_ROUTES.analyticsDrivers, { params: { period: range.granularity }, signal }),
+    apiGet(API_ROUTES.analyticsPeakHours, { params: { days_back: range.daysBack }, signal }),
+    apiGet(API_ROUTES.rides, { params: { page: 1, page_size: 5, sort_by: 'created_at', sort_order: 'desc' }, signal }),
   ])
 
   // Each result is read independently: a rejected request becomes null and the

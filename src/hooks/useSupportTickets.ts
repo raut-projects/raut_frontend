@@ -10,6 +10,7 @@ import {
   SupportTicketListParams,
 } from "@/services/supportTickets";
 import { queryKeys } from "@/lib/queryKeys";
+import { polledQueryOptions } from "@/lib/queryClient";
 
 /**
  * useSupportTickets hook.
@@ -17,8 +18,9 @@ import { queryKeys } from "@/lib/queryKeys";
 export function useSupportTickets(params: SupportTicketListParams) {
   return useQuery({
     queryKey: queryKeys.supportTickets.list(params),
-    queryFn: () => listSupportTickets(params),
+    queryFn: ({ signal }) => listSupportTickets(params, { signal }),
     placeholderData: keepPreviousData,
+    ...polledQueryOptions,
     refetchInterval: 30_000,
   });
 }
@@ -29,8 +31,9 @@ export function useSupportTickets(params: SupportTicketListParams) {
 export function useSupportTicket(ticketId: string) {
   return useQuery({
     queryKey: queryKeys.supportTickets.detail(ticketId),
-    queryFn: () => getSupportTicketDetail(ticketId),
+    queryFn: ({ signal }) => getSupportTicketDetail(ticketId, { signal }),
     enabled: Boolean(ticketId),
+    ...polledQueryOptions,
     refetchInterval: 30_000,
   });
 }
@@ -41,7 +44,7 @@ export function useSupportTicket(ticketId: string) {
 export function useSupportAgents() {
   return useQuery({
     queryKey: queryKeys.supportTickets.agents,
-    queryFn: listSupportAgents,
+    queryFn: ({ signal }) => listSupportAgents({ signal }),
     staleTime: 5 * 60_000,
   });
 }

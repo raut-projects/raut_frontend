@@ -20,22 +20,26 @@ import {
   mapRbacRoleCatalog,
 } from "./mappers";
 
-export async function fetchMyPermissions(): Promise<RbacAccessSnapshot> {
-  const payload = await request(API_ROUTES.myPermissions, { auth: true });
+export async function fetchMyPermissions({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<RbacAccessSnapshot> {
+  const payload = await request(API_ROUTES.myPermissions, { auth: true, signal });
 
   return mapRbacAccess(payload);
 }
 
-export async function fetchPermissionCatalog(): Promise<
-  RbacCatalogPermission[]
-> {
-  const payload = await apiGet(API_ROUTES.rbacPermissions);
+export async function fetchPermissionCatalog({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<RbacCatalogPermission[]> {
+  const payload = await apiGet(API_ROUTES.rbacPermissions, { signal });
 
   return mapRbacPermissionCatalog(payload);
 }
 
-export async function fetchRbacRoles(): Promise<RbacCatalogRole[]> {
-  const payload = await apiGet(API_ROUTES.rbacRoles);
+export async function fetchRbacRoles({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<RbacCatalogRole[]> {
+  const payload = await apiGet(API_ROUTES.rbacRoles, { signal });
 
   return mapRbacRoleCatalog(payload);
 }
@@ -90,8 +94,10 @@ export async function deleteRbacRole(roleId: string): Promise<void> {
   await apiDelete(API_ROUTES.rbacRole(roleId));
 }
 
-export async function fetchRbacRegions(): Promise<RbacRegion[]> {
-  const payload = await apiGet(API_ROUTES.rbacRegions);
+export async function fetchRbacRegions({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<RbacRegion[]> {
+  const payload = await apiGet(API_ROUTES.rbacRegions, { signal });
 
   return mapRbacRegionCatalog(payload);
 }

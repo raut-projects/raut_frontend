@@ -6,6 +6,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getCustomerStats, listCustomers } from "../services/customers";
 import { queryKeys } from "../lib/queryKeys";
+import { polledQueryOptions } from "../lib/queryClient";
 
 /**
  * Lists customers for the supplied filters.
@@ -19,8 +20,9 @@ import { queryKeys } from "../lib/queryKeys";
 export function useCustomers(params) {
   return useQuery({
     queryKey: queryKeys.customers.list(params),
-    queryFn: () => listCustomers(params),
+    queryFn: ({ signal }) => listCustomers(params, { signal }),
     placeholderData: keepPreviousData,
+    ...polledQueryOptions,
     refetchInterval: 60_000,
   });
 }
@@ -36,7 +38,7 @@ export function useCustomers(params) {
 export function useCustomerStats() {
   return useQuery({
     queryKey: queryKeys.customers.stats,
-    queryFn: getCustomerStats,
+    queryFn: ({ signal }) => getCustomerStats({ signal }),
     staleTime: 60_000,
   });
 }

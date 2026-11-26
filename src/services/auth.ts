@@ -247,8 +247,10 @@ export function getToken() {
  * Returns `{ user, role, roleLabel }`, resolved from the response only.
  * Throws ApiError on an expired/invalid session or transport failure.
  */
-export async function fetchCurrentUser() {
-  const payload = await request(API_ROUTES.me, { auth: true });
+export async function fetchCurrentUser({
+  signal,
+}: { signal?: AbortSignal } = {}) {
+  const payload = await request(API_ROUTES.me, { auth: true, signal });
   const data = envelopeData(payload) ?? {};
   const user = data.user ?? data;
   const role = roleFromResponse({ user, data });

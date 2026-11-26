@@ -18,8 +18,9 @@ import { mapConfigDetail, mapConfigHistory, mapConfigRecord } from "./mappers";
 
 export async function listConfigs(
   filters: ConfigListFilters = {},
+  { signal }: { signal?: AbortSignal } = {},
 ): Promise<ConfigRecord[]> {
-  const data = await apiGet(API_ROUTES.configs, { params: filters });
+  const data = await apiGet(API_ROUTES.configs, { params: filters, signal });
   const configs = Array.isArray(data?.configs)
     ? data.configs
     : Array.isArray(data?.items)
@@ -34,9 +35,10 @@ export async function listConfigs(
 export async function getConfig(
   configKey: string,
   scope: ConfigScope = {},
+  { signal }: { signal?: AbortSignal } = {},
 ): Promise<ConfigDetail> {
   return mapConfigDetail(
-    await apiGet(API_ROUTES.config(configKey), { params: scope }),
+    await apiGet(API_ROUTES.config(configKey), { params: scope, signal }),
   );
 }
 
@@ -69,10 +71,12 @@ export async function updateConfigs(
 export async function getConfigHistory(
   configKey: string,
   limit = 50,
+  { signal }: { signal?: AbortSignal } = {},
 ): Promise<ConfigHistoryEntry[]> {
   return mapConfigHistory(
     await apiGet(API_ROUTES.configHistory(configKey), {
       params: { limit },
+      signal,
     }),
   );
 }

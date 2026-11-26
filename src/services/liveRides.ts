@@ -39,7 +39,7 @@ export async function listLiveRides(params?: {
   customerQuery?: string;
   rideId?: string;
   issuesOnly?: boolean;
-}): Promise<LiveRide[]> {
+}, { signal }: { signal?: AbortSignal } = {}): Promise<LiveRide[]> {
   if (LIVE_RIDES_USE_MOCK_DATA) {
     return getMockLiveRides(40);
   }
@@ -52,6 +52,7 @@ export async function listLiveRides(params?: {
       ride_id: params?.rideId,
       issues_only: params?.issuesOnly ? "true" : undefined,
     },
+    signal,
   });
   return (data?.rides ?? data?.items ?? []).map(mapLiveRide);
 }
