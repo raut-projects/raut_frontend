@@ -211,6 +211,7 @@ const ensureFreshToken = async () => {
  * @param options.timeout Abort timeout in ms, default REQUEST_TIMEOUT_MS.
  * @param options.allowRefresh Whether a 401 may trigger a token refresh.
  * @param options.form Send `body` as application/x-www-form-urlencoded.
+ * @param options.signal External signal used to cancel the request.
  * @returns The parsed response payload without unwrapping the `data` envelope.
  * @throws ApiError for configuration, network, timeout and non-2xx responses.
  */
@@ -223,8 +224,13 @@ export const request = async (
     timeout = REQUEST_TIMEOUT_MS,
     allowRefresh = true,
     form = false,
+    signal,
   }: any = {},
 ) => {
+  if (signal?.aborted) {
+    throw new DOMException("Request aborted.", "AbortError");
+  }
+
   if (!isApiConfigured) {
     throw new ApiError(
       "Please check your internet connection and try again",
@@ -256,6 +262,12 @@ export const request = async (
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
+  const abortFromSignal = () => controller.abort();
+
+  if (signal) {
+    if (signal.aborted) controller.abort();
+    else signal.addEventListener("abort", abortFromSignal, { once: true });
+  }
 
   let response;
 
@@ -268,6 +280,7 @@ export const request = async (
     });
   } catch (error) {
     if (error?.name === "AbortError") {
+      if (signal?.aborted) throw error;
       throw new ApiError(
         "The server took too long to respond. Please try again.",
         0,
@@ -281,6 +294,7 @@ export const request = async (
     );
   } finally {
     clearTimeout(timer);
+    signal?.removeEventListener("abort", abortFromSignal);
   }
 
   const payload = await readBody(response);
@@ -298,6 +312,7 @@ export const request = async (
           timeout,
           allowRefresh: false,
           form,
+          signal,
         });
       }
       clearSession();

@@ -24,7 +24,7 @@ export async function listCustomers({
   status = "all",
   page = 1,
   limit = 8,
-} = {}) {
+} = {}, { signal }: { signal?: AbortSignal } = {}) {
   const query = String(search ?? "").trim();
 
   const params: Record<string, string | number | boolean> = {
@@ -41,7 +41,7 @@ export async function listCustomers({
   if (state === "active") params.is_active = true;
   if (state === "inactive") params.is_active = false;
 
-  const data = await apiGet(API_ROUTES.users, { params });
+  const data = await apiGet(API_ROUTES.users, { params, signal });
   const items = (data?.items ?? []).map(mapCustomer);
 
   return {
@@ -60,7 +60,9 @@ export async function listCustomers({
  * Throws ApiError on request failure, and a plain Error when the backend reports
  * a total that cannot be reached or the page guard trips.
  */
-export async function getCustomerStats() {
+export async function getCustomerStats({
+  signal,
+}: { signal?: AbortSignal } = {}) {
   let page = 1;
   let totalItems: number | null = null;
   let active = 0;
@@ -76,6 +78,7 @@ export async function getCustomerStats() {
         sort_by: "created_at",
         sort_order: "desc",
       },
+      signal,
     });
     const pageItems = Array.isArray(data?.items) ? data.items : [];
     const reportedTotal = data?.pagination?.total_items;

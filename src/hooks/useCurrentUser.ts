@@ -19,7 +19,7 @@ import { queryKeys } from "../lib/queryKeys";
 export function useCurrentUser() {
   return useQuery({
     queryKey: queryKeys.me.all,
-    queryFn: fetchCurrentUser,
+    queryFn: ({ signal }) => fetchCurrentUser({ signal }),
     staleTime: 60_000,
   });
 }

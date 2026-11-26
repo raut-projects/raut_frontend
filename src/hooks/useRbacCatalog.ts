@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { RBAC_REVALIDATE_MS } from "@/lib/config";
 import { queryKeys } from "@/lib/queryKeys";
 import {
   createRbacRegion,
@@ -12,38 +11,44 @@ import {
   fetchRbacRoles,
   updateRbacRole,
 } from "@/services/rbac";
-import { updateSession } from "@/services/tokenStore";
+import { usePermissionStore } from "@/store/permissionStore";
 import type {
   RbacRegionPayload,
   RbacRoleCreatePayload,
   RbacRoleUpdatePayload,
 } from "@/types/rbac";
 
+const RBAC_CATALOG_STALE_MS = 5 * 60 * 1000;
+
 const queryOptions = {
-  staleTime: RBAC_REVALIDATE_MS,
+  staleTime: RBAC_CATALOG_STALE_MS,
   refetchOnWindowFocus: false,
 };
 
-const refreshSessionAccess = async (queryClient: ReturnType<typeof useQueryClient>) => {
+const refreshCachedPermissions = async (
+  queryClient: ReturnType<typeof useQueryClient>,
+) => {
   try {
     const access = await fetchMyPermissions();
-    updateSession({ access });
+    usePermissionStore.getState().setAccess(access);
     queryClient.invalidateQueries({ queryKey: queryKeys.me.all });
-  } catch {
-    return;
+    return true;
+  } catch (error) {
+    console.error("Failed to refresh cached permissions", error);
+    return false;
   }
 };
 
 const invalidateRbac = async (queryClient: ReturnType<typeof useQueryClient>) => {
   await queryClient.invalidateQueries({ queryKey: queryKeys.rbac.all });
-  await queryClient.invalidateQueries({ queryKey: queryKeys.staff.all });
-  await refreshSessionAccess(queryClient);
+  await queryClient.invalidateQueries({ queryKey: queryKeys.staff.lists() });
+  await refreshCachedPermissions(queryClient);
 };
 
 export function usePermissionCatalog(enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.rbac.permissions,
-    queryFn: fetchPermissionCatalog,
+    queryFn: ({ signal }) => fetchPermissionCatalog({ signal }),
     enabled,
     ...queryOptions,
   });
@@ -52,7 +57,7 @@ export function usePermissionCatalog(enabled: boolean) {
 export function useRbacRoles(enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.rbac.roles,
-    queryFn: fetchRbacRoles,
+    queryFn: ({ signal }) => fetchRbacRoles({ signal }),
     enabled,
     ...queryOptions,
   });
@@ -61,7 +66,7 @@ export function useRbacRoles(enabled: boolean) {
 export function useRbacRegions(enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.rbac.regions,
-    queryFn: fetchRbacRegions,
+    queryFn: ({ signal }) => fetchRbacRegions({ signal }),
     enabled,
     ...queryOptions,
   });

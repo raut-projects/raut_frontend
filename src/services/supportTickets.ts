@@ -313,6 +313,7 @@ function mapAgent(value: unknown): SupportAgent | null {
 
 export async function listSupportTickets(
   params: SupportTicketListParams = {},
+  { signal }: { signal?: AbortSignal } = {},
 ): Promise<SupportTicketListResult> {
   const page = params.page ?? 1;
   const limit = params.limit ?? 25;
@@ -341,6 +342,7 @@ export async function listSupportTickets(
       requester_id: params.requesterId || undefined,
       include_unassigned: params.includeUnassigned ? true : undefined,
     },
+    signal,
   });
 
   const record = asRecord(data);
@@ -362,8 +364,10 @@ export async function listSupportTickets(
   };
 }
 
-export async function listSupportAgents(): Promise<SupportAgent[]> {
-  const data = await apiGet(API_ROUTES.supportAgents);
+export async function listSupportAgents({
+  signal,
+}: { signal?: AbortSignal } = {}): Promise<SupportAgent[]> {
+  const data = await apiGet(API_ROUTES.supportAgents, { signal });
 
   return listItems(data, "agents", "eligible_agents")
     .map(mapAgent)
@@ -372,14 +376,20 @@ export async function listSupportAgents(): Promise<SupportAgent[]> {
 
 export async function getSupportTicketContext(
   ticketId: string,
+  { signal }: { signal?: AbortSignal } = {},
 ): Promise<SupportTicketUser> {
-  const data = await apiGet(API_ROUTES.supportTicketContext(ticketId));
+  const data = await apiGet(API_ROUTES.supportTicketContext(ticketId), {
+    signal,
+  });
 
   return mapTicketUser(data);
 }
 
-export async function getSupportTicket(ticketId: string) {
-  const data = await apiGet(API_ROUTES.supportTicket(ticketId));
+export async function getSupportTicket(
+  ticketId: string,
+  { signal }: { signal?: AbortSignal } = {},
+) {
+  const data = await apiGet(API_ROUTES.supportTicket(ticketId), { signal });
   const record = asRecord(data);
   const ticketRecord = firstValue(record, "ticket") ?? data;
 
@@ -389,27 +399,34 @@ export async function getSupportTicket(ticketId: string) {
 export async function listSupportTicketMessages(
   ticketId: string,
   params: { page?: number; limit?: number } = {},
+  { signal }: { signal?: AbortSignal } = {},
 ) {
   const data = await apiGet(API_ROUTES.supportTicketMessages(ticketId), {
     params: {
       page: params.page ?? 1,
       page_size: params.limit ?? 50,
     },
+    signal,
   });
 
   return listItems(data, "messages").map(mapSupportTicketMessage);
 }
 
-export async function getSupportTicketDetail(ticketId: string) {
+export async function getSupportTicketDetail(
+  ticketId: string,
+  { signal }: { signal?: AbortSignal } = {},
+) {
   const [ticket, context] = await Promise.all([
-    getSupportTicket(ticketId),
-    getSupportTicketContext(ticketId).catch(() => ({}) as SupportTicketUser),
+    getSupportTicket(ticketId, { signal }),
+    getSupportTicketContext(ticketId, { signal }).catch(
+      () => ({}) as SupportTicketUser,
+    ),
   ]);
 
   let messages: SupportTicketMessage[] = [];
 
   try {
-    messages = await listSupportTicketMessages(ticketId);
+    messages = await listSupportTicketMessages(ticketId, undefined, { signal });
   } catch {
     messages = [];
   }

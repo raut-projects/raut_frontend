@@ -4,6 +4,7 @@ import { useId, useMemo, useState } from "react";
 import { Trash2 } from "lucide-react";
 
 import SidePanel from "@/components/SidePanel";
+import { useToast } from "@/components/toastContext";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,7 @@ export function RoleEditorDialog({
   onSaved,
 }: RoleEditorDialogProps) {
   const formId = `role-editor-${useId()}`;
+  const toast = useToast();
   const { has } = usePermissions();
   const canManage = has(PERMISSIONS.PLATFORM_ROLES_MANAGE);
   const permissionsQuery = usePermissionCatalog(open && canManage);
@@ -162,6 +164,7 @@ export function RoleEditorDialog({
         { roleId: role.id, roleKey: role.key, payload },
         {
           onSuccess: () => {
+            toast.success("Role updated.");
             onSaved?.();
             handleClose();
           },
@@ -179,6 +182,7 @@ export function RoleEditorDialog({
 
     createMutation.mutate(payload, {
       onSuccess: () => {
+        toast.success("Role created.");
         onSaved?.();
         handleClose();
       },
@@ -190,6 +194,7 @@ export function RoleEditorDialog({
 
     deleteMutation.mutate(role.id, {
       onSuccess: () => {
+        toast.success("Role deleted.");
         setConfirmDelete(false);
         onSaved?.();
         handleClose();

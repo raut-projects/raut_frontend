@@ -49,7 +49,7 @@ function NewSupportTicketPage() {
     try {
       const ticketId = await createSupportTicket(form);
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.supportTickets.all,
+        queryKey: queryKeys.supportTickets.lists(),
       });
       toast.success("Support ticket created.");
       router.push(`/support-tickets/${encodeURIComponent(ticketId)}`);

@@ -13,10 +13,8 @@ import {
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
-import {
-  TicketPriorityBadge,
-  TicketStatusBadge,
-} from "@/components/supportTicketBadges";
+import { TicketStatusBadge } from "@/components/statusBadges";
+import { TicketPriorityBadge } from "@/components/supportTicketBadges";
 import { useToast } from "@/components/toastContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -211,17 +209,20 @@ function SupportTicketsPage() {
     resetPage();
   };
 
-  const updateTicketStatus = (
+  const updateTicketStatus = async (
     ticket: SupportTicket,
     nextStatus: SupportTicketStatus,
   ) => {
     void updateSupportTicketStatus(ticket.id, nextStatus, ticket.version)
-      .then(() => {
+      .then(async () => {
         toast.success(
           `${ticket.id} marked ${TICKET_STATUS_LABELS[nextStatus].toLowerCase()}.`,
         );
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.supportTickets.lists(),
+        });
         return queryClient.invalidateQueries({
-          queryKey: queryKeys.supportTickets.all,
+          queryKey: queryKeys.supportTickets.detail(ticket.id),
         });
       })
       .catch((error: unknown) => {

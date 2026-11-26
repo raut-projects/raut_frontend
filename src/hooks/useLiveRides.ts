@@ -14,9 +14,8 @@ import { LiveRidesSocket } from "@/services/liveRidesSocket";
 import { LIVE_RIDES_WS_URL } from "@/lib/config";
 import { LIVE_RIDES_USE_MOCK_DATA } from "@/lib/liveRides";
 import { usePageViewField } from "@/store/pageViewStore";
-import { useSession } from "@/hooks/useSession";
-import { normalizeRole } from "@/lib/roles";
-import { isFullControlRole, canEscalateOrNote } from "@/lib/liveRides";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PERMISSIONS, hasPermission } from "@/lib/permissions";
 import { useWindowedList } from "./useWindowedList";
 
 /**
@@ -25,9 +24,9 @@ import { useWindowedList } from "./useWindowedList";
  * Transport modes: mock mode refetches on filter changes, seeds the simulator
  * and advances it every 5 seconds; otherwise, when `LIVE_RIDES_WS_URL` is set,
  * a websocket streams ride updates after the initial REST snapshot. Filters
- * persist through `usePageViewField`. Permissions are derived from the
- * normalized session role: full-control roles can manage, any other known role
- * is view-only, and escalation/notes are role-gated. The filtered list is
+ * persist through `usePageViewField`. Permissions come from the RBAC snapshot:
+ * `rides.cancel` grants full management and `rides.read` allows escalation and
+ * notes when management is not granted. The filtered list is
  * sorted by newest status change and windowed with `useWindowedList`.
  *
  * @returns Filters and setters, filtered/visible rides, windowing props,
@@ -44,12 +43,13 @@ export function useLiveRides() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const socketRef = useRef<LiveRidesSocket | null>(null);
 
-  const session = useSession();
-  const role = normalizeRole(session?.role ?? null);
+  const { access, hydrated } = usePermissions();
+  const canManage = hydrated && hasPermission(access, PERMISSIONS.RIDES_CANCEL);
+  const canRead = hydrated && hasPermission(access, PERMISSIONS.RIDES_READ);
   const permissions = {
-    canManage: isFullControlRole(role),
-    canEscalateNote: canEscalateOrNote(role),
-    isViewOnly: !!role && !isFullControlRole(role),
+    canManage,
+    canEscalateNote: canRead && !canManage,
+    isViewOnly: canRead && !canManage,
   };
 
   const [status, setStatus] = usePageViewField("live-rides", "status");

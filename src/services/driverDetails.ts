@@ -15,8 +15,11 @@ import { mapDriver, mapDocument } from "./mappers";
  * allDocumentsVerified, canBeVerified, lastActivity }`.
  * Throws ApiError (including 404 "Driver not found.") on failure.
  */
-export async function getDriverDetails(driverId) {
-  const data = await apiGet(API_ROUTES.driverDetail(driverId));
+export async function getDriverDetails(
+  driverId,
+  { signal }: { signal?: AbortSignal } = {},
+) {
+  const data = await apiGet(API_ROUTES.driverDetail(driverId), { signal });
   const payload = data?.data ?? data ?? {};
   const profile = payload?.profile ?? payload?.driver ?? payload;
 

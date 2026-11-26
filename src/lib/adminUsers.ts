@@ -413,45 +413,17 @@ export const ADMIN_USER_DEFAULT_FORM: AdminUserFormValues = {
   sendWelcomeSms: true,
 };
 
-/** Maps accepted role spellings to canonical admin role keys. */
-const ROLE_ALIASES: Record<string, string> = {
-  super_admin: "super_admin",
-  superadmin: "super_admin",
-  "super-admin": "super_admin",
-  owner: "super_admin",
-  admin: "super_admin",
-  administrator: "super_admin",
-  platform_manager: "platform_manager",
-  "platform-manager": "platform_manager",
-  operations_agent: "operations_agent",
-  operations: "operations_agent",
-  operator: "operations_agent",
-  support_agent: "support_agent",
-  support: "support_agent",
-  "support-agent": "support_agent",
-  finance_manager: "finance_manager",
-  finance: "finance_manager",
-  finance_agent: "finance_agent",
-  marketing_manager: "marketing_manager",
-  marketing: "marketing_manager",
-  marketing_agent: "marketing_agent",
-  analyst: "analyst",
-  read_only: "analyst",
-};
-
 /**
- * Normalizes any role value to a canonical admin role key.
+ * Normalizes any role value for display and lookup.
  *
- * Trims, lowercases and collapses whitespace to underscores before alias
- * lookup; unknown values are preserved so backend-defined roles survive.
+ * Trims, lowercases and collapses whitespace to underscores; backend-defined
+ * roles are preserved unchanged apart from that formatting.
  */
 export function normalizeAdminRole(value: unknown): string {
-  const key = String(value ?? "")
+  return String(value ?? "")
     .trim()
     .toLowerCase()
     .replace(/\s+/g, "_");
-
-  return ROLE_ALIASES[key] ?? key;
 }
 
 /**

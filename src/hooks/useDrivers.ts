@@ -7,6 +7,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { listAllDrivers, listDrivers } from "../services/drivers";
 import { queryKeys } from "../lib/queryKeys";
+import { polledQueryOptions } from "../lib/queryClient";
 
 /**
  * Lists drivers for the supplied filters.
@@ -20,8 +21,9 @@ import { queryKeys } from "../lib/queryKeys";
 export function useDrivers(params) {
   return useQuery({
     queryKey: queryKeys.drivers.list(params),
-    queryFn: () => listDrivers(params),
+    queryFn: ({ signal }) => listDrivers(params, { signal }),
     placeholderData: keepPreviousData,
+    ...polledQueryOptions,
     refetchInterval: 30_000,
   });
 }
@@ -38,7 +40,8 @@ export function useDrivers(params) {
 export function useAllDrivers() {
   return useQuery({
     queryKey: queryKeys.drivers.list({ scope: "all" }),
-    queryFn: listAllDrivers,
+    queryFn: ({ signal }) => listAllDrivers({ signal }),
+    ...polledQueryOptions,
     refetchInterval: 30_000,
   });
 }

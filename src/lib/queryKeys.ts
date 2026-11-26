@@ -4,11 +4,13 @@
 export const queryKeys = {
   customers: {
     all: ["customers"],
+    lists: () => ["customers", "list"],
     list: (params) => ["customers", "list", params],
     stats: ["customers", "stats"],
   },
   drivers: {
     all: ["drivers"],
+    lists: () => ["drivers", "list"],
     list: (params) => ["drivers", "list", params],
     detail: (driverId) => ["drivers", "detail", driverId],
   },
@@ -18,6 +20,7 @@ export const queryKeys = {
   },
   rides: {
     all: ["rides"],
+    lists: () => ["rides", "list"],
     list: (params) => ["rides", "list", params],
     summary: ["rides", "summary"],
     dispute: (rideId: string) => ["rides", "dispute", rideId],
@@ -30,11 +33,13 @@ export const queryKeys = {
   },
   routes: {
     all: ["routes"],
+    lists: () => ["routes", "list"],
     list: (params) => ["routes", "list", params],
     summary: ["routes", "summary"],
   },
   payouts: {
     all: ["payouts"],
+    lists: () => ["payouts", "list"],
     list: (params) => ["payouts", "list", params],
     batchReview: ["payouts", "batch-review"],
     batchProcessing: ["payouts", "batch-processing"],
@@ -76,10 +81,21 @@ export const queryKeys = {
   },
   staff: {
     all: ["staff"],
+    lists: () => ["staff", "list"],
     list: (params) => ["staff", "list", params],
+    invitations: ["staff", "invitations"],
+    invitationLists: () => ["staff", "invitations", "list"],
+    invitationList: (params) => ["staff", "invitations", "list", params],
+    invitationVerification: (token) => [
+      "staff",
+      "invitations",
+      "verify",
+      token,
+    ],
   },
   supportTickets: {
     all: ["support-tickets"],
+    lists: () => ["support-tickets", "list"],
     list: (params) => ["support-tickets", "list", params],
     detail: (ticketId) => ["support-tickets", "detail", ticketId],
     agents: ["support-tickets", "agents"],
@@ -88,6 +104,7 @@ export const queryKeys = {
     all: ["marketing"],
     promotions: {
       all: ["marketing", "promotions"],
+      lists: () => ["marketing", "promotions", "list"],
       list: (params) => ["marketing", "promotions", "list", params],
       detail: (promotionId) => [
         "marketing",
@@ -101,19 +118,24 @@ export const queryKeys = {
     all: ["referrals"],
     programs: {
       all: ["referrals", "programs"],
+      lists: () => ["referrals", "programs", "list"],
       list: (params) => ["referrals", "programs", "list", params],
       detail: (programId) => ["referrals", "programs", "detail", programId],
     },
     users: {
       all: ["referrals", "users"],
+      lists: () => ["referrals", "users", "list"],
       list: (params) => ["referrals", "users", "list", params],
       detail: (userId) => ["referrals", "users", "detail", userId],
     },
     relationships: {
       all: ["referrals", "relationships"],
+      lists: () => ["referrals", "relationships", "list"],
       list: (params) => ["referrals", "relationships", "list", params],
     },
+    statsAll: () => ["referrals", "stats"],
     stats: (params) => ["referrals", "stats", params],
+    topReferrersAll: () => ["referrals", "top-referrers"],
     topReferrers: (limit) => ["referrals", "top-referrers", limit],
     pendingPayments: ["referrals", "payments", "pending"],
     myCode: ["referrals", "my-code"],

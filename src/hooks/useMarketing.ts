@@ -12,7 +12,14 @@ import {
 } from "@tanstack/react-query";
 
 import { queryKeys } from "@/lib/queryKeys";
-import type { PromotionListParams, PromotionPayload } from "@/lib/marketing";
+import { polledQueryOptions } from "@/lib/queryClient";
+import { derivePromotionStatus } from "@/lib/marketing";
+import type {
+  Promotion,
+  PromotionListParams,
+  PromotionListResult,
+  PromotionPayload,
+} from "@/lib/marketing";
 import {
   activatePromotion,
   createPromotion,
@@ -23,6 +30,37 @@ import {
   updatePromotion,
 } from "@/services/marketing";
 
+const patchPromotionStatus = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  promotionId: string,
+  isActive: boolean,
+) => {
+  const withStatus = (promotion: Promotion): Promotion => ({
+    ...promotion,
+    isActive,
+    status: derivePromotionStatus({
+      isActive,
+      startsAt: promotion.startsAt,
+      endsAt: promotion.endsAt,
+    }),
+  });
+
+  queryClient.setQueriesData<PromotionListResult>(
+    { queryKey: queryKeys.marketing.promotions.lists() },
+    (current) =>
+      current && {
+        ...current,
+        items: current.items.map((promotion) =>
+          promotion.id === promotionId ? withStatus(promotion) : promotion,
+        ),
+      },
+  );
+  queryClient.setQueryData<Promotion>(
+    queryKeys.marketing.promotions.detail(promotionId),
+    (current) => (current ? withStatus(current) : current),
+  );
+};
+
 /**
  * Lists promotions with keep-previous data and 60s polling.
  * Query key: marketing.promotions.list(params).
@@ -30,8 +68,9 @@ import {
 export function usePromotions(params: PromotionListParams) {
   return useQuery({
     queryKey: queryKeys.marketing.promotions.list(params),
-    queryFn: () => listPromotions(params),
+    queryFn: ({ signal }) => listPromotions(params, { signal }),
     placeholderData: keepPreviousData,
+    ...polledQueryOptions,
     refetchInterval: 60_000,
   });
 }
@@ -42,7 +81,7 @@ export function usePromotions(params: PromotionListParams) {
 export function usePromotion(promotionId: string) {
   return useQuery({
     queryKey: queryKeys.marketing.promotions.detail(promotionId),
-    queryFn: () => getPromotion(promotionId),
+    queryFn: ({ signal }) => getPromotion(promotionId, { signal }),
     enabled: Boolean(promotionId),
   });
 }
@@ -57,7 +96,7 @@ export function useCreatePromotion() {
     mutationFn: (payload: PromotionPayload) => createPromotion(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.marketing.promotions.all,
+        queryKey: queryKeys.marketing.promotions.lists(),
       });
     },
   });
@@ -74,7 +113,10 @@ export function useUpdatePromotion(promotionId: string) {
       updatePromotion(promotionId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.marketing.promotions.all,
+        queryKey: queryKeys.marketing.promotions.lists(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.marketing.promotions.detail(promotionId),
       });
     },
   });
@@ -88,9 +130,12 @@ export function useDeletePromotion() {
 
   return useMutation({
     mutationFn: (promotionId: string) => deletePromotion(promotionId),
-    onSuccess: () => {
+    onSuccess: (_data, promotionId) => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.marketing.promotions.all,
+        queryKey: queryKeys.marketing.promotions.lists(),
+      });
+      queryClient.removeQueries({
+        queryKey: queryKeys.marketing.promotions.detail(promotionId),
       });
     },
   });
@@ -104,10 +149,8 @@ export function useActivatePromotion() {
 
   return useMutation({
     mutationFn: (promotionId: string) => activatePromotion(promotionId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.marketing.promotions.all,
-      });
+    onSuccess: (_data, promotionId) => {
+      patchPromotionStatus(queryClient, promotionId, true);
     },
   });
 }
@@ -120,10 +163,8 @@ export function useDeactivatePromotion() {
 
   return useMutation({
     mutationFn: (promotionId: string) => deactivatePromotion(promotionId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.marketing.promotions.all,
-      });
+    onSuccess: (_data, promotionId) => {
+      patchPromotionStatus(queryClient, promotionId, false);
     },
   });
 }

@@ -33,11 +33,13 @@ export const buildQuery = (params = {}) => {
 type QueryOptions = {
   params?: Record<string, unknown>;
   auth?: boolean;
+  signal?: AbortSignal;
 };
 
 type BodyOptions = {
   body?: unknown;
   auth?: boolean;
+  signal?: AbortSignal;
 };
 
 /**
@@ -48,9 +50,9 @@ type BodyOptions = {
  */
 export const apiGet = async (
   path: string,
-  { params, auth = true }: QueryOptions = {},
+  { params, auth = true, signal }: QueryOptions = {},
 ) => {
-  const payload = await request(`${path}${buildQuery(params)}`, { auth });
+  const payload = await request(`${path}${buildQuery(params)}`, { auth, signal });
 
   return envelopeData(payload) ?? {};
 };
@@ -63,9 +65,9 @@ export const apiGet = async (
 export const apiPost = async (
   path: string,
   body?: unknown,
-  { auth = true }: BodyOptions = {},
+  { auth = true, signal }: BodyOptions = {},
 ) => {
-  const payload = await request(path, { method: "POST", body, auth });
+  const payload = await request(path, { method: "POST", body, auth, signal });
 
   return envelopeData(payload) ?? {};
 };
@@ -78,9 +80,9 @@ export const apiPost = async (
 export const apiPatch = async (
   path: string,
   body?: unknown,
-  { auth = true }: BodyOptions = {},
+  { auth = true, signal }: BodyOptions = {},
 ) => {
-  const payload = await request(path, { method: "PATCH", body, auth });
+  const payload = await request(path, { method: "PATCH", body, auth, signal });
 
   return envelopeData(payload) ?? {};
 };
@@ -93,9 +95,9 @@ export const apiPatch = async (
 export const apiPut = async (
   path: string,
   body?: unknown,
-  { auth = true }: BodyOptions = {},
+  { auth = true, signal }: BodyOptions = {},
 ) => {
-  const payload = await request(path, { method: "PUT", body, auth });
+  const payload = await request(path, { method: "PUT", body, auth, signal });
 
   return envelopeData(payload) ?? {};
 };
@@ -107,9 +109,9 @@ export const apiPut = async (
  */
 export const apiDelete = async (
   path: string,
-  { body, auth = true }: BodyOptions = {},
+  { body, auth = true, signal }: BodyOptions = {},
 ) => {
-  const payload = await request(path, { method: "DELETE", body, auth });
+  const payload = await request(path, { method: "DELETE", body, auth, signal });
 
   return envelopeData(payload) ?? {};
 };

@@ -18,17 +18,28 @@ import { QueryClient } from "@tanstack/react-query";
  *
  * Mutations: never retried automatically (retry 0).
  */
+const retryDelay = (attempt: number) => Math.min(1_000 * 2 ** attempt, 30_000);
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 30_000,
       gcTime: 5 * 60_000,
       retry: 1,
+      retryDelay,
+      networkMode: "online",
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
     },
     mutations: {
       retry: 0,
+      networkMode: "online",
     },
   },
 });
+
+// Polled lists already refresh on an interval, so a focus-driven refetch would
+// only duplicate the request that resumes when the tab becomes visible again.
+export const polledQueryOptions = {
+  refetchOnWindowFocus: false,
+} as const;

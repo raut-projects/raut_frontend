@@ -10,6 +10,7 @@ import { useRbacRegions, useRbacRoles } from "@/hooks/useRbacCatalog";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAssignStaffRole, useRevokeStaffRole } from "@/hooks/useStaff";
 import { PERMISSIONS } from "@/lib/permissions";
+import { isAssignableStaffRole } from "@/lib/rbacRoles";
 import { formatDate } from "@/services/mappers";
 import type { StaffMember, StaffScopeType } from "@/types/staff";
 
@@ -56,7 +57,7 @@ export function ManageStaffDialog({
   const [revokeError, setRevokeError] = useState("");
 
   const roles = useMemo(
-    () => (rolesQuery.data ?? []).filter((role) => role.id),
+    () => (rolesQuery.data ?? []).filter(isAssignableStaffRole),
     [rolesQuery.data],
   );
   const selectedRole = roles.find((role) => role.id === roleId);
@@ -74,6 +75,11 @@ export function ManageStaffDialog({
 
     if (!roleId) {
       setError("Choose a role to assign.");
+      return;
+    }
+
+    if (!roles.some((role) => role.id === roleId)) {
+      setError("The Super Admin role cannot be assigned.");
       return;
     }
 

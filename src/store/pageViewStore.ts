@@ -10,6 +10,7 @@ import type {
   SupportTicketPriority,
   SupportTicketStatus,
 } from "@/lib/supportTickets";
+import type { StaffInvitationStatus } from "@/types/staff";
 
 type PageViewValues = {
   routes: {
@@ -75,6 +76,9 @@ type PageViewValues = {
     status: AdminUserStatus;
     search: string;
     page: number;
+    view: "staff" | "invitations";
+    invitationStatus: StaffInvitationStatus | "all";
+    invitationPage: number;
   };
   "live-rides": {
     status: string;
@@ -167,6 +171,9 @@ function createInitialViews(): PageViewValues {
       status: "active",
       search: "",
       page: 1,
+      view: "staff",
+      invitationStatus: "all",
+      invitationPage: 1,
     },
     "live-rides": {
       status: "all",

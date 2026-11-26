@@ -1,9 +1,3 @@
-import {
-  ADMIN_ROLE_LABELS,
-  ADMIN_ROLE_TONES,
-  normalizeAdminRole,
-  roleDescription as legacyRoleDescription,
-} from "@/lib/adminUsers";
 import type { RbacCatalogRole } from "@/types/rbac";
 
 const ROLE_TONES = [
@@ -39,15 +33,28 @@ export function formatRoleKey(value: unknown) {
     .join(" ");
 }
 
+const normalizeRoleKey = (value: unknown) =>
+  String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_");
+
+const NON_ASSIGNABLE_STAFF_ROLE_KEYS = new Set(["super_admin"]);
+
+export function isAssignableStaffRole(role: RbacCatalogRole) {
+  if (!role.id) return false;
+  return !NON_ASSIGNABLE_STAFF_ROLE_KEYS.has(normalizeRoleKey(role.key));
+}
+
 export function findCatalogRole(
   roles: RbacCatalogRole[],
   key: string | null | undefined,
 ) {
-  const normalized = normalizeAdminRole(key);
+  const normalized = normalizeRoleKey(key);
 
   if (!normalized) return undefined;
 
-  return roles.find((role) => normalizeAdminRole(role.key) === normalized);
+  return roles.find((role) => normalizeRoleKey(role.key) === normalized);
 }
 
 export function roleDisplayName(
@@ -55,12 +62,7 @@ export function roleDisplayName(
 ) {
   const catalogName = roleName(role).trim();
 
-  if (catalogName) return catalogName;
-
-  const key = normalizeAdminRole(roleKey(role));
-  const legacyLabel = key ? ADMIN_ROLE_LABELS[key] : "";
-
-  return legacyLabel || formatRoleKey(key || roleName(role));
+  return catalogName || formatRoleKey(roleKey(role) || roleName(role));
 }
 
 export function roleCatalogDescription(
@@ -70,20 +72,13 @@ export function roleCatalogDescription(
     return role.description.trim();
   }
 
-  const key = normalizeAdminRole(roleKey(role));
-
-  return key ? legacyRoleDescription(key) : "";
+  return "";
 }
 
 export function roleToneFor(
   role: RbacCatalogRole | string | null | undefined,
 ) {
-  const key = normalizeAdminRole(roleKey(role));
-  const legacyTone = key ? ADMIN_ROLE_TONES[key] : "";
-
-  if (legacyTone) return legacyTone;
-
-  const source = key || normalizeAdminRole(roleName(role)) || "role";
+  const source = normalizeRoleKey(roleKey(role)) || normalizeRoleKey(roleName(role)) || "role";
   let hash = 7;
 
   for (const character of source) {

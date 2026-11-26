@@ -24,7 +24,10 @@ const asDocumentList = (payload) => {
  * GET /drivers/documents with `driver_id`, page 1, a 100-row page, newest first.
  * Returns the documents mapped for the admin UI. Throws ApiError on failure.
  */
-export async function listDriverDocuments(driverId) {
+export async function listDriverDocuments(
+  driverId,
+  { signal }: { signal?: AbortSignal } = {},
+) {
   const data = await apiGet(API_ROUTES.documents, {
     params: {
       driver_id: driverId,
@@ -33,6 +36,7 @@ export async function listDriverDocuments(driverId) {
       sort_by: 'created_at',
       sort_order: 'desc',
     },
+    signal,
   })
 
   return asDocumentList(data).map(mapDocument)

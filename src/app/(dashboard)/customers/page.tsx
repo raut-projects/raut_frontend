@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { EllipsisVertical } from "lucide-react";
 import { Can } from "@/components/Can";
 import ViewCustomerPanel from "@/components/viewCustomerPanel";
@@ -72,7 +72,10 @@ function Customers() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const debouncedSearch = useDebouncedValue(search, 300);
-  const params = { search: debouncedSearch, status, page, limit: PAGE_SIZE };
+  const params = useMemo(
+    () => ({ search: debouncedSearch, status, page, limit: PAGE_SIZE }),
+    [debouncedSearch, status, page],
+  );
 
   const {
     data,
@@ -540,7 +543,10 @@ function Customers() {
         onChange={setDeactivateReason}
         pending={deactivateUser.isPending}
         onConfirm={async () => {
-          await deactivateUser.mutateAsync();
+          await deactivateUser.mutateAsync({
+            userId: deactivateTarget.id,
+            reason: deactivateReason,
+          } as never);
           setDeactivateTarget(null);
         }}
       />

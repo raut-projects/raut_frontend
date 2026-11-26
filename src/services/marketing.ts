@@ -15,6 +15,7 @@ import type {
   PromotionStatus,
 } from "@/lib/marketing";
 import { apiDelete, apiGet, apiPost, apiPut } from "./api";
+import { ApiError } from "./http";
 
 type RecordValue = Record<string, unknown>;
 
@@ -126,9 +127,24 @@ const normalizeStatus = (
  */
 export function mapPromotion(value: unknown): Promotion {
   const record = asRecord(value);
-  const eligibility = asRecord(
-    firstValue(record, "eligibility_criteria", "eligibility"),
+  const eligibilityValue = firstValue(
+    record,
+    "eligibility_criteria",
+    "eligibility",
   );
+  let eligibility = asRecord(eligibilityValue);
+  if (
+    eligibilityValue &&
+    typeof eligibilityValue === "string" &&
+    Object.keys(eligibility).length === 0
+  ) {
+    try {
+      const parsed = JSON.parse(eligibilityValue);
+      eligibility = asRecord(parsed);
+    } catch {
+      // Keep empty eligibility when the string is not valid JSON.
+    }
+  }
   const startsAt = text(
     firstValue(record, "start_date", "starts_at", "startsAt", "startDate", "start"),
   );
@@ -341,10 +357,11 @@ export function mapPromotion(value: unknown): Promotion {
  */
 export async function listPromotions(
   params: PromotionListParams = {},
+  { signal }: { signal?: AbortSignal } = {},
 ): Promise<PromotionListResult> {
   const page = Math.max(1, params.page ?? 1);
   const limit = Math.max(1, params.limit ?? 20);
-  const data = await apiGet(API_ROUTES.marketingPromotions);
+  const data = await apiGet(API_ROUTES.marketingPromotions, { signal });
   const items = listItems(data, "promotions").map(mapPromotion);
   const search = params.search?.trim().toLowerCase() ?? "";
   const filtered = items.filter((promotion) => {
@@ -377,12 +394,42 @@ export async function listPromotions(
  * GET /marketing/promotions/:promotionId, accepting `{ promotion }` or the
  * record itself. Returns the mapped Promotion. Throws ApiError on failure.
  */
-export async function getPromotion(promotionId: string): Promise<Promotion> {
-  const data = await apiGet(API_ROUTES.marketingPromotion(promotionId));
+export async function getPromotion(
+  promotionId: string,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<Promotion> {
+  const data = await apiGet(API_ROUTES.marketingPromotion(promotionId), {
+    signal,
+  });
   const record = asRecord(data);
 
   return mapPromotion(firstValue(record, "promotion") ?? data);
 }
+
+const isEligibilityArg12Error = (error: unknown) => {
+  if (!(error instanceof ApiError)) return false;
+  const message = typeof error.message === "string" ? error.message : "";
+  return (
+    message.includes("query argument $12") &&
+    message.includes("eligibility_criteria") &&
+    (message.includes("expected str, got dict") || message.includes("got dict"))
+  );
+};
+
+const withEligibilityCompatibility = async <T>(
+  payload: PromotionPayload,
+  send: (body: PromotionPayload | (Omit<PromotionPayload, "eligibility_criteria"> & { eligibility_criteria: string })) => Promise<T>,
+) => {
+  try {
+    return await send(payload);
+  } catch (error) {
+    if (!isEligibilityArg12Error(error)) throw error;
+    return send({
+      ...payload,
+      eligibility_criteria: JSON.stringify(payload.eligibility_criteria),
+    });
+  }
+};
 
 /**
  * Creates a promotion.
@@ -391,7 +438,9 @@ export async function getPromotion(promotionId: string): Promise<Promotion> {
  * Throws ApiError on failure.
  */
 export async function createPromotion(payload: PromotionPayload) {
-  const data = await apiPost(API_ROUTES.marketingPromotions, payload);
+  const data = await withEligibilityCompatibility(payload, (body) =>
+    apiPost(API_ROUTES.marketingPromotions, body),
+  );
   const record = asRecord(data);
   const created = asRecord(firstValue(record, "promotion") ?? data);
 
@@ -409,7 +458,9 @@ export async function updatePromotion(
   promotionId: string,
   payload: PromotionPayload,
 ) {
-  return apiPut(API_ROUTES.marketingPromotion(promotionId), payload);
+  return withEligibilityCompatibility(payload, (body) =>
+    apiPut(API_ROUTES.marketingPromotion(promotionId), body),
+  );
 }
 
 /**

@@ -36,20 +36,20 @@ export type ConfigFieldUnit =
 export type ConfigFieldSpec = {
   key: string;
   label: string;
-  type: ConfigFieldType;
-  valueKey?: string;
+  type: "number" | "text" | "switch" | "select" | "json";
   unit?: ConfigFieldUnit;
   hint?: string;
   min?: number;
   max?: number;
   step?: number;
-  placeholder?: string;
   pattern?: RegExp;
   patternMessage?: string;
-  options?: { label: string; value: string }[];
+  placeholder?: string;
+  options?: Array<{ label: string; value: string }>;
+  valueKey?: string;
+  order?: number;
+  readOnly?: boolean;
 };
-
-/** A titled group of config fields. */
 export type ConfigSectionSpec = {
   id: string;
   title: string;
@@ -606,13 +606,6 @@ export const OPERATIONS_SECTIONS: ConfigSectionSpec[] = [
   },
 ];
 
-const LATRA_CONFIG_KEYS = new Set([
-  "latra.auto_submit_daily_report",
-  "latra.auto_submit_trips",
-  "latra.cets_base_url",
-  "latra.jwt_expiry_minutes",
-]);
-
 export const LATRA_SECTION: ConfigSectionSpec = {
   id: "latra",
   title: "LATRA compliance",
@@ -626,7 +619,7 @@ export const LATRA_SECTION: ConfigSectionSpec = {
 };
 
 export const isLATRAConfig = (record: ConfigRecord) =>
-  LATRA_CONFIG_KEYS.has(record.key);
+  record.key.startsWith("latra.");
 
 // Keys belonging to the public (boda/bajaji) pricing tab.
 const PUBLIC_KEYS = new Set([
@@ -674,15 +667,17 @@ export function pricingTabForKey(key: string): PricingTabId | null {
 
 /** True when a record is a feature flag (by type or "feature." key). */
 export const isFeatureConfig = (record: ConfigRecord) =>
-  record.type === "feature_flag" || record.key.startsWith("feature.");
+  !isLATRAConfig(record) &&
+  (record.type === "feature_flag" || record.key.startsWith("feature."));
 
 /** True when a record is a quoting or ride-rule config. */
 export const isOperationsConfig = (record: ConfigRecord) =>
-  record.key.startsWith("quote.") || record.key.startsWith("ride.");
+  !isLATRAConfig(record) &&
+  (record.key.startsWith("quote.") || record.key.startsWith("ride."));
 
 /** True when a record belongs to one of the pricing tabs. */
 export const isPricingConfig = (record: ConfigRecord) =>
-  pricingTabForKey(record.key) !== null;
+  !isLATRAConfig(record) && pricingTabForKey(record.key) !== null;
 
 // Fallback spec inferred from the first value's runtime type.
 const inferFieldSpec = (record: ConfigRecord): ConfigFieldSpec => {
@@ -732,10 +727,67 @@ export function humanizeKey(key: string) {
   return name ? name.charAt(0).toUpperCase() + name.slice(1) : "Setting";
 }
 
-/** Returns the registered spec for a record, or an inferred fallback. */
-export const fieldSpecFor = (record: ConfigRecord): ConfigFieldSpec =>
-  CONFIG_FIELDS[record.key] ?? inferFieldSpec(record);
+const normalizeUnit = (unit?: string | null): ConfigFieldUnit | undefined => {
+  const value = String(unit ?? "")
+    .toLowerCase()
+    .trim();
+  if (!value) return undefined;
+  if (["money", "tzs", "currency"].includes(value)) return "money";
+  if (["percent", "percentage", "%"].includes(value)) return "percent";
+  if (["multiplier", "x"].includes(value)) return "multiplier";
+  if (["ratio"].includes(value)) return "ratio";
+  if (["minutes", "minute", "min"].includes(value)) return "minutes";
+  if (["seconds", "second", "s", "sec"].includes(value)) return "seconds";
+  if (["meters", "meter", "m"].includes(value)) return "meters";
+  if (["km", "kilometer", "kilometers"].includes(value)) return "km";
+  if (["count", "integer", "number"].includes(value)) return "count";
+  return undefined;
+};
 
+const inferFieldType = (record: ConfigRecord): ConfigFieldSpec["type"] => {
+  const explicit = String(record.fieldType ?? "").toLowerCase();
+  if (explicit === "boolean" || explicit === "switch") return "switch";
+  if (explicit === "number" || explicit === "integer" || explicit === "float")
+    return "number";
+  if (explicit === "select" || explicit === "enum") return "select";
+  if (explicit === "json" || explicit === "object" || explicit === "array")
+    return "json";
+  if (explicit === "text" || explicit === "string") return "text";
+  const sample = Object.values(record.value ?? {})[0];
+  if (typeof sample === "boolean") return "switch";
+  if (typeof sample === "number") return "number";
+  if (sample && typeof sample === "object") return "json";
+  return "text";
+};
+
+/** Returns the registered spec for a record, or an inferred fallback. */
+export const fieldSpecFor = (record: ConfigRecord): ConfigFieldSpec => {
+  const known = CONFIG_FIELDS[record.key];
+  const inferredType = inferFieldType(record);
+  const firstKey = Object.keys(record.value ?? {})[0];
+  const options = record.options ?? known?.options;
+  const type =
+    options && (known?.type ?? inferredType) !== "switch"
+      ? "select"
+      : (known?.type ?? inferredType);
+  return {
+    key: record.key,
+    label: String(record.label ?? known?.label ?? humanizeKey(record.key)),
+    type,
+    unit: normalizeUnit(record.unit) ?? known?.unit,
+    hint: String(record.description ?? known?.hint ?? "") || undefined,
+    min: record.min ?? known?.min,
+    max: record.max ?? known?.max,
+    step: record.step ?? known?.step,
+    pattern: known?.pattern,
+    patternMessage: known?.patternMessage,
+    placeholder: record.placeholder ?? known?.placeholder,
+    options: options ?? undefined,
+    valueKey: known?.valueKey ?? firstKey ?? "value",
+    order: record.order ?? known?.order,
+    readOnly: record.readOnly ?? known?.readOnly,
+  };
+};
 /**
  * Reads a field's value from a config value.
  *
@@ -828,14 +880,22 @@ export function draftToUpdates(
     if (next === undefined) continue;
     if (next === toDraftValue(record)) continue;
 
-    const parsed =
-      spec.type === "switch"
-        ? Boolean(next)
-        : spec.type === "number"
-          ? Number(next)
-          : String(next).trim();
-
-    if (spec.type === "number" && !Number.isFinite(parsed)) continue;
+    let parsed: unknown = String(next).trim();
+    if (spec.type === "switch") parsed = Boolean(next);
+    else if (spec.type === "number") {
+      parsed = Number(next);
+      if (!Number.isFinite(parsed as number)) continue;
+    } else if (spec.type === "json") {
+      const text = String(next).trim();
+      if (!text) parsed = null;
+      else {
+        try {
+          parsed = JSON.parse(text);
+        } catch {
+          continue;
+        }
+      }
+    }
 
     updates.push({
       key: record.key,
@@ -872,25 +932,30 @@ export function validateConfigDraft(
       continue;
     }
 
+    if (spec.type === "json") {
+      if (text) {
+        try {
+          JSON.parse(text);
+        } catch {
+          errors[record.key] = `${spec.label} must be valid JSON`;
+        }
+      }
+      continue;
+    }
     if (spec.type !== "number") continue;
-
     if (!text) {
       errors[record.key] = `${spec.label} is required`;
       continue;
     }
-
     const amount = Number(text);
-
     if (!Number.isFinite(amount)) {
       errors[record.key] = `${spec.label} must be a number`;
       continue;
     }
-
     if (spec.min !== undefined && amount < spec.min) {
       errors[record.key] = `${spec.label} must be at least ${spec.min}`;
       continue;
     }
-
     if (spec.max !== undefined && amount > spec.max) {
       errors[record.key] = `${spec.label} must be at most ${spec.max}`;
     }
@@ -966,14 +1031,22 @@ export function sectionsForRecords(
     })
     .filter((section) => section.fields.length > 0);
 
-  const extra = records.filter((record) => !covered.has(record.key));
+  const extra = records.filter(
+    (record) => !record.hidden && !covered.has(record.key),
+  );
 
   if (extra.length) {
     resolved.push({
       id: "other",
       title: "Other settings",
       description: "Additional configuration keys returned by the API.",
-      fields: extra.map(fieldSpecFor),
+      fields: extra
+        .map(fieldSpecFor)
+        .sort(
+          (a, b) =>
+            (a.order ?? 10_000) - (b.order ?? 10_000) ||
+            a.label.localeCompare(b.label),
+        ),
     });
   }
 

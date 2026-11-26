@@ -64,12 +64,18 @@ export const API_ROUTES = {
   rbacRegions: "/rbac/regions",
   staff: "/staff",
   staffInvitations: "/staff/invitations",
-  staffRoles: (userId: string) =>
-    `/staff/${encodeURIComponent(userId)}/roles`,
+  staffInvitationVerify: "/staff/invitations/verify",
+  staffInvitationAccept: "/staff/invitations/accept",
+  staffInvitationCancel: (invitationId: string) =>
+    `/staff/invitations/${encodeURIComponent(invitationId)}/cancel`,
+  staffInvitationResend: (invitationId: string) =>
+    `/staff/invitations/${encodeURIComponent(invitationId)}/resend`,
+  staffRoles: (userId: string) => `/staff/${encodeURIComponent(userId)}/roles`,
   staffRole: (userId: string, assignmentId: string) =>
     `/staff/${encodeURIComponent(userId)}/roles/${encodeURIComponent(assignmentId)}`,
   staffDeactivate: (userId: string) =>
     `/staff/${encodeURIComponent(userId)}/deactivate`,
+  confirmResetPassword: "/auth/password/reset/confirm",
   resetPassword: "/auth/password/reset",
   passwordUpdate: "/auth/password/update",
   notifications: "/notifications/",
@@ -193,14 +199,4 @@ export const REFRESH_TOKEN_FIELD = "refresh_token";
 /** Default API request timeout in milliseconds (15 seconds). */
 export const REQUEST_TIMEOUT_MS = 15000;
 
-/**
- * How long a role confirmed by the server stays trusted before the admin gate
- * asks the backend again (GET /auth/me). Five minutes.
- */
-// How long a role confirmed by the server stays trusted before the admin gate
-// asks the backend again (GET /auth/me).
-export const ROLE_REVALIDATE_MS = 5 * 60 * 1000;
 
-export const RBAC_REVALIDATE_MS = 5 * 60 * 1000;
-
-export const RBAC_STALE_GRACE_MS = 24 * 60 * 60 * 1000;

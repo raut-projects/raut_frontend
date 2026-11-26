@@ -6,22 +6,23 @@ import {
   hasAnyPermission,
   hasPermission,
 } from "../lib/permissions";
-import { useSession } from "./useSession";
+import { usePermissionStore } from "@/store/permissionStore";
 
 export function usePermissions() {
-  const session = useSession();
-  const access = session?.access ?? null;
+  const access = usePermissionStore((state) => state.access);
+  const hydrated = usePermissionStore((state) => state.hydrated);
 
   return useMemo(
     () => ({
       access,
+      hydrated,
       roles: access?.roles ?? [],
       permissions: access?.permissions ?? [],
-      loaded: Boolean(access),
+      loaded: hydrated && Boolean(access),
       has: (permission: string) => hasPermission(access, permission),
       hasAny: (permissions: string[]) => hasAnyPermission(access, permissions),
       hasAll: (permissions: string[]) => hasAllPermissions(access, permissions),
     }),
-    [access],
+    [access, hydrated],
   );
 }

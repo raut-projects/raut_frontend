@@ -8,12 +8,15 @@ import { mapRoute } from "./mappers";
 
 const SUMMARY_STATUSES = ["active", "completed", "cancelled"];
 
-const countRoutes = async (status?: string) => {
+const countRoutes = async (
+  status?: string,
+  { signal }: { signal?: AbortSignal } = {},
+) => {
   const params: Record<string, string | number> = { page: 1, page_size: 1 };
 
   if (status) params.status = status;
 
-  const data = await apiGet(API_ROUTES.routes, { params });
+  const data = await apiGet(API_ROUTES.routes, { params, signal });
 
   return data?.pagination?.total_items ?? 0;
 };
@@ -27,7 +30,7 @@ export async function listRoutes({
   to = "",
   page = 1,
   limit = 10,
-} = {}) {
+} = {}, { signal }: { signal?: AbortSignal } = {}) {
   const params: Record<string, string | number> = {
     page,
     page_size: limit,
@@ -42,7 +45,7 @@ export async function listRoutes({
   if (from) params.start_date = from;
   if (to) params.end_date = to;
 
-  const data = await apiGet(API_ROUTES.routes, { params });
+  const data = await apiGet(API_ROUTES.routes, { params, signal });
   const items = (data?.items ?? []).map(mapRoute);
 
   return {
@@ -53,10 +56,12 @@ export async function listRoutes({
   };
 }
 
-export async function getRouteSummary() {
+export async function getRouteSummary({
+  signal,
+}: { signal?: AbortSignal } = {}) {
   const [total, active, completed, cancelled] = await Promise.all([
-    countRoutes(),
-    ...SUMMARY_STATUSES.map(countRoutes),
+    countRoutes(undefined, { signal }),
+    ...SUMMARY_STATUSES.map((status) => countRoutes(status, { signal })),
   ]);
 
   return { total, active, completed, cancelled };

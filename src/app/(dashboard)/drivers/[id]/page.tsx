@@ -40,7 +40,7 @@ import {
 } from "@/hooks/useAdminActions";
 import { useDriverDetails } from "@/hooks/useDriverDetails";
 import { useToast } from "@/components/toastContext";
-import { useAuthStore } from "@/store/authStore";
+import { usePermissions } from "@/hooks/usePermissions";
 import { usePageViewField } from "@/store/pageViewStore";
 import {
   formatDate,
@@ -215,12 +215,8 @@ function DriverDetailsPage() {
   const driverId = Array.isArray(routeId) ? routeId[0] : routeId;
   const router = useRouter();
   const toast = useToast();
-  const sessionRole = useAuthStore((state) => state.session?.role);
-  const normalizedRole = String(sessionRole ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/[\s-]+/g, "_");
-  const canProcessPayouts = ["finance", "finance_manager"].includes(normalizedRole);
+  const { has } = usePermissions();
+  const canProcessPayouts = has(PERMISSIONS.FINANCE_PAYOUTS_MANAGE);
   const [, setRidesDriverId] = usePageViewField("rides", "driverId");
   const [, setPayoutDriverId] = usePageViewField("payouts", "driverId");
   const [, setPayoutStatus] = usePageViewField("payouts", "status");
