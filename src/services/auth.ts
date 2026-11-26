@@ -379,46 +379,17 @@ export async function resetPassword(email) {
 }
 
 /**
- * Completes a password reset by submitting a new password with the reset token.
- * POST /auth/password/update (API_ROUTES.passwordUpdate) with no bearer token.
- * Accepts flexible token/code/email params to match backend reset-link payloads.
- * Throws ApiError on failure.
+ * Changes the signed-in user's password.
+ *
+ * POST /auth/password/update (API_ROUTES.passwordUpdate) with `{ password }`
+ * and the bearer token. Returns the envelope message when the backend supplies
+ * one. Throws ApiError on failure.
  */
-export async function updatePassword({
-  token,
-  code,
-  email,
-  password,
-}: {
-  token?: string | null;
-  code?: string | null;
-  email?: string | null;
-  password: string;
-}) {
-  const body: Record<string, string> = {
-    password: String(password ?? ""),
-    new_password: String(password ?? ""),
-    password_confirmation: String(password ?? ""),
-  };
-
-  const tokenValue = String(token ?? "").trim();
-  const codeValue = String(code ?? "").trim();
-  const emailValue = String(email ?? "").trim();
-
-  if (tokenValue) {
-    body.token = tokenValue;
-    body.reset_token = tokenValue;
-  }
-  if (codeValue) {
-    body.code = codeValue;
-    body.otp = codeValue;
-  }
-  if (emailValue) body.email = emailValue;
-
+export async function updatePassword(password: string) {
   const payload = await request(API_ROUTES.passwordUpdate, {
     method: "POST",
-    body,
-    auth: false,
+    body: { password: String(password ?? "") },
+    auth: true,
   });
 
   return envelopeMessage(payload);
