@@ -4,7 +4,7 @@
  * machine-readable keys where both are needed.
  */
 /** Roles recognized by the admin application. */
-export type UserRole = string
+export type UserRole = string;
 
 /**
  * Customer/admin-user row used by the customers table.
@@ -13,18 +13,18 @@ export type UserRole = string
  * and `createdAt` are formatted strings rather than Date objects.
  */
 export interface Customer {
-  id: string | number | null
-  name: string
-  email: string
-  phone: string
-  orders: number
-  joined: string
-  status: 'Active' | 'Inactive' | string
-  statusKey: 'active' | 'inactive' | string
-  role: UserRole | string
-  isDriver: boolean
-  isActive: boolean
-  createdAt: string | null
+  id: string | number | null;
+  name: string;
+  email: string;
+  phone: string;
+  orders: number;
+  joined: string;
+  status: "Active" | "Inactive" | string;
+  statusKey: "active" | "inactive" | string;
+  role: UserRole | string;
+  isDriver: boolean;
+  isActive: boolean;
+  createdAt: string | null;
 }
 
 /**
@@ -34,18 +34,50 @@ export interface Customer {
  * and `statusKey` the filter value.
  */
 export interface Driver {
-  id: string | number | null
-  name: string
-  phone: string
-  email: string
-  status: string
-  statusKey: string
-  rides: number
-  rating: number
-  ratingCount: number
-  isActive: boolean
-  joined: string
-  verifiedAt: string
+  id: string | number | null;
+  name: string;
+  phone: string;
+  email: string;
+  profilePhotoUrl?: string | null;
+  status: string;
+  statusKey: string;
+  rides: number;
+  totalDrives?: number;
+  rating: number;
+  ratingCount: number;
+  isActive: boolean;
+  joined: string;
+  verifiedAt: string;
+  vehicle?: string | null;
+  vehicleMake?: string | null;
+  vehicleModel?: string | null;
+  vehicleType?: string | null;
+  vehicleYear?: string | number | null;
+  vehicleColor?: string | null;
+  plateNumber?: string | null;
+  vehiclePlateVerified?: boolean | null;
+}
+
+export interface DriverLatraStatus {
+  submitted: boolean | string | null;
+  submittedAt: string | null;
+  submissionStatus: string | null;
+  referenceNumber: string | null;
+  errorMessage: string | null;
+}
+
+export interface DriverDetails extends Driver {
+  profile: Record<string, any>;
+  documents: Record<string, any>[];
+  vehicles: Record<string, any>[];
+  primaryVehicle: Record<string, any> | null;
+  driveStats: Record<string, any> | null;
+  payoutStats: Record<string, any> | null;
+  missingDocuments: unknown[];
+  allDocumentsVerified: boolean | null;
+  canBeVerified: boolean | null;
+  lastActivity: string | null;
+  latra: DriverLatraStatus;
 }
 
 /**
@@ -55,14 +87,14 @@ export interface Driver {
  * was last confirmed.
  */
 export interface AuthSession {
-  id: string | number | null
-  name: string
-  phone: string
-  role: string
-  roleLabel: string
-  initials: string
-  signedInAt: string
-  roleVerifiedAt?: number
+  id: string | number | null;
+  name: string;
+  phone: string;
+  role: string;
+  roleLabel: string;
+  initials: string;
+  signedInAt: string;
+  roleVerifiedAt?: number;
 }
 
 /**
@@ -71,13 +103,13 @@ export interface AuthSession {
  * additional backend fields not modeled here.
  */
 export interface AuthUser {
-  id: string | number | null
-  full_name?: string
-  email?: string
-  phone?: string
-  role?: UserRole | string
-  is_admin?: boolean
-  is_super_admin?: boolean
-  permissions?: string[]
-  [key: string]: unknown
+  id: string | number | null;
+  full_name?: string;
+  email?: string;
+  phone?: string;
+  role?: UserRole | string;
+  is_admin?: boolean;
+  is_super_admin?: boolean;
+  permissions?: string[];
+  [key: string]: unknown;
 }

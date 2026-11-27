@@ -49,6 +49,7 @@ import {
   formatRelative,
 } from "@/services/mappers";
 import { ApiError } from "@/services/http";
+import type { DriverLatraStatus } from "@/types";
 import { PERMISSIONS } from "@/lib/permissions";
 
 const isRecord = (value) =>
@@ -300,6 +301,13 @@ function DriverDetailsPage() {
   }
 
   const profile = driver.profile ?? {};
+  const latraFromDriver: DriverLatraStatus = driver.latra ?? {
+    submitted: null,
+    submittedAt: null,
+    submissionStatus: null,
+    referenceNumber: null,
+    errorMessage: null,
+  };
   const nestedProfile = profile.profile ?? {};
   const personal =
     profile.personal_information ??
@@ -310,6 +318,7 @@ function DriverDetailsPage() {
     nestedProfile.account ??
     {};
   const vehicleValue =
+    driver.primaryVehicle ??
     profile.vehicle ??
     profile.vehicle_info ??
     profile.vehicle_details ??
@@ -322,6 +331,19 @@ function DriverDetailsPage() {
     : isRecord(vehicleValue)
       ? vehicleValue
       : {};
+  const latra = {
+    submitted: latraFromDriver.submitted ?? vehicle.latra_verified ?? null,
+    submittedAt:
+      latraFromDriver.submittedAt ?? vehicle.latra_submitted_at ?? null,
+    submissionStatus:
+      latraFromDriver.submissionStatus ??
+      vehicle.latra_submission_status ??
+      null,
+    referenceNumber:
+      latraFromDriver.referenceNumber ?? vehicle.latra_reference_number ?? null,
+    errorMessage:
+      latraFromDriver.errorMessage ?? vehicle.latra_error_message ?? null,
+  };
   const performance = profile.performance ?? profile.metrics ?? {};
   const earnings = profile.earnings ?? profile.earnings_summary ?? {};
   const earningsPeriod =
@@ -342,32 +364,9 @@ function DriverDetailsPage() {
   const isSuspended = driver.statusKey === "suspended";
   const email = driver.email === "—" ? "" : driver.email;
   const phone = driver.phone === "—" ? "" : driver.phone;
-  const phoneVerified = firstValue(
-    [profile, personal],
-    [
-      "phone_verified",
-      "is_phone_verified",
-      "phone_is_verified",
-      "phone_verification_status",
-    ],
-  );
-  const phoneVerifiedAt = firstValue(
-    [profile, personal],
-    ["phone_verified_at"],
-  );
-  const emailVerified = firstValue(
-    [profile, personal],
-    [
-      "email_verified",
-      "is_email_verified",
-      "email_is_verified",
-      "email_verification_status",
-    ],
-  );
-  const emailVerifiedAt = firstValue(
-    [profile, personal],
-    ["email_verified_at"],
-  );
+  const profilePhotoUrl =
+    driver.profilePhotoUrl ??
+    firstValue([profile, personal], ["profile_photo_url", "photo_url"]);
   const nationalId = firstValue(
     [profile, personal],
     ["national_id", "national_id_number", "identification_number", "id_number"],
@@ -398,8 +397,27 @@ function DriverDetailsPage() {
           ? "Online status unavailable"
           : "Offline";
   const photoFields: [string, string[]][] = [
-    ["Front", ["front_photo", "front_image", "vehicle_front_photo"]],
-    ["Back", ["back_photo", "back_image", "vehicle_back_photo"]],
+    [
+      "Front",
+      [
+        "front_photo_url",
+        "front_photo",
+        "front_image",
+        "vehicle_front_photo",
+        "vehicle_front_photo_url",
+      ],
+    ],
+    [
+      "Back",
+      [
+        "back_photo_url",
+        "rear_photo_url",
+        "back_photo",
+        "back_image",
+        "vehicle_back_photo",
+        "vehicle_back_photo_url",
+      ],
+    ],
     ["Left", ["left_photo", "left_image", "vehicle_left_photo"]],
     ["Right", ["right_photo", "right_image", "vehicle_right_photo"]],
     ["Interior", ["interior_photo", "interior_image", "vehicle_interior_photo"]],
@@ -473,9 +491,16 @@ function DriverDetailsPage() {
           joined: driver.joined,
           verifiedAt: driver.verifiedAt,
           rides: driver.rides,
+          totalDrives: driver.totalDrives,
           rating: driver.rating,
           ratingCount: driver.ratingCount,
           profile,
+          vehicle: driver.vehicle ?? null,
+          primaryVehicle: driver.primaryVehicle ?? null,
+          vehicles: driver.vehicles ?? [],
+          driveStats: driver.driveStats ?? null,
+          payoutStats: driver.payoutStats ?? null,
+          latra,
         },
         documents: items.map(
           ({
@@ -619,9 +644,14 @@ function DriverDetailsPage() {
       formatHours(getMetric(["average_weekly_hours", "avg_weekly_hours"])),
     ],
     ["Peak hours", getMetric(["peak_hours", "peak_activity_hours"])],
-    ...(driver.driveStats?.total_drives != null
-      ? ([["Total drives", driver.driveStats.total_drives]] as [string, unknown][])
-      : []),
+    ...(driver.driveStats?.total_drives ?? driver.totalDrives) != null
+      ? ([
+        [
+          "Total drives",
+          driver.driveStats?.total_drives ?? driver.totalDrives,
+        ],
+      ] as [string, unknown][])
+      : [],
     ...(driver.lastActivity
       ? ([["Last activity", formatRelative(driver.lastActivity)]] as [string, unknown][])
       : []),
@@ -672,7 +702,7 @@ function DriverDetailsPage() {
         <div className="flex flex-wrap gap-2">
           { driver.statusKey === "pending" && (
             <>
-              <Can permission={PERMISSIONS.DRIVERS_VERIFY}>
+              <Can permission={ PERMISSIONS.DRIVERS_VERIFY }>
                 <Button
                   type="button"
                   variant="outline"
@@ -702,7 +732,7 @@ function DriverDetailsPage() {
               </Button>
             </>
           ) }
-          <Can permission={PERMISSIONS.DRIVERS_SUSPEND}>
+          <Can permission={ PERMISSIONS.DRIVERS_SUSPEND }>
             { isSuspended ? (
               <Button
                 type="button"
@@ -776,17 +806,34 @@ function DriverDetailsPage() {
         </div>
 
         <DriverSection icon={ UserRound } title="Personal Information">
+          { typeof profilePhotoUrl === "string" && profilePhotoUrl.length > 0 && (
+            <button
+              type="button"
+              onClick={ () =>
+                setLightboxPhoto({ label: "Profile photo", url: profilePhotoUrl })
+              }
+              className="group relative mb-4 h-28 w-28 overflow-hidden rounded-full border border-slate-200 bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+            >
+              <img
+                src={ profilePhotoUrl }
+                alt=""
+                loading="lazy"
+                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+              />
+              <span className="absolute inset-x-0 bottom-0 bg-slate-950/70 px-2 py-1 text-xs font-medium text-white">
+                Profile photo
+              </span>
+            </button>
+          ) }
           <dl className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
             <InfoField label="Name" value={ driver.name } />
             <InfoField
               label="Phone"
               value={ phone }
-              badge={ verificationLabel(phoneVerified, phoneVerifiedAt) }
             />
             <InfoField
               label="Email"
               value={ email }
-              badge={ verificationLabel(emailVerified, emailVerifiedAt) }
             />
             <InfoField label="National ID" value={ nationalId } />
             <InfoField
@@ -890,6 +937,28 @@ function DriverDetailsPage() {
           </div>
         </DriverSection>
 
+        <DriverSection icon={ ShieldAlert } title="LATRA Compliance">
+          <dl className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
+            <InfoField label="Submitted" value={ latra.submitted } />
+            <InfoField
+              label="Submitted at"
+              value={ latra.submittedAt ? formatDate(latra.submittedAt) : null }
+              detail={
+                latra.submittedAt ? formatRelative(latra.submittedAt) : null
+              }
+            />
+            <InfoField
+              label="Submission status"
+              value={ latra.submissionStatus }
+            />
+            <InfoField
+              label="Reference number"
+              value={ latra.referenceNumber }
+            />
+            <InfoField label="Error message" value={ latra.errorMessage } />
+          </dl>
+        </DriverSection>
+
         <DriverSection
           icon={ FileText }
           title="Documents"
@@ -974,7 +1043,7 @@ function DriverDetailsPage() {
                     ) }
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
-                    <Can permission={PERMISSIONS.DRIVERS_DOCUMENTS_REVIEW}>
+                    <Can permission={ PERMISSIONS.DRIVERS_DOCUMENTS_REVIEW }>
                       <Button
                         type="button"
                         size="sm"
@@ -1138,7 +1207,7 @@ function DriverDetailsPage() {
         </DriverSection>
       </div>
 
-      <Can permission={PERMISSIONS.DRIVERS_DOCUMENTS_REVIEW}>
+      <Can permission={ PERMISSIONS.DRIVERS_DOCUMENTS_REVIEW }>
         { reviewTarget && (
           <DocumentReviewDialog
             key={ reviewTarget.id }
@@ -1245,7 +1314,7 @@ function DriverDetailsPage() {
         } }
       />
 
-      <Can permission={PERMISSIONS.DRIVERS_DOCUMENTS_REVIEW}>
+      <Can permission={ PERMISSIONS.DRIVERS_DOCUMENTS_REVIEW }>
         <DocumentRejectionDialog
           key={ rejectTarget?.id ?? "closed" }
           open={ Boolean(rejectTarget) }
