@@ -88,6 +88,7 @@ export const queryKeys = {
     all: ["staff"],
     lists: () => ["staff", "list"],
     list: (params) => ["staff", "list", params],
+    directory: ["staff", "directory"],
     invitations: ["staff", "invitations"],
     invitationLists: () => ["staff", "invitations", "list"],
     invitationList: (params) => ["staff", "invitations", "list", params],

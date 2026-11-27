@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -51,6 +51,8 @@ import {
   useVerifyDriver,
 } from "@/hooks/useAdminActions";
 import { useDriverDetails } from "@/hooks/useDriverDetails";
+import { useSession } from "@/hooks/useSession";
+import { useStaffDirectory } from "@/hooks/useStaff";
 import { useToast } from "@/components/toastContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { usePageViewField } from "@/store/pageViewStore";
@@ -304,6 +306,21 @@ function DriverDetailsPage() {
     error: driverError,
     refetch: refetchDriver,
   } = useDriverDetails(driverId);
+  const session = useSession();
+  const staffDirectoryQuery = useStaffDirectory(
+    Boolean(driver?.documents?.some((document) => document.reviewedById)),
+  );
+  const reviewerNames = useMemo(() => {
+    const names = new Map<string, string>();
+
+    (staffDirectoryQuery.data ?? []).forEach((member) => {
+      if (hasValue(member.id) && hasValue(member.name)) {
+        names.set(String(member.id), member.name);
+      }
+    });
+
+    return names;
+  }, [staffDirectoryQuery.data]);
 
   useEffect(() => {
     if (!lightboxPhoto) return undefined;
@@ -441,6 +458,26 @@ function DriverDetailsPage() {
   };
   const activity = profile.activity ?? profile.activity_summary ?? {};
   const items = documents ?? [];
+  const resolveReviewerLabel = (document) => {
+    if (hasValue(document.reviewedBy)) return document.reviewedBy;
+
+    const reviewerId = document.reviewedById;
+    if (!hasValue(reviewerId)) return null;
+
+    const normalizedId = String(reviewerId);
+    const directoryName = reviewerNames.get(normalizedId);
+    if (hasValue(directoryName)) return directoryName;
+
+    if (
+      session?.id != null &&
+      String(session.id) === normalizedId &&
+      hasValue(session.name)
+    ) {
+      return session.name;
+    }
+
+    return `Unknown reviewer (${normalizedId})`;
+  };
   const documentMutationPending =
     approveDocument.isPending || rejectDocument.isPending;
   const isSuspended = driver.statusKey === "suspended";
@@ -981,6 +1018,7 @@ function DriverDetailsPage() {
                       : document.isRejected
                         ? "rose"
                         : "amber";
+                    const reviewerLabel = resolveReviewerLabel(document);
 
                     return (
                       <li
@@ -1017,8 +1055,8 @@ function DriverDetailsPage() {
                               { document.reviewedAt
                                 ? `Reviewed ${document.reviewedAt}`
                                 : `Uploaded ${document.uploadedAt}` }
-                              { document.reviewedBy
-                                ? ` · by ${document.reviewedBy}`
+                              { document.reviewedAt && hasValue(reviewerLabel)
+                                ? ` · by ${reviewerLabel}`
                                 : "" }
                               { hasValue(document.fileFormatLabel)
                                 ? ` · ${document.fileFormatLabel}`

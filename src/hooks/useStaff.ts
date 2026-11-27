@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 
 import { useToast } from "@/components/toastContext";
+import { PERMISSIONS } from "@/lib/permissions";
 import { queryKeys } from "@/lib/queryKeys";
 import { polledQueryOptions } from "@/lib/queryClient";
 import {
@@ -26,7 +27,12 @@ import type {
   StaffInvitationListParams,
   StaffInvitePayload,
   StaffListParams,
+  StaffMember,
 } from "@/types/staff";
+import { usePermissions } from "./usePermissions";
+
+const STAFF_DIRECTORY_PAGE_SIZE = 100;
+const STAFF_DIRECTORY_PAGE_LIMIT = 100;
 
 export function useStaff(params: StaffListParams) {
   return useQuery({
@@ -35,6 +41,42 @@ export function useStaff(params: StaffListParams) {
     placeholderData: keepPreviousData,
     ...polledQueryOptions,
     refetchInterval: 60_000,
+  });
+}
+
+export function useStaffDirectory(enabled = true) {
+  const { has, loaded } = usePermissions();
+
+  return useQuery({
+    queryKey: queryKeys.staff.directory,
+    queryFn: async ({ signal }) => {
+      const members = new Map<string, StaffMember>();
+      let page = 1;
+      let loadedCount = 0;
+      let hasNext = true;
+
+      while (hasNext && page <= STAFF_DIRECTORY_PAGE_LIMIT) {
+        const result = await listStaff(
+          { page, pageSize: STAFF_DIRECTORY_PAGE_SIZE },
+          { signal },
+        );
+
+        result.items.forEach((member) => {
+          if (member.id) members.set(member.id, member);
+        });
+
+        loadedCount += result.items.length;
+        hasNext =
+          result.hasNext &&
+          result.items.length > 0 &&
+          (!Number.isFinite(result.total) || loadedCount < result.total);
+        page += 1;
+      }
+
+      return [...members.values()];
+    },
+    enabled: enabled && loaded && has(PERMISSIONS.PLATFORM_ADMINS_READ),
+    staleTime: 5 * 60_000,
   });
 }
 

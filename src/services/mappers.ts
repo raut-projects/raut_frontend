@@ -495,6 +495,7 @@ export const mapDocument = (document) => {
       : "No expiry",
     uploadedAt: formatDate(document?.created_at),
     reviewedAt: document?.reviewed_at ? formatDate(document.reviewed_at) : null,
+    reviewedById: document?.reviewed_by ?? null,
     reviewedBy:
       document?.reviewed_by_name ??
       document?.reviewer_name ??
