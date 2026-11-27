@@ -1,35 +1,47 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowUpRight,
-  Ban,
   CarFront,
   CircleCheck,
-  CircleHelp,
   CircleX,
   Clock3,
   Download,
+  EllipsisVertical,
   FileText,
   Mail,
   MessageSquare,
   Phone,
   ShieldAlert,
-  Star,
   UserRound,
   X,
 } from "lucide-react";
 import { Can } from "@/components/Can";
-import { QueryError } from "@/components/queryStates";
+import { QueryError, RefreshIndicator } from "@/components/queryStates";
 import { ReasonDialog } from "@/components/reasonDialog";
 import DocumentRejectionDialog from "@/components/documentRejectionDialog";
 import DocumentReviewDialog from "@/components/documentReviewDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   useApproveDocument,
   useRejectDocument,
@@ -44,7 +56,6 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { usePageViewField } from "@/store/pageViewStore";
 import {
   formatDate,
-  formatDuration,
   formatMoney,
   formatRelative,
 } from "@/services/mappers";
@@ -55,13 +66,19 @@ import { PERMISSIONS } from "@/lib/permissions";
 const isRecord = (value) =>
   value !== null && typeof value === "object" && !Array.isArray(value);
 
+const hasValue = (value) =>
+  value !== null &&
+  value !== undefined &&
+  value !== "" &&
+  !(typeof value === "string" && value.trim() === "—");
+
 const firstValue = (records, keys) => {
   for (const record of records) {
     if (!isRecord(record)) continue;
 
     for (const key of keys) {
       const value = record[key];
-      if (value !== undefined && value !== null && value !== "") return value;
+      if (hasValue(value)) return value;
     }
   }
 
@@ -69,145 +86,190 @@ const firstValue = (records, keys) => {
 };
 
 const displayValue = (value) => {
-  if (value === undefined || value === null || value === "") {
-    return "Not provided";
-  }
+  if (!hasValue(value)) return "—";
   if (typeof value === "boolean") return value ? "Yes" : "No";
   if (Array.isArray(value)) {
-    if (!value.length) return "None";
+    if (!value.length) return "—";
     return value
       .map((item) =>
         isRecord(item)
-          ? (item.summary ??
-            item.title ??
-            item.reason ??
-            item.name ??
-            item.id ??
-            "Issue")
+          ? item.summary ??
+          item.title ??
+          item.reason ??
+          item.name ??
+          item.id ??
+          "—"
           : item,
       )
       .join(", ");
   }
   if (isRecord(value)) {
-    return (
-      value.full_name ??
-      value.name ??
-      value.label ??
-      value.id ??
-      "Not provided"
-    );
+    return value.full_name ?? value.name ?? value.label ?? value.id ?? "—";
   }
 
   return String(value);
 };
 
-const verificationLabel = (value, verifiedAt) => {
-  if (value === true) return "Verified";
-  if (value === false) return "Not verified";
-  const normalized = String(value ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
-  if (["verified", "confirmed", "true", "1", "yes"].includes(normalized)) {
-    return "Verified";
-  }
-  if (
-    ["unverified", "not_verified", "false", "0", "no", "rejected"].includes(
-      normalized,
-    )
-  ) {
-    return "Not verified";
-  }
-  if (["pending", "in_progress"].includes(normalized)) {
-    return "Pending verification";
-  }
-  if (verifiedAt) return "Verified";
-  return "Verification not provided";
-};
-
-const formatPercent = (value) => {
-  if (value === null || value === undefined || value === "") {
-    return "Not provided";
-  }
-
-  const amount = Number(value);
-  if (!Number.isFinite(amount)) return displayValue(value);
-
-  return `${Math.round((amount <= 1 ? amount * 100 : amount) * 10) / 10}%`;
-};
-
-const formatMoneyValue = (value) => {
-  if (value === null || value === undefined || value === "") {
-    return "Not provided";
-  }
-
-  const amount = Number(value);
-  return Number.isFinite(amount) ? formatMoney(amount) : displayValue(value);
-};
+const titleCaseText = (value) =>
+  String(value ?? "")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 
 const numericValue = (value) => {
-  if (value === null || value === undefined || value === "") return null;
+  if (!hasValue(value)) return null;
   const amount = Number(value);
   return Number.isFinite(amount) ? amount : null;
 };
 
-const formatHours = (value) => {
-  if (value === null || value === undefined || value === "") {
-    return "Not provided";
-  }
-
-  const amount = Number(value);
-  return Number.isFinite(amount) ? `${amount}h` : displayValue(value);
+const formatMoneyValue = (value) => {
+  const amount = numericValue(value);
+  return amount === null ? displayValue(value) : formatMoney(amount);
 };
 
-function InfoField({ label, value, detail = null, badge = null }) {
+const toneStyles = {
+  emerald: {
+    badge: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    dot: "bg-emerald-500",
+    panel: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  },
+  amber: {
+    badge: "border-amber-200 bg-amber-50 text-amber-800",
+    dot: "bg-amber-500",
+    panel: "border-amber-200 bg-amber-50 text-amber-900",
+  },
+  rose: {
+    badge: "border-rose-200 bg-rose-50 text-rose-700",
+    dot: "bg-rose-500",
+    panel: "border-rose-200 bg-rose-50 text-rose-800",
+  },
+  slate: {
+    badge: "border-slate-200 bg-slate-50 text-slate-600",
+    dot: "bg-slate-400",
+    panel: "border-slate-200 bg-slate-50 text-slate-700",
+  },
+};
+
+function StatusPill({ label, tone = "slate", icon: Icon = null }) {
+  const styles = toneStyles[tone] ?? toneStyles.slate;
+
   return (
-    <div className="min-w-0 border-b border-slate-100 py-3 last:border-0">
-      <dt className="text-xs font-medium text-slate-500">{ label }</dt>
-      <dd className="mt-1 flex flex-wrap items-center gap-2 text-sm font-medium text-slate-900">
-        <span className="wrap-break-words">{ displayValue(value) }</span>
-        { badge && (
-          <Badge
-            variant="outline"
-            className={
-              badge === "Verified" || badge === "Valid"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                : badge === "Expired"
-                  ? "border-rose-200 bg-rose-50 text-rose-700"
-                  : badge === "Not verified"
-                    ? "border-amber-200 bg-amber-50 text-amber-800"
-                    : "border-slate-200 bg-slate-50 text-slate-600"
-            }
-          >
-            { badge === "Verified" || badge === "Valid" ? (
-              <CircleCheck aria-hidden="true" />
-            ) : (
-              <CircleHelp aria-hidden="true" />
-            ) }
-            { badge }
-          </Badge>
-        ) }
+    <Badge
+      variant="outline"
+      className={ `gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${styles.badge}` }
+    >
+      <span className={ `size-1.5 rounded-full ${styles.dot}` } aria-hidden="true" />
+      { Icon && <Icon className="size-3.5" aria-hidden="true" /> }
+      { label }
+    </Badge>
+  );
+}
+
+function InfoField({ label, value, detail = null }) {
+  return (
+    <div className="min-w-0 py-2.5">
+      <dt className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+        { label }
+      </dt>
+      <dd className="mt-1 wrap-break-words text-sm font-medium text-slate-800">
+        { displayValue(value) }
       </dd>
-      { detail && <p className="mt-1 text-xs text-slate-500">{ detail }</p> }
+      { hasValue(detail) && (
+        <p className="mt-0.5 text-xs text-slate-500">{ displayValue(detail) }</p>
+      ) }
     </div>
   );
 }
 
-function DriverSection({
+function Metric({ label, value, detail }) {
+  return (
+    <div className="min-w-0 rounded-lg bg-slate-50 px-3 py-2.5 ring-1 ring-slate-200/70">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+        { label }
+      </p>
+      <p className="mt-1 text-lg font-semibold tracking-tight text-slate-900">
+        { value }
+      </p>
+      { hasValue(detail) && (
+        <p className="mt-0.5 truncate text-xs text-slate-500">{ detail }</p>
+      ) }
+    </div>
+  );
+}
+
+function EmptyState({ icon: Icon, title, description }) {
+  return (
+    <div className="rounded-lg border border-dashed border-slate-200 px-4 py-8 text-center">
+      { Icon && (
+        <Icon
+          className="mx-auto size-5 text-slate-400"
+          strokeWidth={ 1.8 }
+          aria-hidden="true"
+        />
+      ) }
+      <p className="mt-2 text-sm font-medium text-slate-700">{ title }</p>
+      { hasValue(description) && (
+        <p className="mt-1 text-xs text-slate-500">{ description }</p>
+      ) }
+    </div>
+  );
+}
+
+function PhotoTile({ photo, onOpen }) {
+  return (
+    <button
+      type="button"
+      onClick={ onOpen }
+      className="group relative h-20 w-28 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 sm:h-24 sm:w-32"
+    >
+      <img
+        src={ photo.url }
+        alt={ `${photo.label} photo` }
+        loading="lazy"
+        className="size-full object-cover transition-transform group-hover:scale-105"
+      />
+      <span className="absolute inset-x-0 bottom-0 truncate bg-slate-950/70 px-2 py-1 text-xs font-medium text-white">
+        { photo.label }
+      </span>
+    </button>
+  );
+}
+
+function DetailSection({
+  id = undefined,
   icon: Icon,
   title,
+  description = null,
   action = null,
   children,
-  id = undefined,
+  className = "",
 }) {
+  const titleId = id ? `${id}-title` : undefined;
+
   return (
-    <section id={ id } className="border-t border-slate-200 pt-5">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900">
-          <Icon className="h-4 w-4 text-brand-600" aria-hidden="true" />
-          { title }
-        </h2>
-        { action }
-      </div>
-      { children }
-    </section>
+    <Card
+      id={ id }
+      aria-labelledby={ titleId }
+      className={ `gap-0 overflow-hidden rounded-xl py-0 shadow-card ring-slate-200 ${className}` }
+    >
+      <CardHeader className="border-b border-slate-200 px-4 py-3.5 sm:px-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2
+              id={ titleId }
+              className="flex items-center gap-2 text-sm font-semibold text-slate-900"
+            >
+              <Icon className="size-4 text-brand-600" aria-hidden="true" />
+              { title }
+            </h2>
+            { hasValue(description) && (
+              <p className="mt-1 text-xs text-slate-500">{ description }</p>
+            ) }
+          </div>
+          { action && <div className="shrink-0">{ action }</div> }
+        </div>
+      </CardHeader>
+      <CardContent className="px-4 pt-4 pb-5 sm:px-5">{ children }</CardContent>
+    </Card>
   );
 }
 
@@ -232,27 +294,42 @@ function DriverDetailsPage() {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [lightboxPhoto, setLightboxPhoto] = useState(null);
+  const lightboxCloseRef = useRef(null);
   const {
     data: driver,
+    dataUpdatedAt,
     isPending: driverPending,
+    isFetching,
     isError: driverIsError,
     error: driverError,
     refetch: refetchDriver,
   } = useDriverDetails(driverId);
+
   useEffect(() => {
     if (!lightboxPhoto) return undefined;
 
+    const previouslyFocused = window.document.activeElement as HTMLElement | null;
+    lightboxCloseRef.current?.focus();
+
     const handleKeyDown = (event) => {
-      if (event.key === "Escape") setLightboxPhoto(null);
+      if (event.key === "Escape") {
+        setLightboxPhoto(null);
+        return;
+      }
+      if (event.key === "Tab") {
+        event.preventDefault();
+        lightboxCloseRef.current?.focus();
+      }
     };
+
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      previouslyFocused?.focus?.();
+    };
   }, [lightboxPhoto]);
+
   const documents = driver?.documents ?? [];
-  const documentsPending = driverPending;
-  const documentsIsError = driverIsError;
-  const documentsError = driverError;
-  const refetchDocuments = refetchDriver;
   const approveDocument = useApproveDocument();
   const rejectDocument = useRejectDocument();
   const verifyDriver = useVerifyDriver();
@@ -263,10 +340,28 @@ function DriverDetailsPage() {
 
   if (driverPending) {
     return (
-      <div className="space-y-6">
-        <div className="h-8 w-40 animate-pulse rounded bg-slate-200" />
-        <Card className="h-48 animate-pulse bg-slate-50" />
-        <Card className="h-64 animate-pulse bg-slate-50" />
+      <div className="space-y-5">
+        <Skeleton className="h-8 w-32" />
+        <Card className="gap-0 rounded-xl py-0 shadow-card ring-slate-200">
+          <CardContent className="px-5 py-6">
+            <div className="flex items-center gap-4">
+              <Skeleton className="size-20 rounded-xl" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-4 w-72 max-w-full" />
+              </div>
+            </div>
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <Skeleton className="h-16" />
+              <Skeleton className="h-16" />
+              <Skeleton className="h-16" />
+            </div>
+          </CardContent>
+        </Card>
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,0.8fr)]">
+          <Skeleton className="h-80" />
+          <Skeleton className="h-80" />
+        </div>
       </div>
     );
   }
@@ -294,7 +389,7 @@ function DriverDetailsPage() {
     }
 
     return (
-      <Card className="rounded-xl">
+      <Card className="rounded-xl shadow-card ring-slate-200">
         <QueryError error={ driverError } onRetry={ refetchDriver } />
       </Card>
     );
@@ -344,20 +439,7 @@ function DriverDetailsPage() {
     errorMessage:
       latraFromDriver.errorMessage ?? vehicle.latra_error_message ?? null,
   };
-  const performance = profile.performance ?? profile.metrics ?? {};
-  const earnings = profile.earnings ?? profile.earnings_summary ?? {};
-  const earningsPeriod =
-    earnings.last_30_days ?? earnings.last30Days ?? profile.last_30_days ?? {};
   const activity = profile.activity ?? profile.activity_summary ?? {};
-  const records = [
-    profile,
-    personal,
-    vehicle,
-    performance,
-    earnings,
-    earningsPeriod,
-    activity,
-  ];
   const items = documents ?? [];
   const documentMutationPending =
     approveDocument.isPending || rejectDocument.isPending;
@@ -388,14 +470,60 @@ function DriverDetailsPage() {
   const isOnline =
     online === true ||
     ["online", "available", "true", "1"].includes(normalizedOnline);
-  const onlineLabel =
-    isOnline
-      ? "Online"
+  const onlineLabel = isOnline
+    ? "Online"
+    : online === false
+      ? "Offline"
       : lastOnline
-        ? `Last online: ${formatRelative(lastOnline)}`
-        : online === null
-          ? "Online status unavailable"
-          : "Offline";
+        ? `Last seen ${formatRelative(lastOnline)}`
+        : null;
+  const dateJoined = firstValue([profile, personal], ["created_at", "joined_at"]);
+  const joinedRelative = dateJoined ? formatRelative(dateJoined) : null;
+  const missingDocuments = driver.missingDocuments ?? [];
+  const hasMissingDocuments = missingDocuments.length > 0;
+  const isReadyForVerification =
+    !hasMissingDocuments &&
+    (driver.canBeVerified === true || driver.allDocumentsVerified === true);
+
+  const statusTone =
+    isSuspended || driver.statusKey === "rejected"
+      ? "rose"
+      : driver.statusKey === "pending"
+        ? "amber"
+        : driver.statusKey === "verified"
+          ? "emerald"
+          : "slate";
+  const statusLabel = hasValue(driver.status)
+    ? driver.status
+    : titleCaseText(driver.statusKey ?? "unknown");
+
+  const normalizedLatraStatus = String(latra.submissionStatus ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+  const latraSucceeded = ["approved", "verified", "success", "completed"].includes(
+    normalizedLatraStatus,
+  );
+  const latraPending = ["pending", "submitted", "in_review", "processing"].includes(
+    normalizedLatraStatus,
+  );
+  const latraTone = latra.errorMessage
+    ? "rose"
+    : latraSucceeded
+      ? "emerald"
+      : latraPending
+        ? "amber"
+        : "slate";
+  const latraLabel = latra.errorMessage
+    ? "Submission failed"
+    : hasValue(latra.submissionStatus)
+      ? titleCaseText(latra.submissionStatus)
+      : latra.submitted === true
+        ? "Submitted"
+        : latra.submitted === false
+          ? "Not submitted"
+          : "No status available";
+
   const photoFields: [string, string[]][] = [
     [
       "Front",
@@ -431,6 +559,16 @@ function DriverDetailsPage() {
   const vehiclePhotoDocs = items.filter(
     (document) => document.type === "vehicle_photo" && document.fileUrl,
   );
+  const primaryVehiclePhoto =
+    vehiclePhotos.find((photo) => photo.label === "Front") ??
+    vehiclePhotos.find((photo) => photo.label === "Back") ??
+    vehiclePhotos.find(
+      (photo) => photo.label !== "Front" && photo.label !== "Back",
+    ) ??
+    (vehiclePhotoDocs[0]
+      ? { label: "Vehicle photo", url: vehiclePhotoDocs[0].fileUrl }
+      : null);
+
   const insuranceExpiry =
     driver.vehicleInsuranceExpiry ??
     firstValue(
@@ -443,16 +581,7 @@ function DriverDetailsPage() {
       [vehicle, profile, nestedProfile],
       ["insurance_valid", "is_insurance_valid"],
     );
-  const activeIssues = firstValue(
-    [profile, activity],
-    ["active_issues", "open_issues", "current_issues", "flags"],
-  );
-  const historicalIssues = firstValue(
-    [profile, activity],
-    ["historical_issues", "resolved_disputes", "disputes"],
-  );
-  const dateJoined = firstValue([profile, personal], ["created_at", "joined_at"]);
-  const joinedRelative = dateJoined ? formatRelative(dateJoined) : null;
+  const totalDrives = driver.driveStats?.total_drives ?? driver.totalDrives;
 
   const navigateToRides = () => {
     setRidesDriverId(String(driverId));
@@ -502,12 +631,7 @@ function DriverDetailsPage() {
           payoutStats: driver.payoutStats ?? null,
           latra,
         },
-        documents: items.map(
-          ({
-            fileUrl: _fileUrl,
-            ...document
-          }) => document,
-        ),
+        documents: items.map(({ fileUrl: _fileUrl, ...document }) => document),
         exportedAt: new Date().toISOString(),
       };
       const blob = new Blob([JSON.stringify(exportData, null, 2)], {
@@ -525,686 +649,580 @@ function DriverDetailsPage() {
     }
   };
 
-  const getMetric = (keys) => firstValue(records, keys);
-  const driverRating =
-    getMetric(["rating_avg", "rating", "average_rating"]) ??
-    (driver.rating > 0 ? driver.rating : null);
-  const rideCount =
-    getMetric(["total_rides", "ride_count", "completed_rides"]) ?? driver.rides;
-  const ratingCount =
-    getMetric(["rating_count", "ratings_count", "total_ratings"]) ??
-    driver.ratingCount;
-  const getEarningsMetric = (keys) =>
-    firstValue([earningsPeriod, earnings], keys);
-  const grossEarnings = numericValue(
-    getEarningsMetric(["gross_earnings", "gross_amount", "total_gross"]),
-  );
-  const platformFee = numericValue(
-    getEarningsMetric(["platform_fee", "platform_fees", "commission_amount"]),
-  );
-  const providedNetEarnings = numericValue(
-    getEarningsMetric(["net_earnings", "net_amount", "driver_earnings"]),
-  );
-  const netEarnings =
-    grossEarnings !== null && platformFee !== null
-      ? grossEarnings - platformFee
-      : providedNetEarnings;
-  const detailFields: [string, string[]][] = [
-    ["Acceptance rate", ["acceptance_rate", "acceptanceRate"]],
-    ["Cancellation rate", ["cancellation_rate", "cancellationRate"]],
-    ["Completion rate", ["completion_rate", "completionRate"]],
-    ["On-time arrival", ["on_time_rate", "on_time_arrival_rate", "onTimeRate"]],
-  ];
-  const responseTime = getMetric([
-    "average_response_time_seconds",
-    "average_response_time",
-    "avg_response_time",
-    "response_time",
-  ]);
-  const performanceFields: {
-    label: string;
-    value: unknown;
-    detail?: string;
-  }[] = [
-      {
-        label: "Overall rating",
-        value:
-          driverRating !== null
-            ? `${Number(driverRating).toFixed(1)} / 5`
-            : "Not provided",
-        detail:
-          ratingCount > 0
-            ? `${displayValue(ratingCount)} ratings · ${displayValue(rideCount)} rides`
-            : "Rating count not provided",
-      },
-      ...detailFields.map(([label, keys]) => ({
-        label,
-        value: formatPercent(getMetric(keys)),
-      })),
-      {
-        label: "Average response time",
-        value: responseTime === null ? "Not provided" : formatDuration(responseTime),
-      },
-    ];
-
-  const earningsFields: [string, unknown][] = [
-    [
-      "Total rides",
-      getEarningsMetric(["rides_count", "total_rides", "ride_count"]),
-    ],
-    [
-      "Gross earnings",
-      grossEarnings !== null
-        ? formatMoney(grossEarnings)
-        : formatMoneyValue(
-          netEarnings !== null && platformFee !== null
-            ? netEarnings + platformFee
-            : getEarningsMetric([
-              "gross_earnings",
-              "gross_amount",
-              "total_gross",
-            ]),
-        ),
-    ],
-    [
-      "Platform fee",
-      formatMoneyValue(platformFee),
-    ],
-    [
-      "Net earnings",
-      formatMoneyValue(netEarnings),
-    ],
-    [
-      "Already paid out",
-      formatMoneyValue(
-        getEarningsMetric(["paid_out", "paid_amount", "total_paid"]),
-      ),
-    ],
-    [
-      "Pending payout",
-      formatMoneyValue(
-        getEarningsMetric(["pending_payout", "pending_amount", "unpaid_amount"]),
-      ),
-    ],
-  ];
-  const activityFields: [string, unknown][] = [
-    [
-      "Last online",
-      (() => {
-        const value = lastOnline;
-        return value ? formatRelative(value) : null;
-      })(),
-    ],
-    [
-      "Active hours today",
-      formatHours(getMetric(["active_hours_today", "hours_active_today"])),
-    ],
-    [
-      "Average weekly hours",
-      formatHours(getMetric(["average_weekly_hours", "avg_weekly_hours"])),
-    ],
-    ["Peak hours", getMetric(["peak_hours", "peak_activity_hours"])],
-    ...(driver.driveStats?.total_drives ?? driver.totalDrives) != null
-      ? ([
-        [
-          "Total drives",
-          driver.driveStats?.total_drives ?? driver.totalDrives,
-        ],
-      ] as [string, unknown][])
-      : [],
-    ...(driver.lastActivity
-      ? ([["Last activity", formatRelative(driver.lastActivity)]] as [string, unknown][])
-      : []),
-  ];
+  const getPayoutMetric = (keys) =>
+    firstValue([driver.payoutStats ?? {}], keys);
+  const payoutRows = [
+    ["Gross earnings", getPayoutMetric(["gross_earnings", "gross_amount", "total_gross"])],
+    ["Platform fee", getPayoutMetric(["platform_fee", "platform_fees", "commission_amount"])],
+    ["Paid out", getPayoutMetric(["paid_out", "paid_amount", "total_paid"])],
+    ["Pending payout", getPayoutMetric(["pending_payout", "pending_amount", "unpaid_amount"])],
+  ]
+    .filter(([, value]) => hasValue(value))
+    .map(([label, value]) => [label, formatMoneyValue(value)]);
+  const activityRows = [
+    ["Online status", onlineLabel],
+    ["Last activity", driver.lastActivity ? formatRelative(driver.lastActivity) : null],
+    ["Joined", hasValue(driver.joined) ? driver.joined : null],
+    ...payoutRows,
+  ].filter(([, value]) => hasValue(value));
+  const identityFields = [
+    ["Phone", phone],
+    ["Email", email],
+    ["National ID", nationalId],
+    ["Referral code", referralCode],
+    ["Referred by", referredBy],
+    ["Joined", driver.joined],
+    ["Driver ID", driver.id],
+  ].filter(([, value]) => hasValue(value));
 
   return (
     <>
-      <div className="space-y-6">
-        <header className="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
-            <Button asChild variant="outline" size="sm">
-              <Link href="/drivers">
-                <ArrowLeft aria-hidden="true" />
-                Back to Drivers
-              </Link>
-            </Button>
-            <div className="min-w-0">
-              <h1 className="truncate text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
-                { driver.name }
-              </h1>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge
-              variant="outline"
-              className={
-                driver.isActive
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                  : "border-rose-200 bg-rose-50 text-rose-700"
-              }
-            >
-              <span
-                className={ `h-1.5 w-1.5 rounded-full ${driver.isActive ? "bg-emerald-500" : "bg-rose-500"
-                  }` }
-                aria-hidden="true"
-              />
-              { driver.isActive ? "Active" : "Inactive" }
-            </Badge>
-            <Badge variant="outline" className="border-slate-200 text-slate-600">
-              { onlineLabel }
-            </Badge>
-            <Badge variant="outline" className="border-slate-200 text-slate-600">
-              { driver.status }
-            </Badge>
-          </div>
-        </header>
-
-        <div className="flex flex-wrap gap-2">
-          { driver.statusKey === "pending" && (
-            <>
-              <Can permission={ PERMISSIONS.DRIVERS_VERIFY }>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={ verifyDriver.isPending }
-                  onClick={ () =>
-                    (
-                      verifyDriver.mutate as unknown as (variables: {
-                        driverId: string;
-                      }) => void
-                    )({ driverId: String(driverId) })
-                  }
-                >
-                  <CircleCheck aria-hidden="true" />
-                  Verify
-                </Button>
-              </Can>
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={ () => {
-                  setRejectReason("");
-                  setRejectOpen(true);
-                } }
-              >
-                <CircleX aria-hidden="true" />
-                Reject
-              </Button>
-            </>
-          ) }
-          <Can permission={ PERMISSIONS.DRIVERS_SUSPEND }>
-            { isSuspended ? (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={ unsuspendDriver.isPending }
-                onClick={ () =>
-                  (
-                    unsuspendDriver.mutate as unknown as (variables: {
-                      driverId: string;
-                    }) => void
-                  )({ driverId: String(driverId) })
-                }
-              >
-                Reactivate
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                variant="destructive"
-                disabled={
-                  suspendDriver.isPending ||
-                  !driver.isActive ||
-                  driver.statusKey !== "verified"
-                }
-                title={
-                  driver.isActive && driver.statusKey === "verified"
-                    ? undefined
-                    : "Only active, verified drivers can be suspended."
-                }
-                onClick={ () => {
-                  setSuspendReason("");
-                  setSuspendOpen(true);
-                } }
-              >
-                <ShieldAlert aria-hidden="true" />
-                Suspend
-              </Button>
-            ) }
-          </Can>
-          <Button
-            type="button"
-            variant="outline"
-            disabled
-            title="Blocking a driver is not supported by the current admin API."
-          >
-            <Ban aria-hidden="true" />
-            Block
+      <div className="mx-auto max-w-350 space-y-5 pb-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Button asChild variant="outline" size="sm">
+            <Link href="/drivers">
+              <ArrowLeft aria-hidden="true" />
+              Back to drivers
+            </Link>
           </Button>
-          { email ? (
-            <Button asChild variant="outline">
-              <a href={ `mailto:${encodeURIComponent(email)}` }>
-                <MessageSquare aria-hidden="true" />
-                Send Message
-              </a>
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              disabled
-              title="An email address is not available."
-            >
-              <MessageSquare aria-hidden="true" />
-              Send Message
-            </Button>
-          ) }
-          <Button type="button" variant="outline" onClick={ exportProfile }>
-            <Download aria-hidden="true" />
-            Export Data
-          </Button>
+          <RefreshIndicator
+            isFetching={ isFetching }
+            updatedAt={ dataUpdatedAt }
+            onRefresh={ refetchDriver }
+          />
         </div>
 
-        <DriverSection icon={ UserRound } title="Personal Information">
-          { typeof profilePhotoUrl === "string" && profilePhotoUrl.length > 0 && (
-            <button
-              type="button"
-              onClick={ () =>
-                setLightboxPhoto({ label: "Profile photo", url: profilePhotoUrl })
-              }
-              className="group relative mb-4 h-28 w-28 overflow-hidden rounded-full border border-slate-200 bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
-            >
-              <img
-                src={ profilePhotoUrl }
-                alt=""
-                loading="lazy"
-                className="h-full w-full object-cover transition-transform group-hover:scale-105"
-              />
-              <span className="absolute inset-x-0 bottom-0 bg-slate-950/70 px-2 py-1 text-xs font-medium text-white">
-                Profile photo
-              </span>
-            </button>
-          ) }
-          <dl className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
-            <InfoField label="Name" value={ driver.name } />
-            <InfoField
-              label="Phone"
-              value={ phone }
-            />
-            <InfoField
-              label="Email"
-              value={ email }
-            />
-            <InfoField label="National ID" value={ nationalId } />
-            <InfoField
-              label="Joined"
-              value={ driver.joined }
-              detail={ joinedRelative }
-            />
-            <InfoField label="Referral code" value={ referralCode } />
-            <InfoField label="Referred by" value={ referredBy } />
-          </dl>
-        </DriverSection>
-
-        <DriverSection icon={ CarFront } title="Vehicle Information">
-          <dl className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
-            <InfoField
-              label="Make / model"
-              value={
-                [driver.vehicleMake, driver.vehicleModel].filter(Boolean).join(" ") ||
-                driver.vehicle ||
-                null
-              }
-            />
-            <InfoField label="Year" value={ driver.vehicleYear } />
-            <InfoField label="Color" value={ driver.vehicleColor } />
-            <InfoField
-              label="Plate"
-              value={ driver.plateNumber }
-              badge={
-                driver.vehiclePlateVerified === true
-                  ? "Verified"
-                  : driver.vehiclePlateVerified === false
-                    ? "Not verified"
-                    : undefined
-              }
-            />
-            <InfoField
-              label="Insurance expiry"
-              value={ insuranceExpiry ? formatDate(insuranceExpiry) : null }
-              badge={
-                insuranceValidity === true
-                  ? "Valid"
-                  : insuranceValidity === false
-                    ? "Expired"
-                    : undefined
-              }
-            />
-          </dl>
-          <div className="mt-4 border-t border-slate-100 pt-4">
-            <h3 className="text-xs font-medium text-slate-500">Vehicle photos</h3>
-            { vehiclePhotos.length > 0 || vehiclePhotoDocs.length > 0 ? (
-              <div className="mt-2 flex flex-wrap gap-2">
-                { vehiclePhotos.map((photo) => (
+        <Card className="gap-0 overflow-hidden rounded-xl py-0 shadow-card ring-slate-200">
+          <CardContent className="px-4 pt-5 sm:px-5">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+              <div className="flex min-w-0 items-start gap-4">
+                { hasValue(profilePhotoUrl) ? (
                   <button
-                    key={ photo.label }
-                    type="button"
-                    onClick={ () =>
-                      setLightboxPhoto({ label: photo.label, url: photo.url })
-                    }
-                    className="group relative h-24 w-32 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
-                  >
-                    <img
-                      src={ photo.url }
-                      alt=""
-                      loading="lazy"
-                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                    />
-                    <span className="absolute inset-x-0 bottom-0 bg-slate-950/70 px-2 py-1 text-xs font-medium text-white">
-                      { photo.label }
-                    </span>
-                  </button>
-                )) }
-                { vehiclePhotoDocs.map((photo, index) => (
-                  <button
-                    key={ photo.id ?? photo.fileName ?? index }
                     type="button"
                     onClick={ () =>
                       setLightboxPhoto({
-                        label: photo.fileName || "Vehicle photo",
-                        url: photo.fileUrl,
+                        label: `${driver.name} profile photo`,
+                        url: profilePhotoUrl,
                       })
                     }
-                    className="group relative h-24 w-32 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+                    className="group size-20 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
                   >
                     <img
-                      src={ photo.fileUrl }
-                      alt=""
-                      loading="lazy"
-                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      src={ profilePhotoUrl }
+                      alt={ `${driver.name} profile photo` }
+                      className="size-full object-cover transition-transform group-hover:scale-105"
                     />
-                    <span className="absolute inset-x-0 bottom-0 truncate bg-slate-950/70 px-2 py-1 text-xs font-medium text-white">
-                      { photo.fileName || "Vehicle photo" }
-                    </span>
                   </button>
-                )) }
-              </div>
-            ) : (
-              <p className="mt-2 text-sm text-slate-500">
-                Vehicle photo details are not provided.
-              </p>
-            ) }
-          </div>
-        </DriverSection>
-
-        <DriverSection icon={ ShieldAlert } title="LATRA Compliance">
-          <dl className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
-            <InfoField label="Submitted" value={ latra.submitted } />
-            <InfoField
-              label="Submitted at"
-              value={ latra.submittedAt ? formatDate(latra.submittedAt) : null }
-              detail={
-                latra.submittedAt ? formatRelative(latra.submittedAt) : null
-              }
-            />
-            <InfoField
-              label="Submission status"
-              value={ latra.submissionStatus }
-            />
-            <InfoField
-              label="Reference number"
-              value={ latra.referenceNumber }
-            />
-            <InfoField label="Error message" value={ latra.errorMessage } />
-          </dl>
-        </DriverSection>
-
-        <DriverSection
-          icon={ FileText }
-          title="Documents"
-          id="driver-documents"
-          action={
-            !documentsPending && !documentsIsError ? (
-              <div className="flex items-center gap-2">
-                { driver.allDocumentsVerified === true && (
-                  <Badge
-                    variant="outline"
-                    className="border-emerald-200 bg-emerald-50 text-emerald-700"
+                ) : (
+                  <div
+                    className="flex size-20 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-400 ring-1 ring-slate-200"
+                    aria-hidden="true"
                   >
-                    All verified
-                  </Badge>
+                    <UserRound className="size-8" strokeWidth={ 1.6 } />
+                  </div>
                 ) }
-                { (driver.missingDocuments?.length ?? 0) > 0 && (
-                  <span className="text-xs text-amber-700">
-                    { driver.missingDocuments.length } missing
-                  </span>
-                ) }
-                <span className="text-xs text-slate-500">
-                  { items.length } document{ items.length === 1 ? "" : "s" }
-                </span>
-              </div>
-            ) : null
-          }
-        >
-          { documentsPending && (
-            <div className="space-y-3">
-              { [0, 1, 2].map((item) => (
-                <div
-                  key={ item }
-                  className="h-16 animate-pulse rounded-lg bg-slate-100"
-                />
-              )) }
-            </div>
-          ) }
-          { documentsIsError && (
-            <QueryError error={ documentsError } onRetry={ refetchDocuments } />
-          ) }
-          { !documentsPending && !documentsIsError && items.length === 0 && (
-            <p className="rounded-lg border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500">
-              This driver has not uploaded any documents.
-            </p>
-          ) }
-          { !documentsPending && !documentsIsError && items.length > 0 && (
-            <ul className="divide-y divide-slate-100">
-              { items.map((document) => (
-                <li
-                  key={ document.id ?? document.fileName }
-                  className="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-1"
-                >
-                  <div className="min-w-0">
-                    <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-900">
-                      <span
-                        className={ `h-2 w-2 rounded-full ${document.isApproved
-                          ? "bg-emerald-500"
-                          : document.isRejected
-                            ? "bg-rose-500"
-                            : "bg-amber-500"
-                          }` }
-                        aria-hidden="true"
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+                      { driver.name }
+                    </h1>
+                    <StatusPill label={ statusLabel } tone={ statusTone } />
+                    { driver.hasIssues === true && (
+                      <StatusPill
+                        label="Flagged"
+                        tone="amber"
+                        icon={ ShieldAlert }
                       />
-                      { document.typeLabel }
-                      <Badge variant="outline">{ document.status }</Badge>
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      { document.reviewedAt
-                        ? `${document.status} ${document.reviewedAt}`
-                        : `Uploaded ${document.uploadedAt}` }
-                      { document.reviewedBy ? ` · by ${document.reviewedBy}` : "" }
-                    </p>
-                    { document.expiry !== "No expiry" && (
-                      <p className="mt-1 text-xs text-slate-500">
-                        Valid until { document.expiry }
-                      </p>
-                    ) }
-                    { document.rejectionReason && (
-                      <p className="mt-1 text-xs text-rose-700">
-                        { document.rejectionReason }
-                      </p>
                     ) }
                   </div>
-                  <div className="flex shrink-0 flex-wrap items-center gap-2">
-                    <Can permission={ PERMISSIONS.DRIVERS_DOCUMENTS_REVIEW }>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={ documentMutationPending }
-                        onClick={ () => setReviewTarget(document) }
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                    <span>{ driver.isActive ? "Active account" : "Inactive account" }</span>
+                    { hasValue(driver.id) && <span>ID: { displayValue(driver.id) }</span> }
+                    { joinedRelative && <span>Joined { joinedRelative }</span> }
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                    { phone && (
+                      <a
+                        href={ `tel:${encodeURIComponent(phone)}` }
+                        className="inline-flex items-center gap-1.5 font-medium text-slate-700 hover:text-slate-900"
                       >
-                        View Document →
-                      </Button>
-                    </Can>
+                        <Phone className="size-4 text-slate-400" aria-hidden="true" />
+                        { phone }
+                      </a>
+                    ) }
+                    { email && (
+                      <a
+                        href={ `mailto:${encodeURIComponent(email)}` }
+                        className="inline-flex items-center gap-1.5 font-medium text-slate-700 hover:text-slate-900"
+                      >
+                        <Mail className="size-4 text-slate-400" aria-hidden="true" />
+                        { email }
+                      </a>
+                    ) }
                   </div>
-                </li>
-              )) }
-            </ul>
-          ) }
-          { !documentsPending && !documentsIsError && (driver.missingDocuments?.length ?? 0) > 0 && (
-            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              <p className="font-medium">Missing documents</p>
-              <ul className="mt-1 list-disc pl-4">
-                { driver.missingDocuments.map((doc, index) => (
-                  <li key={ index }>{ displayValue(doc) }</li>
-                )) }
-              </ul>
-              { driver.canBeVerified === false && (
-                <p className="mt-1 text-amber-700">
-                  Not ready to verify until these are uploaded.
+                </div>
+              </div>
+
+              <div className="grid w-full gap-2 sm:grid-cols-3 lg:w-150">
+                <Metric
+                  label="Rating"
+                  value={
+                    numericValue(driver.rating) > 0
+                      ? `${Number(driver.rating).toFixed(1)} / 5`
+                      : "—"
+                  }
+                  detail={
+                    driver.ratingCount > 0
+                      ? `${driver.ratingCount} ratings`
+                      : null
+                  }
+                />
+                <Metric label="Rides" value={ displayValue(driver.rides) } detail={ null } />
+                <Metric
+                  label="Drives"
+                  value={ hasValue(totalDrives) ? displayValue(totalDrives) : "—" }
+                  detail={ null }
+                />
+              </div>
+            </div>
+
+            { hasMissingDocuments && (
+              <div
+                className={ `mt-5 rounded-lg border px-3 py-2.5 text-xs ${toneStyles.amber.panel}` }
+              >
+                <p className="font-semibold">
+                  Verification blocked — { missingDocuments.length } missing
+                  document{ missingDocuments.length === 1 ? "" : "s" }
                 </p>
+                <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                  { missingDocuments.map((doc, index) => (
+                    <li key={ index }>{ displayValue(doc) }</li>
+                  )) }
+                </ul>
+                { driver.canBeVerified === false && (
+                  <p className="mt-1 text-amber-800">
+                    Upload the missing documents before verifying this driver.
+                  </p>
+                ) }
+              </div>
+            ) }
+            { !hasMissingDocuments && isReadyForVerification &&
+              driver.statusKey === "pending" && (
+                <div
+                  className={ `mt-5 rounded-lg border px-3 py-2.5 text-xs ${toneStyles.emerald.panel}` }
+                >
+                  <p className="font-semibold">
+                    All required documents are verified. This application is
+                    ready for review.
+                  </p>
+                </div>
+              ) }
+          </CardContent>
+
+          <CardFooter className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
+            <div className="flex flex-wrap items-center gap-2">
+              { driver.statusKey === "pending" && (
+                <>
+                  <Can permission={ PERMISSIONS.DRIVERS_VERIFY }>
+                    <Button
+                      type="button"
+                      disabled={
+                        verifyDriver.isPending || driver.canBeVerified === false
+                      }
+                      onClick={ () =>
+                        (
+                          verifyDriver.mutate as unknown as (variables: {
+                            driverId: string;
+                          }) => void
+                        )({ driverId: String(driverId) })
+                      }
+                    >
+                      <CircleCheck aria-hidden="true" />
+                      Verify driver
+                    </Button>
+                  </Can>
+                  <Can permission={ PERMISSIONS.DRIVERS_VERIFY }>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                      onClick={ () => {
+                        setRejectReason("");
+                        setRejectOpen(true);
+                      } }
+                    >
+                      <CircleX aria-hidden="true" />
+                      Reject
+                    </Button>
+                  </Can>
+                </>
+              ) }
+              { isSuspended && (
+                <Can permission={ PERMISSIONS.DRIVERS_SUSPEND }>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={ unsuspendDriver.isPending }
+                    onClick={ () =>
+                      (
+                        unsuspendDriver.mutate as unknown as (variables: {
+                          driverId: string;
+                        }) => void
+                      )({ driverId: String(driverId) })
+                    }
+                  >
+                    <CircleCheck aria-hidden="true" />
+                    Reactivate driver
+                  </Button>
+                </Can>
+              ) }
+              { driver.statusKey === "verified" && driver.isActive && (
+                <Can permission={ PERMISSIONS.DRIVERS_SUSPEND }>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                    onClick={ () => {
+                      setSuspendReason("");
+                      setSuspendOpen(true);
+                    } }
+                  >
+                    <ShieldAlert aria-hidden="true" />
+                    Suspend driver
+                  </Button>
+                </Can>
               ) }
             </div>
-          ) }
-        </DriverSection>
 
-        <DriverSection icon={ Star } title="Performance Metrics">
-          <dl className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
-            { performanceFields.map((field) => (
-              <InfoField
-                key={ field.label }
-                label={ field.label }
-                value={ field.value }
-                detail={ field.detail }
-              />
-            )) }
-          </dl>
-          <p className="mt-2 text-xs text-slate-500">
-            Detailed acceptance, cancellation, and arrival metrics are only
-            available when returned by the driver profile API.
-          </p>
-        </DriverSection>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="outline" size="sm">
+                  <EllipsisVertical aria-hidden="true" />
+                  More actions
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuLabel>Driver</DropdownMenuLabel>
+                { phone && (
+                  <DropdownMenuItem asChild>
+                    <a href={ `tel:${encodeURIComponent(phone)}` }>
+                      <Phone aria-hidden="true" />
+                      Call driver
+                    </a>
+                  </DropdownMenuItem>
+                ) }
+                { email && (
+                  <DropdownMenuItem asChild>
+                    <a href={ `mailto:${encodeURIComponent(email)}` }>
+                      <MessageSquare aria-hidden="true" />
+                      Email driver
+                    </a>
+                  </DropdownMenuItem>
+                ) }
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Related records</DropdownMenuLabel>
+                <DropdownMenuItem onSelect={ navigateToRides }>
+                  <ArrowUpRight aria-hidden="true" />
+                  View rides
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={ navigateToPayouts }>
+                  <Download aria-hidden="true" />
+                  View earnings
+                </DropdownMenuItem>
+                { canProcessPayouts && (
+                  <DropdownMenuItem onSelect={ navigateToPendingPayouts }>
+                    <CircleCheck aria-hidden="true" />
+                    Process payouts
+                  </DropdownMenuItem>
+                ) }
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={ exportProfile }>
+                  <FileText aria-hidden="true" />
+                  Export data
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </CardFooter>
+        </Card>
 
-        <DriverSection
-          icon={ Download }
-          title="Earnings · Last 30 Days"
-          action={
-            canProcessPayouts ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={ navigateToPendingPayouts }
-              >
-                Process →
-              </Button>
-            ) : null
-          }
-        >
-          <dl className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
-            { earningsFields.map(([label, value]) => (
-              <InfoField
-                key={ label }
-                label={ label }
-                value={
-                  label === "Total rides"
-                    ? displayValue(value)
-                    : value
-                }
-              />
-            )) }
-          </dl>
-          { driver.payoutStats && Object.keys(driver.payoutStats).length > 0 && (
-            <div className="mt-3 border-t border-slate-100 pt-3">
-              <h3 className="text-xs font-medium text-slate-500">Payout stats</h3>
-              <dl className="mt-2 grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
-                { Object.entries(driver.payoutStats).map(([key, value]) => (
-                  <InfoField
-                    key={ key }
-                    label={ key
-                      .replace(/_/g, " ")
-                      .replace(/\b\w/g, (char) => char.toUpperCase()) }
-                    value={ value }
-                  />
-                )) }
-              </dl>
-            </div>
-          ) }
-          <p className="mt-2 text-xs text-slate-500">
-            Earnings and payout totals for this date range are not provided by
-            the current driver profile API.
-          </p>
-        </DriverSection>
-
-        <DriverSection icon={ Clock3 } title="Activity">
-          <dl className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-4">
-            { activityFields.map(([label, value]) => (
-              <InfoField key={ label } label={ label } value={ value } />
-            )) }
-          </dl>
-        </DriverSection>
-
-        <DriverSection icon={ ShieldAlert } title="Issues & Flags">
-          { activeIssues === null && historicalIssues === null ? (
-            <p className="text-sm text-slate-500">
-              Issue and dispute history is not provided by the current API.
-            </p>
-          ) : (
-            <div className="space-y-3 text-sm">
-              <p className="font-medium text-slate-800">
-                Active: { displayValue(activeIssues) }
-              </p>
-              <p className="text-slate-600">
-                Historical: { displayValue(historicalIssues) }
-              </p>
-            </div>
-          ) }
-        </DriverSection>
-
-        <DriverSection icon={ ArrowUpRight } title="Quick Links">
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" onClick={ navigateToRides }>
-              View All Rides
-              <ArrowUpRight aria-hidden="true" />
-            </Button>
-            <Button type="button" variant="outline" onClick={ navigateToPayouts }>
-              View Earnings
-              <ArrowUpRight aria-hidden="true" />
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled
-              title="Rating comments are not available in the current API."
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,0.8fr)]">
+          <div className="space-y-5">
+            <DetailSection
+              id="driver-documents"
+              icon={ FileText }
+              title="Documents"
+              description="Review submitted proof before verifying this application."
+              action={
+                <div className="flex items-center gap-2">
+                  { driver.allDocumentsVerified === true && (
+                    <StatusPill label="All verified" tone="emerald" />
+                  ) }
+                  <Badge variant="outline" className="rounded-full px-2.5 text-xs">
+                    { items.length } document{ items.length === 1 ? "" : "s" }
+                  </Badge>
+                </div>
+              }
             >
-              View Ratings
-            </Button>
-            { email && (
-              <Button asChild variant="outline">
-                <a href={ `mailto:${encodeURIComponent(email)}` }>
-                  <Mail aria-hidden="true" />
-                  Message Driver
-                </a>
-              </Button>
-            ) }
-            { phone && (
-              <Button asChild variant="outline">
-                <a href={ `tel:${encodeURIComponent(phone)}` }>
-                  <Phone aria-hidden="true" />
-                  Call Driver
-                </a>
-              </Button>
-            ) }
+              { items.length === 0 ? (
+                <EmptyState
+                  icon={ FileText }
+                  title="No documents uploaded"
+                  description={
+                    hasMissingDocuments
+                      ? "Required documents are still missing."
+                      : null
+                  }
+                />
+              ) : (
+                <ul className="divide-y divide-slate-100">
+                  { items.map((document) => {
+                    const documentTone = document.isApproved
+                      ? "emerald"
+                      : document.isRejected
+                        ? "rose"
+                        : "amber";
+
+                    return (
+                      <li
+                        key={ document.id ?? document.fileName }
+                        className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          { document.isImage && document.fileUrl ? (
+                            <img
+                              src={ document.fileUrl }
+                              alt={ `${document.typeLabel} document thumbnail` }
+                              loading="lazy"
+                              className="size-10 shrink-0 rounded-md border border-slate-200 object-cover"
+                            />
+                          ) : (
+                            <div
+                              className="flex size-10 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-500"
+                              aria-hidden="true"
+                            >
+                              <FileText className="size-4" />
+                            </div>
+                          ) }
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-sm font-semibold text-slate-800">
+                                { document.typeLabel }
+                              </p>
+                              <StatusPill
+                                label={ document.status }
+                                tone={ documentTone }
+                              />
+                            </div>
+                            <p className="mt-1 text-xs text-slate-500">
+                              { document.reviewedAt
+                                ? `Reviewed ${document.reviewedAt}`
+                                : `Uploaded ${document.uploadedAt}` }
+                              { document.reviewedBy
+                                ? ` · by ${document.reviewedBy}`
+                                : "" }
+                              { hasValue(document.fileFormatLabel)
+                                ? ` · ${document.fileFormatLabel}`
+                                : "" }
+                            </p>
+                            { document.expiry !== "No expiry" && (
+                              <p className="mt-0.5 text-xs text-slate-500">
+                                Valid until { document.expiry }
+                              </p>
+                            ) }
+                            { hasValue(document.rejectionReason) && (
+                              <p className="mt-1 text-xs font-medium text-rose-700">
+                                { document.rejectionReason }
+                              </p>
+                            ) }
+                          </div>
+                        </div>
+                        <Can permission={ PERMISSIONS.DRIVERS_DOCUMENTS_REVIEW }>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={ documentMutationPending }
+                            onClick={ () => setReviewTarget(document) }
+                          >
+                            Review
+                            <ArrowUpRight aria-hidden="true" />
+                          </Button>
+                        </Can>
+                      </li>
+                    );
+                  }) }
+                </ul>
+              ) }
+            </DetailSection>
+
+            <DetailSection
+              icon={ CarFront }
+              title="Vehicle & media"
+              description="Registered vehicle details and uploaded photos."
+              action={
+                hasValue(driver.plateNumber) ? (
+                  <Badge
+                    variant="outline"
+                    className="rounded-full px-2.5 font-mono text-xs text-slate-700"
+                  >
+                    { displayValue(driver.plateNumber) }
+                  </Badge>
+                ) : null
+              }
+            >
+              <dl className="grid gap-x-6 sm:grid-cols-2">
+                <InfoField
+                  label="Make / model"
+                  value={
+                    [driver.vehicleMake, driver.vehicleModel]
+                      .filter(Boolean)
+                      .join(" ") || driver.vehicle
+                  }
+                />
+                <InfoField label="Type" value={ driver.vehicleType } />
+                <InfoField label="Year" value={ driver.vehicleYear } />
+                <InfoField label="Color" value={ driver.vehicleColor } />
+                <InfoField
+                  label="Plate verified"
+                  value={
+                    driver.vehiclePlateVerified === true
+                      ? "Yes"
+                      : driver.vehiclePlateVerified === false
+                        ? "No"
+                        : null
+                  }
+                />
+                <InfoField
+                  label="Insurance"
+                  value={
+                    insuranceExpiry ? formatDate(insuranceExpiry) : null
+                  }
+                  detail={
+                    insuranceValidity === true
+                      ? "Valid"
+                      : insuranceValidity === false
+                        ? "Expired"
+                        : null
+                  }
+                />
+              </dl>
+
+              <div className="mt-5 border-t border-slate-100 pt-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">
+                    Photos
+                  </h3>
+                  { primaryVehiclePhoto && (
+                    <span className="text-xs text-slate-500">
+                      { primaryVehiclePhoto.label }
+                    </span>
+                  ) }
+                </div>
+                { primaryVehiclePhoto ? (
+                  <PhotoTile
+                    photo={ primaryVehiclePhoto }
+                    onOpen={ () => setLightboxPhoto(primaryVehiclePhoto) }
+                  />
+                ) : (
+                  <EmptyState
+                    icon={ CarFront }
+                    title="No vehicle photos"
+                    description="No vehicle images were returned for this driver."
+                  />
+                ) }
+              </div>
+            </DetailSection>
           </div>
-        </DriverSection>
+
+          <div className="space-y-5">
+            <DetailSection
+              icon={ UserRound }
+              title="Identity & contact"
+              description="Recorded profile details from the driver application."
+            >
+              { identityFields.length > 0 ? (
+                <dl className="grid gap-x-6 sm:grid-cols-2">
+                  { identityFields.map(([label, value]) => (
+                    <InfoField key={ label } label={ label } value={ value } />
+                  )) }
+                </dl>
+              ) : (
+                <EmptyState
+                  icon={ UserRound }
+                  title="No additional profile details"
+                  description="Only the driver name is available."
+                />
+              ) }
+            </DetailSection>
+
+            <DetailSection
+              icon={ ShieldAlert }
+              title="LATRA compliance"
+              description="Regulatory submission status for this driver."
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusPill label={ latraLabel } tone={ latraTone } />
+                { hasValue(latra.referenceNumber) && (
+                  <span className="font-mono text-xs text-slate-500">
+                    { displayValue(latra.referenceNumber) }
+                  </span>
+                ) }
+              </div>
+              { latra.submittedAt && (
+                <p className="mt-3 text-xs text-slate-500">
+                  Submitted { formatDate(latra.submittedAt) } ·{ " " }
+                  { formatRelative(latra.submittedAt) }
+                </p>
+              ) }
+              { hasValue(latra.errorMessage) && (
+                <p
+                  className={ `mt-3 rounded-lg border px-3 py-2 text-xs ${toneStyles.rose.panel}` }
+                >
+                  { displayValue(latra.errorMessage) }
+                </p>
+              ) }
+              { !hasValue(latra.submitted) &&
+                !hasValue(latra.submissionStatus) &&
+                !hasValue(latra.errorMessage) && (
+                  <p className="mt-3 text-xs text-slate-500">
+                    No LATRA submission data was returned.
+                  </p>
+                ) }
+            </DetailSection>
+
+            <DetailSection
+              icon={ Clock3 }
+              title="Activity & payouts"
+              description="Latest available signals and payout totals."
+              action={
+                canProcessPayouts ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={ navigateToPendingPayouts }
+                  >
+                    Process payouts
+                  </Button>
+                ) : null
+              }
+            >
+              { activityRows.length > 0 ? (
+                <dl className="grid gap-x-6 sm:grid-cols-2">
+                  { activityRows.map(([label, value]) => (
+                    <InfoField key={ label } label={ label } value={ value } />
+                  )) }
+                </dl>
+              ) : (
+                <EmptyState
+                  icon={ Clock3 }
+                  title="No recent activity"
+                  description="No activity or payout totals were returned."
+                />
+              ) }
+            </DetailSection>
+          </div>
+        </div>
       </div>
 
       <Can permission={ PERMISSIONS.DRIVERS_DOCUMENTS_REVIEW }>
@@ -1249,11 +1267,12 @@ function DriverDetailsPage() {
             className="relative flex max-h-full max-w-full flex-col items-center gap-3"
           >
             <Button
+              ref={ lightboxCloseRef }
               type="button"
               variant="ghost"
               size="icon"
               onClick={ () => setLightboxPhoto(null) }
-              aria-label="Close vehicle photo"
+              aria-label={ `Close ${lightboxPhoto.label}` }
               className="absolute -right-2 -top-2 z-10 rounded-full bg-white text-slate-700 hover:bg-slate-100 sm:right-0 sm:top-0"
             >
               <X aria-hidden="true" />
@@ -1263,9 +1282,7 @@ function DriverDetailsPage() {
               alt={ lightboxPhoto.label }
               className="max-h-[80dvh] max-w-full rounded-lg object-contain"
             />
-            <p className="text-sm font-medium text-white">
-              { lightboxPhoto.label }
-            </p>
+            <p className="text-sm font-medium text-white">{ lightboxPhoto.label }</p>
           </section>
         </div>
       ) }
